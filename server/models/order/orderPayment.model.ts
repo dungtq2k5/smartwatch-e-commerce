@@ -1,0 +1,46 @@
+import mongoose from "mongoose";
+
+const OrderPaymentSchema = new mongoose.Schema(
+  {
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: true,
+    },
+    amountCents: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    methodId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PaymentMethod",
+      required: true,
+    },
+    statusId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PaymentStatus",
+      required: true,
+    },
+    currency: {
+      type: String,
+      required: true,
+    },
+    transactionDate: {
+      type: Date,
+      default: Date.now,
+    },
+    relatedTransactionId: {
+      type: String,
+      default: null,
+      index: {
+        unique: true,
+        partialFilterExpression: { relatedTransactionId: { $type: "string" } },
+      },
+    },
+  },
+  { timestamps: true }
+);
+
+const OrderPayment = mongoose.model("OrderPayment", OrderPaymentSchema);
+export default OrderPayment;

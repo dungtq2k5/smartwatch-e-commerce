@@ -1,0 +1,2 @@
+- Firebase for image storage and auth by Google.
+- Mailtrap for email services.
