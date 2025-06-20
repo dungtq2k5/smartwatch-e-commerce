@@ -1,12 +1,25 @@
 import dotenv from "dotenv";
-import { seedAllCollection } from "./utils/seedings";
-import express, { Response } from "express";
+import { seedAllCollections } from "./utils/seedings";
+import express, { NextFunction, Request, Response } from "express";
+import cors from "cors";
 import cookieParser from "cookie-parser";
-import { ErrorResponse } from "../common/types.common";
+import authRoute from "./routes/auth.route";
+// import userRoute from "./routes/user.route";
+import { errorHandler } from "./utils/middlewares/error.middleware";
+import connectDB from "./db/connectDB";
 
 dotenv.config();
 const requiredEnvVars = [
   "SERVER_PORT",
+  "JWT_SECRET_KEY",
+  "MONGO_URI",
+  "MAILTRAP_TOKEN",
+  "MAILTRAP_SENDER_EMAIL",
+  "MAILTRAP_SENDER_NAME",
+  "CLIENT_URL",
+  "TWILIO_SID",
+  "TWILIO_AUTH_TOKEN",
+  "TWILIO_AUTH_PHONE",
 ];
 for (const varName of requiredEnvVars) {
   if (!process.env[varName]) {
@@ -15,29 +28,32 @@ for (const varName of requiredEnvVars) {
   }
 }
 
-// Init some Mongo collections when first time running the server
-await seedAllCollection();
-
 const app = express();
+app.use(
+  cors({
+    origin: [process.env.CLIENT_URL!],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true, // Allow cookies to be sent with requests
+    optionsSuccessStatus: 200, // For legacy browser support
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ["Set-Cookie"],
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
-app.use((err: any, res: Response): void => {
-  console.log("❌", "Error handler catching and sending process...");
-  let statusCode = err.statusCode || 500;
-  let msg = err.message || "Internal Server Error";
+app.use("/api/auth", authRoute);
+// app.use("/api/user", userRoute);
 
-  // Mongoose duplicate key error
-  if (err.code === 1000 && err.keyValue) {
-    const dupField = Object.keys(err.keyValue)[0];
-    const dupVal = err.keyValue[dupField];
-    statusCode = 409;
-    msg = `${dupField} '${dupVal}' already exists!`;
-  }
+app.use((err: any, req: Request, res: Response, next: NextFunction) =>
+  errorHandler(err, req, res, next)
+);
 
-  res.status(statusCode).json({
-    success: false,
-    message: msg,
-  } as ErrorResponse);
-  console.log("...error handler send response completed.");
+const port = process.env.SERVER_PORT;
+app.listen(port, async () => {
+  console.log("🔗", "Connecting to MongoDB...");
+  await connectDB();
+  // console.log("🫘 ", "Seeding collections...");
+  // await seedAllCollections(); // Init some Mongo collections when first time running the server
+  console.log("🚀", `Server is running on http://localhost:${port}`);
 });

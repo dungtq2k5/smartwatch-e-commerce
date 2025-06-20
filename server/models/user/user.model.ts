@@ -104,23 +104,56 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    email: {
-      // Can be undefined if phoneNumber is provided
+    avatarUrl: {
       type: String,
-      unique: true,
+      default: null,
+    },
+    email: {
+      // Can be null if phoneNumber is provided
+      type: String,
+      default: null,
+      index: {
+        unique: true,
+        partialFilterExpression: { email: { $type: "string" } },
+      }
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
     },
     phoneNumber: {
-      // Can be undefined if email is provided
+      // Can be null if email is provided
       type: String,
-      unique: true,
+      default: null,
+      index: {
+        unique: true,
+        partialFilterExpression: { phoneNumber: { $type: "string" } },
+      }
     },
-    isVerified: {
+    isPhoneNumberVerified: {
       type: Boolean,
       default: false,
     },
     password: {
       type: String,
       required: true,
+    },
+    stripeCustomerId: {
+      type: String,
+      default: null,
+    },
+    userBalanceCents: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+    isLocked: {
+      type: Boolean,
+      default: false,
     },
     isDeleted: {
       type: Boolean,
@@ -130,23 +163,6 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null,
-    },
-    stripeCustomerId: {
-      type: String,
-      default: null,
-    },
-    lastLogin: {
-      type: Date,
-      default: null,
-    },
-    userBalanceCents: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    isLocked: {
-      type: Boolean,
-      default: false,
     },
     addresses: {
       type: [userAddress],

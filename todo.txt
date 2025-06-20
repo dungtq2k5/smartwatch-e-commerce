@@ -1,2 +1,34 @@
-- Firebase for image storage and auth by Google.
-- Mailtrap for email services.
+- Legends:
+  🔥 Developing.
+  ✅ Completed.
+  ❌ Not started.
+  📝 Some notes.
+
+- 🦾 Techs used:
+  - React for the frontend.
+  - Node.js with Express for the backend.
+  - MongoDB for the database.
+  - Firebase for image storage and authentication.
+  - Mailtrap for email sending services.
+  - Twilio for SMS sending services.
+  - Auto generate JWT secret key: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+- 📝 Todos:
+  - Frontend:
+    - When user not verified not login -> redirect to verify page ❌.
+    - Find default image for user profile ❌.
+    - Find default image for product ❌.
+    - Auto login user when user is verified ❌.
+
+  - Backend - API: (remember isDeleted field)
+    - Because __v field is only activated with doc.save() so stick with find-modify-save method when modifying data 📝.
+    - Sending welcome email after user is verified if they have email ✅.
+    - Dev auth API ✅.
+    - Dev user API 🔥.
+    - Template for email sending ❌.
+
+  - Database init:
+    - Init roles & permissions ❌.
+
+  - Features:
+    - Dynamic default avatar for user profile ❌.

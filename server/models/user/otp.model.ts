@@ -7,16 +7,17 @@ const optSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    email: {
+    type: {
       type: String,
-      unique: true,
+      enum: ["email", "phone"],
+      required: true,
     },
-    phoneNumber: {
+    code: {
       type: String,
-      unique: true,
+      required: true,
     },
-    otpCode: {
-      type: String,
+    expiresAt: {
+      type: Date,
       required: true,
     },
     isUsed: {
