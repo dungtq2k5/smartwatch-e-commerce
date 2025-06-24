@@ -19,13 +19,15 @@
     - Find default image for user profile ❌.
     - Find default image for product ❌.
     - Auto login user when user is verified ❌.
+    - When user auth by Google send back to BackEnd idToken ❌.
 
   - Backend - API: (remember isDeleted field)
     - Because __v field is only activated with doc.save() so stick with find-modify-save method when modifying data 📝.
     - Sending welcome email after user is verified if they have email ✅.
     - Dev auth API ✅.
-    - Dev user API 🔥.
+    - Dev user API ✅.
     - Template for email sending ❌.
+    - Better user friendly when sending email or SMS (with datetime for lock/unlock) ❌.
 
   - Database init:
     - Init roles & permissions ❌.

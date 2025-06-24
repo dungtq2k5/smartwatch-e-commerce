@@ -6,7 +6,7 @@ import {
   isValidPassword,
   isValidVnPhoneNumber,
 } from "../../../common/utils.common";
-import { isValidImgUrl } from "..//utils";
+import { isValidIdArray, isValidImgUrl } from "..//utils";
 import { PASSWORD_HINT_MESSAGE } from "../../../common/configs.common";
 import { errorHandler } from "../errorHandler";
 
@@ -16,7 +16,7 @@ export function sanitizeUserInput(
   next: NextFunction
 ): void {
   console.log("▶️", "Sanitizing user input...");
-  const { fullName, email, type, code } = req.body;
+  const { fullName, email, type, code, value } = req.body;
   const { token } = req.params; // For reset password case
 
   if (typeof fullName === "string") {
@@ -26,7 +26,7 @@ export function sanitizeUserInput(
     req.body.email = removeOddSpaces(email).toLowerCase();
   }
   if (typeof type === "string") {
-    req.body.type = removeOddSpaces(type).toLowerCase();
+    req.body.type = removeOddSpaces(type);
   }
   if (typeof code === "string") {
     req.body.code = removeOddSpaces(code);
@@ -34,14 +34,14 @@ export function sanitizeUserInput(
   if (typeof token === "string") {
     req.body.token = removeOddSpaces(token);
   }
+  if (typeof value === "string") {
+    req.body.value = removeOddSpaces(value).toLocaleLowerCase();
+  }
 
   next();
 }
 
-export async function verifyUserInput(
-  req: Request,
-  res: Response,
-  next: NextFunction,
+export function verifyUserInput(
   type:
     | "signup"
     | "login"
@@ -50,163 +50,274 @@ export async function verifyUserInput(
     | "verify user"
     | "forgot password"
     | "reset password"
-): Promise<void> {
-  console.log("▶️", "Validating user input...");
+    | "update email"
+    | "update phone number"
+    | "update contact info"
+    | "create"
+) {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    console.log("▶️", "Validating user input...");
 
-  let errors: string[] = [];
-  try {
-    switch (type) {
-      case "signup": {
-        console.log("Validating registration input...");
-        const { fullName, email, phoneNumber, password } = req.body;
+    let errors: string[] = [];
+    try {
+      switch (type) {
+        case "signup": {
+          console.log("Validating registration input...");
+          const { fullName, email, phoneNumber, password } = req.body;
 
-        if (fullName === undefined) {
-          errors.push("fullName is required.");
-        } else if (!isValidUserFullName(fullName)) {
-          errors.push("fullName is invalid.");
+          if (!fullName) {
+            errors.push("fullName is required.");
+          } else if (!isValidUserFullName(fullName)) {
+            errors.push("fullName is invalid.");
+          }
+          if (!email && !phoneNumber) {
+            errors.push("email or phoneNumber is required.");
+          } else {
+            if (email && !isValidEmail(email)) {
+              errors.push("email is invalid.");
+            }
+            if (phoneNumber && !isValidVnPhoneNumber(phoneNumber)) {
+              errors.push("phoneNumber is invalid.");
+            }
+          }
+          if (!password) {
+            errors.push("password is required.");
+          } else if (!isValidPassword(password)) {
+            errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
+          }
+          break;
         }
-        if (email === undefined && phoneNumber === undefined) {
-          errors.push("email or phoneNumber is required.");
-        } else {
+        case "login": {
+          console.log("Validating login input...");
+          const { email, phoneNumber, password } = req.body;
+
+          if (!email && !phoneNumber) {
+            errors.push("email or phoneNumber is required.");
+          } else {
+            if (email && !isValidEmail(email)) {
+              errors.push("email is invalid.");
+            }
+            if (phoneNumber && !isValidVnPhoneNumber(phoneNumber)) {
+              errors.push("phoneNumber is invalid.");
+            }
+          }
+          if (!password) {
+            errors.push("password is required.");
+          } else if (!isValidPassword(password)) {
+            errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
+          }
+          break;
+        }
+        case "update": {
+          console.log("Validating update input...");
+          const { fullName, avatarUrl, password, userBalanceCents, isLocked } =
+            req.body;
+
+          if (fullName !== undefined && !isValidUserFullName(fullName)) {
+            errors.push("fullName is invalid.");
+          }
+          if (password !== undefined && !isValidPassword(password)) {
+            errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
+          }
+          if (
+            avatarUrl !== undefined &&
+            avatarUrl !== null &&
+            !(await isValidImgUrl(avatarUrl))
+          ) {
+            errors.push("avatarUrl is invalid.");
+          }
+          if (
+            userBalanceCents !== undefined &&
+            (typeof userBalanceCents !== "number" || userBalanceCents < 0)
+          ) {
+            errors.push("userBalanceCents must be a non-negative number.");
+          }
+          if (isLocked !== undefined && typeof isLocked !== "boolean") {
+            errors.push("isLocked must be a boolean.");
+          }
+          break;
+        }
+        case "auth by google": {
+          console.log("Validating authentication by Google input...");
+          const { idToken } = req.body;
+
+          if (!idToken) {
+            errors.push("idToken is required.");
+          } else if (typeof idToken !== "string") {
+            errors.push("idToken must be a non-empty string.");
+          }
+          break;
+        }
+        case "verify user": {
+          console.log("Validating verify user input...");
+          const { type, code } = req.body;
+
+          if (!type) {
+            errors.push("type is required.");
+          } else if (type !== "email" && type !== "phoneNumber") {
+            errors.push("type must be either 'email' or 'phoneNumber'.");
+          }
+          if (!code) {
+            errors.push("code is required.");
+          } else if (typeof code !== "string") {
+            errors.push("code must be a non-empty string.");
+          }
+          break;
+        }
+        case "forgot password": {
+          console.log("Validating forgot password input...");
+          const { email, phoneNumber } = req.body;
+
+          if (!email && !phoneNumber) {
+            errors.push("email or phoneNumber is required.");
+          } else {
+            if (email && !isValidEmail(email)) {
+              errors.push("email is invalid.");
+            }
+            if (phoneNumber && !isValidVnPhoneNumber(phoneNumber)) {
+              errors.push("phoneNumber is invalid.");
+            }
+          }
+          break;
+        }
+        case "reset password": {
+          console.log("Validating reset password input...");
+          const token = req.params.token;
+          const password = req.body.password;
+
+          if (!token) {
+            errors.push("token is required.");
+          } else if (typeof token !== "string") {
+            errors.push("token must be a non-empty string.");
+          }
+          if (!password) {
+            errors.push("password is required.");
+          } else if (!isValidPassword(password)) {
+            errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
+          }
+          break;
+        }
+        case "update email": {
+          console.log("Validating update email input...");
+          const { email, isEmailVerified } = req.body;
+
           if (email !== undefined && !isValidEmail(email)) {
             errors.push("email is invalid.");
           }
+          if (
+            isEmailVerified !== undefined &&
+            typeof isEmailVerified !== "boolean"
+          ) {
+            errors.push("isEmailVerified must be a boolean.");
+          }
+          break;
+        }
+        case "update phone number": {
+          console.log("Validating update phone number input...");
+          const { phoneNumber, isPhoneNumberVerified } = req.body;
           if (phoneNumber !== undefined && !isValidVnPhoneNumber(phoneNumber)) {
             errors.push("phoneNumber is invalid.");
           }
+          if (
+            isPhoneNumberVerified !== undefined &&
+            typeof isPhoneNumberVerified !== "boolean"
+          ) {
+            errors.push("isPhoneNumberVerified must be a boolean.");
+          }
+          break;
         }
-        if (password === undefined) {
-          errors.push("password is required.");
-        } else if (!isValidPassword(password)) {
-          errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
-        }
-        break;
-      }
-      case "login": {
-        console.log("Validating login input...");
-        const { email, phoneNumber, password } = req.body;
+        case "update contact info": {
+          console.log("Validating update contact info input...");
+          const { type, value } = req.body;
 
-        if (email === undefined && phoneNumber === undefined) {
-          errors.push("email or phoneNumber is required.");
-        } else {
-          if (email !== undefined && !isValidEmail(email)) {
+          if (!type) {
+            errors.push("type is required.");
+          } else if (type !== "email" && type !== "phoneNumber") {
+            errors.push("type must be either 'email' or 'phoneNumber'.");
+          } else if (!value) {
+            errors.push("value is required.");
+          } else if (type === "email" && !isValidEmail(value)) {
+            errors.push("value must be a valid email.");
+          } else if (type === "phoneNumber" && !isValidVnPhoneNumber(value)) {
+            errors.push("value must be a valid phone number.");
+          }
+          break;
+        }
+        case "create": {
+          console.log("Validating create input...");
+          const {
+            fullName,
+            avatarUrl,
+            email,
+            isEmailVerified,
+            phoneNumber,
+            isPhoneNumberVerified,
+            password,
+            userBalanceCents,
+            isLocked,
+            roleIds,
+          } = req.body;
+
+          if (!fullName) {
+            errors.push("fullName is required.");
+          } else if (!isValidUserFullName(fullName)) {
+            errors.push("fullName is invalid.");
+          }
+          if (avatarUrl !== undefined && !(await isValidImgUrl(avatarUrl))) {
+            errors.push("avatarUrl is invalid.");
+          }
+          if (!email && !phoneNumber) {
+            errors.push("email or phoneNumber is required.");
+          }
+          if (email && !isValidEmail(email)) {
             errors.push("email is invalid.");
           }
-          if (phoneNumber !== undefined && !isValidVnPhoneNumber(phoneNumber)) {
+          if (
+            isEmailVerified !== undefined &&
+            typeof isEmailVerified !== "boolean"
+          ) {
+            errors.push("isEmailVerified must be a boolean.");
+          }
+          if (phoneNumber && !isValidVnPhoneNumber(phoneNumber)) {
             errors.push("phoneNumber is invalid.");
           }
-        }
-        if (password === undefined) {
-          errors.push("password is required.");
-        } else if (!isValidPassword(password)) {
-          errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
-        }
-        break;
-      }
-      case "update": {
-        console.log("Validating update input...");
-        const { fullName, email, phoneNumber, password, avatarUrl } = req.body;
-
-        if (fullName !== undefined && !isValidUserFullName(fullName)) {
-          errors.push("fullName is invalid.");
-        }
-        if (email !== undefined && !isValidEmail(email)) {
-          errors.push("email is invalid.");
-        }
-        if (phoneNumber !== undefined && !isValidVnPhoneNumber(phoneNumber)) {
-          errors.push("phoneNumber is invalid.");
-        }
-        if (password !== undefined && !isValidPassword(password)) {
-          errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
-        }
-        if (
-          avatarUrl !== undefined &&
-          avatarUrl !== null &&
-          !(await isValidImgUrl(avatarUrl))
-        ) {
-          errors.push("avatarUrl is invalid.");
-        }
-        break;
-      }
-      case "auth by google": {
-        console.log("Validating authentication by Google input...");
-        const { fullName, email, avatarUrl } = req.body;
-
-        if (fullName === undefined) {
-          errors.push("fullName is required.");
-        } else if (!isValidUserFullName(fullName)) {
-          errors.push("fullName is invalid.");
-        }
-        if (email === undefined) {
-          errors.push("email is required.");
-        } else if (!isValidEmail(email)) {
-          errors.push("email is invalid.");
-        }
-        if (
-          avatarUrl !== undefined &&
-          avatarUrl !== null &&
-          !(await isValidImgUrl(avatarUrl))
-        ) {
-          errors.push("avatarUrl is invalid.");
-        }
-        break;
-      }
-      case "verify user": {
-        console.log("Validating verify user input...");
-        const { type, code } = req.body;
-
-        if (type === undefined) {
-          errors.push("type is required.");
-        } else if (type !== "email" && type !== "phone") {
-          errors.push("type must be either 'email' or 'phone'.");
-        }
-        if (code === undefined) {
-          errors.push("code is required.");
-        } else if (typeof code !== "string") {
-          errors.push("code must be a non-empty string.");
-        }
-        break;
-      }
-      case "forgot password": {
-        console.log("Validating forgot password input...");
-        const { email, phoneNumber } = req.body;
-
-        if (email === undefined && phoneNumber === undefined) {
-          errors.push("email or phoneNumber is required.");
-        } else {
-          if (email !== undefined && !isValidEmail(email)) {
-            errors.push("email is invalid.");
+          if (
+            isPhoneNumberVerified !== undefined &&
+            typeof isPhoneNumberVerified !== "boolean"
+          ) {
+            errors.push("isPhoneNumberVerified must be a boolean.");
           }
-          if (phoneNumber !== undefined && !isValidVnPhoneNumber(phoneNumber)) {
-            errors.push("phoneNumber is invalid.");
+          if (!password) {
+            errors.push("password is required.");
+          } else if (!isValidPassword(password)) {
+            errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
+          }
+          if (
+            userBalanceCents !== undefined &&
+            typeof userBalanceCents !== "number" &&
+            userBalanceCents < 0
+          ) {
+            errors.push("userBalanceCents must be a non-negative number.");
+          }
+          if (isLocked !== undefined && typeof isLocked !== "boolean") {
+            errors.push("isLocked must be a boolean.");
+          }
+          if (roleIds !== undefined && !isValidIdArray(roleIds)) {
+            errors.push("roleIds must be an array of valid ids.");
           }
         }
-        break;
       }
-      case "reset password": {
-        console.log("Validating reset password input...");
-        const token = req.params.token;
-        const password = req.body.password;
 
-        if (token === undefined) {
-          errors.push("token is required.");
-        } else if (typeof token !== "string") {
-          errors.push("token must be a non-empty string.");
-        }
-        if (password === undefined) {
-          errors.push("password is required.");
-        } else if (!isValidPassword(password)) {
-          errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
-        }
-        break;
+      if (errors.length > 0) {
+        return next(errorHandler(400, errors));
       }
+      next();
+    } catch (error) {
+      next(error);
     }
-
-    if (errors.length > 0) {
-      return next(errorHandler(400, errors));
-    }
-    next();
-  } catch (error) {
-    next(error);
-  }
+  };
 }

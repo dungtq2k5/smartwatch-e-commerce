@@ -19,11 +19,7 @@ const VariationColorInstanceSchema = new mongoose.Schema(
     },
     supplierImeiNumber: {
       type: String,
-      default: null,
-      index: {
-        unique: true,
-        partialFilterExpression: { supplierImeiNumber: { $type: "String" } },
-      },
+      unique: true,
     },
     conditionId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -36,7 +32,6 @@ const VariationColorInstanceSchema = new mongoose.Schema(
     },
     inActivateAt: {
       type: Date,
-      default: null,
     },
   },
   { timestamps: true }

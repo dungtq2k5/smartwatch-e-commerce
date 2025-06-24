@@ -8,7 +8,7 @@ import {
   signup,
   verifyUser,
 } from "../controllers/auth.controller";
-import { verifyAuthentication, verifyReauthentication } from "../utils/middlewares/auth.middleware";
+import { verifyAuthentication, verifyJWTHasUserId, verifyReauthentication } from "../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../utils/middlewares/general.middleware";
 import {
   sanitizeUserInput,
@@ -38,7 +38,7 @@ router.post(
   verifyReauthentication,
   verifyEmptyBody,
   sanitizeUserInput,
-  (req, res, next) => verifyUserInput(req, res, next, "signup"),
+  verifyUserInput("signup"),
   signup
 );
 
@@ -48,7 +48,7 @@ router.post(
   verifyReauthentication,
   verifyEmptyBody,
   sanitizeUserInput,
-  (req, res, next) => verifyUserInput(req, res, next, "login"),
+  verifyUserInput("login"),
   login
 );
 
@@ -56,20 +56,18 @@ router.post("/logout", verifyAuthentication, logout);
 
 router.post(
   "/verify-user",
-  verifyReauthentication,
+  verifyJWTHasUserId,
   verifyEmptyBody,
   sanitizeUserInput,
-  (req, res, next) => verifyUserInput(req, res, next, "verify user"),
+  verifyUserInput("verify user"),
   verifyUser
 );
 
-// FIXME ...
 router.post(
   "/google",
   verifyReauthentication,
   verifyEmptyBody,
-  sanitizeUserInput,
-  (req, res, next) => verifyUserInput(req, res, next, "auth by google"),
+  verifyUserInput("auth by google"),
   authByGoogle
 );
 
@@ -79,7 +77,7 @@ router.post(
   verifyReauthentication,
   verifyEmptyBody,
   sanitizeUserInput,
-  (req, res, next) => verifyUserInput(req, res, next, "forgot password"),
+  verifyUserInput("forgot password"),
   forgotPassword
 );
 
@@ -89,7 +87,7 @@ router.post(
   verifyReauthentication,
   verifyEmptyBody,
   sanitizeUserInput,
-  (req, res, next) => verifyUserInput(req, res, next, "reset password"),
+  verifyUserInput("reset password"),
   resetPassword
 );
 

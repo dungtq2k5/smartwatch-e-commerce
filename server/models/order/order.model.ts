@@ -132,7 +132,6 @@ const orderSchema = new mongoose.Schema(
     },
     receivedDate: {
       type: Date,
-      default: null,
     },
     deliveryName: {
       type: String,

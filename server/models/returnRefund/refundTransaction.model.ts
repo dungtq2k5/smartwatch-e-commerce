@@ -23,7 +23,6 @@ const refundTransactionSchema = new mongoose.Schema(
     },
     externalRef: {
       type: String,
-      default: null,
     },
     statusId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -32,7 +31,6 @@ const refundTransactionSchema = new mongoose.Schema(
     },
     completedAt: {
       type: Date,
-      default: null,
     },
   },
   { timestamps: true }

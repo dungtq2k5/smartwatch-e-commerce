@@ -9,7 +9,7 @@ const optSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["email", "phone"],
+      enum: ["email", "phoneNumber"],
       required: true,
     },
     code: {

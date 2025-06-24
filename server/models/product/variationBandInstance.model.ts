@@ -14,11 +14,7 @@ const VariationBandInstanceSchema = new mongoose.Schema(
     },
     supplierSerialNumber: {
       type: String,
-      default: null,
-      index: {
-        unique: true,
-        partialFilterExpression: { supplierSerialNumber: { $type: "string" } },
-      },
+      unique: true,
     },
     conditionId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -31,7 +27,6 @@ const VariationBandInstanceSchema = new mongoose.Schema(
     },
     inActivateAt: {
       type: Date,
-      default: null,
     },
   },
   { timestamps: true }

@@ -23,7 +23,6 @@ const inventoryMovementSchema = new mongoose.Schema({
   grnId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Grn",
-    default: null,
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

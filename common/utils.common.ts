@@ -129,3 +129,10 @@ export function convertToE164(phoneNumber: string): string {
 
   return `+84${phoneNumber.slice(1)}`; // Remove leading 0 and add +84
 }
+
+export function isStringArray(arr: any): boolean {
+  if (!Array.isArray(arr)) return false;
+
+  // Check if every element in the array is a string
+  return arr.every((item) => typeof item === "string");
+}

@@ -72,7 +72,6 @@ const returnOrderSchema = new mongoose.Schema(
     },
     buyerReason: {
       type: String,
-      default: null,
     },
   },
   { timestamps: true }

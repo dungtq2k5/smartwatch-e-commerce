@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
 
 const PermissionSchema = new mongoose.Schema({
-  actionName: {
+  name: {
     type: String,
     unique: true,
     required: true,
   },
-  actionCode: {
+  code: {
     type: String,
     unique: true,
     required: true,

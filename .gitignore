@@ -26,5 +26,5 @@ dist-ssr
 .env
 test.*
 .prettierrc.json
-api/serviceAccountKey.json
 *.drawio.png
+serviceAccountKey.json

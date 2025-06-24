@@ -4,9 +4,10 @@ import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoute from "./routes/auth.route";
-// import userRoute from "./routes/user.route";
+import userRoute from "./routes/user.route";
 import { errorHandler } from "./utils/middlewares/error.middleware";
 import connectDB from "./db/connectDB";
+import { initAppCache } from "./configs/cache";
 
 dotenv.config();
 const requiredEnvVars = [
@@ -20,6 +21,8 @@ const requiredEnvVars = [
   "TWILIO_SID",
   "TWILIO_AUTH_TOKEN",
   "TWILIO_AUTH_PHONE",
+  "FIREBASE_USER_AVATAR_BUCKET",
+  "FIREBASE_PRODUCT_IMAGE_BUCKET",
 ];
 for (const varName of requiredEnvVars) {
   if (!process.env[varName]) {
@@ -43,7 +46,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/auth", authRoute);
-// app.use("/api/user", userRoute);
+app.use("/api/users", userRoute);
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) =>
   errorHandler(err, req, res, next)
@@ -53,7 +56,7 @@ const port = process.env.SERVER_PORT;
 app.listen(port, async () => {
   console.log("🔗", "Connecting to MongoDB...");
   await connectDB();
-  // console.log("🫘 ", "Seeding collections...");
-  // await seedAllCollections(); // Init some Mongo collections when first time running the server
+  await seedAllCollections(); // Init Mongo collections when first time running the server
+  await initAppCache(); // Init application cache
   console.log("🚀", `Server is running on http://localhost:${port}`);
 });

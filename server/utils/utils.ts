@@ -3,7 +3,8 @@ import { VERIFICATION_CODE_LENGTH } from "../../common/configs.common";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "./types";
 import { JWT_NAME, JWT_TTL } from "../configs/configs";
-import { UserResponse } from "../../common/types.common";
+import { AdminUserResponse, UserResponse } from "../../common/types.common";
+import { Types } from "mongoose";
 
 export function isValidUrl(url: any): boolean {
   if (typeof url !== "string") return false;
@@ -66,7 +67,7 @@ export function genVerificationCode(
 export function genJWTAndSetCookie(
   res: any,
   userId: string,
-  isVerified: boolean = true
+  isVerified: boolean
 ): string {
   const token = jwt.sign(
     { userId, isVerified } as JwtPayload,
@@ -100,15 +101,28 @@ export function formatUserResponse(user: any): UserResponse {
   return {
     id: user._id.toString(),
     fullName: user.fullName,
-    avatarUrl: user.avatarUrl,
-    email: user.email,
+    avatarUrl: user.avatarUrl ? user.avatarUrl : undefined,
+    email: user.email ? user.email : undefined,
     isEmailVerified: user.isEmailVerified,
-    phoneNumber: user.phoneNumber,
+    phoneNumber: user.phoneNumber ? user.phoneNumber : undefined,
     isPhoneNumberVerified: user.isPhoneNumberVerified,
-    stripeCustomerId: user.stripeCustomerId,
+    stripeCustomerId: user.stripeCustomerId ? user.stripeCustomerId : undefined,
     userBalanceCents: user.userBalanceCents,
-    lastLogin: user.lastLogin.toISOString(),
+    lastLogin: user.lastLogin ? user.lastLogin.toISOString() : undefined,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };
+}
+
+export function formatAdminUserResponse(user: any): AdminUserResponse {
+  return {
+    ...formatUserResponse(user),
+    isLocked: user.isLocked,
+  }
+}
+
+export function isValidIdArray(arr: any): boolean {
+  if (!Array.isArray(arr)) return false;
+
+  return arr.every((id) => Types.ObjectId.isValid(id));
 }

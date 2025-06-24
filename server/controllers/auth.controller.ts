@@ -24,11 +24,22 @@ import {
   sendPasswordResetSuccessSms,
   sendVerificationSms,
 } from "../utils/twilio";
-import { SuccessResponse, UserResponse } from "../../common/types.common";
-import mongoose from "mongoose";
+import {
+  SuccessResponse,
+  UserAuthByGoogle,
+  UserForgotPassword,
+  UserLogin,
+  UserResponse,
+  UserSignup,
+  UserVerify,
+} from "../../common/types.common";
+import mongoose, { Types } from "mongoose";
 import { genRandomPassword } from "../../common/utils.common";
 import crypto from "crypto";
 import PasswordResetToken from "../models/user/passwordResetToken.model";
+import admin from "firebase-admin";
+import Role from "../models/role/role.model";
+import { appCache } from "../configs/cache";
 
 export async function signup(
   req: Request,
@@ -36,21 +47,21 @@ export async function signup(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️", "Processing signup request...");
-  const { fullName, email, phoneNumber, password } = req.body;
+  const { fullName, email, phoneNumber, password } = req.body as UserSignup;
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // 1. Check existing user
+    // Check existing user
     const orConditions: ({ email: string } | { phoneNumber: string })[] = [];
     if (email) orConditions.push({ email });
     if (phoneNumber) orConditions.push({ phoneNumber });
-    const existingUser = await User.findOne({
+    const userExists = await User.exists({
       isDeleted: false,
       $or: orConditions,
-    });
+    }).session(session);
 
-    if (existingUser) {
+    if (userExists) {
       return next(
         errorHandler(
           409,
@@ -59,27 +70,41 @@ export async function signup(
       );
     }
 
-    // 2. Save new user
+    const roleAssignment = await assignDefaultBuyerRole(session);
     const hashedPassword = await bcrypt.hash(password, HASH_SALT);
     const verificationCode = genVerificationCode();
-    const user = new User({
-      fullName,
-      email: email || null,
-      password: hashedPassword,
-      phoneNumber: phoneNumber || null,
-    });
-    await user.save({ session });
+    const [user] = await User.create(
+      [
+        {
+          fullName,
+          email: email,
+          password: hashedPassword,
+          phoneNumber: phoneNumber,
+          roles: [
+            {
+              id: roleAssignment?.roleId,
+              assignedBy: roleAssignment?.assignedBy,
+            },
+          ],
+        },
+      ],
+      { session }
+    );
 
-    // 3. Save OTP for verification
-    const otp = new Otp({
-      userId: user._id,
-      type: email ? "email" : "phone",
-      code: verificationCode,
-      expiresAt: new Date(Date.now() + VERIFICATION_CODE_TTL),
-    });
-    await otp.save({ session });
+    // Save OTP for verification
+    await Otp.create(
+      [
+        {
+          userId: user._id,
+          type: email ? "email" : "phoneNumber",
+          code: verificationCode,
+          expiresAt: new Date(Date.now() + VERIFICATION_CODE_TTL),
+        },
+      ],
+      { session }
+    );
 
-    // 4. Send verification code via email or SMS
+    // Send verification code via email or SMS
     if (email) {
       await sendVerificationEmail(email, verificationCode);
     } else if (phoneNumber) {
@@ -88,7 +113,7 @@ export async function signup(
 
     await session.commitTransaction();
 
-    // 6. Set JWT and send cookie
+    // Set JWT and send cookie
     genJWTAndSetCookie(res, user._id.toString(), false);
 
     res.status(201).json({
@@ -101,7 +126,7 @@ export async function signup(
     } as SuccessResponse);
     console.log("✅", "Signup process completed successfully.");
   } catch (error) {
-    await session.abortTransaction();
+    if (session.inTransaction()) await session.abortTransaction();
     next(error);
   } finally {
     session.endSession();
@@ -114,10 +139,10 @@ export async function login(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️", "Processing login request...");
-  const { email, phoneNumber, password } = req.body;
+  const { email, phoneNumber, password } = req.body as UserLogin;
 
   try {
-    // 1. Check user exists
+    // Check user exists
     const orConditions: ({ email: string } | { phoneNumber: string })[] = [];
     if (email) orConditions.push({ email });
     if (phoneNumber) orConditions.push({ phoneNumber });
@@ -129,7 +154,12 @@ export async function login(
       return next(errorHandler(404, "User not found, please sign up first."));
     }
 
-    // 2. Check user is verified or not
+    // Check user is locked
+    if (user.isLocked) {
+      return next(errorHandler(403, "User account is locked."));
+    }
+
+    // Check user is verified or not
     if (email && !user.isEmailVerified) {
       return next(
         errorHandler(403, "Email not verified. Please verify your email first.")
@@ -143,17 +173,17 @@ export async function login(
       );
     }
 
-    // 3. Check password or user is locked
+    // Check password or user is locked
     if (!bcrypt.compareSync(password, user.password) || user.isLocked) {
       return next(errorHandler(401, "Invalid credentials."));
     }
 
-    // 4. Update last login time
+    // Update last login time
     user.lastLogin = new Date();
     await user.save();
 
-    // 5. Set JWT and send cookie
-    genJWTAndSetCookie(res, user._id.toString());
+    // Set JWT and send cookie
+    genJWTAndSetCookie(res, user._id.toString(), true);
 
     res.status(200).json({
       success: true,
@@ -187,70 +217,78 @@ export async function logout(
   }
 }
 
+// Login user at this function
 export async function verifyUser(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   console.log("▶️", "Processing user verification request...");
-  const { userId, type, code } = req.body; // userId is auto assigned by middleware via JWT
+  const { type, code } = req.body as UserVerify;
+  const userId = req["auth"].userId;
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // 1. Check user exists
-    const user = await User.findById(userId);
+    // Check user exists
+    if (!Types.ObjectId.isValid(userId)) {
+      return next(errorHandler(404, "User not found."));
+    }
+    const user = await User.findById(userId).session(session);
     if (!user || user.isDeleted) {
       return next(errorHandler(404, "User not found."));
     }
 
-    // 3. Check valid OTP
+    // Check user is locked
+    if (user.isLocked) {
+      return next(errorHandler(403, "User account is locked."));
+    }
+
+    // Check valid OTP
     const otp = await Otp.findOne({
       userId,
       code,
       type,
       isUsed: false,
       expiresAt: { $gt: new Date() },
-    });
+    }).session(session);
     if (!otp) {
       return next(errorHandler(400, "Invalid or expired verification code."));
     }
 
-    // 4. Update user verification status
-    if (type === "email") {
-      user.isEmailVerified = true;
-    } else if (type === "phone") {
-      user.isPhoneNumberVerified = true;
-    }
-    await user.save({ session });
-
-    // 5. Invalidate ALL pending OTPs for this user and type for security
+    // Invalidate ALL pending OTPs for this user and type for security
     await Otp.updateMany(
       { userId, type, isUsed: false },
       { $set: { isUsed: true } },
       { session }
     );
 
-    // 6. Send welcome email if email is verified
-    if (type === "email") {
-      await sendWelcomeEmail(user.email, user.fullName);
+    // Update user verification status
+    user[type === "email" ? "isEmailVerified" : "isPhoneNumberVerified"] = true;
+
+    // Send welcome email if email is verified with first login
+    if (user.lastLogin === undefined) {
+      if (type === "email") {
+        await sendWelcomeEmail(user.email as string, user.fullName);
+      }
+      user.lastLogin = new Date();
     }
+
+    await user.save({ session });
 
     await session.commitTransaction();
 
-    // 7. Refresh JWT and set cookie with isVerified is true
+    // Refresh JWT and set cookie with isVerified is true
     genJWTAndSetCookie(res, user._id.toString(), true);
 
     res.status(200).json({
       success: true,
       message: "User verified successfully.",
-      data: {
-        userId: user._id,
-      },
-    } as SuccessResponse);
+      data: formatUserResponse(user),
+    } as SuccessResponse<UserResponse>);
     console.log("✅", "User verification process completed successfully.");
   } catch (error) {
-    await session.abortTransaction();
+    if (session.inTransaction()) await session.abortTransaction();
     next(error);
   } finally {
     session.endSession();
@@ -263,29 +301,56 @@ export async function authByGoogle(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️", "Processing Google authentication request...");
-  const { fullName, email, avatarUrl } = req.body;
+  const { idToken } = req.body as UserAuthByGoogle;
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
-    // 1. Check user exists
+    // Verify Google ID token using the Firebase Admin SDK
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+
+    // Extract trusted user info from the decoded token
+    const { name: fullName, email, picture: avatarUrl } = decodedToken;
+
+    if (!email) {
+      return next(
+        errorHandler(400, "Email not available from Google account.")
+      );
+    }
+
+    // Check user exists
     const user = await User.findOne({
       isDeleted: false,
       email,
-    });
+    }).session(session);
 
-    // 2. User not exists -> create new user -> login
+    // User not exists -> create new user -> login
     if (!user) {
+      const roleAssignment = await assignDefaultBuyerRole(session);
       const hashedPassword = await bcrypt.hash(genRandomPassword(), HASH_SALT);
-      const newUser = new User({
-        fullName,
-        email,
-        password: hashedPassword,
-        avatarUrl: avatarUrl || null,
-      });
-      newUser.isEmailVerified = true; // Automatically verify email for Google users
-      newUser.lastLogin = new Date();
-      await newUser.save();
+      const [newUser] = await User.create(
+        [
+          {
+            fullName,
+            avatarUrl,
+            email,
+            isEmailVerified: true, // Automatically verify email for Google users
+            password: hashedPassword,
+            lastLogin: new Date(),
+            roles: [
+              {
+                id: roleAssignment.roleId,
+                assignedBy: roleAssignment.assignedBy,
+              },
+            ],
+          },
+        ],
+        { session }
+      );
 
-      genJWTAndSetCookie(res, newUser._id.toString());
+      await session.commitTransaction();
+
+      genJWTAndSetCookie(res, newUser._id.toString(), true);
 
       res.status(201).json({
         success: true,
@@ -297,30 +362,38 @@ export async function authByGoogle(
         "Google authentication process completed successfully."
       );
       return;
+    } else {
+      // User exists -> proceed with login
+      // Check user is locked
+      if (user.isLocked) {
+        return next(errorHandler(403, "User account is locked."));
+      }
+
+      // Login user
+      user.fullName = fullName;
+      if (avatarUrl) user.avatarUrl = avatarUrl; // Make sure user avatar is fresh case they updated their avatar with Google services
+      user.isEmailVerified = true; // Make sure email is verified for Google users
+      user.lastLogin = new Date();
+      await user.save({ session });
+
+      await session.commitTransaction();
+
+      genJWTAndSetCookie(res, user._id.toString(), true);
+
+      res.status(200).json({
+        success: true,
+        message: "Login successful.",
+        data: formatUserResponse(user),
+      } as SuccessResponse<UserResponse>);
+      console.log("✅", "Google login process completed successfully.");
     }
-
-    // 3. User exists -> login
-    genJWTAndSetCookie(res, user._id.toString());
-    user.fullName = fullName;
-    if (avatarUrl) user.avatarUrl = avatarUrl; // Make sure user avatar is fresh case they updated their avatar with Google services
-    user.isEmailVerified = true; // Make sure email is verified for Google users
-    user.lastLogin = new Date();
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Login successful.",
-      data: formatUserResponse(user),
-    } as SuccessResponse<UserResponse>);
-    console.log("✅", "Google login process completed successfully.");
   } catch (error) {
+    if (session.inTransaction()) await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
   }
 }
-
-// TODO handle when user signup with email then leaves and signup with phone (has 2 accounts), then they verified by phone and login but later update their email
-
-// TODO when user is locked, send the announcement to user via email or sms
 
 export async function forgotPassword(
   req: Request,
@@ -328,10 +401,10 @@ export async function forgotPassword(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️", "Processing forgot password request...");
-  const { email, phoneNumber } = req.body;
+  const { email, phoneNumber } = req.body as UserForgotPassword;
 
   try {
-    // 1. Check user exists and verified
+    // Check user exists and verified
     const orConditions: ({ email: string } | { phoneNumber: string })[] = [];
     if (email) orConditions.push({ email });
     if (phoneNumber) orConditions.push({ phoneNumber });
@@ -343,13 +416,18 @@ export async function forgotPassword(
       return next(errorHandler(404, "User not found."));
     }
 
+    // Check user is locked
+    if (user.isLocked) {
+      return next(errorHandler(403, "User account is locked."));
+    }
+
     if (email && !user.isEmailVerified) {
       return next(errorHandler(403, "Email not verified."));
     } else if (phoneNumber && !user.isPhoneNumberVerified) {
       return next(errorHandler(403, "Phone number not verified."));
     }
 
-    // 2. Generate reset token
+    // Generate reset token
     const resetToken = crypto.randomBytes(20).toString("hex");
     const tokenExpiry = new Date(Date.now() + RESET_TOKEN_TLL);
     const passwordResetToken = new PasswordResetToken({
@@ -361,7 +439,7 @@ export async function forgotPassword(
     await passwordResetToken.save();
 
     if (email) {
-      await sendPasswordResetEmail(email, resetToken, next);
+      await sendPasswordResetEmail(email, resetToken);
     } else if (phoneNumber) {
       await sendPasswordResetSms(phoneNumber, resetToken);
     }
@@ -388,37 +466,44 @@ export async function resetPassword(
   session.startTransaction();
 
   try {
-    // 1. Check reset token exists
+    // Check reset token exists
     const passwordResetToken = await PasswordResetToken.findOne({
       token: resetToken,
       expiresAt: { $gt: new Date() },
       isUsed: false,
-    });
+    }).session(session);
     if (!passwordResetToken) {
       return next(
         errorHandler(400, "Invalid or expired password reset token.")
       );
     }
 
-    // 2. Check user exists
-    const user = await User.findById(passwordResetToken.userId);
+    // Check user exists
+    const user = await User.findById(passwordResetToken.userId).session(
+      session
+    );
     if (!user || user.isDeleted) {
       return next(errorHandler(400, "User not found."));
     }
 
-    // 3. Update user password
+    // Check user is locked
+    if (user.isLocked) {
+      return next(errorHandler(403, "User account is locked."));
+    }
+
+    // Update user password
     const hashedResetPassword = await bcrypt.hash(req.body.password, HASH_SALT);
     user.password = hashedResetPassword;
     await user.save({ session });
 
-    // 4. Mark ALL reset tokens as used
+    // Mark ALL reset tokens as used
     await PasswordResetToken.updateMany(
       { userId: user._id, isUsed: false },
       { $set: { isUsed: true } },
       { session }
     );
 
-    // 5. Send email or SMS notification
+    // Send email or SMS notification
     if (user.email) {
       await sendPasswordResetSuccessEmail(user.email);
     } else if (user.phoneNumber) {
@@ -433,9 +518,32 @@ export async function resetPassword(
     } as SuccessResponse);
     console.log("✅", "Reset password process completed successfully.");
   } catch (error) {
-    await session.abortTransaction();
+    if (session.inTransaction()) await session.abortTransaction();
     next(error);
   } finally {
     session.endSession();
+  }
+}
+
+// --- HELPER FUNCTIONS ---
+async function assignDefaultBuyerRole(
+  session: mongoose.ClientSession
+): Promise<{ roleId: Types.ObjectId; assignedBy: Types.ObjectId }> {
+  const { buyerRoleId, systemUserId } = appCache;
+
+  if (!buyerRoleId || !systemUserId) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  try {
+    await Role.updateOne(
+      { _id: buyerRoleId },
+      { $inc: { userAssigned: 1 } },
+      { session }
+    );
+
+    return { roleId: buyerRoleId, assignedBy: systemUserId };
+  } catch (error) {
+    throw error;
   }
 }

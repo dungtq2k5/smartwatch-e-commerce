@@ -32,11 +32,7 @@ const OrderPaymentSchema = new mongoose.Schema(
     },
     relatedTransactionId: {
       type: String,
-      default: null,
-      index: {
-        unique: true,
-        partialFilterExpression: { relatedTransactionId: { $type: "string" } },
-      },
+      unique: true,
     },
   },
   { timestamps: true }

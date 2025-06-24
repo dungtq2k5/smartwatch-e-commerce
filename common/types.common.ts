@@ -1,3 +1,5 @@
+import { PERMISSION_LIST } from "../server/configs/configs";
+
 export type ErrorResponse = {
   readonly success: false;
   message: string;
@@ -12,24 +14,24 @@ export type SuccessResponse<T = any> = {
 type BaseUserResponse = {
   id: string;
   fullName: string;
-  avatarUrl: string | null;
-  email: string | null;
+  avatarUrl?: string;
+  email?: string;
   isEmailVerified: boolean;
-  phoneNumber: string | null;
+  phoneNumber?: string;
   isPhoneNumberVerified: boolean;
-  stripeCustomerId: string | null;
+  stripeCustomerId?: string;
   userBalanceCents: number;
-  lastLogin: string | null;
+  lastLogin?: string;
   createdAt: string;
   updatedAt: string;
 };
 
 type UserWithEmailOnly = {
   email: string;
-  phoneNumber: null;
+  phoneNumber: undefined;
 };
 type UserWithPhoneNumberOnly = {
-  email: null;
+  email: undefined;
   phoneNumber: string;
 };
 
@@ -44,3 +46,98 @@ export type UserResponse = BaseUserResponse &
     | UserWithPhoneNumberOnly
     | UserWithBothEmailAndPhoneNumber
   );
+
+export type AdminUserResponse = BaseUserResponse & {
+  isLocked: boolean;
+};
+
+export type AdminUserListResponse = {
+  items: AdminUserResponse[];
+  total: number;
+  offset: number;
+  limit: number;
+};
+
+export type UserSignup = {
+  fullName: string;
+  email?: string;
+  phoneNumber?: string;
+  password: string;
+} & (
+  | { email: string; phoneNumber?: undefined }
+  | { email?: undefined; phoneNumber: string }
+);
+
+export type UserLogin = {
+  email?: string;
+  phoneNumber?: string;
+  password: string;
+} & (
+  | { email: string; phoneNumber?: undefined }
+  | { email?: undefined; phoneNumber: string }
+);
+
+export type UserVerify = {
+  userId: string;
+  type: "email" | "phoneNumber";
+  code: string;
+};
+
+
+export type UserAuthByGoogle = {
+  idToken: string;
+};
+
+export type UserForgotPassword = {
+  email: string;
+  phoneNumber: undefined;
+} | {
+  email: undefined;
+  phoneNumber: string;
+};
+
+export type UserUpdateEmail = {
+  email?: string | null;
+  isEmailVerified?: boolean;
+}
+
+export type UserUpdatePhoneNumber = {
+  phoneNumber?: string | null;
+  isPhoneNumberVerified?: boolean;
+}
+
+export type UserUpdate = {
+  fullName?: string;
+  avatarUrl?: string | null;
+  password?: string;
+  userBalanceCents?: number;
+  isLocked?: boolean;
+};
+
+export type CreateOtp = {
+  type: "email" | "phoneNumber";
+  userId: string;
+};
+
+export type UserUpdateContactInfo = {
+  type: "email" | "phoneNumber";
+  value: string;
+};
+
+export type PermissionCode = typeof PERMISSION_LIST[number]["code"];
+
+export type UserCreate = {
+  fullName: string;
+  avatarUrl?: string;
+  email?: string;
+  isEmailVerified?: boolean;
+  phoneNumber?: string;
+  isPhoneNumberVerified?: boolean;
+  password: string;
+  userBalanceCents?: number;
+  isLocked?: boolean;
+  roleIds?: string[];
+} & (
+  | { email: string; phoneNumber?: undefined }
+  | { email?: undefined; phoneNumber: string }
+);

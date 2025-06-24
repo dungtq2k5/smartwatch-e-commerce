@@ -40,11 +40,9 @@ const grnSchema = new mongoose.Schema({
   reversedByGrnId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Grn",
-    default: null,
   },
   reversedAt: {
     type: Date,
-    default: null,
   },
 });
 
