@@ -1,4 +1,5 @@
 import User from "../models/user/user.model";
+import { genRandomPassword } from "../../common/utils.common";
 import {
   HASH_SALT,
   SYSTEM_USER,
@@ -24,20 +25,27 @@ export async function createSystemUser(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const systemUser = await User.findOne({ email: SYSTEM_USER.email });
+    const systemUser = await User.findOne({ email: SYSTEM_USER.email }).session(
+      session
+    );
     if (systemUser) {
       console.log("System user already exists, no need to create.");
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(SYSTEM_USER.password, HASH_SALT);
-    const newSystemUser = await User.create({
-      fullName: SYSTEM_USER.fullName,
-      email: SYSTEM_USER.email,
-      password: hashedPassword,
-      isEmailVerified: true,
-    });
-    console.log("🫘 ", "System user created successfully:", newSystemUser._id);
+    const hashedPassword = await bcrypt.hash(genRandomPassword(), HASH_SALT);
+    await User.create(
+      [
+        {
+          fullName: SYSTEM_USER.fullName,
+          email: SYSTEM_USER.email,
+          password: hashedPassword,
+          isEmailVerified: true,
+        },
+      ],
+      { session }
+    );
+    console.log("🫘 ", "System user created successfully");
   } catch (error) {
     await session.abortTransaction();
     await session.endSession();
@@ -50,7 +58,7 @@ export async function seedGrnStatuses(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const count = await GrnStatus.countDocuments();
+    const count = await GrnStatus.countDocuments().session(session);
 
     if (count !== 0) {
       console.log("GrnStatuses already exist, no seeding needed.");
@@ -61,7 +69,7 @@ export async function seedGrnStatuses(
       { lookupId: 2, name: "reversal" },
       { lookupId: 3, name: "draft" },
     ];
-    await GrnStatus.insertMany(grnStatuses);
+    await GrnStatus.insertMany(grnStatuses, { session });
     console.log("🫘 ", "GrnStatuses seeded successfully!");
   } catch (error) {
     await session.abortTransaction();
@@ -75,7 +83,7 @@ export async function seedInventoryMovementTypes(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const count = await inventoryMovementType.countDocuments();
+    const count = await inventoryMovementType.countDocuments().session(session);
 
     if (count !== 0) {
       console.log("InventoryMovementTypes already exist, no seeding needed.");
@@ -133,7 +141,7 @@ export async function seedInventoryMovementTypes(
         description: "Any other type of inventory movement.",
       },
     ];
-    await inventoryMovementType.insertMany(movementTypes);
+    await inventoryMovementType.insertMany(movementTypes, { session });
     console.log("🫘 ", "InventoryMovementTypes seeded successfully!");
   } catch (error) {
     await session.abortTransaction();
@@ -147,7 +155,7 @@ export async function seedDeliveryStates(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const count = await DeliveryState.countDocuments();
+    const count = await DeliveryState.countDocuments().session(session);
 
     if (count !== 0) {
       console.log("DeliveryStates already exist, no seeding needed.");
@@ -164,7 +172,7 @@ export async function seedDeliveryStates(
       { lookupId: 8, name: "cancelled" },
       { lookupId: 9, name: "returned" },
     ];
-    await DeliveryState.insertMany(deliveryStates);
+    await DeliveryState.insertMany(deliveryStates, { session });
     console.log("🫘 ", "DeliveryStates seeded successfully!");
   } catch (error) {
     await session.abortTransaction();
@@ -178,7 +186,7 @@ export async function seedPaymentMethods(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const count = await PaymentMethod.countDocuments();
+    const count = await PaymentMethod.countDocuments().session(session);
 
     if (count !== 0) {
       console.log("PaymentMethods already exist, no seeding needed.");
@@ -192,7 +200,7 @@ export async function seedPaymentMethods(
       { lookupId: 5, name: "mobile payment" },
       { lookupId: 6, name: "user balance" },
     ];
-    await PaymentMethod.insertMany(paymentMethods);
+    await PaymentMethod.insertMany(paymentMethods, { session });
     console.log("🫘 ", "PaymentMethods seeded successfully!");
   } catch (error) {
     await session.abortTransaction();
@@ -206,7 +214,7 @@ export async function seedPaymentStatus(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const count = await PaymentStatus.countDocuments();
+    const count = await PaymentStatus.countDocuments().session(session);
 
     if (count !== 0) {
       console.log("PaymentStatuses already exist, no seeding needed.");
@@ -219,7 +227,7 @@ export async function seedPaymentStatus(
       { lookupId: 4, name: "refunded" },
       { lookupId: 5, name: "cancelled" },
     ];
-    await PaymentStatus.insertMany(paymentStatuses);
+    await PaymentStatus.insertMany(paymentStatuses, { session });
     console.log("🫘 ", "PaymentStatuses seeded successfully!");
   } catch (error) {
     await session.abortTransaction();
@@ -233,7 +241,7 @@ export async function seedInstanceConditions(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const count = await InstanceCondition.countDocuments();
+    const count = await InstanceCondition.countDocuments().session(session);
 
     if (count !== 0) {
       console.log("InstanceConditions already exist, no seeding needed.");
@@ -245,7 +253,7 @@ export async function seedInstanceConditions(
       { lookupId: 3, name: "refurbished" },
       { lookupId: 4, name: "defective" },
     ];
-    await InstanceCondition.insertMany(instanceConditions);
+    await InstanceCondition.insertMany(instanceConditions, { session });
     console.log("🫘 ", "InstanceConditions seeded successfully!");
   } catch (error) {
     await session.abortTransaction();
@@ -259,7 +267,7 @@ export async function seedRefundStatus(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const count = await RefundStatus.countDocuments();
+    const count = await RefundStatus.countDocuments().session(session);
 
     if (count !== 0) {
       console.log("RefundStatuses already exist, no seeding needed.");
@@ -272,7 +280,7 @@ export async function seedRefundStatus(
       { lookupId: 4, name: "canceled" },
       { lookupId: 5, name: "rejected" },
     ];
-    await RefundStatus.insertMany(refundStatuses);
+    await RefundStatus.insertMany(refundStatuses, { session });
     console.log("🫘 ", "RefundStatuses seeded successfully!");
   } catch (error) {
     await session.abortTransaction();
@@ -286,7 +294,7 @@ export async function seedReturnStatuses(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const count = await ReturnStatus.countDocuments();
+    const count = await ReturnStatus.countDocuments().session(session);
 
     if (count !== 0) {
       console.log("ReturnStatuses already exist, no seeding needed.");
@@ -301,7 +309,7 @@ export async function seedReturnStatuses(
       { lookupId: 6, name: "refunded" },
       { lookupId: 7, name: "cancelled" },
     ];
-    await ReturnStatus.insertMany(returnStatuses);
+    await ReturnStatus.insertMany(returnStatuses, { session });
     console.log("🫘 ", "ReturnStatuses seeded successfully!");
   } catch (error) {
     await session.abortTransaction();
@@ -315,7 +323,7 @@ export async function seedReturnReasons(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const count = await ReturnReason.countDocuments();
+    const count = await ReturnReason.countDocuments().session(session);
 
     if (count !== 0) {
       console.log("ReturnReasons already exist, no seeding needed.");
@@ -329,7 +337,7 @@ export async function seedReturnReasons(
       { lookupId: 5, name: "quality issues" },
       { lookupId: 6, name: "other" },
     ];
-    await ReturnReason.insertMany(returnReasons);
+    await ReturnReason.insertMany(returnReasons, { session });
     console.log("🫘 ", "ReturnReasons seeded successfully!");
   } catch (error) {
     await session.abortTransaction();
@@ -343,13 +351,13 @@ export async function seedPermissions(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const count = await Permission.countDocuments();
+    const count = await Permission.countDocuments().session(session);
 
     if (count !== 0) {
       console.log("Permissions already exist, no seeding needed.");
       return;
     }
-    await Permission.insertMany(PERMISSION_LIST);
+    await Permission.insertMany(PERMISSION_LIST, { session });
     console.log("🫘 ", "Permissions seeded successfully!");
   } catch (error) {
     await session.abortTransaction();
@@ -363,40 +371,54 @@ export async function seedRoles(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const roleCount = await Role.countDocuments();
+    const roleCount = await Role.countDocuments().session(session);
     if (roleCount !== 0) {
       console.log("Roles already exist, no seeding needed.");
       return;
     }
 
-    const permissionCount = await Permission.countDocuments();
+    const permissionCount = await Permission.countDocuments().session(session);
     if (permissionCount === 0) {
       console.log("No permissions found, seeding permissions first...");
       await seedPermissions(session);
     }
 
-    const systemUser = await User.findOne({ email: SYSTEM_USER.email });
+    const systemUser = await User.findOne({ email: SYSTEM_USER.email }).session(
+      session
+    );
     if (!systemUser) {
       console.log("No system user found, creating system user first...");
       await createSystemUser(session);
     }
-    const systemUserId = (await User.findOne({ email: SYSTEM_USER.email }))!
-      ._id;
+    const systemUserId = (await User.findOne({
+      email: SYSTEM_USER.email,
+    })
+      .session(session)
+      .select("_id"))!._id;
 
-    const permissions = await Permission.find().select("_id code");
+    const permissions = await Permission.find()
+      .session(session)
+      .select("_id code");
 
     const buyerPermissionCodes: string[] = BUYER_PERMISSION_LIST.map(
       (p) => p.code
     );
     const buyerPermissionIds = permissions
       .filter((p) => buyerPermissionCodes.includes(p.code))
-      .map((p) => ({ id: p._id }));
+      .map((p) => ({
+        id: p._id,
+        assignedBy: systemUserId,
+      }));
 
     const roles = [
       {
         name: "admin",
         createdBy: systemUserId,
-        permissions: permissions.map((p) => ({ id: p._id })),
+        userAssigned: 1, // Initial admin user will be assigned this role
+        permissions: permissions.map((p) => ({
+          id: p._id,
+          assignedBy: systemUserId,
+        })),
       },
       {
         name: "buyer",
@@ -405,7 +427,7 @@ export async function seedRoles(
       },
     ];
 
-    await Role.insertMany(roles);
+    await Role.insertMany(roles, { session });
     console.log("🫘 ", "Roles seeded successfully!");
   } catch (error) {
     await session.abortTransaction();
@@ -419,45 +441,50 @@ export async function createBaseAdminUser(
   session: mongoose.mongo.ClientSession
 ): Promise<void> {
   try {
-    const adminUser = await User.findOne({ email: ADMIN_USER.email });
+    const adminUser = await User.findOne({ email: ADMIN_USER.email }).session(
+      session
+    );
     if (adminUser) {
       console.log("Base admin user already exists, no need to create.");
       return;
     }
 
-    const existSystemUser = await User.findOne({ email: SYSTEM_USER.email });
+    const existSystemUser = await User.findOne({
+      email: SYSTEM_USER.email,
+    }).session(session);
     if (!existSystemUser) {
       console.log("No system user found, creating system user first...");
       await createSystemUser(session);
     }
 
-    const roleCount = await Role.countDocuments();
+    const roleCount = await Role.countDocuments().session(session);
     if (roleCount === 0) {
       console.log("No roles found, seeding roles first...");
       await seedRoles(session);
     }
 
-    const adminRole = (await Role.findOne({ name: "admin" }))!;
-    adminRole.userAssigned += 1;
-    await adminRole.save();
+    const adminRole = (await Role.findOne({ name: "admin" })
+      .session(session)
+      .select("_id"))!;
 
-    const systemUser = (await User.findOne({ email: SYSTEM_USER.email }).select(
-      "_id"
-    ))!;
+    const systemUser = (await User.findOne({ email: SYSTEM_USER.email })
+      .session(session)
+      .select("_id"))!;
 
     const hashedPassword = await bcrypt.hash(ADMIN_USER.password, HASH_SALT);
-    const newAdminUser = await User.create({
-      fullName: ADMIN_USER.fullName,
-      email: ADMIN_USER.email,
-      password: hashedPassword,
-      isEmailVerified: true,
-      roles: [{ id: adminRole._id, assignedBy: systemUser._id }],
-    });
-    console.log(
-      "🫘 ",
-      "Base admin user created successfully:",
-      newAdminUser._id
+    await User.create(
+      [
+        {
+          fullName: ADMIN_USER.fullName,
+          email: ADMIN_USER.email,
+          password: hashedPassword,
+          isEmailVerified: true,
+          roles: [{ id: adminRole._id, assignedBy: systemUser._id }],
+        },
+      ],
+      { session }
     );
+    console.log("🫘 ", "Base admin user created successfully");
   } catch (error) {
     await session.abortTransaction();
     await session.endSession();

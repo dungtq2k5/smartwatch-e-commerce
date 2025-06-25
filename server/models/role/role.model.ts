@@ -12,6 +12,11 @@ const rolePermission = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    assignedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   { _id: false }
 );
@@ -22,6 +27,7 @@ const roleSchema = new mongoose.Schema(
       type: String,
       unique: true,
       required: true,
+      lowercase: true,
     },
     userAssigned: {
       type: Number,
@@ -49,10 +55,11 @@ roleSchema.pre("save", function (next) {
       new Error(`Role "${this.name}" is immutable and cannot be modified.`)
     );
   }
+  next();
 });
 
 const preventImmutableRoleMod = function (action: "deletes" | "updates") {
-  return async (next: mongoose.CallbackWithoutResultAndOptionalError) => {
+  return async function (next: mongoose.CallbackWithoutResultAndOptionalError) {
     const filter = this.getFilter();
 
     const isModifyingImmutableRole = await this.model.exists({
@@ -74,6 +81,7 @@ const preventImmutableRoleMod = function (action: "deletes" | "updates") {
             )
       );
     }
+
     next();
   };
 };

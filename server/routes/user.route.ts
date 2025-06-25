@@ -12,7 +12,7 @@ import {
   updateEmail,
   updatePhoneNumber,
   deleteSelf,
-  deleteUser,
+  remove,
   create,
   get,
   getSelf,
@@ -95,6 +95,6 @@ router.patch(
 );
 
 // Delete
-router.delete("/:id", verifyPermission("d_usr"), deleteUser);
+router.delete("/:id", verifyPermission("d_usr"), remove);
 
 export default router;

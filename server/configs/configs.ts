@@ -5,7 +5,6 @@ export const JWT_NAME = "auth_token";
 export const SYSTEM_USER = {
   fullName: "System User",
   email: "system@internal.app",
-  password: "a_very_secure_system_password_123!@#",
 } as const;
 
 export const ADMIN_USER = {

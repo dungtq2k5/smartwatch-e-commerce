@@ -26,6 +26,8 @@
     - Sending welcome email after user is verified if they have email ✅.
     - Dev auth API ✅.
     - Dev user API ✅.
+    - Dev roles & permissions API ✅.
+    - Dev product API 🔥.
     - Template for email sending ❌.
     - Better user friendly when sending email or SMS (with datetime for lock/unlock) ❌.
 

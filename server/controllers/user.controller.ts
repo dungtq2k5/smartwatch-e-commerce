@@ -62,7 +62,6 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️", "Processing create user request...");
-  const { userId: reqUserId } = req["auth"] as RequestAuth;
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -114,6 +113,7 @@ export async function create(
       }
     }
 
+    const { userId: reqUserId } = req["auth"] as RequestAuth;
     const userRoles = roleIds
       ? roleIds.map((id) => ({
           id: new Types.ObjectId(id),
@@ -284,8 +284,6 @@ export async function updateGeneralInfo(
   }
 
   const userId = req.params.id;
-  const { fullName, avatarUrl, password, userBalanceCents, isLocked } =
-    req.body as UserUpdate;
 
   try {
     // Check user exists
@@ -298,6 +296,8 @@ export async function updateGeneralInfo(
     }
 
     // Business logic
+    const { fullName, avatarUrl, password, userBalanceCents, isLocked } =
+      req.body as UserUpdate;
     const updatedFullName = fullName !== undefined ? fullName : user.fullName;
     const updatedAvatarUrl =
       avatarUrl !== undefined
@@ -348,7 +348,7 @@ export async function updateGeneralInfo(
   }
 }
 
-export async function deleteUser(
+export async function remove(
   req: Request,
   res: Response,
   next: NextFunction
@@ -405,9 +405,7 @@ export async function updateSelfContactInfo(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️", "Processing update user contact info request...");
-  const { value, type } = req.body as UserUpdateContactInfo;
   const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
-  const user = req["user"];
 
   // Check only buyer perform this action
   if (!isBuyerOnly) {
@@ -416,6 +414,8 @@ export async function updateSelfContactInfo(
     );
   }
 
+  const { value, type } = req.body as UserUpdateContactInfo;
+  const user = req["user"];
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -843,7 +843,9 @@ async function hasConstraints(userId: Types.ObjectId): Promise<boolean> {
      */
     const constraintChecks = [
       User.exists({ "roles.assignedBy": userId }),
-      Role.exists({ createdBy: userId }),
+      Role.exists({
+        $or: [{ createdBy: userId }, { "permissions.assignedBy": userId }],
+      }),
 
       Order.exists({ userId }),
 
@@ -934,7 +936,7 @@ async function executeDeletion(
         { session }
       );
       await UserAddress.deleteMany({ userId: userToDelete._id }, { session });
-      await User.findByIdAndDelete(userToDelete._id, { session });
+      await userToDelete.deleteOne({ session });
     }
   } catch (error) {
     throw error;

@@ -15,7 +15,7 @@ export function sanitizeUserInput(
   res: Response,
   next: NextFunction
 ): void {
-  console.log("▶️", "Sanitizing user input...");
+  console.log("▶️ ", "Sanitizing user input...");
   const { fullName, email, type, code, value } = req.body;
   const { token } = req.params; // For reset password case
 
@@ -60,7 +60,7 @@ export function verifyUserInput(
     res: Response,
     next: NextFunction
   ): Promise<void> => {
-    console.log("▶️", "Validating user input...");
+    console.log("▶️ ", "Validating user input...");
 
     let errors: string[] = [];
     try {

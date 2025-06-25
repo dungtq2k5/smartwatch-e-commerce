@@ -224,7 +224,6 @@ export async function verifyUser(
   next: NextFunction
 ) {
   console.log("▶️", "Processing user verification request...");
-  const { type, code } = req.body as UserVerify;
   const userId = req["auth"].userId;
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -245,6 +244,7 @@ export async function verifyUser(
     }
 
     // Check valid OTP
+    const { type, code } = req.body as UserVerify;
     const otp = await Otp.findOne({
       userId,
       code,

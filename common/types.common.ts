@@ -141,3 +141,32 @@ export type UserCreate = {
   | { email: string; phoneNumber?: undefined }
   | { email?: undefined; phoneNumber: string }
 );
+
+export type RoleCreate = {
+  name: string;
+  permissionIds?: string[];
+}
+
+export type RoleResponse = {
+  id: string;
+  name: string;
+  userAssigned: number;
+  permissions: {
+    id: string;
+    assignedAt: string;
+    assignedBy: string;
+  }[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RoleListResponse = {
+  roles: RoleResponse[];
+  total: number;
+}
+
+export type RoleUpdate = {
+  name?: string;
+  permissionIds?: string[];
+}

@@ -5,6 +5,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoute from "./routes/auth.route";
 import userRoute from "./routes/user.route";
+import roleRoute from "./routes/role.route";
 import { errorHandler } from "./utils/middlewares/error.middleware";
 import connectDB from "./db/connectDB";
 import { initAppCache } from "./configs/cache";
@@ -47,6 +48,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
+app.use("/api/roles", roleRoute);
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) =>
   errorHandler(err, req, res, next)
@@ -56,7 +58,7 @@ const port = process.env.SERVER_PORT;
 app.listen(port, async () => {
   console.log("🔗", "Connecting to MongoDB...");
   await connectDB();
-  await seedAllCollections(); // Init Mongo collections when first time running the server
+  // await seedAllCollections(); // Init Mongo collections when first time running the server
   await initAppCache(); // Init application cache
   console.log("🚀", `Server is running on http://localhost:${port}`);
 });
