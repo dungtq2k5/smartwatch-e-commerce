@@ -112,6 +112,7 @@ export type UserUpdate = {
   password?: string;
   userBalanceCents?: number;
   isLocked?: boolean;
+  roleIds?: string[];
 };
 
 export type CreateOtp = {

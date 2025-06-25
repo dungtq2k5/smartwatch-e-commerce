@@ -102,27 +102,32 @@ export async function create(
       return next(errorHandler(409, "Email or phone number already exists."));
     }
 
-    // Update Role collection
+    // Check and update Role collection
+    let roles: { id: Types.ObjectId; assignedBy: Types.ObjectId }[] = [];
     if (roleIds && roleIds.length > 0) {
-      for (const roleId of roleIds) {
-        await Role.updateOne(
-          { _id: roleId },
-          { $inc: { userAssigned: 1 } },
-          { session }
-        );
+      const roleCount = await Role.countDocuments({
+        _id: { $in: roleIds },
+      }).session(session);
+      if (roleCount !== roleIds.length) {
+        return next(errorHandler(400, "One or more roles do not exist."));
       }
+
+      await Role.updateMany(
+        { _id: { $in: roleIds } },
+        { $inc: { userAssigned: 1 } },
+        { session }
+      );
+
+      const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
+      roles = roleIds.map((id) => ({
+        id: new Types.ObjectId(id),
+        assignedBy: reqUserId,
+      }));
     }
 
-    const { userId: reqUserId } = req["auth"] as RequestAuth;
-    const userRoles = roleIds
-      ? roleIds.map((id) => ({
-          id: new Types.ObjectId(id),
-          assignedBy: new Types.ObjectId(reqUserId),
-        }))
-      : [];
     const hashedPassword = await bcrypt.hash(password, HASH_SALT);
     const [user] = await User.create(
-      [{ ...req.body, password: hashedPassword, roles: userRoles }],
+      [{ ...req.body, password: hashedPassword, roles }],
       { session }
     );
 
@@ -284,20 +289,28 @@ export async function updateGeneralInfo(
   }
 
   const userId = req.params.id;
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
     // Check user exists
     if (!Types.ObjectId.isValid(userId)) {
       return next(errorHandler(404, "User not found."));
     }
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).session(session);
     if (!user || user.isDeleted) {
       return next(errorHandler(404, "User not found."));
     }
 
     // Business logic
-    const { fullName, avatarUrl, password, userBalanceCents, isLocked } =
-      req.body as UserUpdate;
+    const {
+      fullName,
+      avatarUrl,
+      password,
+      userBalanceCents,
+      isLocked,
+      roleIds: updatedRoleIds,
+    } = req.body as UserUpdate;
     const updatedFullName = fullName !== undefined ? fullName : user.fullName;
     const updatedAvatarUrl =
       avatarUrl !== undefined
@@ -317,7 +330,65 @@ export async function updateGeneralInfo(
       await deleteFileFromFirebaseStorage(user.avatarUrl, "user-avatar");
     }
 
-    if (user.isLocked !== updatedIsLocked) {
+    if (updatedRoleIds) {
+      const currentRoleIds = user.roles.map(
+        (role) => role.id.toString() as string
+      );
+
+      const rolesToAdd = updatedRoleIds.filter(
+        (id) => !currentRoleIds.includes(id)
+      );
+      const rolesToRemove = currentRoleIds.filter(
+        (id) => !updatedRoleIds.includes(id)
+      );
+
+      if (rolesToAdd.length > 0) {
+        const roleCount = await Role.countDocuments({
+          _id: { $in: rolesToAdd },
+        }).session(session);
+        if (roleCount !== rolesToAdd.length) {
+          return next(errorHandler(400, "One or more roles do not exist."));
+        }
+
+        await Role.updateMany(
+          { _id: { $in: rolesToAdd } },
+          { $inc: { userAssigned: 1 } },
+          { session }
+        );
+
+        const reqUserId = new Types.ObjectId(
+          (req["auth"] as RequestAuth).userId
+        );
+        user.roles.push(
+          ...rolesToAdd.map((id) => ({
+            id: new Types.ObjectId(id),
+            assignedBy: reqUserId,
+          }))
+        );
+      }
+
+      if (rolesToRemove.length > 0) {
+        await Role.updateMany(
+          { _id: { $in: rolesToRemove } },
+          { $inc: { userAssigned: -1 } },
+          { session }
+        );
+        rolesToRemove.forEach((removeId) => {
+          user.roles.pull({ id: new Types.ObjectId(removeId) });
+        });
+      }
+    }
+
+    // Save changes
+    const oldIsLocked = user.isLocked; // For notification
+    user.fullName = updatedFullName;
+    user.avatarUrl = updatedAvatarUrl;
+    user.password = updatedPassword;
+    user.userBalanceCents = updatedUserBalanceCents;
+    user.isLocked = updatedIsLocked;
+    await user.save({ session });
+
+    if (oldIsLocked !== updatedIsLocked) {
       if (user.email) {
         await sendLockAccountChangeEmail(
           user.email,
@@ -329,13 +400,7 @@ export async function updateGeneralInfo(
       }
     }
 
-    // Save changes
-    user.fullName = updatedFullName;
-    user.avatarUrl = updatedAvatarUrl;
-    user.password = updatedPassword;
-    user.userBalanceCents = updatedUserBalanceCents;
-    user.isLocked = updatedIsLocked;
-    await user.save();
+    await session.commitTransaction();
 
     res.status(200).json({
       success: true,
@@ -344,7 +409,243 @@ export async function updateGeneralInfo(
     } as SuccessResponse<AdminUserResponse>);
     console.log("✅", "User updated successfully.");
   } catch (error) {
+    await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
+export async function updateEmail(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️", "Processing update user email request...");
+  const { isBuyerOnly } = req["auth"] as RequestAuth;
+  if (isBuyerOnly) {
+    return next(
+      errorHandler(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const userId = req.params.id;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Check user exists
+    if (!Types.ObjectId.isValid(userId)) {
+      return next(errorHandler(404, "User not found."));
+    }
+    const user = await User.findById(userId).session(session);
+    if (!user || user.isDeleted) {
+      return next(errorHandler(404, "User not found."));
+    }
+
+    // Business logic
+    const { email, isEmailVerified } = req.body as UserUpdateEmail;
+    const updatedEmail =
+      email !== undefined
+        ? email === null
+          ? undefined
+          : email
+        : (user.email as string | undefined);
+    const updatedIsEmailVerified =
+      isEmailVerified !== undefined ? isEmailVerified : user.isEmailVerified;
+
+    const existingUser = await User.findOne({
+      _id: { $ne: user._id }, // Exclude current user
+      email: updatedEmail,
+      isDeleted: false,
+    }).session(session);
+    if (existingUser) {
+      return next(errorHandler(409, "Email already exists."));
+    }
+
+    if (!updatedEmail && updatedIsEmailVerified) {
+      return next(
+        errorHandler(400, "Email cannot be empty when isEmailVerified is true.")
+      );
+    }
+
+    // Save changes
+    const oldEmail = user.email; // For notification
+    const oldIsEmailVerified = user.isEmailVerified; // For notification
+    user.email = updatedEmail;
+    user.isEmailVerified = updatedIsEmailVerified;
+    await user.save({ session });
+
+    // Send changes notification
+    /*
+      Email changed from:
+        - undefined -> email
+        - email -> diff email
+        - email -> undefined
+    */
+    if (oldEmail !== updatedEmail) {
+      const recipients = oldEmail ? [oldEmail] : [];
+      if (updatedEmail) recipients.push(updatedEmail);
+      await sendEmailChangeEmail(
+        recipients,
+        oldEmail ? oldEmail : "No email",
+        updatedEmail ? updatedEmail : "No email",
+        user.fullName,
+        updatedIsEmailVerified
+      );
+      /**
+     Verification changed from:
+      - Has email: true -> false, false -> true
+      */
+    } else if (oldIsEmailVerified !== updatedIsEmailVerified) {
+      // Email not changed but verification changed
+      await sendEmailVerifiedEmail(
+        updatedEmail as string,
+        user.fullName,
+        updatedIsEmailVerified
+      );
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "User email updated successfully",
+      data: formatUserResponse(user),
+    } as SuccessResponse<UserResponse>);
+    console.log("✅", "User email updated successfully.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
+export async function updatePhoneNumber(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️", "Processing update user phone number request...");
+  const { isBuyerOnly } = req["auth"] as RequestAuth;
+  if (isBuyerOnly) {
+    return next(
+      errorHandler(403, "You do not have permission to perform this action.")
+    );
+  }
+  const userId = req.params.id;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Check user exists
+    if (!Types.ObjectId.isValid(userId)) {
+      return next(errorHandler(404, "User not found."));
+    }
+    const user = await User.findById(userId).session(session);
+    if (!user || user.isDeleted) {
+      return next(errorHandler(404, "User not found."));
+    }
+
+    // Business logic
+    const { phoneNumber, isPhoneNumberVerified } =
+      req.body as UserUpdatePhoneNumber;
+    const updatedPhoneNumber =
+      phoneNumber !== undefined
+        ? phoneNumber === null
+          ? undefined
+          : phoneNumber
+        : (user.phoneNumber as string | undefined);
+    const updatedIsPhoneNumberVerified =
+      isPhoneNumberVerified !== undefined
+        ? isPhoneNumberVerified
+        : user.isPhoneNumberVerified;
+
+    const existingUser = await User.findOne({
+      _id: { $ne: user._id }, // Exclude current user
+      phoneNumber: updatedPhoneNumber,
+      isDeleted: false,
+    }).session(session);
+    if (existingUser) {
+      return next(errorHandler(409, "Phone number already exists."));
+    }
+
+    if (!updatedPhoneNumber && updatedIsPhoneNumberVerified) {
+      return next(
+        errorHandler(
+          400,
+          "Phone number cannot be empty when isPhoneNumberVerified is true."
+        )
+      );
+    }
+
+    // Save changes
+    const oldPhoneNumber = user.phoneNumber; // For notification
+    const oldIsPhoneNumberVerified = user.isPhoneNumberVerified; // For notification
+    user.phoneNumber = updatedPhoneNumber;
+    user.isPhoneNumberVerified = updatedIsPhoneNumberVerified;
+    await user.save({ session });
+
+    // Send changes notification, priority send by email if has
+    /*
+      Phone number changed from:
+        - undefined -> phone number
+        - phone number -> diff phone number
+        - phone number -> undefined
+    */
+    if (oldPhoneNumber !== updatedPhoneNumber) {
+      if (user.email) {
+        await sendPhoneNumberChangeEmail(
+          user.email,
+          oldPhoneNumber ? oldPhoneNumber : "No phone number",
+          updatedPhoneNumber ? updatedPhoneNumber : "No phone number",
+          user.fullName,
+          updatedIsPhoneNumberVerified
+        );
+      } else {
+        const recipients = oldPhoneNumber ? [oldPhoneNumber] : [];
+        if (updatedPhoneNumber) recipients.push(updatedPhoneNumber as string);
+        await sendPhoneNumberChangeSms(
+          recipients,
+          oldPhoneNumber ? oldPhoneNumber : "No phone number",
+          updatedPhoneNumber ? updatedPhoneNumber : "No phone number",
+          updatedIsPhoneNumberVerified
+        );
+      }
+      /*
+     Verification changed from:
+      - Has phone number: true -> false, false -> true
+    */
+    } else if (oldIsPhoneNumberVerified !== updatedIsPhoneNumberVerified) {
+      if (user.email) {
+        await sendPhoneNumberVerifiedEmail(
+          user.email,
+          user.fullName,
+          updatedIsPhoneNumberVerified
+        );
+      } else {
+        await sendPhoneNumberVerifiedSms(
+          updatedPhoneNumber as string,
+          user.fullName,
+          updatedIsPhoneNumberVerified
+        );
+      }
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "User phone number updated successfully",
+      data: formatUserResponse(user),
+    } as SuccessResponse<UserResponse>);
+    console.log("✅", "User phone number updated successfully.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
   }
 }
 
@@ -485,221 +786,6 @@ export async function updateSelfContactInfo(
     next(error);
   } finally {
     session.endSession();
-  }
-}
-
-export async function updateEmail(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️", "Processing update user email request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
-  if (isBuyerOnly) {
-    return next(
-      errorHandler(403, "You do not have permission to perform this action.")
-    );
-  }
-
-  const userId = req.params.id;
-
-  try {
-    // Check user exists
-    if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
-    }
-    const user = await User.findById(userId);
-    if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
-    }
-
-    // Business logic
-    const { email, isEmailVerified } = req.body as UserUpdateEmail;
-    const updatedEmail =
-      email !== undefined
-        ? email === null
-          ? undefined
-          : email
-        : (user.email as string | undefined);
-    const updatedIsEmailVerified =
-      isEmailVerified !== undefined ? isEmailVerified : user.isEmailVerified;
-
-    const existingUser = await User.findOne({
-      _id: { $ne: user._id }, // Exclude current user
-      email: updatedEmail,
-      isDeleted: false,
-    });
-    if (existingUser) {
-      return next(errorHandler(409, "Email already exists."));
-    }
-
-    if (!updatedEmail && updatedIsEmailVerified) {
-      return next(
-        errorHandler(400, "Email cannot be empty when isEmailVerified is true.")
-      );
-    }
-
-    // 4. Send changes notification
-    /*
-      Email changed from:
-        - undefined -> email
-        - email -> diff email
-        - email -> undefined
-    */
-    if (user.email !== updatedEmail) {
-      const recipients = user.email ? [user.email] : [];
-      if (updatedEmail) recipients.push(updatedEmail);
-      await sendEmailChangeEmail(
-        recipients,
-        user.email ? user.email : "No email",
-        updatedEmail ? updatedEmail : "No email",
-        user.fullName,
-        updatedIsEmailVerified
-      );
-      /**
-     Verification changed from:
-      - Has email: true -> false, false -> true
-      */
-    } else if (user.isEmailVerified !== updatedIsEmailVerified) {
-      // Email not changed but verification changed
-      await sendEmailVerifiedEmail(
-        updatedEmail as string,
-        user.fullName,
-        updatedIsEmailVerified
-      );
-    }
-
-    // Save changes
-    user.email = updatedEmail;
-    user.isEmailVerified = updatedIsEmailVerified;
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: "User email updated successfully",
-      data: formatUserResponse(user),
-    } as SuccessResponse<UserResponse>);
-    console.log("✅", "User email updated successfully.");
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function updatePhoneNumber(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️", "Processing update user phone number request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
-  if (isBuyerOnly) {
-    return next(
-      errorHandler(403, "You do not have permission to perform this action.")
-    );
-  }
-  const userId = req.params.id;
-
-  try {
-    // Check user exists
-    if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
-    }
-    const user = await User.findById(userId);
-    if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
-    }
-
-    // Business logic
-    const { phoneNumber, isPhoneNumberVerified } =
-      req.body as UserUpdatePhoneNumber;
-    const updatedPhoneNumber =
-      phoneNumber !== undefined
-        ? phoneNumber === null
-          ? undefined
-          : phoneNumber
-        : (user.phoneNumber as string | undefined);
-    const updatedIsPhoneNumberVerified =
-      isPhoneNumberVerified !== undefined
-        ? isPhoneNumberVerified
-        : user.isPhoneNumberVerified;
-
-    const existingUser = await User.findOne({
-      _id: { $ne: user._id }, // Exclude current user
-      phoneNumber: updatedPhoneNumber,
-      isDeleted: false,
-    });
-    if (existingUser) {
-      return next(errorHandler(409, "Phone number already exists."));
-    }
-
-    if (!updatedPhoneNumber && updatedIsPhoneNumberVerified) {
-      return next(
-        errorHandler(
-          400,
-          "Phone number cannot be empty when isPhoneNumberVerified is true."
-        )
-      );
-    }
-
-    // 4. Send changes notification, priority send by email if has
-    /*
-      Phone number changed from:
-        - undefined -> phone number
-        - phone number -> diff phone number
-        - phone number -> undefined
-    */
-    if (user.phoneNumber !== updatedPhoneNumber) {
-      if (user.email) {
-        await sendPhoneNumberChangeEmail(
-          user.email,
-          user.phoneNumber ? user.phoneNumber : "No phone number",
-          updatedPhoneNumber ? updatedPhoneNumber : "No phone number",
-          user.fullName,
-          updatedIsPhoneNumberVerified
-        );
-      } else {
-        const recipients = user.phoneNumber ? [user.phoneNumber] : [];
-        if (updatedPhoneNumber) recipients.push(updatedPhoneNumber as string);
-        await sendPhoneNumberChangeSms(
-          recipients,
-          user.phoneNumber ? user.phoneNumber : "No phone number",
-          updatedPhoneNumber ? updatedPhoneNumber : "No phone number",
-          updatedIsPhoneNumberVerified
-        );
-      }
-      /*
-     Verification changed from:
-      - Has phone number: true -> false, false -> true
-    */
-    } else if (user.isPhoneNumberVerified !== updatedIsPhoneNumberVerified) {
-      if (user.email) {
-        await sendPhoneNumberVerifiedEmail(
-          user.email,
-          user.fullName,
-          updatedIsPhoneNumberVerified
-        );
-      } else {
-        await sendPhoneNumberVerifiedSms(
-          updatedPhoneNumber as string,
-          user.fullName,
-          updatedIsPhoneNumberVerified
-        );
-      }
-    }
-
-    // Save changes
-    user.phoneNumber = updatedPhoneNumber;
-    user.isPhoneNumberVerified = updatedIsPhoneNumberVerified;
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: "User phone number updated successfully",
-      data: formatUserResponse(user),
-    } as SuccessResponse<UserResponse>);
-    console.log("✅", "User phone number updated successfully.");
-  } catch (error) {
-    next(error);
   }
 }
 
@@ -900,13 +986,12 @@ async function executeDeletion(
 ): Promise<void> {
   try {
     // Recalculate userAssigned from Roles
-    for (const role of userToDelete.roles) {
-      await Role.updateOne(
-        { _id: role.id },
-        { $inc: { userAssigned: -1 } },
-        { session }
-      );
-    }
+    const roleIds = userToDelete.roles.map((role: any) => role.id as string);
+    await Role.updateMany(
+      { _id: { $in: roleIds } },
+      { $inc: { userAssigned: -1 } },
+      { session }
+    );
 
     // Check for constraints to decide deletion strategy
     if (await hasConstraints(userToDelete._id)) {

@@ -16,7 +16,7 @@ export function sanitizeUserInput(
   next: NextFunction
 ): void {
   console.log("▶️ ", "Sanitizing user input...");
-  const { fullName, email, type, code, value } = req.body;
+  const { fullName, email, type, code, value, roleIds } = req.body;
   const { token } = req.params; // For reset password case
 
   if (typeof fullName === "string") {
@@ -36,6 +36,9 @@ export function sanitizeUserInput(
   }
   if (typeof value === "string") {
     req.body.value = removeOddSpaces(value).toLocaleLowerCase();
+  }
+  if (roleIds !== undefined && Array.isArray(roleIds)) {
+    req.body.roleIds = [...new Set(roleIds)];
   }
 
   next();
@@ -114,8 +117,14 @@ export function verifyUserInput(
         }
         case "update": {
           console.log("Validating update input...");
-          const { fullName, avatarUrl, password, userBalanceCents, isLocked } =
-            req.body;
+          const {
+            fullName,
+            avatarUrl,
+            password,
+            userBalanceCents,
+            isLocked,
+            roleIds,
+          } = req.body;
 
           if (fullName !== undefined && !isValidUserFullName(fullName)) {
             errors.push("fullName is invalid.");
@@ -138,6 +147,9 @@ export function verifyUserInput(
           }
           if (isLocked !== undefined && typeof isLocked !== "boolean") {
             errors.push("isLocked must be a boolean.");
+          }
+          if (roleIds !== undefined && !isValidIdArray(roleIds)) {
+            errors.push("roleIds must be an array of valid ids.");
           }
           break;
         }

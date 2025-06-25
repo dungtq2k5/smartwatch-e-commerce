@@ -12,7 +12,6 @@ import mongoose, { Types } from "mongoose";
 import { formatRoleResponse } from "../utils/utils";
 import { errorHandler } from "../utils/errorHandler";
 import Permission from "../models/role/permission.model";
-import { compareArrays, getArrayDifferences } from "../../common/utils.common";
 import User from "../models/user/user.model";
 
 export async function create(
@@ -26,7 +25,6 @@ export async function create(
   session.startTransaction();
 
   try {
-
     // Check role exists
     const existingRole = await Role.findOne({ name }).session(session);
     if (existingRole) {
@@ -36,14 +34,13 @@ export async function create(
     }
 
     // Check permissions exist and create permission list
-    const { userId: reqUserId } = req["auth"] as RequestAuth;
+    const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
     let permissions: { id: Types.ObjectId; assignedBy: Types.ObjectId }[] = [];
     if (permissionIds) {
       if (permissionIds.length > 0) {
         const permissionCount = await Permission.countDocuments({
           _id: { $in: permissionIds },
         }).session(session);
-
         if (permissionCount !== permissionIds.length) {
           return next(
             errorHandler(400, "One or more permissions do not exist.")
@@ -53,7 +50,7 @@ export async function create(
 
       permissions = permissionIds.map((id) => ({
         id: new Types.ObjectId(id),
-        assignedBy: new Types.ObjectId(reqUserId),
+        assignedBy: reqUserId,
       }));
     }
 
@@ -62,7 +59,7 @@ export async function create(
         {
           name,
           permissions,
-          createdBy: new Types.ObjectId(reqUserId),
+          createdBy: reqUserId,
         },
       ],
       { session }
@@ -155,7 +152,8 @@ export async function update(
     }
 
     // Business logic
-    const { name, permissionIds } = req.body as RoleUpdate;
+    const { name, permissionIds: updatedPermissionIds } =
+      req.body as RoleUpdate;
     const updatedName = name ? name : role.name;
 
     if (updatedName !== role.name) {
@@ -168,57 +166,44 @@ export async function update(
       role.name = updatedName;
     }
 
-    const rolePermissionIds = role.permissions.map(
-      (p) => p.id.toString() as string
-    );
-    const updatedPermissionIds = permissionIds
-      ? permissionIds
-      : rolePermissionIds;
-    /*
-      Permissions change scenarios:
-        - From [a, b, c] to []
-        - From [a, b, c] to [a, b, c]
-        - From [] to [a, b, c]
-        - From [a] to [a, b, c]
-        - From [a, b, c] to [a, c]
-        - From [a, b, c] to [b, c, d]
-    */
-    if (!compareArrays(rolePermissionIds, updatedPermissionIds)) {
-      // Remove case
-      const permissionIdsRemove = getArrayDifferences(
-        rolePermissionIds,
-        updatedPermissionIds,
-        true,
-        false
+    if (updatedPermissionIds) {
+      const currentPermissionIds = role.permissions.map(
+        (p) => p.id.toString() as string
       );
-      if (permissionIdsRemove.length > 0) {
-        permissionIdsRemove.forEach((removeId) => {
-          role.permissions.pull({ id: new Types.ObjectId(removeId) });
-        });
-      }
-      // Add case
-      const permissionIdsAdd = getArrayDifferences(
-        rolePermissionIds,
-        updatedPermissionIds,
-        false,
-        true
+
+      // Permission to add
+      const permissionIdsToAdd = updatedPermissionIds.filter(
+        (id) => !currentPermissionIds.includes(id)
       );
-      if (permissionIdsAdd.length > 0) {
+      if (permissionIdsToAdd.length > 0) {
         const permissionCount = await Permission.countDocuments({
-          _id: { $in: permissionIdsAdd },
+          _id: { $in: permissionIdsToAdd },
         });
-        if (permissionCount !== permissionIdsAdd.length) {
+        if (permissionCount !== permissionIdsToAdd.length) {
           return next(
             errorHandler(400, "One or more permissions do not exist.")
           );
         }
-        const { userId: reqUserId } = req["auth"] as RequestAuth;
+
+        const reqUserId = new Types.ObjectId(
+          (req["auth"] as RequestAuth).userId
+        );
         role.permissions.push(
-          ...permissionIdsAdd.map((id) => ({
+          ...permissionIdsToAdd.map((id) => ({
             id: new Types.ObjectId(id),
-            assignedBy: new Types.ObjectId(reqUserId),
+            assignedBy: reqUserId,
           }))
         );
+      }
+
+      // Permission to remove
+      const permissionIdsToRemove = currentPermissionIds.filter(
+        (id) => !updatedPermissionIds.includes(id)
+      );
+      if (permissionIdsToRemove.length > 0) {
+        permissionIdsToRemove.forEach((removeId) => {
+          role.permissions.pull({ id: new Types.ObjectId(removeId) });
+        });
       }
     }
 
