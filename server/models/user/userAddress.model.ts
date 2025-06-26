@@ -42,13 +42,14 @@ const userAddressSchema = new mongoose.Schema(
     isDefault: {
       type: Boolean,
       default: false,
-      index: {
-        unique: true,
-        partialFilterExpression: { isDefault: true },
-      },
     },
   },
   { timestamps: true }
+);
+
+userAddressSchema.index(
+  { userId: 1, isDefault: 1 },
+  { unique: true, partialFilterExpression: { isDefault: true } }
 );
 
 const UserAddress = mongoose.model("UserAddress", userAddressSchema);

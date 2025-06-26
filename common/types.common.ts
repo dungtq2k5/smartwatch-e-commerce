@@ -52,7 +52,7 @@ export type AdminUserResponse = BaseUserResponse & {
 };
 
 export type AdminUserListResponse = {
-  items: AdminUserResponse[];
+  users: AdminUserResponse[];
   total: number;
   offset: number;
   limit: number;
@@ -83,28 +83,29 @@ export type UserVerify = {
   code: string;
 };
 
-
 export type UserAuthByGoogle = {
   idToken: string;
 };
 
-export type UserForgotPassword = {
-  email: string;
-  phoneNumber: undefined;
-} | {
-  email: undefined;
-  phoneNumber: string;
-};
+export type UserForgotPassword =
+  | {
+      email: string;
+      phoneNumber: undefined;
+    }
+  | {
+      email: undefined;
+      phoneNumber: string;
+    };
 
 export type UserUpdateEmail = {
   email?: string | null;
   isEmailVerified?: boolean;
-}
+};
 
 export type UserUpdatePhoneNumber = {
   phoneNumber?: string | null;
   isPhoneNumberVerified?: boolean;
-}
+};
 
 export type UserUpdate = {
   fullName?: string;
@@ -113,6 +114,40 @@ export type UserUpdate = {
   userBalanceCents?: number;
   isLocked?: boolean;
   roleIds?: string[];
+};
+
+export type BaseUserAddress = {
+  id: string;
+  name: string;
+  userId: string;
+  street: string;
+  apartmentNumber: string;
+  ward: string;
+  district: string;
+  cityProvince: string;
+  country: string;
+  phoneNumber: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UserAddressResponse = Omit<BaseUserAddress, "userId">;
+
+export type UserAddressResponseList = {
+  addresses: UserAddressResponse[];
+  total: number;
+};
+
+export type UserAddressCreate = Omit<
+  BaseUserAddress,
+  "id" | "userId" | "createdAt" | "updatedAt" | "isDefault"
+> & { isDefault?: boolean };
+
+export type UserAddressUpdate = Optional<UserAddressCreate>;
+
+export type AdminUserAddressResponse = UserAddressResponse & {
+  userId: string;
 };
 
 export type CreateOtp = {
@@ -125,7 +160,7 @@ export type UserUpdateContactInfo = {
   value: string;
 };
 
-export type PermissionCode = typeof PERMISSION_LIST[number]["code"];
+export type PermissionCode = (typeof PERMISSION_LIST)[number]["code"];
 
 export type UserCreate = {
   fullName: string;
@@ -146,7 +181,7 @@ export type UserCreate = {
 export type RoleCreate = {
   name: string;
   permissionIds?: string[];
-}
+};
 
 export type RoleResponse = {
   id: string;
@@ -160,14 +195,19 @@ export type RoleResponse = {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
-}
+};
 
 export type RoleListResponse = {
   roles: RoleResponse[];
   total: number;
-}
+};
 
 export type RoleUpdate = {
   name?: string;
   permissionIds?: string[];
-}
+};
+
+// --- HELPER TYPES ---
+export type Optional<T> = {
+  [K in keyof T]?: T[K];
+};

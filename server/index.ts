@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import authRoute from "./routes/auth.route";
 import userRoute from "./routes/user.route";
 import roleRoute from "./routes/role.route";
+import productRoute from "./routes/product.route";
 import { errorHandler } from "./utils/middlewares/error.middleware";
 import connectDB from "./db/connectDB";
 import { initAppCache } from "./configs/cache";
@@ -49,6 +50,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/roles", roleRoute);
+app.use("/api/products", productRoute);
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) =>
   errorHandler(err, req, res, next)

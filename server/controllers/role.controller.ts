@@ -123,8 +123,8 @@ export async function getAll(
       success: true,
       message: "Roles fetched successfully.",
       data: {
-        roles: roles.map(formatRoleResponse),
         total: roles.length,
+        roles: roles.map(formatRoleResponse),
       },
     } as SuccessResponse<RoleListResponse>);
     console.log("✅ ", "Roles fetched successfully.");

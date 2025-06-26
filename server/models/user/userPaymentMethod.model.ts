@@ -33,13 +33,14 @@ const userPaymentMethodSchema = new mongoose.Schema(
     isDefault: {
       type: Boolean,
       default: false,
-      index: {
-        unique: true,
-        partialFilterExpression: { isDefault: true },
-      },
     },
   },
   { timestamps: true }
+);
+
+userPaymentMethodSchema.index(
+  { userId: 1, isDefault: 1 },
+  { unique: true, partialFilterExpression: { isDefault: true } }
 );
 
 const UserPaymentMethod = mongoose.model("UserPaymentMethod", userPaymentMethodSchema);

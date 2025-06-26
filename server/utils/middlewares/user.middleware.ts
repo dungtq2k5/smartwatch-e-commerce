@@ -10,7 +10,7 @@ import { isValidIdArray, isValidImgUrl } from "..//utils";
 import { PASSWORD_HINT_MESSAGE } from "../../../common/configs.common";
 import { errorHandler } from "../errorHandler";
 
-export function sanitizeUserInput(
+function sanitizeUserInput(
   req: Request,
   res: Response,
   next: NextFunction
@@ -44,6 +44,43 @@ export function sanitizeUserInput(
   next();
 }
 
+function sanitizeAddressInput(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing address input...");
+  const { name, street, apartmentNumber, ward, district, cityProvince } =
+    req.body;
+
+  if (typeof name === "string") {
+    req.body.name = removeOddSpaces(name);
+  }
+  if (typeof street === "string") {
+    req.body.street = removeOddSpaces(street);
+  }
+  if (typeof apartmentNumber === "string") {
+    req.body.apartmentNumber = removeOddSpaces(apartmentNumber);
+  }
+  if (typeof ward === "string") {
+    req.body.ward = removeOddSpaces(ward);
+  }
+  if (typeof district === "string") {
+    req.body.district = removeOddSpaces(district);
+  }
+  if (typeof cityProvince === "string") {
+    req.body.cityProvince = removeOddSpaces(cityProvince);
+  }
+
+  next();
+}
+
+export function inputSanitizer(
+  type: "user" | "address"
+): (req: Request, res: Response, next: NextFunction) => void {
+  return type === "user" ? sanitizeUserInput : sanitizeAddressInput;
+}
+
 export function verifyUserInput(
   type:
     | "signup"
@@ -57,7 +94,7 @@ export function verifyUserInput(
     | "update phone number"
     | "update contact info"
     | "create"
-) {
+): (req: Request, res: Response, next: NextFunction) => Promise<void> {
   return async (
     req: Request,
     res: Response,
@@ -321,6 +358,115 @@ export function verifyUserInput(
           if (roleIds !== undefined && !isValidIdArray(roleIds)) {
             errors.push("roleIds must be an array of valid ids.");
           }
+        }
+      }
+
+      if (errors.length > 0) {
+        return next(errorHandler(400, errors));
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+export function verifyAddressInput(
+  type: "create" | "update"
+): (req: Request, res: Response, next: NextFunction) => Promise<void> {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    console.log("▶️ ", "Validating address input...");
+
+    let errors: string[] = [];
+    try {
+      switch (type) {
+        case "create": {
+          console.log("Validating create address input...");
+          const {
+            name,
+            street,
+            apartmentNumber,
+            ward,
+            district,
+            cityProvince,
+            phoneNumber,
+          } = req.body;
+          if (typeof name !== "string" || !name) {
+            errors.push("name is required.");
+          }
+          if (typeof street !== "string" || !street) {
+            errors.push("street is required.");
+          }
+          if (typeof ward !== "string" || !ward) {
+            errors.push("ward is required.");
+          }
+          if (typeof district !== "string" || !district) {
+            errors.push("district is required.");
+          }
+          if (typeof cityProvince !== "string" || !cityProvince) {
+            errors.push("cityProvince is required.");
+          }
+          if (typeof apartmentNumber !== "string" || !apartmentNumber) {
+            errors.push("apartmentNumber is required.");
+          }
+          if (!phoneNumber) {
+            errors.push("phoneNumber is required.");
+          } else if (!isValidVnPhoneNumber(phoneNumber)) {
+            errors.push("phoneNumber is invalid.");
+          }
+          break;
+        }
+        case "update": {
+          console.log("Validating update address input...");
+          const {
+            name,
+            street,
+            apartmentNumber,
+            ward,
+            district,
+            cityProvince,
+            phoneNumber,
+          } = req.body;
+
+          if (name !== undefined && (typeof name !== "string" || !name)) {
+            errors.push("name must be a string.");
+          }
+          if (street !== undefined && (typeof street !== "string" || !street)) {
+            errors.push("street must be a string.");
+          }
+          if (
+            apartmentNumber !== undefined &&
+            (typeof apartmentNumber !== "string" || !apartmentNumber)
+          ) {
+            errors.push("apartmentNumber must be a string.");
+          }
+          if (ward !== undefined && (typeof ward !== "string" || !ward)) {
+            errors.push("ward must be a string.");
+          }
+          if (
+            district !== undefined &&
+            (typeof district !== "string" || !district)
+          ) {
+            errors.push("district must be a string.");
+          }
+          if (
+            cityProvince !== undefined &&
+            (typeof cityProvince !== "string" || !cityProvince)
+          ) {
+            errors.push("cityProvince must be a string.");
+          }
+          if (phoneNumber !== undefined) {
+            if (!phoneNumber) {
+              errors.push("phoneNumber must be a string.");
+            } else if (!isValidVnPhoneNumber(phoneNumber)) {
+              errors.push("phoneNumber is invalid.");
+            }
+          }
+          break;
         }
       }
 

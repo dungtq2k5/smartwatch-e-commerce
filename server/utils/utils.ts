@@ -3,7 +3,7 @@ import { VERIFICATION_CODE_LENGTH } from "../../common/configs.common";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "./types";
 import { JWT_NAME, JWT_TTL } from "../configs/configs";
-import { AdminUserResponse, RoleResponse, UserResponse } from "../../common/types.common";
+import { AdminUserAddressResponse, AdminUserResponse, RoleResponse, UserAddressResponse, UserResponse } from "../../common/types.common";
 import { Types } from "mongoose";
 
 export function isValidUrl(url: any): boolean {
@@ -135,6 +135,30 @@ export function formatRoleResponse(role: any): RoleResponse {
     createdAt: role.createdAt.toISOString(),
     updatedAt: role.updatedAt.toISOString(),
   };
+}
+
+export function formatUserAddressResponse(address: any): UserAddressResponse {
+  return {
+    id: address._id.toString(),
+    name: address.name,
+    street: address.street,
+    apartmentNumber: address.apartmentNumber,
+    ward: address.ward,
+    district: address.district,
+    cityProvince: address.cityProvince,
+    country: address.country,
+    phoneNumber: address.phoneNumber,
+    isDefault: address.isDefault,
+    createdAt: address.createdAt.toISOString(),
+    updatedAt: address.updatedAt.toISOString(),
+  }
+}
+
+export function formatAdminUserAddressResponse(address: any): AdminUserAddressResponse {
+  return {
+    ...formatUserAddressResponse(address),
+    userId: address.userId.toString(),
+  }
 }
 
 export function isValidIdArray(arr: any): boolean {

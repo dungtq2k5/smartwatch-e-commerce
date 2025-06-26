@@ -11,7 +11,7 @@ import {
 import { verifyAuthentication, verifyJWTHasUserId, verifyReauthentication } from "../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../utils/middlewares/general.middleware";
 import {
-  sanitizeUserInput,
+  inputSanitizer,
   verifyUserInput,
 } from "../utils/middlewares/user.middleware";
 import rateLimit from "express-rate-limit";
@@ -37,7 +37,7 @@ router.post(
   "/signup",
   verifyReauthentication,
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("user"),
   verifyUserInput("signup"),
   signup
 );
@@ -47,7 +47,7 @@ router.post(
   authLimiter,
   verifyReauthentication,
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("user"),
   verifyUserInput("login"),
   login
 );
@@ -58,7 +58,7 @@ router.post(
   "/verify-user",
   verifyJWTHasUserId,
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("user"),
   verifyUserInput("verify user"),
   verifyUser
 );
@@ -76,7 +76,7 @@ router.post(
   authLimiter,
   verifyReauthentication,
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("user"),
   verifyUserInput("forgot password"),
   forgotPassword
 );
@@ -86,7 +86,7 @@ router.post(
   authLimiter,
   verifyReauthentication,
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("user"),
   verifyUserInput("reset password"),
   resetPassword
 );

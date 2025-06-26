@@ -1,14 +1,21 @@
 import { Request, Response, NextFunction } from "express";
 import User from "../models/user/user.model";
 import {
+  formatAdminUserAddressResponse,
   formatAdminUserResponse,
+  formatUserAddressResponse,
   formatUserResponse,
   genVerificationCode,
 } from "../utils/utils";
 import {
+  AdminUserAddressResponse,
   AdminUserListResponse,
   AdminUserResponse,
   SuccessResponse,
+  UserAddressCreate,
+  UserAddressResponse,
+  UserAddressResponseList,
+  UserAddressUpdate,
   UserCreate,
   UserResponse,
   UserUpdate,
@@ -61,7 +68,7 @@ export async function create(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️", "Processing create user request...");
+  console.log("▶️ ", "Processing create user request...");
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -152,7 +159,7 @@ export async function get(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️", "Processing get user request...");
+  console.log("▶️ ", "Processing get user request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
@@ -188,7 +195,7 @@ export async function search(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️", "Processing search users request...");
+  console.log("▶️ ", "Processing search users request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
@@ -263,8 +270,8 @@ export async function search(
       success: true,
       message: "Users retrieved successfully",
       data: {
-        items: users,
         total: totalUsers,
+        users: users,
         offset,
         limit,
       },
@@ -280,7 +287,7 @@ export async function updateGeneralInfo(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️", "Processing update user request...");
+  console.log("▶️ ", "Processing update user request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
@@ -421,7 +428,7 @@ export async function updateEmail(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️", "Processing update user email request...");
+  console.log("▶️ ", "Processing update user email request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
@@ -527,7 +534,7 @@ export async function updatePhoneNumber(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️", "Processing update user phone number request...");
+  console.log("▶️ ", "Processing update user phone number request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
@@ -654,7 +661,7 @@ export async function remove(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️", "Processing delete user request...");
+  console.log("▶️ ", "Processing delete user request...");
   const { userId: reqUserId, isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
@@ -699,13 +706,140 @@ export async function remove(
   }
 }
 
+export async function getAddresses(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing get user addresses request...");
+  const { isBuyerOnly } = req["auth"] as RequestAuth;
+  if (isBuyerOnly) {
+    return next(
+      errorHandler(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const userId = req.params.id;
+
+  try {
+    // Check user exists
+    if (!Types.ObjectId.isValid(userId)) {
+      return next(errorHandler(404, "User not found."));
+    }
+    const user = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      return next(errorHandler(404, "User not found."));
+    }
+
+    const addresses = await UserAddress.find({ userId }).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "User addresses retrieved successfully",
+      data: {
+        total: addresses.length,
+        addresses: addresses.map((address) =>
+          formatUserAddressResponse(address)
+        ),
+      },
+    } as SuccessResponse<UserAddressResponseList>);
+    console.log("✅", "User addresses retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createAddress(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing create user address request...");
+  const { isBuyerOnly } = req["auth"] as RequestAuth;
+  if (isBuyerOnly) {
+    return next(
+      errorHandler(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const userId = req.params.id;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Check user exists
+    if (!Types.ObjectId.isValid(userId)) {
+      return next(errorHandler(404, "User not found."));
+    }
+    const user = await User.findById(userId).session(session);
+    if (!user || user.isDeleted) {
+      return next(errorHandler(404, "User not found."));
+    }
+
+    const {
+      name,
+      street,
+      apartmentNumber,
+      ward,
+      district,
+      cityProvince,
+      country,
+      phoneNumber,
+      isDefault,
+    } = req.body as UserAddressCreate;
+
+    // Business logic
+    if (isDefault) {
+      await UserAddress.updateMany(
+        { userId, isDefault: true },
+        { $set: { isDefault: false } },
+        { session }
+      );
+    }
+
+    const [address] = await UserAddress.create(
+      [
+        {
+          userId,
+          name,
+          street,
+          apartmentNumber,
+          ward,
+          district,
+          cityProvince,
+          country,
+          phoneNumber,
+          isDefault,
+        },
+      ],
+      { session }
+    );
+
+    await session.commitTransaction();
+
+    res.status(201).json({
+      success: true,
+      message: "User address created successfully",
+      data: formatAdminUserAddressResponse(address),
+    } as SuccessResponse<AdminUserAddressResponse>);
+    console.log("✅", "User address created successfully.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
 // --- BUYER FUNCTIONS ---
 export async function updateSelfContactInfo(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️", "Processing update user contact info request...");
+  console.log("▶️ ", "Processing update user contact info request...");
   const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
 
   // Check only buyer perform this action
@@ -794,7 +928,7 @@ export async function deleteSelf(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️", "Processing delete user request...");
+  console.log("▶️ ", "Processing delete user request...");
   const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
   if (!isBuyerOnly) {
     return next(
@@ -829,13 +963,78 @@ export async function deleteSelf(
   }
 }
 
+export async function createSelfAddress(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing create user address request...");
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const {
+      name,
+      street,
+      apartmentNumber,
+      ward,
+      district,
+      cityProvince,
+      country,
+      phoneNumber,
+      isDefault,
+    } = req.body as UserAddressCreate;
+
+    const { userId } = req["auth"] as RequestAuth;
+    if (isDefault) {
+      await UserAddress.updateMany(
+        { userId, isDefault: true },
+        { $set: { isDefault: false } },
+        { session }
+      );
+    }
+
+    const [address] = await UserAddress.create(
+      [
+        {
+          userId,
+          name,
+          street,
+          apartmentNumber,
+          ward,
+          district,
+          cityProvince,
+          country,
+          phoneNumber,
+          isDefault,
+        },
+      ],
+      { session }
+    );
+
+    await session.commitTransaction();
+
+    res.status(201).json({
+      success: true,
+      message: "User address created successfully",
+      data: formatUserAddressResponse(address),
+    } as SuccessResponse<UserAddressResponse>);
+    console.log("✅", "User address created successfully.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
 // --- BOTH ADMIN AND BUYER FUNCTIONS ---
 export async function getSelf(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️", "Processing get self user request...");
+  console.log("▶️ ", "Processing get self user request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   const user = req["user"];
 
@@ -858,7 +1057,7 @@ export async function updateSelfGeneralInfo(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️", "Processing update user request...");
+  console.log("▶️ ", "Processing update user request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   const user = req["user"];
   const { fullName, avatarUrl, password } = req.body as UserUpdate;
@@ -900,9 +1099,161 @@ export async function updateSelfGeneralInfo(
   }
 }
 
+export async function getSelfAddresses(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing get user addresses request...");
+  const { userId } = req["auth"] as RequestAuth;
+
+  try {
+    const addresses = await UserAddress.find({ userId }).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "User addresses retrieved successfully",
+      data: {
+        total: addresses.length,
+        addresses: addresses.map((address) =>
+          formatUserAddressResponse(address)
+        ),
+      },
+    } as SuccessResponse<UserAddressResponseList>);
+    console.log("✅", "User addresses retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateAddress(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing update user address request...");
+  const addressId = req.params.id;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Check address exists
+    if (!Types.ObjectId.isValid(addressId)) {
+      return next(errorHandler(404, "Address not found."));
+    }
+    const address = await UserAddress.findById(addressId).session(session);
+    if (!address) {
+      return next(errorHandler(404, "Address not found."));
+    }
+
+    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
+    if (isBuyerOnly && !address.userId.equals(userId)) {
+      return next(errorHandler(403, "You do not own this resource."));
+    }
+
+    // Business logic
+    // Business logic
+    const {
+      name,
+      street,
+      apartmentNumber,
+      ward,
+      district,
+      cityProvince,
+      country,
+      phoneNumber,
+      isDefault,
+    } = req.body as UserAddressUpdate;
+    /**
+      isDefault scenarios:
+        - true -> true,
+        - false -> false,
+        - true -> false,
+        - false -> true
+     */
+    if (isDefault !== undefined && isDefault && !address.isDefault) {
+      await UserAddress.updateMany(
+        { userId, isDefault: true },
+        { $set: { isDefault: false } },
+        { session }
+      );
+    }
+    address.name = name !== undefined ? name : address.name;
+    address.street = street !== undefined ? street : address.street;
+    address.apartmentNumber =
+      apartmentNumber !== undefined ? apartmentNumber : address.apartmentNumber;
+    address.ward = ward !== undefined ? ward : address.ward;
+    address.district = district !== undefined ? district : address.district;
+    address.cityProvince =
+      cityProvince !== undefined ? cityProvince : address.cityProvince;
+    address.country = country !== undefined ? country : address.country;
+    address.phoneNumber =
+      phoneNumber !== undefined ? phoneNumber : address.phoneNumber;
+    address.isDefault = isDefault !== undefined ? isDefault : address.isDefault;
+
+    await address.save({ session });
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "User address updated successfully",
+      data: formatUserAddressResponse(address),
+    } as SuccessResponse<UserAddressResponse>);
+    console.log("✅", "User address updated successfully.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
+export async function removeAddress(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing delete user address request...");
+  const addressId = req.params.id;
+
+  try {
+    // Check address exists
+    if (!Types.ObjectId.isValid(addressId)) {
+      return next(errorHandler(404, "Address not found."));
+    }
+    const address = await UserAddress.findById(addressId);
+    if (!address) {
+      return next(errorHandler(404, "Address not found."));
+    }
+
+    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
+    if (isBuyerOnly && !address.userId.equals(userId)) {
+      return next(errorHandler(403, "You do not own this resource."));
+    }
+
+    // Business logic
+    if (address.isDefault) {
+      return next(errorHandler(400, "You cannot delete the default address."));
+    }
+
+    await address.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "User address deleted successfully",
+    } as SuccessResponse);
+    console.log("✅", "User address deleted successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
 // --- HELPER FUNCTIONS ---
 async function hasConstraints(userId: Types.ObjectId): Promise<boolean> {
-  console.log("▶️", "Checking user constraints...");
+  console.log("▶️ ", "Checking user constraints...");
 
   try {
     /**
@@ -963,12 +1314,12 @@ async function hasConstraints(userId: Types.ObjectId): Promise<boolean> {
 
     if (hasConstraints) {
       console.log(
-        `▶️`,
+        `▶️ `,
         `Critical constraints found for user: ${userId}. Soft delete required.`
       );
     } else {
       console.log(
-        `▶️`,
+        `▶️ `,
         `No critical constraints found for user: ${userId}. Hard delete is possible.`
       );
     }
