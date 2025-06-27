@@ -150,6 +150,21 @@ export type AdminUserAddressResponse = UserAddressResponse & {
   userId: string;
 };
 
+export type BaseUserCart = {
+  userId: string;
+  variationId: string;
+  quantity: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UserCartResponse = Omit<BaseUserCart, "userId">;
+
+export type UserCartResponseList = {
+  carts: UserCartResponse[];
+  total: number;
+};
+
 export type CreateOtp = {
   type: "email" | "phoneNumber";
   userId: string;

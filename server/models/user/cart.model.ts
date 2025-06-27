@@ -1,21 +1,5 @@
 import mongoose from "mongoose";
 
-const variationRefSchema = new mongoose.Schema(
-  {
-    variationId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      refPath: "onModel",
-    },
-    onModel: {
-      type: String,
-      required: true,
-      enum: ["VariationColor", "VariationBand"],
-    },
-  },
-  { _id: false }
-);
-
 const cartSchema = new mongoose.Schema(
   {
     userId: {
@@ -24,7 +8,8 @@ const cartSchema = new mongoose.Schema(
       required: true,
     },
     variationId: {
-      type: variationRefSchema,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Variation",
       required: true,
     },
     quantity: {

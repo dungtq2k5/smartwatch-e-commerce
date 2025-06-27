@@ -24,6 +24,7 @@ import {
   removeAddress,
   createSelfAddress,
   createAddress,
+  getCart,
 } from "../controllers/user.controller";
 
 const router = express.Router();
@@ -42,6 +43,7 @@ router.post(
 // Read
 router.get("/me", verifyPermission("r_usr"), getSelf);
 router.get("/me/addresses", verifyPermission("r_usr_addr"), getSelfAddresses);
+router.get("/me/carts/", verifyPermission("r_usr_cart"), getCart);
 
 // Update
 router.patch(

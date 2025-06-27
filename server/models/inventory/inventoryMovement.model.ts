@@ -3,13 +3,8 @@ import mongoose from "mongoose";
 const inventoryMovementSchema = new mongoose.Schema({
   variationInstanceId: {
     type: mongoose.Schema.Types.ObjectId,
+    ref: "VariationInstance",
     required: true,
-    refPath: "onModel",
-  },
-  onModel: {
-    type: String,
-    required: true,
-    enum: ["VariationColorInstance", "VariationBandInstance"],
   },
   sku: {
     type: String,

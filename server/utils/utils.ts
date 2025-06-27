@@ -3,7 +3,7 @@ import { VERIFICATION_CODE_LENGTH } from "../../common/configs.common";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "./types";
 import { JWT_NAME, JWT_TTL } from "../configs/configs";
-import { AdminUserAddressResponse, AdminUserResponse, RoleResponse, UserAddressResponse, UserResponse } from "../../common/types.common";
+import { AdminUserAddressResponse, AdminUserResponse, RoleResponse, UserAddressResponse, UserCartResponse, UserResponse } from "../../common/types.common";
 import { Types } from "mongoose";
 
 export function isValidUrl(url: any): boolean {
@@ -159,6 +159,15 @@ export function formatAdminUserAddressResponse(address: any): AdminUserAddressRe
     ...formatUserAddressResponse(address),
     userId: address.userId.toString(),
   }
+}
+
+export function formatUserCartResponse(cart: any): UserCartResponse {
+  return {
+    variationId: cart.variationId.toString(),
+    quantity: cart.quantity,
+    createdAt: cart.createdAt.toISOString(),
+    updatedAt: cart.updatedAt.toISOString(),
+  };
 }
 
 export function isValidIdArray(arr: any): boolean {

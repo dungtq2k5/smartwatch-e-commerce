@@ -4,6 +4,7 @@ import {
   formatAdminUserAddressResponse,
   formatAdminUserResponse,
   formatUserAddressResponse,
+  formatUserCartResponse,
   formatUserResponse,
   genVerificationCode,
 } from "../utils/utils";
@@ -16,6 +17,8 @@ import {
   UserAddressResponse,
   UserAddressResponseList,
   UserAddressUpdate,
+  UserCartResponse,
+  UserCartResponseList,
   UserCreate,
   UserResponse,
   UserUpdate,
@@ -1028,6 +1031,68 @@ export async function createSelfAddress(
   }
 }
 
+export async function updateCart(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing update user cart request...");
+  const { isBuyerOnly, userId } = req["auth"] as RequestAuth;
+  if (!isBuyerOnly) {
+    return next(
+      errorHandler(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const variationId = req.params.variationId;
+
+  try {
+    // Check variation exists
+    if (!Types.ObjectId.isValid(variationId)) {
+      return next(errorHandler(404, "Variation not found."));
+    }
+    const variation =
+      await VariationColor.findById(variationId) ||
+      await VariationBand.findById(variationId);
+    if (!variation || variation.isDeleted) {
+      return next(errorHandler(404, "Variation not found."));
+    }
+
+    // Check cart exists
+    const cart = await Cart.findOne({
+      userId,
+      variationId,
+    });
+    if (!cart) {
+      return next(errorHandler(404, "Cart item not found."));
+    }
+
+    // Business logic
+    // TODO handle when quantity is 0
+    const quantity = req.body.quantity as number;
+    if (quantity > variation.stockQuantity) {
+      return next(
+        errorHandler(
+          400,
+          `Not enough stock for this variation. Only ${variation.stockQuantity} left.`
+        )
+      );
+    }
+
+    // Update cart item
+    cart.quantity = quantity;
+    await cart.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Cart updated successfully",
+      data: formatUserCartResponse(cart),
+    } as SuccessResponse<UserCartResponse>);
+  } catch (error) {
+    next(error);
+  }
+}
+
 // --- BOTH ADMIN AND BUYER FUNCTIONS ---
 export async function getSelf(
   req: Request,
@@ -1246,6 +1311,43 @@ export async function removeAddress(
       message: "User address deleted successfully",
     } as SuccessResponse);
     console.log("✅", "User address deleted successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getCart(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing get user cart request...");
+  const userId = req.params.id;
+
+  try {
+    // Check user exists
+    if (!Types.ObjectId.isValid(userId)) {
+      return next(errorHandler(404, "User not found."));
+    }
+    const user = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      return next(errorHandler(404, "User not found."));
+    }
+
+    const carts = await Cart.find({ userId }).sort({
+      createdAt: -1,
+    });
+
+    const { isBuyerOnly } = req["auth"] as RequestAuth;
+    res.status(200).json({
+      success: true,
+      message: "User cart retrieved successfully",
+      data: {
+        carts: carts.map((cart) => formatUserCartResponse(cart)),
+        total: carts.length,
+      },
+    } as SuccessResponse<UserCartResponseList>);
+    console.log("✅", "User cart retrieved successfully.");
   } catch (error) {
     next(error);
   }

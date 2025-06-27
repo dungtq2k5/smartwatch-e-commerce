@@ -15,13 +15,8 @@ const returnOrderItemSchema = new mongoose.Schema(
   {
     variationInstanceId: {
       type: mongoose.Schema.Types.ObjectId,
+      ref: "VariationInstance",
       required: true,
-      ref: "onModel",
-    },
-    onModel: {
-      type: String,
-      required: true,
-      enum: ["VariationColorInstance", "VariationBandInstance"],
     },
     instanceSku: {
       type: String,

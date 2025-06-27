@@ -7,12 +7,12 @@ items: [
     totalCents: Number,
     variations: [
       {
-        variationId: ObjectId, // reference to VariationColor or VariationBand
+        id: ObjectId,
         quantity: Number,
         totalCents: Number,
         instanceIds: [
           {
-            instanceId: ObjectId, // reference to VariationColorInstance or VariationBandInstance
+            id: ObjectId,
             sku: String,
           },
           ...
@@ -25,17 +25,12 @@ items: [
 ]
  */
 
-const instanceRefSchema = new mongoose.Schema(
+const variationInstanceSchema = new mongoose.Schema(
   {
-    instanceId: {
+    id: {
       type: mongoose.Schema.Types.ObjectId,
+      ref: "VariationInstance",
       required: true,
-      refPath: "onModel",
-    },
-    onModel: {
-      type: String,
-      required: true,
-      enum: ["VariationColorInstance", "VariationBandInstance"],
     },
     sku: {
       type: String,
@@ -45,26 +40,11 @@ const instanceRefSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const variationRefSchema = new mongoose.Schema(
-  {
-    variationId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      refPath: "onModel",
-    },
-    onModel: {
-      type: String,
-      required: true,
-      enum: ["VariationColor", "VariationBand"],
-    },
-  },
-  { _id: false }
-);
-
 const variationSchema = new mongoose.Schema(
   {
-    variationId: {
-      type: variationRefSchema,
+    id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "variation",
       required: true,
     },
     quantity: {
@@ -78,14 +58,14 @@ const variationSchema = new mongoose.Schema(
       min: 0,
     },
     instanceIds: {
-      type: [instanceRefSchema],
+      type: [variationInstanceSchema],
       required: true,
     },
   },
   { _id: false }
 );
 
-const orderItemsSchema = new mongoose.Schema(
+const orderItemSchema = new mongoose.Schema(
   {
     productVariationId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -113,7 +93,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
     items: {
-      type: [orderItemsSchema],
+      type: [orderItemSchema],
       required: true,
     },
     totalCents: {
