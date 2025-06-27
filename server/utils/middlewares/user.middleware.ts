@@ -373,12 +373,12 @@ export function verifyUserInput(
 
 export function verifyAddressInput(
   type: "create" | "update"
-): (req: Request, res: Response, next: NextFunction) => Promise<void> {
-  return async (
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ): void => {
     console.log("▶️ ", "Validating address input...");
 
     let errors: string[] = [];
@@ -478,4 +478,54 @@ export function verifyAddressInput(
       next(error);
     }
   };
+}
+
+export function verifyCartInput(
+  type: "create" | "update"
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): void => {
+    console.log("▶️ ", "Validating cart input...");
+
+    let errors: string[] = [];
+    try {
+      switch (type) {
+        case "create": {
+          console.log("Validating create cart input...");
+          const { variationId, quantity } = req.body;
+
+          if (!variationId) {
+            errors.push("variationId is required.");
+          } else if (typeof variationId !== "string") {
+            errors.push("variationId must be a string.");
+          }
+          if (quantity !== undefined && quantity < 1) {
+            errors.push("quantity must be a positive number.");
+          }
+          break;
+        }
+        case "update": {
+          console.log("Validating update cart input...");
+          const { quantity } = req.body;
+
+          if (!quantity) {
+            errors.push("quantity is required.");
+          } else if (typeof quantity !== "number" || quantity < 0) {
+            errors.push("quantity must be a positive number.");
+          }
+          break;
+        }
+      }
+
+      if (errors.length > 0) {
+        return next(errorHandler(400, errors));
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  }
 }

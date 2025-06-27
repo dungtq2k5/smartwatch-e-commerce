@@ -165,6 +165,11 @@ export type UserCartResponseList = {
   total: number;
 };
 
+export type UserCartCreate = {
+  variationId: string;
+  quantity?: number;
+};
+
 export type CreateOtp = {
   type: "email" | "phoneNumber";
   userId: string;

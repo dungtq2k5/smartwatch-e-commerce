@@ -4,6 +4,7 @@ import { verifyEmptyBody } from "../utils/middlewares/general.middleware";
 import {
   inputSanitizer,
   verifyAddressInput,
+  verifyCartInput,
   verifyUserInput,
 } from "../utils/middlewares/user.middleware";
 import {
@@ -24,7 +25,10 @@ import {
   removeAddress,
   createSelfAddress,
   createAddress,
-  getCart,
+  getSelfCart,
+  updateSelfCart,
+  createSelfCart,
+  removeSelfCart,
 } from "../controllers/user.controller";
 
 const router = express.Router();
@@ -39,11 +43,18 @@ router.post(
   verifyAddressInput("create"),
   createSelfAddress
 );
+router.post(
+  "/me/carts",
+  verifyPermission("c_usr_cart"),
+  verifyEmptyBody,
+  verifyCartInput("create"),
+  createSelfCart
+);
 
 // Read
 router.get("/me", verifyPermission("r_usr"), getSelf);
 router.get("/me/addresses", verifyPermission("r_usr_addr"), getSelfAddresses);
-router.get("/me/carts/", verifyPermission("r_usr_cart"), getCart);
+router.get("/me/carts/", verifyPermission("r_usr_cart"), getSelfCart);
 
 // Update
 router.patch(
@@ -70,6 +81,13 @@ router.patch(
   verifyAddressInput("update"),
   updateAddress
 );
+router.patch(
+  "/me/carts/:variationId",
+  verifyPermission("u_usr_cart"),
+  verifyEmptyBody,
+  verifyCartInput("update"),
+  updateSelfCart
+);
 
 // Delete
 router.delete("/me", verifyPermission("d_usr"), deleteSelf);
@@ -77,6 +95,11 @@ router.delete(
   "/me/addresses/:id",
   verifyPermission("d_usr_addr"),
   removeAddress
+);
+router.delete(
+  "/me/carts/:variationId",
+  verifyPermission("d_usr_cart"),
+  removeSelfCart
 );
 
 // --- ROUTES FOR ADMIN MANAGEMENT ---
