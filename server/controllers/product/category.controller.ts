@@ -1,0 +1,205 @@
+import { Request, Response, NextFunction } from "express";
+import { RequestAuth } from "../../utils/types";
+import { errorHandler } from "../../utils/errorHandler";
+import ProductCategory from "../../models/product/productCategory.model";
+import {
+  ProductCategoryCreate,
+  ProductCategoryListResponse,
+  ProductCategoryResponse,
+  ProductCategoryUpdate,
+  SuccessResponse,
+} from "../../../common/types.common";
+import { formatProductCategoryResponse } from "../../utils/utils";
+import { Types } from "mongoose";
+import Product from "../../models/product/product.model";
+
+export async function create(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Creating product category...");
+  const { name } = req.body as ProductCategoryCreate;
+
+  try {
+    // Check category exists
+    const existingCategory = await ProductCategory.findOne({
+      isDeleted: false,
+      name,
+    });
+    if (existingCategory) {
+      return next(errorHandler(404, "Product category already exists."));
+    }
+
+    // Create category
+    const { userId } = req["auth"] as RequestAuth;
+    const category = new ProductCategory({
+      name,
+      createdBy: userId,
+    });
+    
+    await category.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Product category created successfully.",
+      data: formatProductCategoryResponse(category),
+    } as SuccessResponse<ProductCategoryResponse>);
+    console.log("✅ ", "Product category created successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAll(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Fetching all product categories...");
+
+  try {
+    const categories = await ProductCategory.find({ isDeleted: false });
+
+    res.status(200).json({
+      success: true,
+      message: "Product categories fetched successfully.",
+      data: {
+        total: categories.length,
+        categories: categories.map(formatProductCategoryResponse),
+        offset: 0, // No pagination for this endpoint
+        limit: categories.length, // Return all categories
+      },
+    } as SuccessResponse<ProductCategoryListResponse>);
+    console.log("✅ ", "Product categories fetched successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function update(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Updating product category...");
+  const { id } = req.params;
+
+  try {
+    // Check category exists
+    if (!Types.ObjectId.isValid(id)) {
+      return next(errorHandler(404, "Product category not found."));
+    }
+    const category = await ProductCategory.findById(id);
+    if (!category || category.isDeleted) {
+      return next(errorHandler(404, "Product category not found."));
+    }
+
+    // Check if name is updated and exists
+    const { name } = req.body as ProductCategoryUpdate;
+    if (name && name !== category.name) {
+      const existingCategory = await ProductCategory.findOne({
+        isDeleted: false,
+        name,
+      });
+      if (existingCategory) {
+        return next(errorHandler(404, "Product category already exists."));
+      }
+      category.name = name;
+    }
+
+    await category.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Product category updated successfully.",
+      data: formatProductCategoryResponse(category),
+    } as SuccessResponse<ProductCategoryResponse>);
+    console.log("✅ ", "Product category updated successfully.");
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function remove(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Deleting product category...");
+  const { id } = req.params;
+
+  try {
+    // Check category exists
+    if (!Types.ObjectId.isValid(id)) {
+      return next(errorHandler(404, "Product category not found."));
+    }
+    const category = await ProductCategory.findById(id);
+    if (!category || category.isDeleted) {
+      return next(errorHandler(404, "Product category not found."));
+    }
+
+    const userId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
+    await executeDeletion(category, userId);
+
+    res.status(200).json({
+      success: true,
+      message: "Product category deleted successfully.",
+    } as SuccessResponse);
+    console.log("✅ ", "Product category deleted successfully.");
+  } catch (error) {
+    return next(error);
+  }
+}
+
+// --- HELPER FUNCTIONS ---
+async function hasConstraints(categoryId: Types.ObjectId): Promise<boolean> {
+  console.log("▶️ ", "Checking category constraints...");
+
+  try {
+    /**
+      None-blocking constraints: none
+      Blocking constraints:
+        - Products (categoryId)
+    */
+    const constraintChecks = [Product.exists({ categoryId })];
+
+    const results = await Promise.all(constraintChecks);
+    const hasConstraints = results.some((result) => result !== null);
+
+    if (hasConstraints) {
+      console.log(
+        `▶️ `,
+        `Critical constraints found for category: ${categoryId}. Soft delete required.`
+      );
+    } else {
+      console.log(
+        `✅ `,
+        `No critical constraints found for category: ${categoryId}. Hard delete allowed.`
+      );
+    }
+    return hasConstraints;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function executeDeletion(
+  categoryToDelete: any,
+  deletedBy: Types.ObjectId
+): Promise<void> {
+  try {
+    if (await hasConstraints(categoryToDelete._id)) {
+      // Soft delete
+      categoryToDelete.isDeleted = true;
+      categoryToDelete.deletedAt = new Date();
+      categoryToDelete.deletedBy = deletedBy;
+      await categoryToDelete.save();
+      return;
+    }
+
+    await categoryToDelete.deleteOne();
+  } catch (error) {
+    throw error;
+  }
+}

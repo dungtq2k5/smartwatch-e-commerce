@@ -48,3 +48,6 @@ export const IMMUTABILITY_USER_EMAILS: string[] = [SYSTEM_USER.email];
 export const PROTECTED_USER_EMAILS: string[] = [ADMIN_USER.email];
 
 export const IMMUTABILITY_ROLE_NAMES = ["admin", "buyer"];
+
+export const PRODUCT_NAME_MIN_LENGTH = 3;
+export const PRODUCT_NAME_MAX_LENGTH = 100;

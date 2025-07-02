@@ -7,9 +7,9 @@ const variationInstanceSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    variationTypeId: {
+    modelVariationId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Variation",
+      ref: "ModelVariation",
       required: true,
     },
     supplierSerialNumber: {
@@ -38,14 +38,14 @@ const variationInstanceSchema = new mongoose.Schema(
 );
 
 variationInstanceSchema.index(
-  { variationTypeId: 1, supplierSerialNumber: 1 },
+  { modelVariationId: 1, supplierSerialNumber: 1 },
   {
     unique: true,
   }
 );
 
 variationInstanceSchema.index(
-  { variationTypeId: 1, supplierImeiNumber: 1 },
+  { modelVariationId: 1, supplierImeiNumber: 1 },
   {
     unique: true,
     partialFilterExpression: { supplierImeiNumber: { $exists: true } },

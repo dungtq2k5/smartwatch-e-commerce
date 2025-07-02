@@ -1,35 +1,24 @@
 import { Request, Response, NextFunction } from "express";
-import User from "../models/user/user.model";
+import User from "../../models/user/user.model";
 import {
-  formatAdminUserAddressResponse,
   formatAdminUserResponse,
-  formatUserAddressResponse,
-  formatUserCartResponse,
   formatUserResponse,
   genVerificationCode,
-} from "../utils/utils";
+} from "../../utils/utils";
 import {
-  AdminUserAddressResponse,
   AdminUserListResponse,
   AdminUserResponse,
   SuccessResponse,
-  UserAddressCreate,
-  UserAddressResponse,
-  UserAddressResponseList,
-  UserAddressUpdate,
-  UserCartCreate,
-  UserCartResponse,
-  UserCartResponseList,
   UserCreate,
   UserResponse,
   UserUpdate,
   UserUpdateContactInfo,
   UserUpdateEmail,
   UserUpdatePhoneNumber,
-} from "../../common/types.common";
-import { errorHandler } from "../utils/errorHandler";
+} from "../../../common/types.common";
+import { errorHandler } from "../../utils/errorHandler";
 import bcrypt from "bcryptjs";
-import { HASH_SALT, JWT_NAME } from "../configs/configs";
+import { HASH_SALT, JWT_NAME } from "../../configs/configs";
 import {
   sendEmailChangeEmail,
   sendEmailVerifiedEmail,
@@ -37,33 +26,33 @@ import {
   sendPhoneNumberChangeEmail,
   sendPhoneNumberVerifiedEmail,
   sendVerificationEmail,
-} from "../utils/mailtrap";
+} from "../../utils/mailtrap";
 import {
   sendLockAccountChangeSms,
   sendPhoneNumberChangeSms,
   sendPhoneNumberVerifiedSms,
   sendVerificationSms,
-} from "../utils/twilio";
+} from "../../utils/twilio";
 import mongoose, { Types } from "mongoose";
-import { deleteFileFromFirebaseStorage } from "../utils/firebase";
-import Otp from "../models/user/otp.model";
-import PasswordResetToken from "../models/user/passwordResetToken.model";
-import { VERIFICATION_CODE_TTL } from "../../common/configs.common";
-import { RequestAuth } from "../utils/types";
-import Role from "../models/role/role.model";
-import Order from "../models/order/order.model";
-import UserPaymentMethod from "../models/user/userPaymentMethod.model";
-import UserAddress from "../models/user/userAddress.model";
-import Cart from "../models/user/cart.model";
-import Provider from "../models/inventory/provider.model";
-import Grn from "../models/inventory/grn.model";
-import InventoryMovement from "../models/inventory/inventoryMovement.model";
-import Product from "../models/product/product.model";
-import ProductBrand from "../models/product/productBrand.model";
-import ProductCategory from "../models/product/productCategory.model";
-import ProductOs from "../models/product/productOs.model";
-import ProductVariation from "../models/product/productVariation.model";
-import Variation from "../models/product/variation.model";
+import { deleteFileFromFirebaseStorage } from "../../utils/firebase";
+import Otp from "../../models/user/otp.model";
+import PasswordResetToken from "../../models/user/passwordResetToken.model";
+import { VERIFICATION_CODE_TTL } from "../../../common/configs.common";
+import { RequestAuth } from "../../utils/types";
+import Role from "../../models/role/role.model";
+import Order from "../../models/order/order.model";
+import UserPaymentMethod from "../../models/user/userPaymentMethod.model";
+import UserAddress from "../../models/user/userAddress.model";
+import Cart from "../../models/user/cart.model";
+import Provider from "../../models/inventory/provider.model";
+import Grn from "../../models/inventory/grn.model";
+import InventoryMovement from "../../models/inventory/inventoryMovement.model";
+import Product from "../../models/product/product.model";
+import ProductBrand from "../../models/product/productBrand.model";
+import ProductCategory from "../../models/product/productCategory.model";
+import ProductOs from "../../models/product/productOs.model";
+import ProductModel from "../../models/product/productModel.model";
+import ModelVariation from "../../models/product/modelVariation.model";
 
 // --- ADMIN FUNCTIONS ---
 export async function create(
@@ -136,10 +125,16 @@ export async function create(
     }
 
     const hashedPassword = await bcrypt.hash(password, HASH_SALT);
-    const [user] = await User.create(
-      [{ ...req.body, password: hashedPassword, roles }],
-      { session }
-    );
+    const user = new User({
+      email,
+      isEmailVerified,
+      phoneNumber,
+      isPhoneNumberVerified,
+      password: hashedPassword,
+      roles,
+    });
+
+    await user.save({ session });
 
     await session.commitTransaction();
 
@@ -313,33 +308,26 @@ export async function updateGeneralInfo(
     }
 
     // Business logic
-    const {
-      fullName,
-      avatarUrl,
-      password,
-      userBalanceCents,
-      isLocked,
-      roleIds: updatedRoleIds,
-    } = req.body as UserUpdate;
-    const updatedFullName = fullName !== undefined ? fullName : user.fullName;
+    const updateData = req.body as UserUpdate;
+
     const updatedAvatarUrl =
-      avatarUrl !== undefined
-        ? avatarUrl === null
+      updateData.avatarUrl !== undefined
+        ? updateData.avatarUrl === null
           ? undefined
-          : avatarUrl
+          : updateData.avatarUrl
         : (user.avatarUrl as string | undefined);
     const updatedPassword =
-      password !== undefined
-        ? await bcrypt.hash(password, HASH_SALT)
+      updateData.password !== undefined
+        ? await bcrypt.hash(updateData.password, HASH_SALT)
         : user.password;
-    const updatedUserBalanceCents =
-      userBalanceCents !== undefined ? userBalanceCents : user.userBalanceCents;
-    const updatedIsLocked = isLocked !== undefined ? isLocked : user.isLocked;
+    const updatedIsLocked =
+      updateData.isLocked !== undefined ? updateData.isLocked : user.isLocked;
 
     if (user.avatarUrl !== updatedAvatarUrl && user.avatarUrl) {
       await deleteFileFromFirebaseStorage(user.avatarUrl, "user-avatar");
     }
 
+    const updatedRoleIds = updateData.roleIds;
     if (updatedRoleIds) {
       const currentRoleIds = user.roles.map(
         (role) => role.id.toString() as string
@@ -391,18 +379,20 @@ export async function updateGeneralInfo(
 
     // Save changes
     const oldIsLocked = user.isLocked; // For notification
-    user.fullName = updatedFullName;
+
+    user.fullName = updateData.fullName || user.fullName;
     user.avatarUrl = updatedAvatarUrl;
     user.password = updatedPassword;
-    user.userBalanceCents = updatedUserBalanceCents;
+    user.userBalanceCents = updateData.userBalanceCents || user.userBalanceCents;
     user.isLocked = updatedIsLocked;
+
     await user.save({ session });
 
     if (oldIsLocked !== updatedIsLocked) {
       if (user.email) {
         await sendLockAccountChangeEmail(
           user.email,
-          updatedFullName,
+          user.fullName,
           updatedIsLocked
         );
       } else if (user.phoneNumber) {
@@ -709,133 +699,6 @@ export async function remove(
   }
 }
 
-export async function getAddresses(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Processing get user addresses request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
-  if (isBuyerOnly) {
-    return next(
-      errorHandler(403, "You do not have permission to perform this action.")
-    );
-  }
-
-  const userId = req.params.id;
-
-  try {
-    // Check user exists
-    if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
-    }
-    const user = await User.findById(userId);
-    if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
-    }
-
-    const addresses = await UserAddress.find({ userId }).sort({
-      createdAt: -1,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "User addresses retrieved successfully",
-      data: {
-        total: addresses.length,
-        addresses: addresses.map((address) =>
-          formatUserAddressResponse(address)
-        ),
-      },
-    } as SuccessResponse<UserAddressResponseList>);
-    console.log("✅", "User addresses retrieved successfully.");
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function createAddress(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Processing create user address request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
-  if (isBuyerOnly) {
-    return next(
-      errorHandler(403, "You do not have permission to perform this action.")
-    );
-  }
-
-  const userId = req.params.id;
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    // Check user exists
-    if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
-    }
-    const user = await User.findById(userId).session(session);
-    if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
-    }
-
-    const {
-      name,
-      street,
-      apartmentNumber,
-      ward,
-      district,
-      cityProvince,
-      country,
-      phoneNumber,
-      isDefault,
-    } = req.body as UserAddressCreate;
-
-    // Business logic
-    if (isDefault) {
-      await UserAddress.updateMany(
-        { userId, isDefault: true },
-        { $set: { isDefault: false } },
-        { session }
-      );
-    }
-
-    const [address] = await UserAddress.create(
-      [
-        {
-          userId,
-          name,
-          street,
-          apartmentNumber,
-          ward,
-          district,
-          cityProvince,
-          country,
-          phoneNumber,
-          isDefault,
-        },
-      ],
-      { session }
-    );
-
-    await session.commitTransaction();
-
-    res.status(201).json({
-      success: true,
-      message: "User address created successfully",
-      data: formatAdminUserAddressResponse(address),
-    } as SuccessResponse<AdminUserAddressResponse>);
-    console.log("✅", "User address created successfully.");
-  } catch (error) {
-    await session.abortTransaction();
-    next(error);
-  } finally {
-    session.endSession();
-  }
-}
-
 // --- BUYER FUNCTIONS ---
 export async function updateSelfContactInfo(
   req: Request,
@@ -1037,425 +900,6 @@ export async function updateSelfGeneralInfo(
   }
 }
 
-export async function getSelfAddresses(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Processing get user addresses request...");
-  const { userId } = req["auth"] as RequestAuth;
-
-  try {
-    const addresses = await UserAddress.find({ userId }).sort({
-      createdAt: -1,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "User addresses retrieved successfully",
-      data: {
-        total: addresses.length,
-        addresses: addresses.map((address) =>
-          formatUserAddressResponse(address)
-        ),
-      },
-    } as SuccessResponse<UserAddressResponseList>);
-    console.log("✅", "User addresses retrieved successfully.");
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function updateAddress(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Processing update user address request...");
-  const addressId = req.params.id;
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    // Check address exists
-    if (!Types.ObjectId.isValid(addressId)) {
-      return next(errorHandler(404, "Address not found."));
-    }
-    const address = await UserAddress.findById(addressId).session(session);
-    if (!address) {
-      return next(errorHandler(404, "Address not found."));
-    }
-
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
-    if (isBuyerOnly && !address.userId.equals(userId)) {
-      return next(errorHandler(403, "You do not own this resource."));
-    }
-
-    // Business logic
-    // Business logic
-    const {
-      name,
-      street,
-      apartmentNumber,
-      ward,
-      district,
-      cityProvince,
-      country,
-      phoneNumber,
-      isDefault,
-    } = req.body as UserAddressUpdate;
-    /**
-      isDefault scenarios:
-        - true -> true,
-        - false -> false,
-        - true -> false,
-        - false -> true
-     */
-    if (isDefault !== undefined && isDefault && !address.isDefault) {
-      await UserAddress.updateMany(
-        { userId, isDefault: true },
-        { $set: { isDefault: false } },
-        { session }
-      );
-    }
-    address.name = name !== undefined ? name : address.name;
-    address.street = street !== undefined ? street : address.street;
-    address.apartmentNumber =
-      apartmentNumber !== undefined ? apartmentNumber : address.apartmentNumber;
-    address.ward = ward !== undefined ? ward : address.ward;
-    address.district = district !== undefined ? district : address.district;
-    address.cityProvince =
-      cityProvince !== undefined ? cityProvince : address.cityProvince;
-    address.country = country !== undefined ? country : address.country;
-    address.phoneNumber =
-      phoneNumber !== undefined ? phoneNumber : address.phoneNumber;
-    address.isDefault = isDefault !== undefined ? isDefault : address.isDefault;
-
-    await address.save({ session });
-
-    await session.commitTransaction();
-
-    res.status(200).json({
-      success: true,
-      message: "User address updated successfully",
-      data: formatUserAddressResponse(address),
-    } as SuccessResponse<UserAddressResponse>);
-    console.log("✅", "User address updated successfully.");
-  } catch (error) {
-    await session.abortTransaction();
-    next(error);
-  } finally {
-    session.endSession();
-  }
-}
-
-export async function removeAddress(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Processing delete user address request...");
-  const addressId = req.params.id;
-
-  try {
-    // Check address exists
-    if (!Types.ObjectId.isValid(addressId)) {
-      return next(errorHandler(404, "Address not found."));
-    }
-    const address = await UserAddress.findById(addressId);
-    if (!address) {
-      return next(errorHandler(404, "Address not found."));
-    }
-
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
-    if (isBuyerOnly && !address.userId.equals(userId)) {
-      return next(errorHandler(403, "You do not own this resource."));
-    }
-
-    // Business logic
-    if (address.isDefault) {
-      return next(errorHandler(400, "You cannot delete the default address."));
-    }
-
-    await address.deleteOne();
-
-    res.status(200).json({
-      success: true,
-      message: "User address deleted successfully",
-    } as SuccessResponse);
-    console.log("✅", "User address deleted successfully.");
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function createSelfAddress(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Processing create user address request...");
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const {
-      name,
-      street,
-      apartmentNumber,
-      ward,
-      district,
-      cityProvince,
-      country,
-      phoneNumber,
-      isDefault,
-    } = req.body as UserAddressCreate;
-
-    const { userId } = req["auth"] as RequestAuth;
-    if (isDefault) {
-      await UserAddress.updateMany(
-        { userId, isDefault: true },
-        { $set: { isDefault: false } },
-        { session }
-      );
-    }
-
-    const [address] = await UserAddress.create(
-      [
-        {
-          userId,
-          name,
-          street,
-          apartmentNumber,
-          ward,
-          district,
-          cityProvince,
-          country,
-          phoneNumber,
-          isDefault,
-        },
-      ],
-      { session }
-    );
-
-    await session.commitTransaction();
-
-    res.status(201).json({
-      success: true,
-      message: "User address created successfully",
-      data: formatUserAddressResponse(address),
-    } as SuccessResponse<UserAddressResponse>);
-    console.log("✅", "User address created successfully.");
-  } catch (error) {
-    await session.abortTransaction();
-    next(error);
-  } finally {
-    session.endSession();
-  }
-}
-
-export async function getSelfCart(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Processing get user cart request...");
-  const { userId } = req["auth"] as RequestAuth;
-
-  try {
-    const carts = await Cart.find({ userId }).sort({
-      createdAt: -1,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "User cart retrieved successfully",
-      data: {
-        carts: carts.map((cart) => formatUserCartResponse(cart)),
-        total: carts.length,
-      },
-    } as SuccessResponse<UserCartResponseList>);
-    console.log("✅", "User cart retrieved successfully.");
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function createSelfCart(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Processing create user cart request...");
-  const { variationId, quantity } = req.body as UserCartCreate;
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    // Check variation exists
-    if (!Types.ObjectId.isValid(variationId)) {
-      return next(errorHandler(404, "Variation not found."));
-    }
-    const variation = await Variation.findById(variationId).session(session);
-    if (!variation || variation.isDeleted) {
-      return next(errorHandler(404, "Variation not found."));
-    }
-
-    // Business logic
-    // Cart exists -> update quantity
-    // Cart does not exist -> create new cart
-    const { userId } = req["auth"] as RequestAuth;
-    const existingCart = await Cart.findOne({
-      userId,
-      variationId,
-    }).session(session);
-    const totalQuantity = existingCart
-      ? existingCart.quantity + (quantity || 1)
-      : quantity || 1;
-    if (totalQuantity > variation.stockQuantity) {
-      return next(
-        errorHandler(
-          400,
-          `Not enough stock for this variation. Only ${variation.stockQuantity} left.`
-        )
-      );
-    }
-
-    let cart: any;
-    if (existingCart) {
-      existingCart.quantity = totalQuantity;
-      await existingCart.save({ session });
-      cart = formatUserCartResponse(existingCart);
-    } else {
-      const [cart] = await Cart.create(
-        [
-          {
-            userId,
-            variationId,
-            quantity: quantity || 1,
-          },
-        ],
-        { session }
-      );
-    }
-
-    await session.commitTransaction();
-
-    res.status(201).json({
-      success: true,
-      message: "User cart created successfully",
-      data: formatUserCartResponse(cart),
-    } as SuccessResponse<UserCartResponse>);
-    console.log("✅", "User cart created successfully.");
-  } catch (error) {
-    await session.abortTransaction();
-    next(error);
-  } finally {
-    session.endSession();
-  }
-}
-
-export async function updateSelfCart(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Processing update user cart request...");
-  const variationId = req.params.variationId;
-
-  try {
-    // Check variation exists
-    if (!Types.ObjectId.isValid(variationId)) {
-      return next(errorHandler(404, "Variation not found."));
-    }
-    const variation = await Variation.findById(variationId);
-    if (!variation || variation.isDeleted) {
-      return next(errorHandler(404, "Variation not found."));
-    }
-
-    // Check cart exists
-    const { userId } = req["auth"] as RequestAuth;
-    const cart = await Cart.findOne({
-      userId,
-      variationId,
-    });
-    if (!cart) {
-      return next(errorHandler(404, "Cart item not found."));
-    }
-
-    // Business logic
-    const quantity = req.body.quantity as number;
-    if (quantity > variation.stockQuantity) {
-      return next(
-        errorHandler(
-          400,
-          `Not enough stock for this variation. Only ${variation.stockQuantity} left.`
-        )
-      );
-    }
-    if (quantity === 0) {
-      await cart.deleteOne();
-      res.status(200).json({
-        success: true,
-        message: "Cart item deleted successfully",
-      } as SuccessResponse);
-      console.log("✅", "Cart item deleted successfully.");
-      return;
-    }
-
-    cart.quantity = quantity;
-    await cart.save();
-    res.status(200).json({
-      success: true,
-      message: "Cart updated successfully",
-      data: formatUserCartResponse(cart),
-    } as SuccessResponse<UserCartResponse>);
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function removeSelfCart(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Processing delete user cart request...");
-  const variationId = req.params.variationId;
-
-  try {
-    // Check variation exists
-    if (!Types.ObjectId.isValid(variationId)) {
-      return next(errorHandler(404, "Variation not found."));
-    }
-    const variation = await Variation.findById(variationId);
-    if (!variation || variation.isDeleted) {
-      return next(errorHandler(404, "Variation not found."));
-    }
-
-    // Check cart exists
-    const { userId } = req["auth"] as RequestAuth;
-    const cart = await Cart.findOne({
-      userId,
-      variationId,
-    });
-    if (!cart) {
-      return next(errorHandler(404, "Cart item not found."));
-    }
-
-    // Business logic
-    await cart.deleteOne();
-
-    res.status(200).json({
-      success: true,
-      message: "Cart item deleted successfully",
-    } as SuccessResponse);
-    console.log("✅", "Cart item deleted successfully.");
-  } catch (error) {
-    next(error);
-  }
-}
-
 // --- HELPER FUNCTIONS ---
 async function hasConstraints(userId: Types.ObjectId): Promise<boolean> {
   console.log("▶️ ", "Checking user constraints...");
@@ -1479,7 +923,7 @@ async function hasConstraints(userId: Types.ObjectId): Promise<boolean> {
         - ProductBrand (createdBy, deletedBy)
         - ProductCategory (createdBy, deletedBy)
         - ProductOs (createdBy, deletedBy)
-        - ProductVariation (createdBy, deletedBy)
+        - ProductModel (createdBy, deletedBy)
         - VariationColor (createdBy, deletedBy)
         - VariationBand (createdBy, deletedBy)
      */
@@ -1503,10 +947,10 @@ async function hasConstraints(userId: Types.ObjectId): Promise<boolean> {
         $or: [{ createdBy: userId }, { deletedBy: userId }],
       }),
       ProductOs.exists({ $or: [{ createdBy: userId }, { deletedBy: userId }] }),
-      ProductVariation.exists({
+      ProductModel.exists({
         $or: [{ createdBy: userId }, { deletedBy: userId }],
       }),
-      Variation.exists({
+      ModelVariation.exists({
         $or: [{ createdBy: userId }, { deletedBy: userId }],
       }),
     ];
@@ -1553,29 +997,35 @@ async function executeDeletion(
       userToDelete.deletedAt = new Date();
       userToDelete.deletedBy = deletedBy;
       await userToDelete.save({ session });
-    } else {
-      // Hard delete (and cleanup)
-      if (userToDelete.avatarUrl) {
-        await deleteFileFromFirebaseStorage(
-          userToDelete.avatarUrl,
-          "user-avatar"
-        );
-      }
-      // The pre-delete hook on the User model is a better place for this,
-      // but keeping it here is also valid within the transaction.
-      await Otp.deleteMany({ userId: userToDelete._id }, { session });
-      await PasswordResetToken.deleteMany(
-        { userId: userToDelete._id },
-        { session }
-      );
-      await Cart.deleteMany({ userId: userToDelete._id }, { session });
-      await UserPaymentMethod.deleteMany(
-        { userId: userToDelete._id },
-        { session }
-      );
-      await UserAddress.deleteMany({ userId: userToDelete._id }, { session });
-      await userToDelete.deleteOne({ session });
+      return;
     }
+
+    // Hard delete (and cleanup)
+    if (userToDelete.avatarUrl) {
+      await deleteFileFromFirebaseStorage(
+        userToDelete.avatarUrl,
+        "user-avatar"
+      );
+    }
+    // The pre-delete hook on the User model is a better place for this,
+    // but keeping it here is also valid within the transaction.
+    await Otp.deleteMany({ userId: userToDelete._id }, { session });
+    await PasswordResetToken.deleteMany(
+      { userId: userToDelete._id },
+      { session }
+    );
+    await Cart.deleteMany({ userId: userToDelete._id }, { session });
+    await UserPaymentMethod.deleteMany(
+      { userId: userToDelete._id },
+      { session }
+    );
+    await UserAddress.deleteMany({ userId: userToDelete._id }, { session });
+
+    await deleteFileFromFirebaseStorage(
+      userToDelete.avatarUrl,
+      "user-avatar"
+    );
+    await userToDelete.deleteOne({ session });
   } catch (error) {
     throw error;
   }

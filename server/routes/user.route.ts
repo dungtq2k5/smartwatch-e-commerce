@@ -7,168 +7,175 @@ import {
   verifyCartInput,
   verifyUserInput,
 } from "../utils/middlewares/user.middleware";
-import {
-  updateSelfContactInfo,
-  updateSelfGeneralInfo,
-  updateGeneralInfo,
-  updateEmail,
-  updatePhoneNumber,
-  deleteSelf,
-  remove,
-  create,
-  get,
-  getSelf,
-  search,
-  getSelfAddresses,
-  getAddresses,
-  updateAddress,
-  removeAddress,
-  createSelfAddress,
-  createAddress,
-  getSelfCart,
-  updateSelfCart,
-  createSelfCart,
-  removeSelfCart,
-} from "../controllers/user.controller";
+import * as userController from "../controllers/user/user.controller";
+import * as cartController from "../controllers/user/cart.controller";
+import * as addressController from "../controllers/user/address.controller";
 
 const router = express.Router();
 
-// --- ROUTES FOR THE AUTH BUYER (/ME) ---
-// Create
-router.post(
-  "/me/addresses",
-  verifyPermission("c_usr_addr"),
-  verifyEmptyBody,
-  inputSanitizer("address"),
-  verifyAddressInput("create"),
-  createSelfAddress
-);
-router.post(
-  "/me/carts",
-  verifyPermission("c_usr_cart"),
-  verifyEmptyBody,
-  verifyCartInput("create"),
-  createSelfCart
-);
+// --- ROUTES FOR THE AUTH BUYER (/me) ---
 
-// Read
-router.get("/me", verifyPermission("r_usr"), getSelf);
-router.get("/me/addresses", verifyPermission("r_usr_addr"), getSelfAddresses);
-router.get("/me/carts/", verifyPermission("r_usr_cart"), getSelfCart);
+// -- ROUTES FOR PROFILE
+router.get("/me", verifyPermission("r_usr"), userController.getSelf);
 
-// Update
 router.patch(
   "/me/contact-info",
   verifyPermission("u_usr"),
   verifyEmptyBody,
   inputSanitizer("user"),
   verifyUserInput("update contact info"),
-  updateSelfContactInfo
+  userController.updateSelfContactInfo
 );
+
 router.patch(
   "/me",
   verifyPermission("u_usr"),
   verifyEmptyBody,
   inputSanitizer("user"),
   verifyUserInput("update"),
-  updateSelfGeneralInfo
+  userController.updateSelfGeneralInfo
 );
-router.patch(
-  "/me/addresses/:id",
-  verifyPermission("u_usr_addr"),
+
+router.delete("/me", verifyPermission("d_usr"), userController.deleteSelf);
+
+// -- ROUTES FOR CART
+router.post(
+  "/me/carts",
+  verifyPermission("c_usr_cart"),
   verifyEmptyBody,
-  inputSanitizer("address"),
-  verifyAddressInput("update"),
-  updateAddress
+  verifyCartInput("create"),
+  cartController.createSelf
+);
+router.get(
+  "/me/carts/",
+  verifyPermission("r_usr_cart"),
+  cartController.getSelf
 );
 router.patch(
   "/me/carts/:variationId",
   verifyPermission("u_usr_cart"),
   verifyEmptyBody,
   verifyCartInput("update"),
-  updateSelfCart
-);
-
-// Delete
-router.delete("/me", verifyPermission("d_usr"), deleteSelf);
-router.delete(
-  "/me/addresses/:id",
-  verifyPermission("d_usr_addr"),
-  removeAddress
+  cartController.updateSelf
 );
 router.delete(
   "/me/carts/:variationId",
   verifyPermission("d_usr_cart"),
-  removeSelfCart
+  cartController.removeSelf
+);
+
+// -- ROUTES FOR ADDRESS
+router.post(
+  "/me/addresses",
+  verifyPermission("c_usr_addr"),
+  verifyEmptyBody,
+  inputSanitizer("address"),
+  verifyAddressInput("create"),
+  addressController.createSelf
+);
+
+router.get(
+  "/me/addresses",
+  verifyPermission("r_usr_addr"),
+  addressController.getSelf
+);
+
+router.patch(
+  "/me/addresses/:id",
+  verifyPermission("u_usr_addr"),
+  verifyEmptyBody,
+  inputSanitizer("address"),
+  verifyAddressInput("update"),
+  addressController.update
+);
+
+router.delete(
+  "/me/addresses/:id",
+  verifyPermission("d_usr_addr"),
+  addressController.remove
 );
 
 // --- ROUTES FOR ADMIN MANAGEMENT ---
-// Create
+
+// -- ROUTES FOR USER
 router.post(
   "/",
   verifyPermission("c_usr"),
   verifyEmptyBody,
   inputSanitizer("user"),
   verifyUserInput("create"),
-  create
-);
-router.post(
-  "/:id/addresses",
-  verifyPermission("c_usr_addr"),
-  verifyEmptyBody,
-  inputSanitizer("address"),
-  verifyAddressInput("create"),
-  createAddress
+  userController.create
 );
 
-// Read
-router.get("/:id", verifyPermission("r_usr"), get);
+router.get("/:id", verifyPermission("r_usr"), userController.get);
+
 /*
   limit, offset,
   searchTerm,
   isEmailVerified, isPhoneNumberVerified,
   isLocked,
-  sortBy, (createdAt, updatedAt, fullName, email, lastLogin, userBalanceCents)
+  sortBy: createdAt, updatedAt, fullName, email, lastLogin, userBalanceCents
   ...
 */
-router.get("/", verifyPermission("r_usr"), search);
-router.get("/:id/addresses", verifyPermission("r_usr_addr"), getAddresses);
+router.get("/", verifyPermission("r_usr"), userController.search);
 
-// Update
 router.patch(
   "/email/:id",
   verifyPermission("u_usr"),
   verifyEmptyBody,
   inputSanitizer("user"),
   verifyUserInput("update email"),
-  updateEmail
+  userController.updateEmail
 );
+
 router.patch(
   "/phone-number/:id",
   verifyPermission("u_usr"),
   verifyEmptyBody,
   verifyUserInput("update phone number"),
-  updatePhoneNumber
+  userController.updatePhoneNumber
 );
+
 router.patch(
   "/:id",
   verifyPermission("u_usr"),
   verifyEmptyBody,
   inputSanitizer("user"),
   verifyUserInput("update"),
-  updateGeneralInfo
+  userController.updateGeneralInfo
 );
+
+router.delete("/:id", verifyPermission("d_usr"), userController.remove);
+
+// -- ROUTES FOR ADDRESS
+router.post(
+  "/:id/addresses",
+  verifyPermission("c_usr_addr"),
+  verifyEmptyBody,
+  inputSanitizer("address"),
+  verifyAddressInput("create"),
+  addressController.create
+);
+
+router.get(
+  "/:id/addresses",
+  verifyPermission("r_usr_addr"),
+  addressController.get
+);
+
 router.patch(
-  "/addresses/:id",
+  "/:userId/addresses/:id",
   verifyPermission("u_usr_addr"),
   verifyEmptyBody,
   inputSanitizer("address"),
   verifyAddressInput("update"),
-  updateAddress
+  addressController.update
 );
 
-// Delete
-router.delete("/:id", verifyPermission("d_usr"), remove);
-router.delete("/addresses/:id", verifyPermission("d_usr_addr"), removeAddress);
+router.delete(
+  "/:userId/addresses/:id",
+  verifyPermission("d_usr_addr"),
+  addressController.remove
+);
 
 export default router;

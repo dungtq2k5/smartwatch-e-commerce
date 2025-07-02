@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
-const variationSchema = new mongoose.Schema(
+const modelVariationSchema = new mongoose.Schema(
   {
-    productVariationId: {
+    productModelId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "ProductVariation",
+      ref: "ProductModel",
       required: true,
     },
     type: {
@@ -81,15 +81,23 @@ const variationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-variationSchema.index(
-  { productVariationId: 1, type: 1, name: 1, colorHex: 1 },
+modelVariationSchema.index(
+  { productModelId: 1, type: 1, name: 1 },
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
   }
 );
 
-variationSchema.pre("save", function (next) {
+modelVariationSchema.index(
+  { productModelId: 1, type: 1, colorHex: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isDeleted: false },
+  }
+);
+
+modelVariationSchema.pre("save", function (next) {
   if (this.isModified("stockQuantity") && !this.isNew) {
     const modifiedPaths = this.modifiedPaths();
     if (modifiedPaths.length === 1 && modifiedPaths[0] === "stockQuantity") {
@@ -99,5 +107,5 @@ variationSchema.pre("save", function (next) {
   next();
 });
 
-const Variation = mongoose.model("Variation", variationSchema);
-export default Variation;
+const ModelVariation = mongoose.model("ModelVariation", modelVariationSchema);
+export default ModelVariation;

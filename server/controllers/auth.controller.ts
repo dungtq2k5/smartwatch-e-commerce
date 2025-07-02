@@ -73,23 +73,20 @@ export async function signup(
     const roleAssignment = await assignDefaultBuyerRole(session);
     const hashedPassword = await bcrypt.hash(password, HASH_SALT);
     const verificationCode = genVerificationCode();
-    const [user] = await User.create(
-      [
+    const user = new User({
+      fullName,
+      email,
+      phoneNumber,
+      password: hashedPassword,
+      roles: [
         {
-          fullName,
-          email: email,
-          password: hashedPassword,
-          phoneNumber: phoneNumber,
-          roles: [
-            {
-              id: roleAssignment?.roleId,
-              assignedBy: roleAssignment?.assignedBy,
-            },
-          ],
+          id: roleAssignment.roleId,
+          assignedBy: roleAssignment.assignedBy,
         },
       ],
-      { session }
-    );
+    });
+
+    await user.save({ session });
 
     // Save OTP for verification
     await Otp.create(
@@ -328,25 +325,22 @@ export async function authByGoogle(
     if (!user) {
       const roleAssignment = await assignDefaultBuyerRole(session);
       const hashedPassword = await bcrypt.hash(genRandomPassword(), HASH_SALT);
-      const [newUser] = await User.create(
-        [
+      const newUser = new User({
+        fullName,
+        avatarUrl,
+        email,
+        isEmailVerified: true, // Automatically verify email for Google users
+        password: hashedPassword,
+        lastLogin: new Date(),
+        roles: [
           {
-            fullName,
-            avatarUrl,
-            email,
-            isEmailVerified: true, // Automatically verify email for Google users
-            password: hashedPassword,
-            lastLogin: new Date(),
-            roles: [
-              {
-                id: roleAssignment.roleId,
-                assignedBy: roleAssignment.assignedBy,
-              },
-            ],
+            id: roleAssignment.roleId,
+            assignedBy: roleAssignment.assignedBy,
           },
         ],
-        { session }
-      );
+      });
+
+      await newUser.save({ session });
 
       await session.commitTransaction();
 

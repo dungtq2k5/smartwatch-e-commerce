@@ -15,14 +15,6 @@ const productSchema = new mongoose.Schema(
       ref: "ProductBrand",
       required: true,
     },
-    model: {
-      type: String,
-      required: true,
-      index: {
-        unique: true,
-        partialFilterExpression: { isDeleted: false },
-      },
-    },
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ProductCategory",

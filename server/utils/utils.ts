@@ -3,7 +3,20 @@ import { VERIFICATION_CODE_LENGTH } from "../../common/configs.common";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "./types";
 import { JWT_NAME, JWT_TTL } from "../configs/configs";
-import { AdminUserAddressResponse, AdminUserResponse, RoleResponse, UserAddressResponse, UserCartResponse, UserResponse } from "../../common/types.common";
+import {
+  AdminUserAddressResponse,
+  AdminUserResponse,
+  ProductBrandResponse,
+  ProductCategoryResponse,
+  ProductOsResponse,
+  ProductResponse,
+  ProductModelResponse,
+  RoleResponse,
+  UserAddressResponse,
+  UserCartResponse,
+  UserResponse,
+  ModelVariationResponse,
+} from "../../common/types.common";
 import { Types } from "mongoose";
 
 export function isValidUrl(url: any): boolean {
@@ -89,7 +102,10 @@ export function getJWTPayload(token: any): JwtPayload | false {
   if (typeof token !== "string") return false;
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET_KEY!) as JwtPayload;
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET_KEY!
+    ) as JwtPayload;
 
     return payload;
   } catch (_) {
@@ -118,7 +134,7 @@ export function formatAdminUserResponse(user: any): AdminUserResponse {
   return {
     ...formatUserResponse(user),
     isLocked: user.isLocked,
-  }
+  };
 }
 
 export function formatRoleResponse(role: any): RoleResponse {
@@ -151,14 +167,16 @@ export function formatUserAddressResponse(address: any): UserAddressResponse {
     isDefault: address.isDefault,
     createdAt: address.createdAt.toISOString(),
     updatedAt: address.updatedAt.toISOString(),
-  }
+  };
 }
 
-export function formatAdminUserAddressResponse(address: any): AdminUserAddressResponse {
+export function formatAdminUserAddressResponse(
+  address: any
+): AdminUserAddressResponse {
   return {
     ...formatUserAddressResponse(address),
     userId: address.userId.toString(),
-  }
+  };
 }
 
 export function formatUserCartResponse(cart: any): UserCartResponse {
@@ -170,8 +188,118 @@ export function formatUserCartResponse(cart: any): UserCartResponse {
   };
 }
 
+export function formatProductResponse(product: any): ProductResponse {
+  return {
+    id: product._id.toString(),
+    name: product.name,
+    brandId: product.brandId.toString(),
+    categoryId: product.categoryId.toString(),
+    imageUrls: product.imageUrls,
+    description: product.description,
+    createdBy: product.createdBy.toString(),
+    createdAt: product.createdAt.toISOString(),
+    updatedAt: product.updatedAt.toISOString(),
+    stopSelling: product.stopSelling,
+  };
+}
+
+export function formatProductBrandResponse(brand: any): ProductBrandResponse {
+  return {
+    id: brand._id.toString(),
+    name: brand.name,
+    createdBy: brand.createdBy.toString(),
+    createdAt: brand.createdAt.toISOString(),
+    updatedAt: brand.updatedAt.toISOString(),
+  };
+}
+
+export function formatProductCategoryResponse(
+  category: any
+): ProductCategoryResponse {
+  return formatProductBrandResponse(category);
+}
+
+export function formatProductOsResponse(os: any): ProductOsResponse {
+  return formatProductBrandResponse(os);
+}
+
+export function formatProductModelResponse(
+  model: any
+): ProductModelResponse {
+  return {
+    id: model._id.toString(),
+    productId: model.productId.toString(),
+    model: model.model,
+    name: model.name,
+    watchSizeMm: model.watchSizeMm,
+    priceCents: model.priceCents,
+    basePriceCents: model.basePriceCents,
+    imageUrls: model.imageUrls,
+    displaySizeMm: model.displaySizeMm,
+    displayType: model.displayType,
+    resolutionHPx: model.resolutionHPx,
+    resolutionWPx: model.resolutionWPx,
+    ramBytes: model.ramBytes,
+    romBytes: model.romBytes,
+    osId: model.osId.toString(),
+    connectivities: model.connectivities,
+    batteryLifeMah: model.batteryLifeMah,
+    waterResistanceValue: model.waterResistanceValue,
+    waterResistanceUnit: model.waterResistanceUnit,
+    sensors: model.sensors,
+    caseMaterial: model.caseMaterial,
+    weightMg: model.weightMg,
+    releaseDate: model.releaseDate.toISOString(),
+    createdBy: model.createdBy.toString(),
+    createdAt: model.createdAt.toISOString(),
+    updatedAt: model.updatedAt.toISOString(),
+    stopSelling: model.stopSelling,
+  };
+}
+
+export function formatModelVariationResponse(variation: any): ModelVariationResponse {
+  const type = variation.type;
+  const formattedVariation: any = {};
+
+  // Common fields for all types
+  Object.assign(formattedVariation, {
+    id: variation._id.toString(),
+    productModelId: variation.productModelId.toString(),
+    type,
+    name: variation.name,
+    colorHex: variation.colorHex,
+    imageUrls: variation.imageUrls,
+    stockQuantity: variation.stockQuantity,
+    createdBy: variation.createdBy.toString(),
+    createdAt: variation.createdAt.toISOString(),
+    updatedAt: variation.updatedAt.toISOString(),
+    stopSelling: variation.stopSelling,
+  });
+
+  // Specific fields for each type
+  if (type === "color") {
+    formattedVariation.additionalPriceCents = variation.additionalPriceCents;
+  } else if (type === "band") {
+    Object.assign(formattedVariation, {
+      material: variation.material,
+      sizeMm: variation.sizeMm,
+      weightMg: variation.weightMg,
+      priceCents: variation.priceCents,
+      basePriceCents: variation.basePriceCents,
+    });
+  }
+
+  return formattedVariation;
+}
+
 export function isValidIdArray(arr: any): boolean {
   if (!Array.isArray(arr)) return false;
 
   return arr.every((id) => Types.ObjectId.isValid(id));
+}
+
+export function isArrayOfStrings(arr: any): boolean {
+  if (!Array.isArray(arr)) return false;
+
+  return arr.every((item) => typeof item === "string");
 }

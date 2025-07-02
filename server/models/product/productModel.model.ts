@@ -1,27 +1,23 @@
 import mongoose from "mongoose";
 
-const productVariationSchema = new mongoose.Schema(
+const productModelSchema = new mongoose.Schema(
   {
     productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
       required: true,
     },
+    model: {
+      type: String,
+      required: true,
+    },
     name: {
       type: String,
       required: true,
-      index: {
-        unique: true,
-        partialFilterExpression: { isDeleted: false },
-      },
     },
     watchSizeMm: {
       type: Number,
       required: true,
-      index: {
-        unique: true,
-        partialFilterExpression: { isDeleted: false },
-      },
       min: 0,
     },
     priceCents: {
@@ -72,7 +68,7 @@ const productVariationSchema = new mongoose.Schema(
       ref: "ProductOs",
       required: true,
     },
-    connectivity: {
+    connectivities: {
       type: [String],
       required: true,
     },
@@ -90,7 +86,7 @@ const productVariationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    sensor: {
+    sensors: {
       type: [String],
       required: true,
     },
@@ -105,7 +101,7 @@ const productVariationSchema = new mongoose.Schema(
     },
     releaseDate: {
       type: Date,
-      required: true,
+      default: Date.now,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -131,8 +127,21 @@ const productVariationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const ProductVariation = mongoose.model(
-  "ProductVariation",
-  productVariationSchema
+productModelSchema.index(
+  { productId: 1, model: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isDeleted: false },
+  }
 );
-export default ProductVariation;
+
+productModelSchema.index(
+  { productId: 1, watchSizeMm: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isDeleted: false },
+  }
+);
+
+const ProductModel = mongoose.model("ProductModel", productModelSchema);
+export default ProductModel;

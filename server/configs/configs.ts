@@ -71,6 +71,18 @@ export const PERMISSION_LIST = [ // 60 permissions
   { name: "update product", code: "u_product" },
   { name: "delete product", code: "d_product" },
 
+  // Product models
+  { name: "create product model", code: "c_product_model" },
+  { name: "read product model", code: "r_product_model" },
+  { name: "update product model", code: "u_product_model" },
+  { name: "delete product model", code: "d_product_model" },
+
+  // Product model variations
+  { name: "create model variation", code: "c_model_variation" },
+  { name: "read model variation", code: "r_model_variation" },
+  { name: "update model variation", code: "u_model_variation" },
+  { name: "delete model variation", code: "d_model_variation" },
+
   // Product categories
   { name: "create product category", code: "c_product_cat" },
   { name: "read product category", code: "r_product_cat" },
@@ -88,12 +100,6 @@ export const PERMISSION_LIST = [ // 60 permissions
   { name: "read product os", code: "r_product_os" },
   { name: "update product os", code: "u_product_os" },
   { name: "delete product os", code: "d_product_os" },
-
-  // Product variations (include variation colors and variation bands)
-  { name: "create product variation", code: "c_product_variation" },
-  { name: "read product variation", code: "r_product_variation" },
-  { name: "update product variation", code: "u_product_variation" },
-  { name: "delete product variation", code: "d_product_variation" },
 
   // GRN (Goods Receipt Note)
   { name: "create grn", code: "c_grn" },

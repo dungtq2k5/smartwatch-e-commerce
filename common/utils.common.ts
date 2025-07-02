@@ -1,5 +1,7 @@
 import {
   PASSWORD_MIN_LENGTH,
+  PRODUCT_NAME_MAX_LENGTH,
+  PRODUCT_NAME_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "./configs.common.ts";
@@ -120,6 +122,16 @@ export function isValidVnPhoneNumber(phoneNumber: any): boolean {
   return phoneRegex.test(phoneNumber);
 }
 
+export function isValidProductName(productName: any): boolean {
+  if (typeof productName !== "string") return false;
+
+  // Product name should be a non-empty string without emojis
+  if (containsEmoji(productName)) return false;
+
+  // Product name should not be empty and should not exceed 100 characters
+  return productName.length > PRODUCT_NAME_MIN_LENGTH && productName.length <= PRODUCT_NAME_MAX_LENGTH;
+}
+
 export function convertToE164(phoneNumber: string): string {
   // Convert Vietnamese phone number to E.164 format
   // E.164 format for Vietnam is +84 followed by the phone number without the leading 0
@@ -135,4 +147,92 @@ export function isStringArray(arr: any): boolean {
 
   // Check if every element in the array is a string
   return arr.every((item) => typeof item === "string");
+}
+
+/*
+// Count element frequencies
+function getFrequencyMap<T>(arr: T[]): Map<T, number> {
+  const frequencyMap = new Map<T, number>();
+  for (const item of arr) {
+    frequencyMap.set(item, (frequencyMap.get(item) || 0) + 1);
+  }
+  return frequencyMap;
+}
+
+// Compare of two array are equal no matter the order of elements
+export function compareArrays<T>(arrayA: T[], arrayB: T[]): boolean {
+  if (arrayA.length !== arrayB.length) return false;
+
+  const frequencyA = getFrequencyMap<T>(arrayA);
+  const frequencyB = getFrequencyMap<T>(arrayB);
+
+  if (frequencyA.size !== frequencyB.size) return false;
+
+  for (const [key, countA] of frequencyA) {
+    const countB = frequencyB.get(key);
+    if (countB === undefined || countB !== countA) return false;
+  }
+
+  return true;
+}
+
+// Finds elements that are different between two arrays, considering frequencies.
+// Example: arrA = [a, b, c, q, q], arrB = [a, b, c, d, e] returns [q, q, d, e].
+// diffFromA: return items which A has but B doesn't have. Example: arrA = [a, b, c, q, q], arrB = [a, b, c, d, e] returns [q, q].
+// diffFromB: return items which B has but A doesn't have. Example: arrA = [a, b, c, q, q], arrB = [a, b, c, d, e] returns [d, e].
+export function getArrayDifferences<T>(
+  arrayA: T[],
+  arrayB: T[],
+  diffFromA: boolean = true,
+  diffFromB: boolean = true
+): T[] {
+  const differences: T[] = [];
+
+  const frequencyA = getFrequencyMap<T>(arrayA);
+  const frequencyB = getFrequencyMap<T>(arrayB);
+
+  // Check elements in arrayA
+  if (diffFromA) {
+    for (const [item, countA] of frequencyA) {
+      const countB = frequencyB.get(item) || 0;
+      if (countA > countB) {
+        for (let i = 0; i < countA - countB; i++) {
+          differences.push(item);
+        }
+      }
+    }
+  }
+
+  // Check elements in arrayB (for those not fully accounted for by arrayA's check)
+  if (diffFromB) {
+    for (const [item, countB] of frequencyB) {
+      const countA = frequencyA.get(item) || 0;
+      if (countB > countA) {
+        for (let i = 0; i < countB - countA; i++) {
+          differences.push(item);
+        }
+      }
+    }
+  }
+
+  return differences;
+}
+*/
+
+export function isValidDateTimeString(dateTimeString: any): boolean {
+  if (typeof dateTimeString !== "string") return false;
+
+  // Check if the string is a valid date-time format
+  const date = new Date(dateTimeString);
+  return !isNaN(date.getTime());
+}
+
+export function isValidHexColor(colorCode: any): boolean {
+  if (typeof colorCode !== "string") return false;
+
+  // This regex matches hex color codes of length 3, 4, 6, or 8,
+  // preceded by a hash (#).
+  // It supports formats like #rgb, #rgba, #rrggbb, and #rrggbbaa.
+  const hexColorRegex = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+  return hexColorRegex.test(colorCode);
 }

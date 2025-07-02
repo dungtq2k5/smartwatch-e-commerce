@@ -15,7 +15,6 @@ import {
 
 const router = express.Router();
 
-// Create
 router.post(
   "/",
   verifyPermission("c_usr_role"),
@@ -25,11 +24,9 @@ router.post(
   create
 );
 
-// Read
 router.get("/:id", verifyPermission("r_usr_role"), get);
 router.get("/", verifyPermission("r_usr_role"), getAll);
 
-// Update
 router.patch(
   "/:id",
   verifyPermission("u_usr_role"),
@@ -39,7 +36,6 @@ router.patch(
   update
 );
 
-// Delete
 router.delete("/:id", verifyPermission("d_usr_role"), remove);
 
 export default router;

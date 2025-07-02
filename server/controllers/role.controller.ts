@@ -54,16 +54,13 @@ export async function create(
       }));
     }
 
-    const [newRole] = await Role.create(
-      [
-        {
-          name,
-          permissions,
-          createdBy: reqUserId,
-        },
-      ],
-      { session }
-    );
+    const newRole = new Role({
+      name,
+      permissions,
+      createdBy: reqUserId,
+    });
+
+    await newRole.save({ session });
 
     await session.commitTransaction();
 

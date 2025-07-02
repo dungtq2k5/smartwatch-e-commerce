@@ -52,8 +52,8 @@ export type AdminUserResponse = BaseUserResponse & {
 };
 
 export type AdminUserListResponse = {
-  users: AdminUserResponse[];
   total: number;
+  users: AdminUserResponse[];
   offset: number;
   limit: number;
 };
@@ -218,8 +218,8 @@ export type RoleResponse = {
 };
 
 export type RoleListResponse = {
-  roles: RoleResponse[];
   total: number;
+  roles: RoleResponse[];
 };
 
 export type RoleUpdate = {
@@ -227,7 +227,154 @@ export type RoleUpdate = {
   permissionIds?: string[];
 };
 
+export type ProductCreate = {
+  name: string;
+  brandId: string;
+  categoryId: string;
+  description: string;
+  imageUrls?: string[];
+  stopSelling?: boolean;
+};
+
+export type ProductUpdate = Optional<ProductCreate>;
+
+export type ProductResponse = {
+  id: string;
+  name: string;
+  brandId: string;
+  categoryId: string;
+  description: string;
+  imageUrls: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  stopSelling: boolean;
+};
+
+export type ProductListResponse = {
+  total: number;
+  products: ProductResponse[];
+  offset: number;
+  limit: number;
+};
+
+export type ProductBrandCreate = {
+  name: string;
+};
+
+export type ProductBrandUpdate = Optional<ProductBrandCreate>;
+
+export type ProductBrandResponse = {
+  id: string;
+  name: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+export type ProductBrandListResponse = {
+  total: number;
+  brands: ProductBrandResponse[];
+  offset: number;
+  limit: number;
+};
+
+export type ProductCategoryCreate = ProductBrandCreate;
+export type ProductCategoryUpdate = Optional<ProductCategoryCreate>;
+export type ProductCategoryResponse = ProductBrandResponse;
+export type ProductCategoryListResponse = {
+  total: number;
+  categories: ProductCategoryResponse[];
+  offset: number;
+  limit: number;
+};
+
+export type ProductOsCreate = ProductBrandCreate;
+export type ProductOsUpdate = Optional<ProductOsCreate>;
+export type ProductOsResponse = ProductBrandResponse;
+export type ProductOsListResponse = {
+  total: number;
+  osList: ProductOsResponse[];
+  offset: number;
+  limit: number;
+};
+
+export type ProductModelCreate = {
+  model: string;
+  name: string;
+  watchSizeMm: number;
+  priceCents: number;
+  basePriceCents: number;
+  imageUrls?: string[];
+  displaySizeMm: number;
+  displayType: string;
+  resolutionHPx: number;
+  resolutionWPx: number;
+  ramBytes: number;
+  romBytes: number;
+  osId: string;
+  connectivities: string[];
+  batteryLifeMah: number;
+  waterResistanceValue: number;
+  waterResistanceUnit: string;
+  sensors: string[];
+  caseMaterial: string;
+  weightMg: number;
+  releaseDate?: string;
+  stopSelling?: boolean;
+};
+
+export type ProductModelUpdate = Optional<ProductModelCreate>;
+
+export type ProductModelResponse = NoneOptional<ProductModelCreate> & {
+  id: string;
+  productId: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BaseModelVariationCreate = {
+  name: string;
+  colorHex: string;
+  imageUrls?: string[];
+  stopSelling?: boolean;
+};
+
+export type ModelVariationColor = {
+  additionalPriceCents?: number;
+};
+
+export type ModelVariationBand = {
+  material: string;
+  sizeMm: number;
+  weightMg: number;
+  priceCents: number;
+  basePriceCents: number;
+};
+
+export type ModelVariationCreate<T = ModelVariationColor | ModelVariationBand> =
+  BaseModelVariationCreate & T;
+
+export type ModelVariationResponse = NoneOptional<BaseModelVariationCreate> & {
+  id: string;
+  productModelId: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  stopSelling: boolean;
+} & (
+    | (NoneOptional<ModelVariationColor> & { type: "color" })
+    | (NoneOptional<ModelVariationBand> & { type: "band" })
+  );
+
+export type ModelVariationUpdate<T = ModelVariationColor | ModelVariationBand> =
+  Optional<BaseModelVariationCreate> & Optional<T>;
+
 // --- HELPER TYPES ---
 export type Optional<T> = {
   [K in keyof T]?: T[K];
+};
+
+export type NoneOptional<T> = {
+  [K in keyof T]-?: T[K];
 };

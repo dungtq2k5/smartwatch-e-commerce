@@ -5,6 +5,7 @@ import {
   isValidEmail,
   isValidPassword,
   isValidVnPhoneNumber,
+  removeAllSpaces,
 } from "../../../common/utils.common";
 import { isValidIdArray, isValidImgUrl } from "..//utils";
 import { PASSWORD_HINT_MESSAGE } from "../../../common/configs.common";
@@ -23,7 +24,7 @@ function sanitizeUserInput(
     req.body.fullName = removeOddSpaces(fullName);
   }
   if (typeof email === "string") {
-    req.body.email = removeOddSpaces(email).toLowerCase();
+    req.body.email = removeAllSpaces(email).toLowerCase();
   }
   if (typeof type === "string") {
     req.body.type = removeOddSpaces(type);
@@ -395,6 +396,7 @@ export function verifyAddressInput(
             cityProvince,
             phoneNumber,
           } = req.body;
+
           if (typeof name !== "string" || !name) {
             errors.push("name is required.");
           }
@@ -459,12 +461,11 @@ export function verifyAddressInput(
           ) {
             errors.push("cityProvince must be a string.");
           }
-          if (phoneNumber !== undefined) {
-            if (!phoneNumber) {
-              errors.push("phoneNumber must be a string.");
-            } else if (!isValidVnPhoneNumber(phoneNumber)) {
-              errors.push("phoneNumber is invalid.");
-            }
+          if (
+            phoneNumber !== undefined &&
+            !isValidVnPhoneNumber(phoneNumber)
+          ) {
+            errors.push("phoneNumber is invalid.");
           }
           break;
         }
