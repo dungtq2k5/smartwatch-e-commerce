@@ -65,9 +65,9 @@ export async function seedGrnStatuses(
       return;
     }
     const grnStatuses = [
-      { lookupId: 1, name: "completed" },
-      { lookupId: 2, name: "reversal" },
-      { lookupId: 3, name: "draft" },
+      { name: "completed" },
+      { name: "reversal" },
+      { name: "draft" },
     ];
     await GrnStatus.insertMany(grnStatuses, { session });
     console.log("🫘 ", "GrnStatuses seeded successfully!");
@@ -91,52 +91,42 @@ export async function seedInventoryMovementTypes(
     }
     const movementTypes = [
       {
-        lookupId: 1,
         name: "goods receipt",
         description: "Incoming stock from supplier.",
       },
       {
-        lookupId: 2,
         name: "grn cancellation",
         description: "Reversal of a good receipt notes.",
       },
       {
-        lookupId: 3,
         name: "sales out",
         description: "Outgoing stock due to a sale.",
       },
       {
-        lookupId: 4,
         name: "stock adjustment",
         description: "Manually increase/decrease in stock.",
       },
       {
-        lookupId: 5,
         name: "stock transfer",
         description: "Transfer of stock between locations.",
       },
       {
-        lookupId: 6,
         name: "damaged stock",
         description: "Stock that is damaged and needs to be written off.",
       },
       {
-        lookupId: 7,
         name: "return to supplier",
         description: "Returning stock to the supplier.",
       },
       {
-        lookupId: 8,
         name: "return from customer",
         description: "Stock returned from a customer.",
       },
       {
-        lookupId: 9,
         name: "stock audit",
         description: "Stock audit adjustments.",
       },
       {
-        lookupId: 10,
         name: "other",
         description: "Any other type of inventory movement.",
       },
@@ -162,15 +152,15 @@ export async function seedDeliveryStates(
       return;
     }
     const deliveryStates = [
-      { lookupId: 1, name: "order places" },
-      { lookupId: 2, name: "order confirmed" },
-      { lookupId: 3, name: "processing" },
-      { lookupId: 4, name: "shipped" },
-      { lookupId: 5, name: "out for delivery" },
-      { lookupId: 6, name: "delivered" },
-      { lookupId: 7, name: "received" },
-      { lookupId: 8, name: "cancelled" },
-      { lookupId: 9, name: "returned" },
+      { name: "order places" },
+      { name: "order confirmed" },
+      { name: "processing" },
+      { name: "shipped" },
+      { name: "out for delivery" },
+      { name: "delivered" },
+      { name: "received" },
+      { name: "cancelled" },
+      { name: "returned" },
     ];
     await DeliveryState.insertMany(deliveryStates, { session });
     console.log("🫘 ", "DeliveryStates seeded successfully!");
@@ -193,12 +183,12 @@ export async function seedPaymentMethods(
       return;
     }
     const paymentMethods = [
-      { lookupId: 1, name: "cash" },
-      { lookupId: 2, name: "credit card" },
-      { lookupId: 3, name: "debit card" },
-      { lookupId: 4, name: "bank transfer" },
-      { lookupId: 5, name: "mobile payment" },
-      { lookupId: 6, name: "user balance" },
+      { name: "cash" },
+      { name: "credit card" },
+      { name: "debit card" },
+      { name: "bank transfer" },
+      { name: "mobile payment" },
+      { name: "user balance" },
     ];
     await PaymentMethod.insertMany(paymentMethods, { session });
     console.log("🫘 ", "PaymentMethods seeded successfully!");
@@ -221,11 +211,11 @@ export async function seedPaymentStatus(
       return;
     }
     const paymentStatuses = [
-      { lookupId: 1, name: "pending" },
-      { lookupId: 2, name: "paid" },
-      { lookupId: 3, name: "failed" },
-      { lookupId: 4, name: "refunded" },
-      { lookupId: 5, name: "cancelled" },
+      { name: "pending" },
+      { name: "paid" },
+      { name: "failed" },
+      { name: "refunded" },
+      { name: "cancelled" },
     ];
     await PaymentStatus.insertMany(paymentStatuses, { session });
     console.log("🫘 ", "PaymentStatuses seeded successfully!");
@@ -248,10 +238,10 @@ export async function seedInstanceConditions(
       return;
     }
     const instanceConditions = [
-      { lookupId: 1, name: "new" },
-      { lookupId: 2, name: "used" },
-      { lookupId: 3, name: "refurbished" },
-      { lookupId: 4, name: "defective" },
+      { name: "new" },
+      { name: "used" },
+      { name: "refurbished" },
+      { name: "defective" },
     ];
     await InstanceCondition.insertMany(instanceConditions, { session });
     console.log("🫘 ", "InstanceConditions seeded successfully!");
@@ -274,11 +264,11 @@ export async function seedRefundStatus(
       return;
     }
     const refundStatuses = [
-      { lookupId: 1, name: "pending" },
-      { lookupId: 2, name: "refunded" },
-      { lookupId: 3, name: "failed" },
-      { lookupId: 4, name: "canceled" },
-      { lookupId: 5, name: "rejected" },
+      { name: "pending" },
+      { name: "refunded" },
+      { name: "failed" },
+      { name: "canceled" },
+      { name: "rejected" },
     ];
     await RefundStatus.insertMany(refundStatuses, { session });
     console.log("🫘 ", "RefundStatuses seeded successfully!");
@@ -301,13 +291,13 @@ export async function seedReturnStatuses(
       return;
     }
     const returnStatuses = [
-      { lookupId: 1, name: "pending" },
-      { lookupId: 2, name: "received" },
-      { lookupId: 3, name: "approved" },
-      { lookupId: 4, name: "declined" },
-      { lookupId: 5, name: "refund pending" },
-      { lookupId: 6, name: "refunded" },
-      { lookupId: 7, name: "cancelled" },
+      { name: "pending" },
+      { name: "received" },
+      { name: "approved" },
+      { name: "declined" },
+      { name: "refund pending" },
+      { name: "refunded" },
+      { name: "cancelled" },
     ];
     await ReturnStatus.insertMany(returnStatuses, { session });
     console.log("🫘 ", "ReturnStatuses seeded successfully!");
@@ -330,12 +320,12 @@ export async function seedReturnReasons(
       return;
     }
     const returnReasons = [
-      { lookupId: 1, name: "defective item" },
-      { lookupId: 2, name: "wrong item" },
-      { lookupId: 3, name: "item not as described" },
-      { lookupId: 4, name: "item not fit" },
-      { lookupId: 5, name: "quality issues" },
-      { lookupId: 6, name: "other" },
+      { name: "defective item" },
+      { name: "wrong item" },
+      { name: "item not as described" },
+      { name: "item not fit" },
+      { name: "quality issues" },
+      { name: "other" },
     ];
     await ReturnReason.insertMany(returnReasons, { session });
     console.log("🫘 ", "ReturnReasons seeded successfully!");

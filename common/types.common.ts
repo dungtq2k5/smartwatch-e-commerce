@@ -370,6 +370,33 @@ export type ModelVariationResponse = NoneOptional<BaseModelVariationCreate> & {
 export type ModelVariationUpdate<T = ModelVariationColor | ModelVariationBand> =
   Optional<BaseModelVariationCreate> & Optional<T>;
 
+export type VariationInstanceCreate = {
+  supplierSerialNumber: string;
+  supplierImeiNumber?: string;
+  conditionId?: string;
+  isActive?: boolean;
+};
+
+export type VariationInstanceResponse = {
+  id: string;
+  sku: string;
+  modelVariationId: string;
+  supplierSerialNumber: string;
+  supplierImeiNumber?: string;
+  conditionId: string;
+  isActive: boolean;
+  inactiveAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type VariationInstanceUpdate = Omit<
+  Optional<VariationInstanceCreate>,
+  "supplierImeiNumber"
+> & {
+  supplierImeiNumber?: string | null;
+};
+
 // --- HELPER TYPES ---
 export type Optional<T> = {
   [K in keyof T]?: T[K];

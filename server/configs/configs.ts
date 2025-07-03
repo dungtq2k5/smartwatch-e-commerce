@@ -83,6 +83,12 @@ export const PERMISSION_LIST = [ // 60 permissions
   { name: "update model variation", code: "u_model_variation" },
   { name: "delete model variation", code: "d_model_variation" },
 
+  // Product variation instances
+  { name: "create variation instance", code: "c_variation_instance" },
+  { name: "read variation instance", code: "r_variation_instance" },
+  { name: "update variation instance", code: "u_variation_instance" },
+  { name: "delete variation instance", code: "d_variation_instance" },
+
   // Product categories
   { name: "create product category", code: "c_product_cat" },
   { name: "read product category", code: "r_product_cat" },

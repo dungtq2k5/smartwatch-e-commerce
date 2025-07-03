@@ -6,10 +6,12 @@ import {
   verifyProductInput,
   verifyProductModelInput,
   verifyModelVariationInput,
+  verifyVariationInstanceInput,
 } from "../../utils/middlewares/product.middleware";
 import * as productController from "../../controllers/product/product.controller";
 import * as modelController from "../../controllers/product/productModel.controller";
 import * as variationController from "../../controllers/product/modelVariation.controller";
+import * as instanceController from "../../controllers/product/variationInstance.controller";
 
 const router = express.Router();
 
@@ -80,7 +82,7 @@ router.delete(
   modelController.remove
 );
 
-// --- PRODUCT MODEL VARIATION ROUTES ---
+// --- MODEL VARIATION ROUTES ---
 
 // -- COLOR VARIATION
 router.post(
@@ -120,7 +122,7 @@ router.patch(
   variationController.updateBand
 );
 
-// -- BOTH VARIATION
+// -- BOTH VARIATIONS
 router.get(
   "/:productId/models/:modelId/variations/:id",
   verifyPermission("r_model_variation"),
@@ -131,6 +133,29 @@ router.delete(
   "/:productId/models/:modelId/variations/:id",
   verifyPermission("d_model_variation"),
   variationController.remove
+);
+
+// --- VARIATION INSTANCES ROUTES ---
+router.post(
+  "/:productId/models/:modelId/variations/:variationId/instances",
+  verifyPermission("c_variation_instance"),
+  verifyEmptyBody,
+  verifyVariationInstanceInput("create"),
+  instanceController.create
+);
+
+router.get(
+  "/:productId/models/:modelId/variations/:variationId/instances/:id",
+  verifyPermission("r_variation_instance"),
+  instanceController.get
+);
+
+router.patch(
+  "/:productId/models/:modelId/variations/:variationId/instances/:id",
+  verifyPermission("u_variation_instance"),
+  verifyEmptyBody,
+  verifyVariationInstanceInput("update"),
+  instanceController.update
 );
 
 export default router;

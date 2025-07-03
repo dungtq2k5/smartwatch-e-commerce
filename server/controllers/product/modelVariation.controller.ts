@@ -26,7 +26,7 @@ export async function createColor(
   const { productId, modelId } = req.params;
 
   try {
-    // Check productId exists
+    // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found."));
     }
@@ -35,7 +35,7 @@ export async function createColor(
       return next(errorHandler(404, "Product not found."));
     }
 
-    // Check modelId exists
+    // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
       return next(errorHandler(404, "Product model not found."));
     }
@@ -95,7 +95,7 @@ export async function updateColor(
   const { productId, modelId, id } = req.params;
 
   try {
-    // Check productId exists
+    // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found."));
     }
@@ -104,7 +104,7 @@ export async function updateColor(
       return next(errorHandler(404, "Product not found."));
     }
 
-    // Check modelId exists
+    // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
       return next(errorHandler(404, "Product model not found."));
     }
@@ -203,7 +203,7 @@ export async function createBand(
   const { productId, modelId } = req.params;
 
   try {
-    // Check productId exists
+    // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found."));
     }
@@ -212,7 +212,7 @@ export async function createBand(
       return next(errorHandler(404, "Product not found."));
     }
 
-    // Check modelId exists
+    // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
       return next(errorHandler(404, "Product model not found."));
     }
@@ -283,7 +283,7 @@ export async function updateBand(
   const { productId, modelId, id } = req.params;
 
   try {
-    // Check productId exists
+    // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found."));
     }
@@ -292,7 +292,7 @@ export async function updateBand(
       return next(errorHandler(404, "Product not found."));
     }
 
-    // Check modelId exists
+    // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
       return next(errorHandler(404, "Product model not found."));
     }
@@ -395,7 +395,7 @@ export async function get(
   const { productId, modelId, id } = req.params;
 
   try {
-    // Check productId exists
+    // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found."));
     }
@@ -404,7 +404,7 @@ export async function get(
       return next(errorHandler(404, "Product not found."));
     }
 
-    // Check modelId exists
+    // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
       return next(errorHandler(404, "Product model not found."));
     }
@@ -449,7 +449,7 @@ export async function remove(
   const { productId, modelId, id } = req.params;
 
   try {
-    // Check productId exists
+    // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found."));
     }
@@ -458,7 +458,7 @@ export async function remove(
       return next(errorHandler(404, "Product not found."));
     }
 
-    // Check modelId exists
+    // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
       return next(errorHandler(404, "Product model not found."));
     }

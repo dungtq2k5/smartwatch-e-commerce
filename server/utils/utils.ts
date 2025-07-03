@@ -16,8 +16,10 @@ import {
   UserCartResponse,
   UserResponse,
   ModelVariationResponse,
+  VariationInstanceResponse,
 } from "../../common/types.common";
 import { Types } from "mongoose";
+import ModelVariation from "../models/product/modelVariation.model";
 
 export function isValidUrl(url: any): boolean {
   if (typeof url !== "string") return false;
@@ -113,6 +115,84 @@ export function getJWTPayload(token: any): JwtPayload | false {
   }
 }
 
+export function isValidIdArray(arr: any): boolean {
+  if (!Array.isArray(arr)) return false;
+
+  return arr.every((id) => Types.ObjectId.isValid(id));
+}
+
+export function isArrayOfStrings(arr: any): boolean {
+  if (!Array.isArray(arr)) return false;
+
+  return arr.every((item) => typeof item === "string");
+}
+
+/*
+SKU format: [BRAND_CODE]-[MODEL_NAME]-[SIZE_MM]-[VAR_TYPE_CODE]-[VAR_NAME_CODE]-[UNIQUE_ID]
+- BRAND_CODE: A 3-letter abbreviation of the product's brand name (e.g., APL for Apple).
+- MODEL_NAME: The model from the ProductModel, sanitized (e.g., "Series 9" becomes "S9").
+- SIZE_MM: The watchSizeMm from the ProductModel (e.g., 45).
+- VAR_TYPE_CODE: A short code for the variation type (CLR for color, BND for band).
+- VAR_NAME_CODE: A 3-letter abbreviation of the variation's name (e.g., MID for Midnight).
+- UNIQUE_ID: A unique identifier to prevent collisions. A combination of the current timestamp and a random string is a reliable method.
+-> Example SKU: APL-S9-45-CLR-MID-L9SO2A1
+*/
+export async function genInstanceSku(
+  variationId: Types.ObjectId
+): Promise<string> {
+  const variation = await ModelVariation.findById(variationId)
+    .populate({
+      path: "productModelId",
+      select: "model watchSizeMm productId",
+      populate: {
+        path: "productId",
+        select: "brandId",
+        populate: {
+          path: "brandId",
+          select: "name",
+        },
+      },
+    })
+    .lean();
+
+  if (!variation) {
+    throw new Error("Model variation not found for SKU generation.");
+  }
+
+  const productModel = variation.productModelId as any;
+  if (
+    !productModel ||
+    !productModel.productId ||
+    !productModel.productId.brandId
+  ) {
+    throw new Error("Incomplete product data for SKU generation.");
+  }
+
+  // 1. Brand Code (e.g., "Apple" -> "APL")
+  const brandName = productModel.productId.brandId.name;
+  const brandCode = brandName.substring(0, 3).toUpperCase();
+
+  // 2. Model Name (e.g., "Series 9" -> "S9")
+  const modelName = productModel.model.replace(/[^a-zA-Z0-9]/g, "");
+
+  // 3. Watch Size (e.g., 45)
+  const sizeMm = productModel.watchSizeMm;
+
+  // 4. Variation Type Code (e.g., "color" -> "CLR")
+  const varTypeCode = variation.type.substring(0, 3).toUpperCase();
+
+  // 5. Variation Name Code (e.g., "Midnight" -> "MID")
+  const varNameCode = variation.name.substring(0, 3).toUpperCase();
+
+  // 6. Unique ID (e.g., "L9SO2A1")
+  const uniqueId =
+    Date.now().toString(36).slice(-4).toUpperCase() +
+    Math.random().toString(36).slice(-3).toUpperCase();
+
+  return `${brandCode}-${modelName}-${sizeMm}-${varTypeCode}-${varNameCode}-${uniqueId}`;
+}
+
+// --- FORMATTING RESPONSE FUNCTIONS ---
 export function formatUserResponse(user: any): UserResponse {
   return {
     id: user._id.toString(),
@@ -223,9 +303,7 @@ export function formatProductOsResponse(os: any): ProductOsResponse {
   return formatProductBrandResponse(os);
 }
 
-export function formatProductModelResponse(
-  model: any
-): ProductModelResponse {
+export function formatProductModelResponse(model: any): ProductModelResponse {
   return {
     id: model._id.toString(),
     productId: model.productId.toString(),
@@ -257,7 +335,9 @@ export function formatProductModelResponse(
   };
 }
 
-export function formatModelVariationResponse(variation: any): ModelVariationResponse {
+export function formatModelVariationResponse(
+  variation: any
+): ModelVariationResponse {
   const type = variation.type;
   const formattedVariation: any = {};
 
@@ -292,14 +372,21 @@ export function formatModelVariationResponse(variation: any): ModelVariationResp
   return formattedVariation;
 }
 
-export function isValidIdArray(arr: any): boolean {
-  if (!Array.isArray(arr)) return false;
-
-  return arr.every((id) => Types.ObjectId.isValid(id));
-}
-
-export function isArrayOfStrings(arr: any): boolean {
-  if (!Array.isArray(arr)) return false;
-
-  return arr.every((item) => typeof item === "string");
+export function formatVariationInstanceResponse(
+  instance: any
+): VariationInstanceResponse {
+  return {
+    id: instance._id.toString(),
+    sku: instance.sku,
+    modelVariationId: instance.modelVariationId.toString(),
+    supplierSerialNumber: instance.supplierSerialNumber,
+    supplierImeiNumber: instance.supplierImeiNumber,
+    conditionId: instance.conditionId.toString(),
+    isActive: instance.isActive,
+    inactiveAt: instance.inactiveAt
+      ? instance.inactiveAt.toISOString()
+      : undefined,
+    createdAt: instance.createdAt.toISOString(),
+    updatedAt: instance.updatedAt.toISOString(),
+  };
 }

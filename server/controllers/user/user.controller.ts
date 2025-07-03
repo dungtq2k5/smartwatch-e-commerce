@@ -205,11 +205,12 @@ export async function search(
   const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
   const query: any = {};
 
-  if (req.query.searchTerm) {
+  const searchTerm = req.query.searchTerm as string;
+  if (searchTerm) {
     query.$or = [
-      { fullName: { $regex: req.query.searchTerm as string, $options: "i" } },
-      { email: { $regex: req.query.searchTerm as string, $options: "i" } },
-      { phoneNumber: { $regex: req.query.searchTerm as string } },
+      { fullName: { $regex: searchTerm, $options: "i" } },
+      { email: { $regex: searchTerm, $options: "i" } },
+      { phoneNumber: { $regex: `^${searchTerm}`, $option: "i" } },
     ];
   }
 

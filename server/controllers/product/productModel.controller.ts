@@ -184,7 +184,7 @@ export async function update(
     const model = await ProductModel.findOne({
       isDeleted: false,
       _id: modelId,
-      productId: productId,
+      productId,
     });
     if (!model) {
       return next(errorHandler(404, "Product model not found"));
@@ -221,7 +221,7 @@ export async function update(
     if (orConditions.length > 0) {
       const existingModel = await ProductModel.findOne({
         isDeleted: false,
-        productId: model.productId,
+        productId,
         $or: orConditions,
       });
       if (existingModel) {

@@ -27,7 +27,8 @@
     - Dev auth API ✅.
     - Dev user API ✅.
     - Dev roles & permissions API ✅.
-    - Dev product API 🔥.
+    - Dev product API ✅.
+    - Dev GRN API 🔥.
     - Template for email sending ❌.
     - Better user friendly when sending email or SMS (with datetime for lock/unlock) ❌.
 
