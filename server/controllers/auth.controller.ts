@@ -56,12 +56,12 @@ export async function signup(
     const orConditions: ({ email: string } | { phoneNumber: string })[] = [];
     if (email) orConditions.push({ email });
     if (phoneNumber) orConditions.push({ phoneNumber });
-    const userExists = await User.exists({
+    const existingUser = await User.exists({
       isDeleted: false,
       $or: orConditions,
-    }).session(session);
+    }).lean().session(session);
 
-    if (userExists) {
+    if (existingUser) {
       return next(
         errorHandler(
           409,

@@ -17,6 +17,7 @@ import {
   UserResponse,
   ModelVariationResponse,
   VariationInstanceResponse,
+  ProviderResponse,
 } from "../../common/types.common";
 import { Types } from "mongoose";
 import ModelVariation from "../models/product/modelVariation.model";
@@ -388,5 +389,17 @@ export function formatVariationInstanceResponse(
       : undefined,
     createdAt: instance.createdAt.toISOString(),
     updatedAt: instance.updatedAt.toISOString(),
+  };
+}
+
+export function formatProviderResponse(provider: any): ProviderResponse {
+  return {
+    id: provider._id.toString(),
+    fullName: provider.fullName,
+    email: provider.email,
+    phoneNumber: provider.phoneNumber,
+    createdBy: provider.createdBy.toString(),
+    createdAt: provider.createdAt.toISOString(),
+    updatedAt: provider.updatedAt.toISOString(),
   };
 }

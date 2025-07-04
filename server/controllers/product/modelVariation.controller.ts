@@ -58,9 +58,9 @@ export async function createColor(
       productModelId: modelId,
       type: "color",
       $or: [{ name }, { colorHex }],
-    });
+    }).lean();
     if (existingVariation) {
-      return next(errorHandler(400, "Product model variation already exists."));
+      return next(errorHandler(409, "Product model variation already exists."));
     }
 
     const reqUserId = (req["auth"] as RequestAuth).userId;
@@ -151,10 +151,10 @@ export async function updateColor(
         productModelId: modelId,
         type: "color",
         $or: orConditions,
-      });
+      }).lean();
       if (existingVariation) {
         return next(
-          errorHandler(400, "Product model variation name already exists.")
+          errorHandler(409, "Product model variation name already exists.")
         );
       }
     }
@@ -243,9 +243,9 @@ export async function createBand(
       productModelId: modelId,
       type: "band",
       $or: [{ name }, { colorHex }],
-    });
+    }).lean();
     if (existingVariation) {
-      return next(errorHandler(400, "Product model variation already exists."));
+      return next(errorHandler(409, "Product model variation already exists."));
     }
 
     const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
@@ -339,10 +339,10 @@ export async function updateBand(
         productModelId: modelId,
         type: "band",
         $or: orConditions,
-      });
+      }).lean();
       if (existingVariation) {
         return next(
-          errorHandler(400, "Product model variation name already exists.")
+          errorHandler(409, "Product model variation name already exists.")
         );
       }
     }

@@ -26,9 +26,9 @@ export async function create(
     const existingOs = await ProductOs.findOne({
       isDeleted: false,
       name,
-    });
+    }).lean();
     if (existingOs) {
-      return next(errorHandler(404, "Product os already exists."));
+      return next(errorHandler(409, "Product os already exists."));
     }
 
     // Create os
@@ -37,7 +37,7 @@ export async function create(
       name,
       createdBy: userId,
     });
-    
+
     await os.save();
 
     res.status(201).json({
@@ -101,9 +101,9 @@ export async function update(
       const existingOs = await ProductOs.findOne({
         isDeleted: false,
         name,
-      });
+      }).lean();
       if (existingOs) {
-        return next(errorHandler(404, "Product os already exists."));
+        return next(errorHandler(409, "Product os already exists."));
       }
       os.name = name;
     }

@@ -397,6 +397,24 @@ export type VariationInstanceUpdate = Omit<
   supplierImeiNumber?: string | null;
 };
 
+export type ProviderCreate = {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+};
+
+export type ProviderResponse = {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProviderUpdate = Optional<ProviderCreate>;
+
 // --- HELPER TYPES ---
 export type Optional<T> = {
   [K in keyof T]?: T[K];

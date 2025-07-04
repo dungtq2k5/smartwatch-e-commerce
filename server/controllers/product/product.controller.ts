@@ -36,19 +36,19 @@ export async function create(
     const existingProduct = await Product.findOne({
       isDeleted: false,
       name,
-    });
+    }).lean();
     if (existingProduct) {
-      return next(errorHandler(404, "Product with this name already exists."));
+      return next(errorHandler(409, "Product with this name already exists."));
     }
 
     // Check brand exists
-    const existingBrand = await ProductBrand.findById(brandId);
+    const existingBrand = await ProductBrand.findById(brandId).lean();
     if (!existingBrand || existingBrand.isDeleted) {
       return next(errorHandler(404, "Brand not found."));
     }
 
     // Check category exists
-    const existingCategory = await ProductCategory.findById(categoryId);
+    const existingCategory = await ProductCategory.findById(categoryId).lean();
     if (!existingCategory || existingCategory.isDeleted) {
       return next(errorHandler(404, "Category not found."));
     }
@@ -221,10 +221,10 @@ export async function update(
       const existingProduct = await Product.findOne({
         isDeleted: false,
         name: updatedName,
-      });
+      }).lean();
       if (existingProduct) {
         return next(
-          errorHandler(404, "Product with this name already exists.")
+          errorHandler(409, "Product with this name already exists.")
         );
       }
     }
@@ -237,7 +237,7 @@ export async function update(
       if (!Types.ObjectId.isValid(updatedBrandId)) {
         return next(errorHandler(404, "Brand not found."));
       }
-      const existingBrand = await ProductBrand.findById(updatedBrandId);
+      const existingBrand = await ProductBrand.findById(updatedBrandId).lean();
       if (!existingBrand || existingBrand.isDeleted) {
         return next(errorHandler(404, "Brand not found."));
       }
@@ -253,7 +253,7 @@ export async function update(
       }
       const existingCategory = await ProductCategory.findById(
         updatedCategoryId
-      );
+      ).lean();
       if (!existingCategory || existingCategory.isDeleted) {
         return next(errorHandler(404, "Category not found."));
       }

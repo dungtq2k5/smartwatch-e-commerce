@@ -459,7 +459,7 @@ export async function updateEmail(
       _id: { $ne: user._id }, // Exclude current user
       email: updatedEmail,
       isDeleted: false,
-    }).session(session);
+    }).lean().session(session);
     if (existingUser) {
       return next(errorHandler(409, "Email already exists."));
     }
@@ -567,7 +567,7 @@ export async function updatePhoneNumber(
       _id: { $ne: user._id }, // Exclude current user
       phoneNumber: updatedPhoneNumber,
       isDeleted: false,
-    }).session(session);
+    }).lean().session(session);
     if (existingUser) {
       return next(errorHandler(409, "Phone number already exists."));
     }
@@ -729,7 +729,7 @@ export async function updateSelfContactInfo(
       _id: { $ne: user._id }, // Exclude current user
       [type]: value,
       isDeleted: false,
-    }).session(session);
+    }).lean().session(session);
     if (existingUser) {
       return next(
         errorHandler(

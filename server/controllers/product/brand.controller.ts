@@ -26,9 +26,9 @@ export async function create(
     const existingBrand = await ProductBrand.findOne({
       isDeleted: false,
       name,
-    });
+    }).lean();
     if (existingBrand) {
-      return next(errorHandler(404, "Product brand already exists."));
+      return next(errorHandler(409, "Product brand already exists."));
     }
 
     // Create brand
@@ -101,9 +101,9 @@ export async function update(
       const existingBrand = await ProductBrand.findOne({
         isDeleted: false,
         name,
-      });
+      }).lean();
       if (existingBrand) {
-        return next(errorHandler(404, "Product brand already exists."));
+        return next(errorHandler(409, "Product brand already exists."));
       }
       brand.name = name;
     }

@@ -26,10 +26,10 @@ export async function create(
 
   try {
     // Check role exists
-    const existingRole = await Role.findOne({ name }).session(session);
+    const existingRole = await Role.findOne({ name }).lean().session(session);
     if (existingRole) {
       return next(
-        errorHandler(400, `Role with name '${name}' already exists.`)
+        errorHandler(409, `Role with name '${name}' already exists.`)
       );
     }
 
@@ -154,10 +154,10 @@ export async function update(
     const updatedName = name ? name : role.name;
 
     if (updatedName !== role.name) {
-      const existingRole = await Role.findOne({ name: updatedName });
+      const existingRole = await Role.findOne({ name: updatedName }).lean();
       if (existingRole) {
         return next(
-          errorHandler(400, `Role with name '${updatedName}' already exists.`)
+          errorHandler(409, `Role with name '${updatedName}' already exists.`)
         );
       }
       role.name = updatedName;

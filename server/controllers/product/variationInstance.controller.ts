@@ -81,9 +81,9 @@ export async function create(
     const existingInstance = await VariationInstance.findOne({
       modelVariationId: variationId,
       $or: orConditions,
-    }).session(session);
+    }).lean().session(session);
     if (existingInstance) {
-      return next(errorHandler(400, "Variation instance already exists."));
+      return next(errorHandler(409, "Variation instance already exists."));
     }
 
     // Check condition exists
@@ -326,9 +326,9 @@ export async function update(
       const existingInstance = await VariationInstance.findOne({
         modelVariationId: variationId,
         $or: orConditions,
-      });
+      }).lean();
       if (existingInstance) {
-        return next(errorHandler(400, "Variation instance already exists."));
+        return next(errorHandler(409, "Variation instance already exists."));
       }
     }
 

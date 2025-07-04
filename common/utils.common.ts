@@ -114,6 +114,17 @@ export function containsEmoji(text: any): boolean {
   return emojiRegex.test(text);
 }
 
+export function isValidPhoneNumber(phoneNumber: any): boolean {
+  if (typeof phoneNumber !== "string") return false;
+
+  // This regex validates phone numbers in the international E.164 format.
+  // E.g., +14155552671
+  // It checks for a leading '+', followed by digits.
+  // The total length of digits is typically between 7 and 15.
+  const phoneRegex = /^\+[1-9]\d{6,14}$/;
+  return phoneRegex.test(phoneNumber);
+}
+
 export function isValidVnPhoneNumber(phoneNumber: any): boolean {
   if (typeof phoneNumber !== "string") return false;
 
@@ -132,7 +143,7 @@ export function isValidProductName(productName: any): boolean {
   return productName.length > PRODUCT_NAME_MIN_LENGTH && productName.length <= PRODUCT_NAME_MAX_LENGTH;
 }
 
-export function convertToE164(phoneNumber: string): string {
+export function convertVnPhoneNumberToE164(phoneNumber: string): string {
   // Convert Vietnamese phone number to E.164 format
   // E.164 format for Vietnam is +84 followed by the phone number without the leading 0
   if (!isValidVnPhoneNumber(phoneNumber)) {
@@ -148,76 +159,6 @@ export function isStringArray(arr: any): boolean {
   // Check if every element in the array is a string
   return arr.every((item) => typeof item === "string");
 }
-
-/*
-// Count element frequencies
-function getFrequencyMap<T>(arr: T[]): Map<T, number> {
-  const frequencyMap = new Map<T, number>();
-  for (const item of arr) {
-    frequencyMap.set(item, (frequencyMap.get(item) || 0) + 1);
-  }
-  return frequencyMap;
-}
-
-// Compare of two array are equal no matter the order of elements
-export function compareArrays<T>(arrayA: T[], arrayB: T[]): boolean {
-  if (arrayA.length !== arrayB.length) return false;
-
-  const frequencyA = getFrequencyMap<T>(arrayA);
-  const frequencyB = getFrequencyMap<T>(arrayB);
-
-  if (frequencyA.size !== frequencyB.size) return false;
-
-  for (const [key, countA] of frequencyA) {
-    const countB = frequencyB.get(key);
-    if (countB === undefined || countB !== countA) return false;
-  }
-
-  return true;
-}
-
-// Finds elements that are different between two arrays, considering frequencies.
-// Example: arrA = [a, b, c, q, q], arrB = [a, b, c, d, e] returns [q, q, d, e].
-// diffFromA: return items which A has but B doesn't have. Example: arrA = [a, b, c, q, q], arrB = [a, b, c, d, e] returns [q, q].
-// diffFromB: return items which B has but A doesn't have. Example: arrA = [a, b, c, q, q], arrB = [a, b, c, d, e] returns [d, e].
-export function getArrayDifferences<T>(
-  arrayA: T[],
-  arrayB: T[],
-  diffFromA: boolean = true,
-  diffFromB: boolean = true
-): T[] {
-  const differences: T[] = [];
-
-  const frequencyA = getFrequencyMap<T>(arrayA);
-  const frequencyB = getFrequencyMap<T>(arrayB);
-
-  // Check elements in arrayA
-  if (diffFromA) {
-    for (const [item, countA] of frequencyA) {
-      const countB = frequencyB.get(item) || 0;
-      if (countA > countB) {
-        for (let i = 0; i < countA - countB; i++) {
-          differences.push(item);
-        }
-      }
-    }
-  }
-
-  // Check elements in arrayB (for those not fully accounted for by arrayA's check)
-  if (diffFromB) {
-    for (const [item, countB] of frequencyB) {
-      const countA = frequencyA.get(item) || 0;
-      if (countB > countA) {
-        for (let i = 0; i < countB - countA; i++) {
-          differences.push(item);
-        }
-      }
-    }
-  }
-
-  return differences;
-}
-*/
 
 export function isValidDateTimeString(dateTimeString: any): boolean {
   if (typeof dateTimeString !== "string") return false;

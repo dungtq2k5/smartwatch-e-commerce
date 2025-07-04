@@ -1,6 +1,6 @@
 import { twilioClient, twilioPhoneNumber } from "../configs/twilio.config";
 import { PROJECT_NAME } from "../../common/configs.common";
-import { convertToE164 } from "../../common/utils.common";
+import { convertVnPhoneNumberToE164 } from "../../common/utils.common";
 
 export async function sendVerificationSms(
   plainPhoneNumber: string,
@@ -12,7 +12,7 @@ export async function sendVerificationSms(
     const message = await twilioClient.messages.create({
       body: `Your verification code from ${PROJECT_NAME} is: ${verificationCode}`,
       from: twilioPhoneNumber,
-      to: convertToE164(plainPhoneNumber),
+      to: convertVnPhoneNumberToE164(plainPhoneNumber),
     });
 
     console.log("✅", "Verification SMS sent successfully:", message.sid);
@@ -32,7 +32,7 @@ export async function sendPasswordResetSms(
     const message = await twilioClient.messages.create({
       body: `To reset your password in ${PROJECT_NAME}, please visit: ${resetLink}`,
       from: twilioPhoneNumber,
-      to: convertToE164(plainPhoneNumber),
+      to: convertVnPhoneNumberToE164(plainPhoneNumber),
     });
 
     console.log("✅", "Password reset SMS sent successfully:", message.sid);
@@ -50,7 +50,7 @@ export async function sendPasswordResetSuccessSms(
     const message = await twilioClient.messages.create({
       body: `Your password has been successfully reset in ${PROJECT_NAME}.`,
       from: twilioPhoneNumber,
-      to: convertToE164(plainPhoneNumber),
+      to: convertVnPhoneNumberToE164(plainPhoneNumber),
     });
 
     console.log(
@@ -77,7 +77,7 @@ export async function sendLockAccountChangeSms(
         ? `Your account in ${PROJECT_NAME} has been locked due to some reason.`
         : `Your account in ${PROJECT_NAME} has been unlocked. You can now access your account.`,
       from: twilioPhoneNumber,
-      to: convertToE164(plainPhoneNumber),
+      to: convertVnPhoneNumberToE164(plainPhoneNumber),
     });
 
     console.log("✅", "Account unlock SMS sent successfully:", message.sid);
@@ -105,7 +105,7 @@ export async function sendPhoneNumberChangeSms(
           ? `Your phone number has been changed from ${currPhoneNumber} to ${newPhoneNumber} in ${PROJECT_NAME} and verified. If this was not you, please contact support.`
           : `Your phone number has been changed from ${currPhoneNumber} to ${newPhoneNumber} in ${PROJECT_NAME}. If this was not you, please contact support.`,
         from: twilioPhoneNumber,
-        to: convertToE164(plainPhone),
+        to: convertVnPhoneNumberToE164(plainPhone),
       });
 
       console.log(
@@ -134,7 +134,7 @@ export async function sendPhoneNumberVerifiedSms(
         ? `Dear ${userName}, your phone number ${plainPhoneNumber} has been successfully verified in ${PROJECT_NAME}.`
         : `Dear ${userName}, your phone number ${plainPhoneNumber} has been unverified in ${PROJECT_NAME}. Please verify your new phone number.`,
       from: twilioPhoneNumber,
-      to: convertToE164(plainPhoneNumber),
+      to: convertVnPhoneNumberToE164(plainPhoneNumber),
     });
 
     console.log(

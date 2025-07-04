@@ -68,10 +68,10 @@ export async function create(
       isDeleted: false,
       productId,
       $or: [{ model }, { watchSizeMm }],
-    });
+    }).lean();
     if (existingModel) {
       return next(
-        errorHandler(400, "Product model with model or size already exists")
+        errorHandler(409, "Product model with model or size already exists")
       );
     }
 
@@ -223,10 +223,10 @@ export async function update(
         isDeleted: false,
         productId,
         $or: orConditions,
-      });
+      }).lean();
       if (existingModel) {
         return next(
-          errorHandler(400, "Product model with model or size already exists")
+          errorHandler(409, "Product model with model or size already exists")
         );
       }
     }

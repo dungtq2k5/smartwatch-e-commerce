@@ -26,9 +26,9 @@ export async function create(
     const existingCategory = await ProductCategory.findOne({
       isDeleted: false,
       name,
-    });
+    }).lean();
     if (existingCategory) {
-      return next(errorHandler(404, "Product category already exists."));
+      return next(errorHandler(409, "Product category already exists."));
     }
 
     // Create category
@@ -37,7 +37,7 @@ export async function create(
       name,
       createdBy: userId,
     });
-    
+
     await category.save();
 
     res.status(201).json({
@@ -101,9 +101,9 @@ export async function update(
       const existingCategory = await ProductCategory.findOne({
         isDeleted: false,
         name,
-      });
+      }).lean();
       if (existingCategory) {
-        return next(errorHandler(404, "Product category already exists."));
+        return next(errorHandler(409, "Product category already exists."));
       }
       category.name = name;
     }
