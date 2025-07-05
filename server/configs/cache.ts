@@ -4,9 +4,17 @@ import User from "../models/user/user.model";
 import { SYSTEM_USER } from "./configs";
 import InstanceCondition from "../models/product/instanceCondition.model";
 import InventoryMovementType from "../models/inventory/inventoryMovementType.model";
+import DeliveryState from "../models/order/deliveryState.model";
 
 type KeyObjectId = {
   [key: string]: Types.ObjectId;
+};
+
+type KeyObjectIdWithLevel = {
+  [key: string]: {
+    id: Types.ObjectId;
+    level: number;
+  };
 };
 
 type AppCache = {
@@ -14,6 +22,7 @@ type AppCache = {
   systemUserId?: Types.ObjectId;
   instanceConditions?: KeyObjectId;
   inventoryMovementTypes?: KeyObjectId;
+  deliveryStates?: KeyObjectIdWithLevel;
 };
 
 export const appCache: AppCache = {};
@@ -36,6 +45,8 @@ export async function initAppCache(): Promise<void> {
     await instanceConditionsCache();
 
     await inventoryMovementTypesCache();
+
+    await deliveryStatesCache();
 
     console.log("✅ Application cache initialized successfully.");
   } catch (error) {
@@ -78,6 +89,29 @@ async function inventoryMovementTypesCache(): Promise<void> {
     console.log("✅ Inventory movement types cache initialized successfully.");
   } catch (error) {
     console.error("❌ Error initializing inventory movement types cache:", error);
+    process.exit(1);
+  }
+}
+
+async function deliveryStatesCache(): Promise<void> {
+  console.log("🗂️ ", "Initializing delivery states cache...");
+  try {
+    // Assuming you have a DeliveryState model similar to the others
+    const deliveryStates = await DeliveryState.find().select("_id name level").lean();
+    if (!deliveryStates || deliveryStates.length === 0) {
+      throw new Error("FATAL ERROR: No delivery states found in the database.");
+    }
+    appCache.deliveryStates = deliveryStates.reduce((acc, state) => {
+      acc[state.name] = {
+        id: state._id,
+        level: state.level,
+      };
+      return acc;
+    }, {} as KeyObjectIdWithLevel);
+
+    console.log("✅ Delivery states cache initialized successfully.");
+  } catch (error) {
+    console.error("❌ Error initializing delivery states cache:", error);
     process.exit(1);
   }
 }

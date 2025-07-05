@@ -18,9 +18,11 @@ import {
   ModelVariationResponse,
   VariationInstanceResponse,
   ProviderResponse,
+  OrderResponse,
 } from "../../common/types.common";
 import { Types } from "mongoose";
 import ModelVariation from "../models/product/modelVariation.model";
+import { appCache } from "../configs/cache";
 
 export function isValidUrl(url: any): boolean {
   if (typeof url !== "string") return false;
@@ -191,6 +193,22 @@ export async function genInstanceSku(
     Math.random().toString(36).slice(-3).toUpperCase();
 
   return `${brandCode}-${modelName}-${sizeMm}-${varTypeCode}-${varNameCode}-${uniqueId}`;
+}
+
+export function compareAddress(
+  address1: any,
+  address2: any
+): boolean {
+  return (
+    address1.name === address2.name &&
+    address1.street === address2.street &&
+    address1.apartmentNumber === address2.apartmentNumber &&
+    address1.ward === address2.ward &&
+    address1.district === address2.district &&
+    address1.cityProvince === address2.cityProvince &&
+    address1.country === address2.country &&
+    address1.phoneNumber === address2.phoneNumber
+  );
 }
 
 // --- FORMATTING RESPONSE FUNCTIONS ---
@@ -402,4 +420,87 @@ export function formatProviderResponse(provider: any): ProviderResponse {
     createdAt: provider.createdAt.toISOString(),
     updatedAt: provider.updatedAt.toISOString(),
   };
+}
+
+export function formatOrderResponse(order: any): OrderResponse {
+  return {
+    id: order._id.toString(),
+    userId: order.userId.toString(),
+    items: order.items.map((item: any) => ({
+      variationId: item.variationId.toString(),
+      quantity: item.quantity,
+      totalCents: item.totalCents,
+      instanceIds: item.instanceIds.map((instance: any) => ({
+        id: instance.id.toString(),
+        sku: instance.sku,
+      })),
+    })),
+    totalCents: order.totalCents,
+    deliveryStateId: order.deliveryStateId.toString(),
+    estimateReceivedDate: order.estimateReceivedDate.toISOString(),
+    receivedDate: order.receivedDate
+      ? order.receivedDate.toISOString()
+      : undefined,
+    deliveryAddress: order.deliveryAddress,
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+  };
+}
+
+// --- CACHING FUNCTIONS ---
+export function getConditionId(conditionName: string): Types.ObjectId {
+  const { instanceConditions } = appCache;
+  if (!instanceConditions) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const conditionId = instanceConditions[conditionName.toLowerCase()];
+  if (!conditionId) {
+    throw new Error(`Condition '${conditionName}' not found in cache.`);
+  }
+
+  return conditionId;
+}
+
+export function getMovementTypeId(movementTypeName: string): Types.ObjectId {
+  const { inventoryMovementTypes } = appCache;
+  if (!inventoryMovementTypes) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const movementTypeId = inventoryMovementTypes[movementTypeName.toLowerCase()];
+  if (!movementTypeId) {
+    throw new Error(`Movement type '${movementTypeName}' not found in cache.`);
+  }
+
+  return movementTypeId;
+}
+
+export function getDeliveryStateId(stateName: string): Types.ObjectId {
+  const { deliveryStates } = appCache;
+  if (!deliveryStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const state = deliveryStates[stateName.toLowerCase()];
+  if (!state) {
+    throw new Error(`Delivery state '${stateName}' not found in cache.`);
+  }
+
+  return state.id;
+}
+
+export function getDeliveryStateLevel(stateId: Types.ObjectId): number {
+  const { deliveryStates } = appCache;
+  if (!deliveryStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const stateName in deliveryStates) {
+    if (deliveryStates[stateName].id.equals(stateId)) {
+      return deliveryStates[stateName].level;
+    }
+  }
+
+  throw new Error(`Delivery state with ID '${stateId}' not found in cache.`);
 }

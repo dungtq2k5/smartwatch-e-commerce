@@ -28,3 +28,4 @@ test.*
 .prettierrc.json
 *.drawio.png
 serviceAccountKey.json
+scratch.*

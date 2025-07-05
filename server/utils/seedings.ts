@@ -152,15 +152,15 @@ export async function seedDeliveryStates(
       return;
     }
     const deliveryStates = [
-      { name: "order places" },
-      { name: "order confirmed" },
-      { name: "processing" },
-      { name: "shipped" },
-      { name: "out for delivery" },
-      { name: "delivered" },
-      { name: "received" },
-      { name: "cancelled" },
-      { name: "returned" },
+      { name: "order places", level: 1 },
+      { name: "order confirmed", level: 2 },
+      { name: "processing", level: 3 },
+      { name: "shipped", level: 4 },
+      { name: "out for delivery", level: 5 },
+      { name: "delivered", level: 6 },
+      { name: "received", level: 7 },
+      { name: "cancelled", level: 8 },
+      { name: "returned", level: 9 },
     ];
     await DeliveryState.insertMany(deliveryStates, { session });
     console.log("🫘 ", "DeliveryStates seeded successfully!");

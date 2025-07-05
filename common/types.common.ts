@@ -64,8 +64,8 @@ export type UserSignup = {
   phoneNumber?: string;
   password: string;
 } & (
-  | { email: string; phoneNumber?: undefined }
-  | { email?: undefined; phoneNumber: string }
+  | { email: string; phoneNumber: undefined }
+  | { email: undefined; phoneNumber: string }
 );
 
 export type UserLogin = {
@@ -73,8 +73,8 @@ export type UserLogin = {
   phoneNumber?: string;
   password: string;
 } & (
-  | { email: string; phoneNumber?: undefined }
-  | { email?: undefined; phoneNumber: string }
+  | { email: string; phoneNumber: undefined }
+  | { email: undefined; phoneNumber: string }
 );
 
 export type UserVerify = {
@@ -194,8 +194,8 @@ export type UserCreate = {
   isLocked?: boolean;
   roleIds?: string[];
 } & (
-  | { email: string; phoneNumber?: undefined }
-  | { email?: undefined; phoneNumber: string }
+  | { email: string; phoneNumber: undefined }
+  | { email: undefined; phoneNumber: string }
 );
 
 export type RoleCreate = {
@@ -414,6 +414,49 @@ export type ProviderResponse = {
 };
 
 export type ProviderUpdate = Optional<ProviderCreate>;
+
+export type OrderCreate = {
+  userAddressId: string;
+  items: {
+    variationId: string;
+    quantity: number;
+  }[];
+};
+
+export type OrderResponse = {
+  id: string;
+  userId: string;
+  items: {
+    variationId: string;
+    quantity: number;
+    totalCents: number;
+    instanceIds: {
+      id: string;
+      sku: string;
+    }[];
+  }[];
+  totalCents: number;
+  deliveryStateId: string;
+  estimateReceivedDate: string;
+  receivedDate?: string;
+  deliveryAddress: {
+    name: string;
+    street: string;
+    apartmentNumber: string;
+    ward: string;
+    district: string;
+    cityProvince: string;
+    phoneNumber: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OrderUpdate = {
+  deliveryStateId?: string;
+  estimateReceivedDate?: string;
+  deliveryAddressId?: string;
+};
 
 // --- HELPER TYPES ---
 export type Optional<T> = {

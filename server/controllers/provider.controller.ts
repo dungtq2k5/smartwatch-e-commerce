@@ -3,7 +3,7 @@ import Provider from "../models/inventory/provider.model";
 import { errorHandler } from "../utils/errorHandler";
 import { RequestAuth } from "../utils/types";
 import { formatProviderResponse } from "../utils/utils";
-import { ProviderResponse, SuccessResponse } from "../../common/types.common";
+import { ProviderCreate, ProviderResponse, ProviderUpdate, SuccessResponse } from "../../common/types.common";
 import { Types } from "mongoose";
 import Grn from "../models/inventory/grn.model";
 
@@ -13,7 +13,7 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating provider...");
-  const { fullName, email, phoneNumber } = req.body;
+  const { fullName, email, phoneNumber } = req.body as ProviderCreate;
 
   try {
     // Check exists
@@ -91,7 +91,7 @@ export async function update(
 ): Promise<void> {
   console.log("▶️ ", "Updating provider...");
   const id = req.params.id;
-  const { fullName, email, phoneNumber } = req.body;
+  const { fullName, email, phoneNumber } = req.body as ProviderUpdate;
 
   try {
     // Check exists

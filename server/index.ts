@@ -10,6 +10,7 @@ import productRoute from "./routes/product/product.route";
 import productBrandRoute from "./routes/product/brand.route";
 import productCategoryRoute from "./routes/product/category.route";
 import productOsRoute from "./routes/product/os.route";
+import Provider from "./routes/provider.route";
 import { errorHandler } from "./utils/middlewares/error.middleware";
 import connectDB from "./db/connectDB";
 import { initAppCache } from "./configs/cache";
@@ -57,6 +58,7 @@ app.use("/api/products", productRoute);
 app.use("/api/product-brands", productBrandRoute);
 app.use("/api/product-categories", productCategoryRoute);
 app.use("/api/product-os", productOsRoute);
+app.use("/api/providers", Provider);
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) =>
   errorHandler(err, req, res, next)

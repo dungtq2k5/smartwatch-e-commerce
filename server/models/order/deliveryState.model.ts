@@ -6,6 +6,11 @@ const deliveryStateSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  level: {
+    type: Number,
+    required: true,
+    unique: true,
+  }
 });
 
 const DeliveryState = mongoose.model("DeliveryState", deliveryStateSchema);

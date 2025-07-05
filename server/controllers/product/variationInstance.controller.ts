@@ -14,6 +14,8 @@ import type {
 import {
   formatVariationInstanceResponse,
   genInstanceSku,
+  getConditionId,
+  getMovementTypeId,
 } from "../../utils/utils";
 import { appCache } from "../../configs/cache";
 import InventoryMovement from "../../models/inventory/inventoryMovement.model";
@@ -355,33 +357,6 @@ export async function update(
 }
 
 // --- HELPER FUNCTIONS ---
-function getConditionId(conditionName: string): Types.ObjectId {
-  const { instanceConditions } = appCache;
-  if (!instanceConditions) {
-    throw new Error("Application cache not initialized properly.");
-  }
-
-  const conditionId = instanceConditions[conditionName.toLowerCase()];
-  if (!conditionId) {
-    throw new Error(`Condition '${conditionName}' not found in cache.`);
-  }
-
-  return conditionId;
-}
-
-function getMovementTypeId(movementTypeName: string): Types.ObjectId {
-  const { inventoryMovementTypes } = appCache;
-  if (!inventoryMovementTypes) {
-    throw new Error("Application cache not initialized properly.");
-  }
-
-  const movementTypeId = inventoryMovementTypes[movementTypeName.toLowerCase()];
-  if (!movementTypeId) {
-    throw new Error(`Movement type '${movementTypeName}' not found in cache.`);
-  }
-
-  return movementTypeId;
-}
 
 // async function handleCheckExistingModels(
 //   productId: string | undefined,

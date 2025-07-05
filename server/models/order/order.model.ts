@@ -3,20 +3,13 @@ import mongoose from "mongoose";
 /**
 items: [
   {
-    productVariationId: ObjectId,
+    variationId: ObjectId,
+    quantity: Number,
     totalCents: Number,
-    variations: [
+    instanceIds: [
       {
         id: ObjectId,
-        quantity: Number,
-        totalCents: Number,
-        instanceIds: [
-          {
-            id: ObjectId,
-            sku: String,
-          },
-          ...
-        ],
+        sku: String,
       },
       ...
     ],
@@ -40,9 +33,9 @@ const variationInstanceSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const variationSchema = new mongoose.Schema(
+const orderItemSchema = new mongoose.Schema(
   {
-    id: {
+    variationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "variation",
       required: true,
@@ -65,20 +58,34 @@ const variationSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const orderItemSchema = new mongoose.Schema(
+const deliveryAddressSchema = new mongoose.Schema(
   {
-    productVariationId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "ProductVariation",
+    name: {
+      type: String,
       required: true,
     },
-    totalCents: {
-      type: Number,
+    street: {
+      type: String,
       required: true,
-      min: 0,
     },
-    variations: {
-      type: [variationSchema],
+    apartmentNumber: {
+      type: String,
+      required: true,
+    },
+    ward: {
+      type: String,
+      required: true,
+    },
+    district: {
+      type: String,
+      required: true,
+    },
+    cityProvince: {
+      type: String,
+      required: true,
+    },
+    phoneNumber: {
+      type: String,
       required: true,
     },
   },
@@ -108,37 +115,13 @@ const orderSchema = new mongoose.Schema(
     },
     estimateReceivedDate: {
       type: Date,
-      default: Date.now,
+      required: true,
     },
     receivedDate: {
       type: Date,
     },
-    deliveryName: {
-      type: String,
-      required: true,
-    },
-    deliveryStreet: {
-      type: String,
-      required: true,
-    },
-    deliveryApartmentNumber: {
-      type: String,
-      required: true,
-    },
-    deliveryWard: {
-      type: String,
-      required: true,
-    },
-    deliveryDistrict: {
-      type: String,
-      required: true,
-    },
-    deliveryCityProvince: {
-      type: String,
-      required: true,
-    },
-    deliveryPhoneNumber: {
-      type: String,
+    deliveryAddress: {
+      type: deliveryAddressSchema,
       required: true,
     },
   },

@@ -5,6 +5,7 @@ import {
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "./configs.common.ts";
+import * as vnAddresses from "./vnAddresses.ts";
 
 export function removeOddSpaces(val: string): string {
   // AI help
@@ -176,4 +177,38 @@ export function isValidHexColor(colorCode: any): boolean {
   // It supports formats like #rgb, #rgba, #rrggbb, and #rrggbbaa.
   const hexColorRegex = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
   return hexColorRegex.test(colorCode);
+}
+
+export function isValidVnAddress(
+  province: any,
+  district: any,
+  ward: any
+): boolean {
+  if (
+    (typeof province !== "string" || !province) ||
+    (typeof district !== "string" || !district) ||
+    (typeof ward !== "string" || !ward)
+  ) return false;
+
+  if (
+    containsEmoji(province) ||
+    containsEmoji(district) ||
+    containsEmoji(ward)
+  ) return false;
+
+  const validProvince = vnAddresses.provinces.data.find(
+    p => p.name_with_type === province
+  );
+  if (!validProvince) return false;
+
+  const validDistrict = vnAddresses.districts.data.find(
+    d => d.name_with_type === district && d.parent_code === validProvince.code
+  );
+  if (!validDistrict) return false;
+
+  const validWard = vnAddresses.wards.data.find(
+    w => w.name_with_type === ward && w.parent_code === validDistrict.code
+  );
+
+  return validWard !== undefined;
 }

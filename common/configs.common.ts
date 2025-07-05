@@ -51,3 +51,5 @@ export const IMMUTABILITY_ROLE_NAMES = ["admin", "buyer"];
 
 export const PRODUCT_NAME_MIN_LENGTH = 3;
 export const PRODUCT_NAME_MAX_LENGTH = 100;
+
+export const ESTIMATE_RECEIVED_DATE = 7 * 24 * 60 * 60 * 1000; // 7 days

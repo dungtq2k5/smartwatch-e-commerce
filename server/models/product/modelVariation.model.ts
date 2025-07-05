@@ -53,7 +53,6 @@ const modelVariationSchema = new mongoose.Schema(
     // Additional fields for color variations
     additionalPriceCents: {
       type: Number,
-      default: 0,
       min: 0,
     },
 

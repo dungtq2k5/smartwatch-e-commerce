@@ -15,8 +15,6 @@ import * as instanceController from "../../controllers/product/variationInstance
 
 const router = express.Router();
 
-// TODO CRUD variationInstances
-
 // --- PRODUCT ROUTES ---
 router.post(
   "/",
