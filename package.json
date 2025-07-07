@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "GOOGLE_APPLICATION_CREDENTIALS='./server/serviceAccountKey.json' NODE_ENV=development tsx watch server/index.ts"
+    "dev": "cross-env GOOGLE_APPLICATION_CREDENTIALS='./server/serviceAccountKey.json' NODE_ENV=development tsx watch server/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +29,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.9",
+    "cross-env": "^7.0.3",
     "tsx": "^4.20.3"
   }
 }

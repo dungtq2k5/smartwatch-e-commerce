@@ -1,6 +1,7 @@
 import express from "express";
 import {
   authByGoogle,
+  checkAuth,
   forgotPassword,
   login,
   logout,
@@ -8,7 +9,11 @@ import {
   signup,
   verifyUser,
 } from "../controllers/auth.controller";
-import { verifyAuthentication, verifyJWTHasUserId, verifyReauthentication } from "../utils/middlewares/auth.middleware";
+import {
+  verifyAuthentication,
+  verifyJWTHasUserId,
+  verifyReauthentication
+} from "../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../utils/middlewares/general.middleware";
 import {
   inputSanitizer,
@@ -89,6 +94,12 @@ router.post(
   inputSanitizer("user"),
   verifyUserInput("reset password"),
   resetPassword
+);
+
+router.get(
+  "/check-auth",
+  verifyJWTHasUserId,
+  checkAuth
 );
 
 export default router;

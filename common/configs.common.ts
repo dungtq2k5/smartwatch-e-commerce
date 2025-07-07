@@ -9,7 +9,8 @@ export const VERIFICATION_TOKEN_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 export const SPECIAL_CHARS_REGEX = /[~`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/? ]/;
 
-export const PASSWORD_HINT_MESSAGE = `Password must be at least ${PASSWORD_MIN_LENGTH} characters long and contain at least one number or letter.`;
+export const PASSWORD_HINT_MESSAGE = `Password must be at least ${PASSWORD_MIN_LENGTH} characters long and
+  contain at least one number or letter.`;
 export const AVATAR_HINT_MESSAGE = `Avatar must be a valid image URL or file,
   with a maximum size of 5MB and dimensions between 200x200 and 1000x1000 pixels.
   Allowed formats are JPG and PNG.`;
@@ -46,8 +47,17 @@ export const PRODUCT_IMAGE_MAX_HEIGHT = 1500; // Increased for better detail/zoo
 
 export const IMMUTABILITY_USER_EMAILS: string[] = [SYSTEM_USER.email];
 export const PROTECTED_USER_EMAILS: string[] = [ADMIN_USER.email];
+export const MODIFIABLE_PROTECTED_USER_FIELDS = [
+  "fullName",
+  "avatarUrl",
+  "email",
+  "password",
+  "lastLogin",
+  "updatedAt",
+];
 
-export const IMMUTABILITY_ROLE_NAMES = ["admin", "buyer"];
+export const PROTECTED_ROLE_NAMES = ["admin", "buyer"];
+export const MODIFIABLE_PROTECTED_ROLES_FIELDS = ["createdAt", "updatedAt", "userAssigned"];
 
 export const PRODUCT_NAME_MIN_LENGTH = 3;
 export const PRODUCT_NAME_MAX_LENGTH = 100;

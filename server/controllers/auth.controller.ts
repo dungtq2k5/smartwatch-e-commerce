@@ -25,6 +25,7 @@ import {
   sendVerificationSms,
 } from "../utils/twilio";
 import {
+  CheckAuthResponse,
   SuccessResponse,
   UserAuthByGoogle,
   UserForgotPassword,
@@ -40,6 +41,7 @@ import PasswordResetToken from "../models/user/passwordResetToken.model";
 import admin from "firebase-admin";
 import Role from "../models/role/role.model";
 import { appCache } from "../configs/cache";
+import { RequestAuth } from "../utils/types";
 
 export async function signup(
   req: Request,
@@ -117,10 +119,8 @@ export async function signup(
       success: true,
       message:
         "User created successfully. Please check your email or phone number for the verification code.",
-      data: {
-        userId: user._id,
-      },
-    } as SuccessResponse);
+      data: formatUserResponse(user),
+    } as SuccessResponse<UserResponse>);
     console.log("✅", "Signup process completed successfully.");
   } catch (error) {
     if (session.inTransaction()) await session.abortTransaction();
@@ -221,7 +221,7 @@ export async function verifyUser(
   next: NextFunction
 ) {
   console.log("▶️", "Processing user verification request...");
-  const userId = req["auth"].userId;
+  const userId = (req["auth"] as RequestAuth).userId;
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -519,6 +519,43 @@ export async function resetPassword(
   }
 }
 
+export async function checkAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️", "Checking authentication status...");
+  const userId = (req["auth"] as RequestAuth).userId;
+
+  try {
+    if (!Types.ObjectId.isValid(userId)) {
+      return next(errorHandler(404, "User not found."));
+    }
+
+    const user = await User.findById(userId).lean();
+    if (!user || user.isDeleted) {
+      return next(errorHandler(404, "User not found."));
+    }
+    if (user.isLocked) {
+      return next(errorHandler(403, "User account is locked."));
+    }
+
+    const isAuth = user.isEmailVerified || user.isPhoneNumberVerified;
+
+    res.status(200).json({
+      success: true,
+      message: isAuth ? "User is authenticated." : "User is registered but not authenticated.",
+      data: {
+        user: formatUserResponse(user),
+        isAuth,
+      },
+    } as SuccessResponse<CheckAuthResponse>);
+    console.log("✅", "Authentication check completed successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
 // --- HELPER FUNCTIONS ---
 async function assignDefaultBuyerRole(
   session: mongoose.ClientSession
@@ -538,6 +575,6 @@ async function assignDefaultBuyerRole(
 
     return { roleId: buyerRoleId, assignedBy: systemUserId };
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }

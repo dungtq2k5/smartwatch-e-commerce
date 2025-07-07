@@ -48,7 +48,7 @@ export async function initAppCache(): Promise<void> {
 
     await deliveryStatesCache();
 
-    console.log("✅ Application cache initialized successfully.");
+    console.log("🗂️ ", "Application cache initialized successfully.");
   } catch (error) {
     console.error("❌ Error initializing application cache:", error);
     process.exit(1);
@@ -67,7 +67,7 @@ async function instanceConditionsCache(): Promise<void> {
       return acc;
     }, {} as KeyObjectId);
 
-    console.log("✅ Instance conditions cache initialized successfully.");
+    console.log("🗂️ ", "Instance conditions cache initialized successfully.");
   } catch (error) {
     console.error("❌ Error initializing instance conditions cache:", error);
     process.exit(1);
@@ -86,7 +86,7 @@ async function inventoryMovementTypesCache(): Promise<void> {
       return acc;
     }, {} as KeyObjectId);
 
-    console.log("✅ Inventory movement types cache initialized successfully.");
+    console.log("🗂️ ", "Inventory movement types cache initialized successfully.");
   } catch (error) {
     console.error("❌ Error initializing inventory movement types cache:", error);
     process.exit(1);
@@ -109,7 +109,7 @@ async function deliveryStatesCache(): Promise<void> {
       return acc;
     }, {} as KeyObjectIdWithLevel);
 
-    console.log("✅ Delivery states cache initialized successfully.");
+    console.log("🗂️ ", "Delivery states cache initialized successfully.");
   } catch (error) {
     console.error("❌ Error initializing delivery states cache:", error);
     process.exit(1);

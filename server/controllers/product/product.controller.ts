@@ -377,6 +377,6 @@ async function executeDeletion(
 
     await productToDelete.deleteOne();
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }

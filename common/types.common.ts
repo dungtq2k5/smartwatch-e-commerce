@@ -11,13 +11,13 @@ export type SuccessResponse<T = any> = {
   data?: T;
 };
 
+export type Response = ErrorResponse | SuccessResponse;
+
 type BaseUserResponse = {
   id: string;
   fullName: string;
   avatarUrl?: string;
-  email?: string;
   isEmailVerified: boolean;
-  phoneNumber?: string;
   isPhoneNumberVerified: boolean;
   stripeCustomerId?: string;
   userBalanceCents: number;
@@ -26,26 +26,26 @@ type BaseUserResponse = {
   updatedAt: string;
 };
 
-type UserWithEmailOnly = {
-  email: string;
-  phoneNumber: undefined;
-};
-type UserWithPhoneNumberOnly = {
-  email: undefined;
-  phoneNumber: string;
-};
-
-type UserWithBothEmailAndPhoneNumber = {
-  email: string;
-  phoneNumber: string;
-};
-
 export type UserResponse = BaseUserResponse &
   (
-    | UserWithEmailOnly
-    | UserWithPhoneNumberOnly
-    | UserWithBothEmailAndPhoneNumber
+    | {
+        email: string;
+        phoneNumber: undefined;
+      }
+    | {
+        email: undefined;
+        phoneNumber: string;
+      }
+    | {
+        email: string;
+        phoneNumber: string;
+      }
   );
+
+export type CheckAuthResponse = {
+  user: UserResponse;
+  isAuth: boolean;
+};
 
 export type AdminUserResponse = BaseUserResponse & {
   isLocked: boolean;
@@ -58,36 +58,7 @@ export type AdminUserListResponse = {
   limit: number;
 };
 
-export type UserSignup = {
-  fullName: string;
-  email?: string;
-  phoneNumber?: string;
-  password: string;
-} & (
-  | { email: string; phoneNumber: undefined }
-  | { email: undefined; phoneNumber: string }
-);
-
-export type UserLogin = {
-  email?: string;
-  phoneNumber?: string;
-  password: string;
-} & (
-  | { email: string; phoneNumber: undefined }
-  | { email: undefined; phoneNumber: string }
-);
-
-export type UserVerify = {
-  userId: string;
-  type: "email" | "phoneNumber";
-  code: string;
-};
-
-export type UserAuthByGoogle = {
-  idToken: string;
-};
-
-export type UserForgotPassword =
+export type EmailOrPhoneNumber =
   | {
       email: string;
       phoneNumber: undefined;
@@ -96,6 +67,30 @@ export type UserForgotPassword =
       email: undefined;
       phoneNumber: string;
     };
+
+export type UserSignup = {
+  fullName: string;
+  // email?: string;
+  // phoneNumber?: string;
+  password: string;
+} & EmailOrPhoneNumber;
+
+export type UserLogin = {
+  // email?: string;
+  // phoneNumber?: string;
+  password: string;
+} & EmailOrPhoneNumber;
+
+export type UserVerify = {
+  type: "email" | "phoneNumber";
+  code: string;
+};
+
+export type UserAuthByGoogle = {
+  idToken: string;
+};
+
+export type UserForgotPassword = EmailOrPhoneNumber;
 
 export type UserUpdateEmail = {
   email?: string | null;

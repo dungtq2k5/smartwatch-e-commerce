@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
-import { IMMUTABILITY_ROLE_NAMES } from "../../../common/configs.common";
+import {
+  PROTECTED_ROLE_NAMES,
+  MODIFIABLE_PROTECTED_ROLES_FIELDS,
+} from "../../../common/configs.common";
 
 const rolePermission = new mongoose.Schema(
   {
@@ -47,38 +50,77 @@ const roleSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// --- IMMUTABILITY MIDDLEWARE FOR PROTECTED ROLES ---
+// --- MIDDLEWARE FOR PROTECTED ROLES ---
 // 1. PREVENT MODIFICATION via 'doc.save()'
 roleSchema.pre("save", function (next) {
-  if (!this.isNew && IMMUTABILITY_ROLE_NAMES.includes(this.name)) {
+  if (this.isNew || !PROTECTED_ROLE_NAMES.includes(this.name)) {
+    return next();
+  }
+
+  const modifiedPaths = this.modifiedPaths();
+
+  const modifiable = modifiedPaths.every((field) =>
+    MODIFIABLE_PROTECTED_ROLES_FIELDS.includes(field)
+  );
+
+  if (!modifiable) {
     return next(
-      new Error(`Role "${this.name}" is immutable and cannot be modified.`)
+      new Error(
+        `Role '${this.name}' is protected.
+        Only the ${MODIFIABLE_PROTECTED_ROLES_FIELDS.join(
+          ", "
+        )} field(s) can be modified.`
+      )
     );
   }
+
   next();
 });
 
-const preventImmutableRoleMod = function (action: "deletes" | "updates") {
+const preventProtectedRoleMod = function (action: "deletes" | "updates") {
   return async function (next: mongoose.CallbackWithoutResultAndOptionalError) {
     const filter = this.getFilter();
 
-    const isModifyingImmutableRole = await this.model.exists({
+    const isModifyingProtectedRole = await this.model.exists({
       ...filter,
-      name: { $in: IMMUTABILITY_ROLE_NAMES },
+      name: { $in: PROTECTED_ROLE_NAMES },
     });
-    if (isModifyingImmutableRole) {
+
+    if (!isModifyingProtectedRole) {
+      return next(); // Not an immutable role, so proceed.
+    }
+
+    if (action === "deletes") {
+      return next(new Error("Cannot delete protected role(s)."));
+    }
+
+    // If it's an update action, check which fields are being updated.
+    const update = this.getUpdate();
+    if (!update) return next();
+
+    // Get all fields being modified, including those inside operators like $set or $inc
+    const updatedFields = Object.keys(update).reduce((acc: string[], key) => {
+      if (key.startsWith("$")) {
+        return acc.concat(Object.keys(update[key]));
+      }
+      acc.push(key);
+      return acc;
+    }, []);
+
+    // Check if every field in the update is 'userAssigned'
+    const modifiable = updatedFields.every((field) =>
+      MODIFIABLE_PROTECTED_ROLES_FIELDS.includes(field)
+    );
+    console.log(updatedFields, modifiable); // DEV
+
+    if (!modifiable) {
       return next(
-        action === "deletes"
-          ? new Error(
-              `Cannot delete immutable role(s): ${IMMUTABILITY_ROLE_NAMES.join(
-                ", "
-              )}`
-            )
-          : new Error(
-              `Cannot modify immutable role(s): ${IMMUTABILITY_ROLE_NAMES.join(
-                ", "
-              )}.`
-            )
+        new Error(
+          `Protected role(s) cannot be modified.
+          Only the ${MODIFIABLE_PROTECTED_ROLES_FIELDS.join(
+            ", "
+          )} field(s) can be modified.`
+        )
       );
     }
 
@@ -87,14 +129,14 @@ const preventImmutableRoleMod = function (action: "deletes" | "updates") {
 };
 
 // 2. PREVENT MODIFICATION via query-based updates
-roleSchema.pre("updateOne", preventImmutableRoleMod("updates"));
-roleSchema.pre("updateMany", preventImmutableRoleMod("updates"));
-roleSchema.pre("findOneAndUpdate", preventImmutableRoleMod("updates"));
+roleSchema.pre("updateOne", preventProtectedRoleMod("updates"));
+roleSchema.pre("updateMany", preventProtectedRoleMod("updates"));
+roleSchema.pre("findOneAndUpdate", preventProtectedRoleMod("updates"));
 
 // 3. PREVENT DELETION via query-based deletes
-roleSchema.pre("deleteOne", preventImmutableRoleMod("deletes"));
-roleSchema.pre("deleteMany", preventImmutableRoleMod("deletes"));
-roleSchema.pre("findOneAndDelete", preventImmutableRoleMod("deletes"));
+roleSchema.pre("deleteOne", preventProtectedRoleMod("deletes"));
+roleSchema.pre("deleteMany", preventProtectedRoleMod("deletes"));
+roleSchema.pre("findOneAndDelete", preventProtectedRoleMod("deletes"));
 
 const Role = mongoose.model("Role", roleSchema);
 export default Role;

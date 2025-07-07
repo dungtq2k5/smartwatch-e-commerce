@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import {
   IMMUTABILITY_USER_EMAILS,
+  MODIFIABLE_PROTECTED_USER_FIELDS,
   PROTECTED_USER_EMAILS,
 } from "../../../common/configs.common";
 
@@ -92,135 +93,107 @@ const userSchema = new mongoose.Schema(
 );
 
 // --- IMMUTABILITY MIDDLEWARE FOR PROTECTED USERS ---
-const ALLOWED_PROTECTED_USER_MODIFIABLE_FIELDS = [
-  "fullName",
-  "avatarUrl",
-  "email",
-  "password",
-  "lastLogin",
-  "updatedAt",
-];
-
 // 1. PREVENT MODIFICATION via 'doc.save()'
 userSchema.pre("save", function (next) {
   // 'this' refers to the document being saved
-  if (!this.isNew && typeof this.email === "string") {
-    if (IMMUTABILITY_USER_EMAILS.includes(this.email)) {
-      return next(
-        new Error(`Immutable user ('${this.email}') cannot be modified.`)
-      );
-    }
-
-    if (PROTECTED_USER_EMAILS.includes(this.email)) {
-      // Get all fields that were modified
-      const modifiedPaths = this.modifiedPaths();
-
-      const forbiddenFiles = modifiedPaths.filter(
-        (path) => !ALLOWED_PROTECTED_USER_MODIFIABLE_FIELDS.includes(path)
-      );
-
-      if (forbiddenFiles.length > 0) {
-        return next(
-          new Error(
-            `Protected user ('${
-              this.email
-            }') cannot modify fields: ${forbiddenFiles.join(", ")}.`
-          )
-        );
-      }
-    }
-  }
-  next();
-});
-
-// 2. PREVENT MODIFICATION via query-based updates
-const preventProtectedUserMod = async function (
-  next: mongoose.CallbackWithoutResultAndOptionalError
-) {
-  // 'this' refers to the query being executed
-  const filter = this.getFilter();
-
-  // Check if any document matching the update query is an immutable user.
-  const isUpdatingImmutableUser = await this.model.exists({
-    ...filter,
-    email: { $in: IMMUTABILITY_USER_EMAILS },
-  });
-  if (isUpdatingImmutableUser) {
-    return next(new Error(`Immutable user(s) cannot be modified.`));
+  if (this.isNew || typeof this.email !== "string") {
+    return next();
   }
 
-  // Check if any document matching the update query is a protected user.
-  const isUpdatingProtectedUser = await this.model.exists({
-    ...filter,
-    email: { $in: PROTECTED_USER_EMAILS },
-  });
+  if (IMMUTABILITY_USER_EMAILS.includes(this.email)) {
+    return next(
+      new Error(`Immutable user '${this.email}' cannot be modified.`)
+    );
+  }
 
-  if (isUpdatingProtectedUser) {
-    const update = this.getUpdate();
+  if (PROTECTED_USER_EMAILS.includes(this.email)) {
+    // Get all fields that were modified
+    const modifiedPaths = this.modifiedPaths();
 
-    // Extract all keys from update operators like $set, $inc, etc.
-    const updatedKeys = [
-      ...Object.keys(update?.$set || {}),
-      ...Object.keys(update?.$unset || {}),
-      ...Object.keys(update?.$inc || {}),
-      ...Object.keys(update || {}),
-      // Add more operators if needed
-    ];
-
-    // Check if any updated key is NOT in the allowed list.
-    const forbiddenFields = updatedKeys.filter(
-      (key) => !ALLOWED_PROTECTED_USER_MODIFIABLE_FIELDS.includes(key)
+    const modifiable = modifiedPaths.every((field) =>
+      MODIFIABLE_PROTECTED_USER_FIELDS.includes(field)
     );
 
-    if (forbiddenFields.length > 0) {
+    if (!modifiable) {
       return next(
         new Error(
-          `Protected user(s) cannot modify fields: ${forbiddenFields.join(
+          `User '${this.email} is protected'.
+          Only the ${MODIFIABLE_PROTECTED_USER_FIELDS.join(
             ", "
-          )}.`
+          )} fields can be modified.`
         )
       );
     }
   }
 
   next();
+});
+
+const preventBaseUserMod = function (action: "deletes" | "updates") {
+  return async function (next: mongoose.CallbackWithoutResultAndOptionalError) {
+    const filter = this.getFilter();
+
+    const isModifyingImmutableUser = await this.model.exists({
+      ...filter,
+      email: { $in: IMMUTABILITY_USER_EMAILS },
+    });
+
+    if (isModifyingImmutableUser) {
+      return next(new Error(`Immutable user(s) cannot be modified.`));
+    }
+
+    const isModifyingProtectedUser = await this.model.exists({
+      ...filter,
+      email: { $in: PROTECTED_USER_EMAILS },
+    });
+
+    if (!isModifyingProtectedUser) {
+      return next(); // Not a protected user, so proceed.
+    }
+
+    if (action === "deletes") {
+      return next(new Error(`Cannot delete protected user(s).`));
+    }
+
+    const update = this.getUpdate();
+    if (!update) return next();
+
+    const updatedFields = Object.keys(update).reduce((acc: string[], key) => {
+      if (key.startsWith("$")) {
+        return acc.concat(Object.keys(update[key]));
+      }
+      acc.push(key);
+      return acc;
+    }, []);
+
+    const modifiable = updatedFields.every((field) =>
+      MODIFIABLE_PROTECTED_USER_FIELDS.includes(field)
+    );
+
+    if (!modifiable) {
+      return next(
+        new Error(
+          `Protected user(s) cannot be modified.
+          Only the ${MODIFIABLE_PROTECTED_USER_FIELDS.join(
+            ", "
+          )} field(s) can be modified.`
+        )
+      );
+    }
+
+    next();
+  };
 };
-userSchema.pre("updateOne", preventProtectedUserMod);
-userSchema.pre("updateMany", preventProtectedUserMod);
-userSchema.pre("findOneAndUpdate", preventProtectedUserMod);
+
+// 2. PREVENT MODIFICATION via query-based updates
+userSchema.pre("updateOne", preventBaseUserMod("updates"));
+userSchema.pre("updateMany", preventBaseUserMod("updates"));
+userSchema.pre("findOneAndUpdate", preventBaseUserMod("updates"));
 
 // 3. PREVENT DELETION via query-based deletes
-const preventProtectUserDeletion = async function (
-  next: mongoose.CallbackWithoutResultAndOptionalError
-) {
-  // 'this' refers to the query being executed
-  const filter = this.getFilter();
-
-  // Check if any document matching the delete query is an immutable user.
-  const isDeletingImmutableUser = await this.model.exists({
-    ...filter,
-    email: { $in: IMMUTABILITY_USER_EMAILS },
-  });
-  if (isDeletingImmutableUser) {
-    return next(new Error(`Immutable user(s) cannot be deleted.`));
-  }
-
-  // Check if any document matching the delete query is a protected user.
-  const isDeletingProtectedUser = await this.model.exists({
-    ...filter,
-    email: { $in: PROTECTED_USER_EMAILS },
-  });
-
-  if (isDeletingProtectedUser) {
-    return next(new Error(`Protected user(s) cannot be deleted.`));
-  }
-
-  next();
-};
-
-userSchema.pre("deleteOne", preventProtectUserDeletion);
-userSchema.pre("deleteMany", preventProtectUserDeletion);
-userSchema.pre("findOneAndDelete", preventProtectUserDeletion);
+userSchema.pre("deleteOne", preventBaseUserMod("deletes"));
+userSchema.pre("deleteMany", preventBaseUserMod("deletes"));
+userSchema.pre("findOneAndDelete", preventBaseUserMod("deletes"));
 
 const User = mongoose.model("User", userSchema);
 export default User;

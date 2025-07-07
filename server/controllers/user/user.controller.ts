@@ -1021,13 +1021,8 @@ async function executeDeletion(
       { session }
     );
     await UserAddress.deleteMany({ userId: userToDelete._id }, { session });
-
-    await deleteFileFromFirebaseStorage(
-      userToDelete.avatarUrl,
-      "user-avatar"
-    );
     await userToDelete.deleteOne({ session });
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }

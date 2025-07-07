@@ -14,6 +14,12 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
   - Mailtrap for email sending services.
   - Twilio for SMS sending services.
   - Auto generate JWT secret key: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+  - FrontEnd:
+    - Bootstrap for styling.
+    - popperjs for toasting.
+    - lucide-react for icons.
+    - react-router-dom for routing.
+    - zustand for controllers.
 
 - 📝 Todos:
   - Frontend:
@@ -22,6 +28,7 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - Find default image for product ❌.
     - Auto login user when user is verified ❌.
     - When user auth by Google send back to BackEnd idToken ❌.
+    - Copilot styling prompt:
 
   - Backend - API: (remember isDeleted field)
     - Because __v field is only activated with doc.save() so stick with find-modify-save method when modifying data 📝.
@@ -39,3 +46,4 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
 
   - Features:
     - Dynamic default avatar for user profile ❌.
+    - Resend verification code feature ❌.

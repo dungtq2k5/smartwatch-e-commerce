@@ -1,0 +1,31 @@
+:root {
+  --primary-color: #4285F4;
+  --secondary-color: #34A853;
+  --danger-color: #EA4335;
+  --warning-color: #FBBC05;
+  --light-color: #F8F9FA;
+  --dark-color: #202124;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--light-color);
+  color: var(--dark-color);
+}
+
+main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+  margin: 1rem;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
