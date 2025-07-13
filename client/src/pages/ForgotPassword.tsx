@@ -106,7 +106,7 @@ export default function ForgotPassword() {
   }, [err, clearError]);
 
   return (
-    <main>
+    <main className="container--center--g">
       {isSent ? (
         <div className="border rounded-3 shadow-sm p-4 text-center">
           <h1 className="h3 mb-3 fw-normal">Check your email or phone number</h1>
@@ -162,7 +162,7 @@ export default function ForgotPassword() {
             )}
           </button>
 
-          <p className="mt-5 mb-3 text-muted">
+          <p className="mt-4 mb-0 text-muted">
             Remembered your password? <Link to="/login">Log in now</Link>
           </p>
         </form>

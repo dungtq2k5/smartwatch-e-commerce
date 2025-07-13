@@ -6,9 +6,14 @@ import {
   isValidPassword,
   isValidVnPhoneNumber,
   removeAllSpaces,
+  isValidDateTimeString,
+  isValidCoordinates,
 } from "../../../common/utils.common";
 import { isValidIdArray, isValidImgUrl } from "..//utils";
-import { PASSWORD_HINT_MESSAGE } from "../../../common/configs.common";
+import {
+  PASSWORD_HINT_MESSAGE,
+  USER_GENDER_OPTIONS,
+} from "../../../common/configs.common";
 import { errorHandler } from "../errorHandler";
 
 function sanitizeUserInput(
@@ -17,7 +22,7 @@ function sanitizeUserInput(
   next: NextFunction
 ): void {
   console.log("▶️ ", "Sanitizing user input...");
-  const { fullName, email, type, code, value, roleIds } = req.body;
+  const { fullName, email, gender, type, code, value, roleIds } = req.body;
   const { token } = req.params; // For reset password case
 
   if (typeof fullName === "string") {
@@ -25,6 +30,9 @@ function sanitizeUserInput(
   }
   if (typeof email === "string") {
     req.body.email = removeAllSpaces(email).toLowerCase();
+  }
+  if (typeof gender === "string") {
+    req.body.gender = removeOddSpaces(gender).toLowerCase();
   }
   if (typeof type === "string") {
     req.body.type = removeOddSpaces(type);
@@ -51,8 +59,14 @@ function sanitizeAddressInput(
   next: NextFunction
 ): void {
   console.log("▶️ ", "Sanitizing address input...");
-  const { name, street, apartmentNumber, ward, district, cityProvince } =
-    req.body;
+  const {
+    name,
+    street,
+    apartmentNumber,
+    wardCode,
+    districtCode,
+    cityProvinceCode,
+  } = req.body;
 
   if (typeof name === "string") {
     req.body.name = removeOddSpaces(name);
@@ -63,14 +77,14 @@ function sanitizeAddressInput(
   if (typeof apartmentNumber === "string") {
     req.body.apartmentNumber = removeOddSpaces(apartmentNumber);
   }
-  if (typeof ward === "string") {
-    req.body.ward = removeOddSpaces(ward);
+  if (typeof wardCode === "string") {
+    req.body.wardCode = removeAllSpaces(wardCode);
   }
-  if (typeof district === "string") {
-    req.body.district = removeOddSpaces(district);
+  if (typeof districtCode === "string") {
+    req.body.districtCode = removeAllSpaces(districtCode);
   }
-  if (typeof cityProvince === "string") {
-    req.body.cityProvince = removeOddSpaces(cityProvince);
+  if (typeof cityProvinceCode === "string") {
+    req.body.cityProvinceCode = removeAllSpaces(cityProvinceCode);
   }
 
   next();
@@ -108,7 +122,8 @@ export function verifyUserInput(
       switch (type) {
         case "signup": {
           console.log("Validating registration input...");
-          const { fullName, email, phoneNumber, password } = req.body;
+          const { fullName, email, birth, gender, phoneNumber, password } =
+            req.body;
 
           if (!fullName) {
             errors.push("fullName is required.");
@@ -124,6 +139,19 @@ export function verifyUserInput(
             if (phoneNumber && !isValidVnPhoneNumber(phoneNumber)) {
               errors.push("phoneNumber is invalid.");
             }
+          }
+          if (!birth) {
+            errors.push("birth is required.");
+          } else if (!isValidDateTimeString(birth)) {
+            errors.push("birth is invalid.");
+          }
+          if (!gender) {
+            errors.push("gender is required.");
+          } else if (!USER_GENDER_OPTIONS.includes(gender)) {
+            errors.push(
+              "gender is invalid. Must be one of: " +
+                USER_GENDER_OPTIONS.join(", ")
+            );
           }
           if (!password) {
             errors.push("password is required.");
@@ -159,6 +187,8 @@ export function verifyUserInput(
             fullName,
             avatarUrl,
             password,
+            birth,
+            gender,
             userBalanceCents,
             isLocked,
             roleIds,
@@ -169,6 +199,16 @@ export function verifyUserInput(
           }
           if (password !== undefined && !isValidPassword(password)) {
             errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
+          }
+          if (birth !== undefined && !isValidDateTimeString(birth)) {
+            errors.push("birth is invalid.");
+          }
+          if (gender !== undefined && !USER_GENDER_OPTIONS.includes(gender)) {
+            errors.push(
+              `gender is invalid. Must be one of: ${USER_GENDER_OPTIONS.join(
+                ", "
+              )}`
+            );
           }
           if (
             avatarUrl !== undefined &&
@@ -307,6 +347,8 @@ export function verifyUserInput(
             phoneNumber,
             isPhoneNumberVerified,
             password,
+            birth,
+            gender,
             userBalanceCents,
             isLocked,
             roleIds,
@@ -346,6 +388,19 @@ export function verifyUserInput(
           } else if (!isValidPassword(password)) {
             errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
           }
+          if (!birth) {
+            errors.push("birth is required.");
+          } else if (!isValidDateTimeString(birth)) {
+            errors.push("birth is invalid.");
+          }
+          if (!gender) {
+            errors.push("gender is required.");
+          } else if (!USER_GENDER_OPTIONS.includes(gender)) {
+            errors.push(
+              "gender is invalid. Must be one of: " +
+                USER_GENDER_OPTIONS.join(", ")
+            );
+          }
           if (
             userBalanceCents !== undefined &&
             typeof userBalanceCents !== "number" &&
@@ -375,11 +430,7 @@ export function verifyUserInput(
 export function verifyAddressInput(
   type: "create" | "update"
 ): (req: Request, res: Response, next: NextFunction) => void {
-  return (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): void => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating address input...");
 
     let errors: string[] = [];
@@ -391,9 +442,10 @@ export function verifyAddressInput(
             name,
             street,
             apartmentNumber,
-            ward,
-            district,
-            cityProvince,
+            wardCode,
+            districtCode,
+            cityProvinceCode,
+            location,
             phoneNumber,
           } = req.body;
 
@@ -403,17 +455,40 @@ export function verifyAddressInput(
           if (typeof street !== "string" || !street) {
             errors.push("street is required.");
           }
-          if (typeof ward !== "string" || !ward) {
-            errors.push("ward is required.");
-          }
-          if (typeof district !== "string" || !district) {
-            errors.push("district is required.");
-          }
-          if (typeof cityProvince !== "string" || !cityProvince) {
-            errors.push("cityProvince is required.");
-          }
           if (typeof apartmentNumber !== "string" || !apartmentNumber) {
             errors.push("apartmentNumber is required.");
+          }
+          if (typeof wardCode !== "string" || !wardCode) {
+            errors.push("wardCode is required.");
+          }
+          if (typeof districtCode !== "string" || !districtCode) {
+            errors.push("districtCode is required.");
+          }
+          if (typeof cityProvinceCode !== "string" || !cityProvinceCode) {
+            errors.push("cityProvinceCode is required.");
+          }
+          if (!location) {
+            errors.push("location is required.");
+          } else if (
+            typeof location !== "object" ||
+            !location.longitude ||
+            !location.latitude
+          ) {
+            errors.push(
+              "location must be an object with latitude and longitude."
+            );
+          } else if (
+            typeof location.longitude !== "number" ||
+            typeof location.latitude !== "number"
+          ) {
+            errors.push("location latitude and longitude must be numbers.");
+          } else if (
+            !isValidCoordinates({
+              longitude: location.longitude,
+              latitude: location.latitude,
+            })
+          ) {
+            errors.push("location latitude and longitude are out of bounds.");
           }
           if (!phoneNumber) {
             errors.push("phoneNumber is required.");
@@ -428,9 +503,10 @@ export function verifyAddressInput(
             name,
             street,
             apartmentNumber,
-            ward,
-            district,
-            cityProvince,
+            wardCode,
+            districtCode,
+            cityProvinceCode,
+            location,
             phoneNumber,
           } = req.body;
 
@@ -446,25 +522,48 @@ export function verifyAddressInput(
           ) {
             errors.push("apartmentNumber must be a string.");
           }
-          if (ward !== undefined && (typeof ward !== "string" || !ward)) {
-            errors.push("ward must be a string.");
+          if (
+            wardCode !== undefined &&
+            (typeof wardCode !== "string" || !wardCode)
+          ) {
+            errors.push("wardCode must be a non-empty string.");
           }
           if (
-            district !== undefined &&
-            (typeof district !== "string" || !district)
+            districtCode !== undefined &&
+            (typeof districtCode !== "string" || !districtCode)
           ) {
-            errors.push("district must be a string.");
+            errors.push("districtCode must be a non-empty string.");
           }
           if (
-            cityProvince !== undefined &&
-            (typeof cityProvince !== "string" || !cityProvince)
+            cityProvinceCode !== undefined &&
+            (typeof cityProvinceCode !== "string" || !cityProvinceCode)
           ) {
-            errors.push("cityProvince must be a string.");
+            errors.push("cityProvinceCode must be a non-empty string.");
           }
-          if (
-            phoneNumber !== undefined &&
-            !isValidVnPhoneNumber(phoneNumber)
-          ) {
+          if (location !== undefined) {
+            if (
+              typeof location !== "object" ||
+              !location.longitude ||
+              !location.latitude
+            ) {
+              errors.push(
+                "location must be an object with latitude and longitude."
+              );
+            } else if (
+              typeof location.longitude !== "number" ||
+              typeof location.latitude !== "number"
+            ) {
+              errors.push("location latitude and longitude must be numbers.");
+            } else if (
+              !isValidCoordinates({
+                longitude: location.longitude,
+                latitude: location.latitude,
+              })
+            ) {
+              errors.push("location latitude and longitude are out of bounds.");
+            }
+          }
+          if (phoneNumber !== undefined && !isValidVnPhoneNumber(phoneNumber)) {
             errors.push("phoneNumber is invalid.");
           }
           break;
@@ -484,11 +583,7 @@ export function verifyAddressInput(
 export function verifyCartInput(
   type: "create" | "update"
 ): (req: Request, res: Response, next: NextFunction) => void {
-  return (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): void => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating cart input...");
 
     let errors: string[] = [];
@@ -528,5 +623,5 @@ export function verifyCartInput(
     } catch (error) {
       next(error);
     }
-  }
+  };
 }

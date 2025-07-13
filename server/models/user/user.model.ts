@@ -3,6 +3,7 @@ import {
   IMMUTABILITY_USER_EMAILS,
   MODIFIABLE_PROTECTED_USER_FIELDS,
   PROTECTED_USER_EMAILS,
+  USER_GENDER_OPTIONS,
 } from "../../../common/configs.common";
 
 const userRole = new mongoose.Schema(
@@ -58,6 +59,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    birth: {
+      type: Date,
+      required: true,
+    },
+    gender: {
+      type: String,
+      enum: USER_GENDER_OPTIONS,
+      required: true,
+    },
     stripeCustomerId: {
       type: String,
     },
@@ -110,7 +120,7 @@ userSchema.pre("save", function (next) {
     // Get all fields that were modified
     const modifiedPaths = this.modifiedPaths();
 
-    const modifiable = modifiedPaths.every((field) =>
+    const modifiable = modifiedPaths.every((field: any) =>
       MODIFIABLE_PROTECTED_USER_FIELDS.includes(field)
     );
 
@@ -166,7 +176,7 @@ const preventBaseUserMod = function (action: "deletes" | "updates") {
       return acc;
     }, []);
 
-    const modifiable = updatedFields.every((field) =>
+    const modifiable = updatedFields.every((field: any) =>
       MODIFIABLE_PROTECTED_USER_FIELDS.includes(field)
     );
 

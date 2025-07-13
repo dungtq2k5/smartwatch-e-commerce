@@ -137,7 +137,7 @@ export default function ResetPassword() {
   }, [err, clearError]);
 
   return (
-    <main>
+    <main className="container--center--g">
       <form className="border rounded-3 shadow-sm p-4" onSubmit={handleSubmit}>
         <h1 className="h3 mb-4 fw-normal">Reset Password</h1>
 

@@ -13,7 +13,7 @@ import Cart from "../../models/user/cart.model";
 import ModelVariation from "../../models/product/modelVariation.model";
 
 // --- BOTH ADMIN AND BUYER FUNCTIONS ---
-export async function getSelf(
+export async function getSelfAll(
   req: Request,
   res: Response,
   next: NextFunction

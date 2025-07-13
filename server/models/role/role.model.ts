@@ -53,13 +53,13 @@ const roleSchema = new mongoose.Schema(
 // --- MIDDLEWARE FOR PROTECTED ROLES ---
 // 1. PREVENT MODIFICATION via 'doc.save()'
 roleSchema.pre("save", function (next) {
-  if (this.isNew || !PROTECTED_ROLE_NAMES.includes(this.name)) {
+  if (this.isNew || !PROTECTED_ROLE_NAMES.includes(this.name as any)) {
     return next();
   }
 
   const modifiedPaths = this.modifiedPaths();
 
-  const modifiable = modifiedPaths.every((field) =>
+  const modifiable = modifiedPaths.every((field: any) =>
     MODIFIABLE_PROTECTED_ROLES_FIELDS.includes(field)
   );
 
@@ -108,10 +108,9 @@ const preventProtectedRoleMod = function (action: "deletes" | "updates") {
     }, []);
 
     // Check if every field in the update is 'userAssigned'
-    const modifiable = updatedFields.every((field) =>
+    const modifiable = updatedFields.every((field: any) =>
       MODIFIABLE_PROTECTED_ROLES_FIELDS.includes(field)
     );
-    console.log(updatedFields, modifiable); // DEV
 
     if (!modifiable) {
       return next(

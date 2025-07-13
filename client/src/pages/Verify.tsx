@@ -133,7 +133,7 @@ export default function Verify() {
   }, [err, clearError]);
 
   return (
-    <main>
+    <main className="container">
       <form className="border rounded-3 shadow-sm p-4">
         <div>
           <h1 className="h3 mb-4 fw-normal">Verify your {verifyType}</h1>

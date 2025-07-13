@@ -29,3 +29,4 @@ test.*
 *.drawio.png
 serviceAccountKey.json
 scratch.*
+draft

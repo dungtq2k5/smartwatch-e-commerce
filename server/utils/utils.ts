@@ -1,5 +1,4 @@
-import { AVATAR_ALLOWED_TYPES } from "../../common/configs.common";
-import { VERIFICATION_CODE_LENGTH } from "../../common/configs.common";
+import { AVATAR_ALLOWED_TYPES, VERIFICATION_CODE_LENGTH } from "../../common/configs.common";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "./types";
 import { JWT_NAME, JWT_TTL } from "../configs/configs";
@@ -33,7 +32,7 @@ export function isValidUrl(url: any): boolean {
     const parsedUrl = new URL(url);
     // Check if the protocol is HTTP or HTTPS, which are common for web-accessible images.
     return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
-  } catch (_) {
+  } catch {
     // If new URL() throws an error, it means the url string is not a valid URL.
     return false;
   }
@@ -47,10 +46,10 @@ export async function isValidImgUrl(url: any): Promise<boolean> {
     if (!res.ok) return false;
 
     const contentType = res.headers.get("content-type");
-    if (contentType && AVATAR_ALLOWED_TYPES.includes(contentType)) return true;
+    if (contentType && AVATAR_ALLOWED_TYPES.includes(contentType as any)) return true;
 
     return false;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -113,7 +112,7 @@ export function getJWTPayload(token: any): JwtPayload | false {
     ) as JwtPayload;
 
     return payload;
-  } catch (_) {
+  } catch {
     return false;
   }
 }
@@ -221,6 +220,8 @@ export function formatUserResponse(user: any): UserResponse {
     isEmailVerified: user.isEmailVerified,
     phoneNumber: user.phoneNumber ? user.phoneNumber : undefined,
     isPhoneNumberVerified: user.isPhoneNumberVerified,
+    birth: user.birth.toISOString(),
+    gender: user.gender,
     stripeCustomerId: user.stripeCustomerId ? user.stripeCustomerId : undefined,
     userBalanceCents: user.userBalanceCents,
     lastLogin: user.lastLogin ? user.lastLogin.toISOString() : undefined,
@@ -258,11 +259,16 @@ export function formatUserAddressResponse(address: any): UserAddressResponse {
     name: address.name,
     street: address.street,
     apartmentNumber: address.apartmentNumber,
-    ward: address.ward,
-    district: address.district,
-    cityProvince: address.cityProvince,
-    country: address.country,
+    wardCode: address.wardCode,
+    districtCode: address.districtCode,
+    cityProvinceCode: address.cityProvinceCode,
+    countryCode: address.country,
+    location: {
+      type: address.location.type,
+      coordinates: address.location.coordinates,
+    },
     phoneNumber: address.phoneNumber,
+    fullAddress: address.fullAddress,
     isDefault: address.isDefault,
     createdAt: address.createdAt.toISOString(),
     updatedAt: address.updatedAt.toISOString(),

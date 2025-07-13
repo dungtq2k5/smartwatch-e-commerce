@@ -506,7 +506,7 @@ export const provinces = {
       code: "15",
     },
   ],
-};
+} as const;
 
 export const districts = {
   total: 705,
@@ -8267,7 +8267,7 @@ export const districts = {
       parent_code: "96",
     },
   ],
-};
+} as const;
 
 export const wards = {
   total: 10599,
@@ -125040,4 +125040,4 @@ export const wards = {
       parent_code: "510",
     },
   ],
-};
+} as const;

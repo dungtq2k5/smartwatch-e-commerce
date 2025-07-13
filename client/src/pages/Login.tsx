@@ -146,7 +146,7 @@ export default function Login() {
   }, [err, clearError]);
 
   return (
-    <main>
+    <main className="container--center--g">
       <form
         className="border rounded-3 shadow-sm p-4"
         autoComplete="on"

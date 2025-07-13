@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { VN_COUNTRY_CODE } from "../../../common/configs.common";
 
 const userAddressSchema = new mongoose.Schema(
   {
@@ -19,25 +20,40 @@ const userAddressSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    ward: {
+    wardCode: {
       type: String,
       required: true,
     },
-    district: {
+    districtCode: {
       type: String,
       required: true,
     },
-    cityProvince: {
+    cityProvinceCode: {
       type: String,
       required: true,
     },
-    country: {
+    countryCode: {
       type: String,
-      default: "vietnam",
+      default: VN_COUNTRY_CODE,
     },
     phoneNumber: {
       type: String,
       required: true,
+    },
+    fullAddress: { // For display purposes
+      type: String,
+      required: true,
+    },
+    location: {
+      type: {
+        type: String,
+        enum: ["point"],
+        default: "point",
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        required: true,
+      },
     },
     isDefault: {
       type: Boolean,

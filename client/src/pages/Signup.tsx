@@ -171,7 +171,7 @@ export default function Signup() {
   }, [err, clearError]);
 
   return (
-    <main>
+    <main className="container--center--g">
       <form className="border rounded-3 shadow-sm p-4" onSubmit={handleSubmit}>
         <h1 className="h3 mb-4 fw-normal">Sign up</h1>
         {/* Full name */}
@@ -260,8 +260,8 @@ export default function Signup() {
         </div>
 
         <button
-          className="w-100 btn btn-primary mt-3 mb-4"
           type="submit"
+          className="w-100 btn btn-primary mt-3 mb-4"
           disabled={isLoading}
         >
           {isLoading ? (

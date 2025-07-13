@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { VN_COUNTRY_CODE } from "../../../common/configs.common";
 
 /**
 items: [
@@ -72,19 +73,38 @@ const deliveryAddressSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    ward: {
+    wardCode: {
       type: String,
       required: true,
     },
-    district: {
+    districtCode: {
       type: String,
       required: true,
     },
-    cityProvince: {
+    cityProvinceCode: {
       type: String,
       required: true,
+    },
+    countryCode: {
+      type: String,
+      default: VN_COUNTRY_CODE,
+    },
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        required: true,
+      },
     },
     phoneNumber: {
+      type: String,
+      required: true,
+    },
+    fullAddress: {
       type: String,
       required: true,
     },

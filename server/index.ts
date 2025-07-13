@@ -11,9 +11,10 @@ import productBrandRoute from "./routes/product/brand.route";
 import productCategoryRoute from "./routes/product/category.route";
 import productOsRoute from "./routes/product/os.route";
 import Provider from "./routes/provider.route";
-import { errorHandler } from "./utils/middlewares/error.middleware";
+import { errorHandler as errorHandlerMiddleware } from "./utils/middlewares/error.middleware";
 import connectDB from "./db/connectDB";
 import { initAppCache } from "./configs/cache";
+import { errorHandler } from "./utils/errorHandler";
 
 dotenv.config();
 const requiredEnvVars = [
@@ -60,15 +61,19 @@ app.use("/api/product-categories", productCategoryRoute);
 app.use("/api/product-os", productOsRoute);
 app.use("/api/providers", Provider);
 
+app.use((req, res, next) => {
+  next(errorHandler(404, `Request not found: ${req.originalUrl}`));
+});
+
 app.use((err: any, req: Request, res: Response, next: NextFunction) =>
-  errorHandler(err, req, res, next)
+  errorHandlerMiddleware(err, req, res, next)
 );
 
 const port = process.env.SERVER_PORT;
 app.listen(port, async () => {
   console.log("🔗", "Connecting to MongoDB...");
   await connectDB();
-  // await seedAllCollections(); // Init Mongo collections when first time running the server
+  await seedAllCollections(); // Init Mongo collections when first time running the server
   await initAppCache(); // Init application cache
   console.log("🚀", `Server is running on http://localhost:${port}`);
 });

@@ -44,9 +44,9 @@ export async function post(
 
 export async function remove(
   url: string,
-  id: string | number
+  id?: string | number
 ): Promise<Response> {
-  return await request(`${url}/${id}`, "DELETE");
+  return await request(id ? `${url}/${id}` : url, "DELETE");
 }
 
 export async function patch(

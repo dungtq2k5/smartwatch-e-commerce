@@ -12,13 +12,18 @@ import ForgotPassword from "./pages/ForgotPassword.tsx";
 import { Toaster } from "react-hot-toast";
 import { useEffect, useRef } from "react";
 import ResetPassword from "./pages/ResetPassword.tsx";
+import NotFound from "./pages/NotFound.tsx";
+import Account from "./pages/Account.tsx";
+import Profile from "./components/account/Profile.tsx";
+import Address from "./components/account/Address.tsx";
+import BankAndCard from "./components/account/BankAndCard.tsx";
 
 export default function App() {
   // DEV for testing
   const renderCount = useRef(0);
   renderCount.current += 1;
   console.log("App render count:", renderCount.current);
-  
+
   const { checkAuth, isCheckingAuth } = useAuthStore();
 
   useEffect(() => {
@@ -48,11 +53,22 @@ export default function App() {
         </Route>
 
         <Route element={<AuthRoute />}>
-
+          {/*
+            TODO
+            - user account page (infos, password change, address management)
+            - user cart page
+            - user orders page
+          */}
+          <Route path="/account" element={<Account/>}>
+            <Route index element={<Profile/>}></Route>
+            <Route path="profile" element={<Profile/>}></Route>
+            <Route path="bank-card" element={<BankAndCard/>}></Route>
+            <Route path="address" element={<Address/>}></Route>
+          </Route>
         </Route>
-      </Routes>
 
-      {/* TODO route not found */}
+        <Route path="*" element={<NotFound/>}></Route>
+      </Routes>
 
       <Footer />
 

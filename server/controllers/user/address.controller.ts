@@ -16,9 +16,10 @@ import { errorHandler } from "../../utils/errorHandler";
 import mongoose, { Types } from "mongoose";
 import { RequestAuth } from "../../utils/types";
 import UserAddress from "../../models/user/userAddress.model";
+import { formatAddress, isValidAddress } from "../../../common/utils.common";
 
 // --- ADMIN FUNCTIONS ---
-export async function get(
+export async function getAll(
   req: Request,
   res: Response,
   next: NextFunction
@@ -94,21 +95,41 @@ export async function create(
       name,
       street,
       apartmentNumber,
-      ward,
-      district,
-      cityProvince,
-      country,
+      wardCode,
+      districtCode,
+      cityProvinceCode,
+      location,
       phoneNumber,
       isDefault,
     } = req.body as UserAddressCreate;
 
     // Business logic
+    if (
+      !isValidAddress({
+        wardCode,
+        districtCode,
+        cityProvinceCode,
+      })
+    ) {
+      return next(errorHandler(400, "Invalid address data."));
+    }
+
     if (isDefault) {
       await UserAddress.updateMany(
         { userId, isDefault: true },
         { $set: { isDefault: false } },
         { session }
       );
+    } else {
+      // Case when first address create but isDefault = false
+      const addressCount = await UserAddress.countDocuments({
+        userId
+      }).session(session);
+      if (addressCount === 0) {
+        return next(
+          errorHandler(400, "You must set the first address as default.")
+        );
+      }
     }
 
     const address = new UserAddress({
@@ -116,11 +137,14 @@ export async function create(
       name,
       street,
       apartmentNumber,
-      ward,
-      district,
-      cityProvince,
-      country,
+      wardCode,
+      districtCode,
+      cityProvinceCode,
+      location: {
+        coordinates: [location.longitude, location.latitude],
+      },
       phoneNumber,
+      fullAddress: formatAddress(req.body),
       isDefault,
     });
 
@@ -143,7 +167,7 @@ export async function create(
 }
 
 // --- BOTH ADMIN AND BUYER FUNCTIONS ---
-export async function getSelf(
+export async function getSelfAll(
   req: Request,
   res: Response,
   next: NextFunction
@@ -206,32 +230,87 @@ export async function update(
     }
 
     // Business logic
-    const updateData = req.body as UserAddressUpdate;
-    const isDefault = updateData.isDefault;
-    /**
-      isDefault scenarios:
-        - true -> true,
-        - false -> false,
-        - true -> false,
-        - false -> true
-     */
-    if (isDefault !== undefined && isDefault && !address.isDefault) {
-      await UserAddress.updateMany(
-        { userId: targetUserId, isDefault: true },
-        { $set: { isDefault: false } },
-        { session }
-      );
+    const {
+      name,
+      street,
+      apartmentNumber,
+      wardCode,
+      districtCode,
+      cityProvinceCode,
+      location,
+      phoneNumber,
+      isDefault,
+    } = req.body as UserAddressUpdate;
+
+    const updatedName = name || address.name;
+    const updatedStreet = street || address.street;
+    const updatedApartmentNumber = apartmentNumber || address.apartmentNumber;
+    const updatedWardCode = wardCode || address.wardCode;
+    const updatedDistrictCode = districtCode || address.districtCode;
+    const updatedCityProvinceCode =
+      cityProvinceCode || address.cityProvinceCode;
+    const updatedPhoneNumber = phoneNumber || address.phoneNumber;
+    const updatedIsDefault = isDefault ?? address.isDefault;
+
+    if (
+      updatedWardCode !== address.wardCode ||
+      updatedDistrictCode !== address.districtCode ||
+      updatedCityProvinceCode !== address.cityProvinceCode
+    ) {
+      if (
+        !isValidAddress({
+          wardCode: updatedWardCode,
+          districtCode: updatedDistrictCode,
+          cityProvinceCode: updatedCityProvinceCode,
+        })
+      ) {
+        return next(errorHandler(400, "Invalid address data."));
+      }
+
+      address.fullAddress = formatAddress({
+        name: updatedName,
+        street: updatedStreet,
+        apartmentNumber: updatedApartmentNumber,
+        wardCode: updatedWardCode,
+        districtCode: updatedDistrictCode,
+        cityProvinceCode: updatedCityProvinceCode,
+        countryCode: address.countryCode,
+        isDefault: updatedIsDefault,
+      });
     }
 
-    address.name = updateData.name || address.name;
-    address.street = updateData.street || address.street;
-    address.apartmentNumber = updateData.apartmentNumber || address.apartmentNumber;
-    address.ward = updateData.ward || address.ward;
-    address.district = updateData.district || address.district;
-    address.cityProvince = updateData.cityProvince || address.cityProvince;
-    address.country = updateData.country || address.country;
-    address.phoneNumber = updateData.phoneNumber || address.phoneNumber;
-    address.isDefault = isDefault ?? address.isDefault;
+    /**
+      isDefault scenarios:
+        - true -> true.
+        - false -> false.
+        - true -> false: forbidden.
+        - false -> true.
+     */
+    if (updatedIsDefault !== address.isDefault) {
+      if (updatedIsDefault === false && address.isDefault === true) {
+        return next(errorHandler(409, "Can't update default address to false."));
+      } else {
+        await UserAddress.updateMany(
+          { userId: targetUserId, isDefault: true },
+          { $set: { isDefault: false } },
+          { session }
+        );
+      }
+      }
+
+    address.name = updatedName;
+    address.street = updatedStreet;
+    address.apartmentNumber = updatedApartmentNumber;
+    address.wardCode = updatedWardCode;
+    address.districtCode = updatedDistrictCode;
+    address.cityProvinceCode = updatedCityProvinceCode;
+    if (location)
+      address.location = {
+        type: "point",
+        coordinates: [location.longitude, location.latitude],
+      };
+    address.phoneNumber = updatedPhoneNumber;
+    address.isDefault = updatedIsDefault;
 
     await address.save({ session });
 
@@ -304,14 +383,34 @@ export async function createSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing create user address request...");
-  const data = req.body as UserAddressCreate;
+  const {
+    name,
+    street,
+    apartmentNumber,
+    wardCode,
+    districtCode,
+    cityProvinceCode,
+    location,
+    phoneNumber,
+    isDefault,
+  } = req.body as UserAddressCreate;
   const { userId } = req["auth"] as RequestAuth;
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    if (data.isDefault) {
+    if (
+      !isValidAddress({
+        wardCode,
+        districtCode,
+        cityProvinceCode,
+      })
+    ) {
+      return next(errorHandler(400, "Invalid address data."));
+    }
+
+    if (isDefault) {
       await UserAddress.updateMany(
         { userId, isDefault: true },
         { $set: { isDefault: false } },
@@ -321,7 +420,19 @@ export async function createSelf(
 
     const address = new UserAddress({
       userId,
-      ...data,
+      name,
+      street,
+      apartmentNumber,
+      wardCode,
+      districtCode,
+      cityProvinceCode,
+      location: {
+        type: "point",
+        coordinates: [location.longitude, location.latitude],
+      },
+      phoneNumber,
+      fullAddress: formatAddress(req.body),
+      isDefault,
     });
 
     await address.save({ session });
@@ -339,5 +450,38 @@ export async function createSelf(
     next(error);
   } finally {
     session.endSession();
+  }
+}
+
+export async function getSelf(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing get user address request...");
+  const { userId } = req["auth"] as RequestAuth;
+  const { id: addressId } = req.params;
+
+  try {
+    // Check address exists
+    if (!Types.ObjectId.isValid(addressId)) {
+      return next(errorHandler(404, "Address not found."));
+    }
+    const address = await UserAddress.findOne({
+      _id: addressId,
+      userId,
+    });
+    if (!address) {
+      return next(errorHandler(404, "Address not found."));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User address retrieved successfully",
+      data: formatUserAddressResponse(address),
+    } as SuccessResponse<UserAddressResponse>);
+    console.log("✅", "User address retrieved successfully.");
+  } catch (error) {
+    next(error);
   }
 }

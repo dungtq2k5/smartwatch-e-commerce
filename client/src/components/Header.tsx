@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
-import { memo, useRef } from "react";
+import { memo, useRef, type JSX } from "react";
+import { useAuthStore } from "../store/authStore";
+import defaultAvatar from "../assets/default-avatar.webp";
 
 const Header = memo(function Header() {
   // DEV temp for testing
@@ -8,12 +10,48 @@ const Header = memo(function Header() {
   renderCount.current += 1;
   console.log("Header rendered", renderCount.current);
 
+  const { user, isAuth } = useAuthStore();
+
+  const renderBtns = (): JSX.Element => {
+    if (user && isAuth) {
+      return (
+        <Link to="/account" title="my account">
+          <img
+            src={user.avatarUrl ?? defaultAvatar}
+            className="avatar--g avatar--sm--g"
+            alt="account"
+          />
+        </Link>
+      );
+    }
+
+    if (!isAuth) {
+      return (
+        <>
+          <Link to="/login" className="btn btn-outline-primary me-2">
+            Login
+          </Link>
+          <Link to="/signup" className="btn btn-primary">
+            Signup
+          </Link>
+        </>
+      );
+    }
+
+    return (
+      <Link to="/verify" className="btn btn-outline-primary">
+        Verify my account
+      </Link>
+    );
+  };
+
   return (
     <header className="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
       <div className="container-fluid">
         <Link className="navbar-brand" to="/">
           SmartWatch
         </Link>
+
         <button
           className="navbar-toggler"
           type="button"
@@ -25,6 +63,7 @@ const Header = memo(function Header() {
         >
           <span className="navbar-toggler-icon"></span>
         </button>
+
         <div className="collapse navbar-collapse" id="navbarSupportedContent">
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
             <li className="nav-item">
@@ -43,8 +82,11 @@ const Header = memo(function Header() {
               </Link>
             </li>
           </ul>
+
           <form className="d-flex">
-            <label htmlFor="search" hidden aria-hidden="true">Search</label>
+            <label htmlFor="search" hidden aria-hidden="true">
+              Search
+            </label>
             <input
               className="form-control me-1"
               type="search"
@@ -57,13 +99,9 @@ const Header = memo(function Header() {
               <Search size={20} />
             </button>
           </form>
+
           <div className="d-flex align-items-center ms-lg-3 mt-2 mt-lg-0">
-            <Link to="/login" className="btn btn-outline-primary me-2">
-              Login
-            </Link>
-            <Link to="/signup" className="btn btn-primary">
-              Signup
-            </Link>
+            {renderBtns()}
           </div>
         </div>
       </div>

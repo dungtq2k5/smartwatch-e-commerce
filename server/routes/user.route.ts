@@ -49,7 +49,7 @@ router.post(
 router.get(
   "/me/carts/",
   verifyPermission("r_usr_cart"),
-  cartController.getSelf
+  cartController.getSelfAll
 );
 router.patch(
   "/me/carts/:variationId",
@@ -76,6 +76,12 @@ router.post(
 
 router.get(
   "/me/addresses",
+  verifyPermission("r_usr_addr"),
+  addressController.getSelfAll
+);
+
+router.get(
+  "/me/addresses/:id",
   verifyPermission("r_usr_addr"),
   addressController.getSelf
 );
@@ -160,7 +166,7 @@ router.post(
 router.get(
   "/:id/addresses",
   verifyPermission("r_usr_addr"),
-  addressController.get
+  addressController.getAll
 );
 
 router.patch(

@@ -5,12 +5,14 @@ export const JWT_NAME = "auth_token";
 export const SYSTEM_USER = {
   fullName: "System User",
   email: "system@internal.app",
+  gender: "other",
 } as const;
 
 export const ADMIN_USER = {
   fullName: "Admin User",
   email: "admin@internal.app",
   password: "a_very_secure_admin_password_123!@#",
+  gender: "other",
 } as const;
 
 export const PERMISSION_LIST = [ // 60 permissions

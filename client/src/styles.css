@@ -1,5 +1,11 @@
+/*
+  - rem for padding, margin, and font sizes
+  - em for width, height, and other dimensions
+  - px for borders and shadows
+*/
+
 :root {
-  --primary-color: #4285F4;
+  --primary-color: #2075ff;
   --secondary-color: #34A853;
   --danger-color: #EA4335;
   --warning-color: #FBBC05;
@@ -11,14 +17,39 @@ body {
   font-family: 'Roboto', sans-serif;
   background-color: var(--light-color);
   color: var(--dark-color);
+  min-height: 100vh;
 }
 
-main {
+#root {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1920px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.container--g {
+  flex-grow: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1em;
+}
+
+.container--center--g {
+  flex-grow: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin: auto;
-  margin: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1em;
+}
+
+.btn {
+  padding: .5em 1em;
+  font-size: 1rem;
+  border-radius: 6px;
 }
 
 .btn-primary {
@@ -28,4 +59,41 @@ main {
 
 .btn-primary:hover {
   opacity: 0.9;
+}
+
+.avatar--g {
+  border-radius: 50%;
+  background: grey;
+  border: none;
+  cursor: pointer;
+  object-fit: cover;
+}
+
+.avatar--sm--g {
+  width: 2rem;
+  height: 2rem;
+}
+
+.avatar--md--g {
+  width: 3rem;
+  height: 3rem;
+}
+
+.avatar--lg--g {
+  width: 10rem;
+  height: 10rem;
+}
+
+.avatar--g:hover {
+  opacity: .8;
+}
+
+.nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+  background-color: var(--primary-color);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
 }

@@ -1,3 +1,4 @@
+import type { UserAddressFormat } from "../client/src/utils/types.ts";
 import {
   PASSWORD_MIN_LENGTH,
   PRODUCT_NAME_MAX_LENGTH,
@@ -5,20 +6,17 @@ import {
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "./configs.common.ts";
-import * as vnAddresses from "./vnAddresses.ts";
+import { districts, wards, provinces } from "./vnAddresses.ts";
 
 export function removeOddSpaces(val: string): string {
-  // AI help
   return val.replace(/\s+/g, " ").trim();
 }
 
 export function removeAllSpaces(val: string): string {
-  // AI gen
   return val.replace(/\s/g, "");
 }
 
 export function genRandomPassword(): string {
-  // AI gen
   const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const numbers = "0123456789";
   const allChars = letters + numbers;
@@ -47,7 +45,6 @@ export function genRandomPassword(): string {
 }
 
 export function genRandomString(length: number = 5): string {
-  // AI gen
   const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const numbers = "0123456789";
   const allChars = letters + numbers;
@@ -59,6 +56,34 @@ export function genRandomString(length: number = 5): string {
   return result;
 }
 
+export function convertVnPhoneNumberToE164(phoneNumber: string): string {
+  // Convert Vietnamese phone number to E.164 format
+  // E.164 format for Vietnam is +84 followed by the phone number without the leading 0
+  if (!isValidVnPhoneNumber(phoneNumber)) {
+    throw new Error("Invalid Vietnamese phone number");
+  }
+
+  return `+84${phoneNumber.slice(1)}`; // Remove leading 0 and add +84
+}
+
+export function convertUtcToLocalISOString(utcIsoString: string): string {
+  if (!utcIsoString.endsWith("Z")) return utcIsoString;
+
+  const date = new Date(utcIsoString);
+
+  if (isNaN(date.getTime())) return utcIsoString;
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
+// --- VALIDATION UTILS ---
 export function isValidUserFullName(fullName: any): boolean {
   if (typeof fullName !== "string") return false;
 
@@ -100,21 +125,6 @@ export function isValidPassword(password: any): boolean {
   );
 }
 
-export function containsEmoji(text: any): boolean {
-  if (typeof text !== "string") return false;
-
-  // This regex uses Unicode property escapes to detect characters
-  // that are considered "Extended Pictographic". This is a broad
-  // category that includes most characters users would identify as emoji.
-  // The 'u' flag is essential for Unicode property escapes to work correctly.
-  // This approach is generally more robust to evolving emoji sets than
-  // manually listing Unicode ranges, as it relies on the JS engine's
-  // built-in knowledge of Unicode character properties.
-  const emojiRegex = /\p{Extended_Pictographic}/u;
-
-  return emojiRegex.test(text);
-}
-
 export function isValidPhoneNumber(phoneNumber: any): boolean {
   if (typeof phoneNumber !== "string") return false;
 
@@ -130,7 +140,7 @@ export function isValidVnPhoneNumber(phoneNumber: any): boolean {
   if (typeof phoneNumber !== "string") return false;
 
   // Vietnamese phone numbers start with 0 and are 10 or 11 digits long
-  const phoneRegex = /^(0[1-9][0-9]{8}|0[1-9][0-9]{9})$/;
+  const phoneRegex = /^(0[1-9]\d{8}|0[1-9]\d{9})$/;
   return phoneRegex.test(phoneNumber);
 }
 
@@ -141,17 +151,10 @@ export function isValidProductName(productName: any): boolean {
   if (containsEmoji(productName)) return false;
 
   // Product name should not be empty and should not exceed 100 characters
-  return productName.length > PRODUCT_NAME_MIN_LENGTH && productName.length <= PRODUCT_NAME_MAX_LENGTH;
-}
-
-export function convertVnPhoneNumberToE164(phoneNumber: string): string {
-  // Convert Vietnamese phone number to E.164 format
-  // E.164 format for Vietnam is +84 followed by the phone number without the leading 0
-  if (!isValidVnPhoneNumber(phoneNumber)) {
-    throw new Error("Invalid Vietnamese phone number");
-  }
-
-  return `+84${phoneNumber.slice(1)}`; // Remove leading 0 and add +84
+  return (
+    productName.length > PRODUCT_NAME_MIN_LENGTH &&
+    productName.length <= PRODUCT_NAME_MAX_LENGTH
+  );
 }
 
 export function isStringArray(arr: any): boolean {
@@ -179,36 +182,89 @@ export function isValidHexColor(colorCode: any): boolean {
   return hexColorRegex.test(colorCode);
 }
 
-export function isValidVnAddress(
-  province: any,
-  district: any,
-  ward: any
+export function containsEmoji(text: any): boolean {
+  if (typeof text !== "string") return false;
+
+  // This regex uses Unicode property escapes to detect characters
+  // that are considered "Extended Pictographic". This is a broad
+  // category that includes most characters users would identify as emoji.
+  // The 'u' flag is essential for Unicode property escapes to work correctly.
+  // This approach is generally more robust to evolving emoji sets than
+  // manually listing Unicode ranges, as it relies on the JS engine's
+  // built-in knowledge of Unicode character properties.
+  const emojiRegex = /\p{Extended_Pictographic}/u;
+
+  return emojiRegex.test(text);
+}
+
+export function isValidCoordinates(coords: { longitude: number; latitude: number }): boolean {
+  const { longitude, latitude } = coords;
+  return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+}
+
+// --- ADDRESS UTILS ---
+export function formatAddress(address: UserAddressFormat): string {
+  const ward = getWard(address.wardCode);
+  const district = getDistrict(address.districtCode);
+  const cityProvince = getCityProvince(address.cityProvinceCode);
+
+  if (!ward || !district || !cityProvince) {
+    throw new Error("Invalid address components");
+  }
+
+  return `${address.street}, ${address.apartmentNumber}, ${ward.name_with_type}, ${district.name_with_type}, ${cityProvince.name_with_type}`;
+}
+
+export function getWard(wardCode: string) {
+  return wards.data.find((ward) => ward.code === wardCode);
+}
+
+export function getDistrict(districtCode: string) {
+  return districts.data.find((district) => district.code === districtCode);
+}
+
+export function getCityProvince(cityProvinceCode: string) {
+  return provinces.data.find((province) => province.code === cityProvinceCode);
+}
+
+export function isValidAddress(
+  address: {
+  wardCode: string,
+  districtCode: string,
+  cityProvinceCode: string }
 ): boolean {
-  if (
-    (typeof province !== "string" || !province) ||
-    (typeof district !== "string" || !district) ||
-    (typeof ward !== "string" || !ward)
-  ) return false;
+  const {  wardCode, districtCode, cityProvinceCode } = address;
 
-  if (
-    containsEmoji(province) ||
-    containsEmoji(district) ||
-    containsEmoji(ward)
-  ) return false;
+  const cityProvince = getCityProvince(cityProvinceCode);
+  if (!cityProvince) return false;
 
-  const validProvince = vnAddresses.provinces.data.find(
-    p => p.name_with_type === province
-  );
-  if (!validProvince) return false;
+  const district = getDistrict(districtCode);
+  if (!district || district.parent_code !== cityProvinceCode) return false;
 
-  const validDistrict = vnAddresses.districts.data.find(
-    d => d.name_with_type === district && d.parent_code === validProvince.code
-  );
-  if (!validDistrict) return false;
+  const ward = getWard(wardCode);
+  if (!ward || ward.parent_code !== districtCode) return false;
 
-  const validWard = vnAddresses.wards.data.find(
-    w => w.name_with_type === ward && w.parent_code === validDistrict.code
+  return true;
+}
+
+export function getDistrictsByProvinceCode(provinceCode: string) {
+  const filteredDistricts = districts.data.filter(
+    (district) => district.parent_code === provinceCode
   );
 
-  return validWard !== undefined;
+  return {
+    total: filteredDistricts.length,
+    data: filteredDistricts,
+  };
+}
+
+export function getWardsByDistrictCode(districtCode: string) {
+  const filteredWards = wards.data.filter(
+    (ward) => ward.parent_code === districtCode
+  );
+
+  return {
+    total: filteredWards.length,
+    data: filteredWards,
+  };
 }

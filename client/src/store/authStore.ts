@@ -54,6 +54,8 @@ type AuthState = {
   resetPasswordStart: () => void;
   resetPasswordSuccess: () => void;
   resetPasswordFailure: (err: unknown) => void;
+
+  // TODO logout...
 };
 
 export const useAuthStore = create<AuthState>((set) => ({

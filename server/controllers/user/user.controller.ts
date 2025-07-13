@@ -71,10 +71,16 @@ export async function create(
       phoneNumber,
       isPhoneNumberVerified,
       password,
+      birth,
+      gender,
       roleIds,
     } = req.body as UserCreate;
 
     // Business logic
+    if (new Date(birth) > new Date()) {
+      return next(errorHandler(400, "Birth date cannot be in the future."));
+    }
+
     if (!email && isEmailVerified) {
       return next(
         errorHandler(400, "Email cannot be empty when isEmailVerified is true.")
@@ -131,6 +137,8 @@ export async function create(
       phoneNumber,
       isPhoneNumberVerified,
       password: hashedPassword,
+      birth,
+      gender,
       roles,
     });
 
@@ -311,6 +319,11 @@ export async function updateGeneralInfo(
     // Business logic
     const updateData = req.body as UserUpdate;
 
+    const updatedBirth = updateData.birth ? new Date(updateData.birth) : user.birth;
+    if (updatedBirth !== user.birth && updatedBirth > new Date()) {
+      return next(errorHandler(400, "Birth date cannot be in the future."));
+    }
+
     const updatedAvatarUrl =
       updateData.avatarUrl !== undefined
         ? updateData.avatarUrl === null
@@ -384,6 +397,8 @@ export async function updateGeneralInfo(
     user.fullName = updateData.fullName || user.fullName;
     user.avatarUrl = updatedAvatarUrl;
     user.password = updatedPassword;
+    user.birth = updatedBirth;
+    user.gender = updateData.gender || user.gender;
     user.userBalanceCents = updateData.userBalanceCents || user.userBalanceCents;
     user.isLocked = updatedIsLocked;
 
@@ -489,8 +504,8 @@ export async function updateEmail(
       if (updatedEmail) recipients.push(updatedEmail);
       await sendEmailChangeEmail(
         recipients,
-        oldEmail ? oldEmail : "No email",
-        updatedEmail ? updatedEmail : "No email",
+        oldEmail || "No email",
+        updatedEmail || "No email",
         user.fullName,
         updatedIsEmailVerified
       );
@@ -599,8 +614,8 @@ export async function updatePhoneNumber(
       if (user.email) {
         await sendPhoneNumberChangeEmail(
           user.email,
-          oldPhoneNumber ? oldPhoneNumber : "No phone number",
-          updatedPhoneNumber ? updatedPhoneNumber : "No phone number",
+          oldPhoneNumber || "No phone number",
+          updatedPhoneNumber || "No phone number",
           user.fullName,
           updatedIsPhoneNumberVerified
         );
@@ -609,8 +624,8 @@ export async function updatePhoneNumber(
         if (updatedPhoneNumber) recipients.push(updatedPhoneNumber as string);
         await sendPhoneNumberChangeSms(
           recipients,
-          oldPhoneNumber ? oldPhoneNumber : "No phone number",
-          updatedPhoneNumber ? updatedPhoneNumber : "No phone number",
+          oldPhoneNumber || "No phone number",
+          updatedPhoneNumber || "No phone number",
           updatedIsPhoneNumberVerified
         );
       }
@@ -862,10 +877,15 @@ export async function updateSelfGeneralInfo(
   console.log("▶️ ", "Processing update user request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   const user = req["user"];
-  const { fullName, avatarUrl, password } = req.body as UserUpdate;
+  const { fullName, avatarUrl, password, birth, gender } = req.body as UserUpdate;
 
   try {
     // Business logic
+    const updatedBirth = birth ? new Date(birth) : user.birth;
+    if (updatedBirth !== user.birth && updatedBirth > new Date()) {
+      return next(errorHandler(400, "Birth date cannot be in the future."));
+    }
+
     const updatedFullName = fullName !== undefined ? fullName : user.fullName;
     const updatedAvatarUrl =
       avatarUrl !== undefined
@@ -886,6 +906,8 @@ export async function updateSelfGeneralInfo(
     user.fullName = updatedFullName;
     user.avatarUrl = updatedAvatarUrl;
     user.password = updatedPassword;
+    user.birth = updatedBirth;
+    user.gender = gender || user.gender;
     await user.save();
 
     res.status(200).json({
@@ -973,7 +995,7 @@ async function hasConstraints(userId: Types.ObjectId): Promise<boolean> {
 
     return hasConstraints;
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }
 

@@ -1,4 +1,5 @@
 import { PERMISSION_LIST } from "../server/configs/configs";
+import { USER_GENDER_OPTIONS } from "./configs.common";
 
 export type ErrorResponse = {
   readonly success: false;
@@ -19,6 +20,8 @@ type BaseUserResponse = {
   avatarUrl?: string;
   isEmailVerified: boolean;
   isPhoneNumberVerified: boolean;
+  birth: string;
+  gender: (typeof USER_GENDER_OPTIONS)[number];
   stripeCustomerId?: string;
   userBalanceCents: number;
   lastLogin?: string;
@@ -28,14 +31,7 @@ type BaseUserResponse = {
 
 export type UserResponse = BaseUserResponse &
   (
-    | {
-        email: string;
-        phoneNumber: undefined;
-      }
-    | {
-        email: undefined;
-        phoneNumber: string;
-      }
+    | EmailOrPhoneNumber
     | {
         email: string;
         phoneNumber: string;
@@ -73,6 +69,8 @@ export type UserSignup = {
   // email?: string;
   // phoneNumber?: string;
   password: string;
+  birth: string;
+  gender: (typeof USER_GENDER_OPTIONS)[number];
 } & EmailOrPhoneNumber;
 
 export type UserLogin = {
@@ -88,6 +86,7 @@ export type UserVerify = {
 
 export type UserAuthByGoogle = {
   idToken: string;
+  accessToken: string; // To user sensitive data like birth, gender, etc.
 };
 
 export type UserForgotPassword = EmailOrPhoneNumber;
@@ -106,10 +105,17 @@ export type UserUpdate = {
   fullName?: string;
   avatarUrl?: string | null;
   password?: string;
+  birth?: string;
+  gender?: (typeof USER_GENDER_OPTIONS)[number];
   userBalanceCents?: number;
   isLocked?: boolean;
   roleIds?: string[];
 };
+
+export type GeoJSONPoint = {
+  readonly type: "Point";
+  coordinates: [number, number]; // [longitude, latitude]
+}
 
 export type BaseUserAddress = {
   id: string;
@@ -117,11 +123,13 @@ export type BaseUserAddress = {
   userId: string;
   street: string;
   apartmentNumber: string;
-  ward: string;
-  district: string;
-  cityProvince: string;
-  country: string;
+  wardCode: string;
+  districtCode: string;
+  cityProvinceCode: string;
+  countryCode?: string;
+  location: GeoJSONPoint;
   phoneNumber: string;
+  fullAddress: string;
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
@@ -130,14 +138,20 @@ export type BaseUserAddress = {
 export type UserAddressResponse = Omit<BaseUserAddress, "userId">;
 
 export type UserAddressResponseList = {
-  addresses: UserAddressResponse[];
   total: number;
+  addresses: UserAddressResponse[];
 };
 
 export type UserAddressCreate = Omit<
   BaseUserAddress,
-  "id" | "userId" | "createdAt" | "updatedAt" | "isDefault"
-> & { isDefault?: boolean };
+  "id" | "userId" | "location" | "fullAddress" | "createdAt" | "updatedAt" | "isDefault"
+> & {
+  location: {
+    longitude: number;
+    latitude: number;
+  }
+  isDefault?: boolean
+};
 
 export type UserAddressUpdate = Optional<UserAddressCreate>;
 
@@ -156,8 +170,8 @@ export type BaseUserCart = {
 export type UserCartResponse = Omit<BaseUserCart, "userId">;
 
 export type UserCartResponseList = {
-  carts: UserCartResponse[];
   total: number;
+  carts: UserCartResponse[];
 };
 
 export type UserCartCreate = {
@@ -185,13 +199,12 @@ export type UserCreate = {
   phoneNumber?: string;
   isPhoneNumberVerified?: boolean;
   password: string;
+  birth: string;
+  gender: (typeof USER_GENDER_OPTIONS)[number];
   userBalanceCents?: number;
   isLocked?: boolean;
   roleIds?: string[];
-} & (
-  | { email: string; phoneNumber: undefined }
-  | { email: undefined; phoneNumber: string }
-);
+} & EmailOrPhoneNumber;
 
 export type RoleCreate = {
   name: string;
@@ -434,15 +447,7 @@ export type OrderResponse = {
   deliveryStateId: string;
   estimateReceivedDate: string;
   receivedDate?: string;
-  deliveryAddress: {
-    name: string;
-    street: string;
-    apartmentNumber: string;
-    ward: string;
-    district: string;
-    cityProvince: string;
-    phoneNumber: string;
-  };
+  deliveryAddress: Omit<BaseUserAddress, "id" | "userId" | "isDefault" | "createdAt" | "updatedAt">;
   createdAt: string;
   updatedAt: string;
 };

@@ -11,6 +11,8 @@ import {
 import Otp from "../models/user/otp.model";
 import {
   RESET_TOKEN_TLL,
+  USER_DEFAULT_BIRTH_GAP,
+  USER_GENDER_OPTIONS,
   VERIFICATION_CODE_TTL,
 } from "../../common/configs.common";
 import {
@@ -49,7 +51,8 @@ export async function signup(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️", "Processing signup request...");
-  const { fullName, email, phoneNumber, password } = req.body as UserSignup;
+  const { fullName, email, birth, gender, phoneNumber, password } =
+    req.body as UserSignup;
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -61,7 +64,9 @@ export async function signup(
     const existingUser = await User.exists({
       isDeleted: false,
       $or: orConditions,
-    }).lean().session(session);
+    })
+      .lean()
+      .session(session);
 
     if (existingUser) {
       return next(
@@ -72,6 +77,12 @@ export async function signup(
       );
     }
 
+    // Business logic
+    if (new Date(birth) > new Date()) {
+      return next(errorHandler(400, "Birth date cannot be in the future."));
+    }
+
+    // Assign default buyer role
     const roleAssignment = await assignDefaultBuyerRole(session);
     const hashedPassword = await bcrypt.hash(password, HASH_SALT);
     const verificationCode = genVerificationCode();
@@ -80,6 +91,8 @@ export async function signup(
       email,
       phoneNumber,
       password: hashedPassword,
+      birth,
+      gender,
       roles: [
         {
           id: roleAssignment.roleId,
@@ -298,7 +311,7 @@ export async function authByGoogle(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️", "Processing Google authentication request...");
-  const { idToken } = req.body as UserAuthByGoogle;
+  const { idToken, accessToken } = req.body as UserAuthByGoogle;
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -323,6 +336,55 @@ export async function authByGoogle(
 
     // User not exists -> create new user -> login
     if (!user) {
+      // Use accessToken to fetch additional profile data
+      let birth: Date | undefined, gender: typeof USER_GENDER_OPTIONS[number] | undefined;
+      try {
+        const res = await fetch(
+          "https://people.googleapis.com/v1/people/me?personFields=birthdays,genders",
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error(
+            `Google People API request failed with status ${res.status}`
+          );
+        }
+
+        const person = await res.json();
+
+        // Extract gender
+        if (person.genders && person.genders.length > 0) {
+          gender = person.genders[0].value.toLowerCase();
+        }
+
+        // Extract birth date
+        if (person.birthdays && person.birthdays.length > 0) {
+          const bday = person.birthdays.find((b: any) => b.date);
+          if (bday && bday.date) {
+            const { year, month, day } = bday.date;
+            if (year && month && day) {
+              birth = new Date(Date.UTC(year, month - 1, day));
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch Google profile data:", error);
+        // Continue with default values...
+      }
+
+      if (!birth) {
+        const currentDate = new Date();
+        currentDate.setFullYear(
+          currentDate.getFullYear() - USER_DEFAULT_BIRTH_GAP
+        );
+        birth = currentDate;
+      }
+      if (!gender || !USER_GENDER_OPTIONS.includes(gender)) gender = "other";
+
       const roleAssignment = await assignDefaultBuyerRole(session);
       const hashedPassword = await bcrypt.hash(genRandomPassword(), HASH_SALT);
       const newUser = new User({
@@ -331,6 +393,8 @@ export async function authByGoogle(
         email,
         isEmailVerified: true, // Automatically verify email for Google users
         password: hashedPassword,
+        birth,
+        gender,
         lastLogin: new Date(),
         roles: [
           {
@@ -356,31 +420,29 @@ export async function authByGoogle(
         "Google authentication process completed successfully."
       );
       return;
-    } else {
-      // User exists -> proceed with login
-      // Check user is locked
-      if (user.isLocked) {
-        return next(errorHandler(403, "User account is locked."));
-      }
-
-      // Login user
-      user.fullName = fullName;
-      if (avatarUrl) user.avatarUrl = avatarUrl; // Make sure user avatar is fresh case they updated their avatar with Google services
-      user.isEmailVerified = true; // Make sure email is verified for Google users
-      user.lastLogin = new Date();
-      await user.save({ session });
-
-      await session.commitTransaction();
-
-      genJWTAndSetCookie(res, user._id.toString(), true);
-
-      res.status(200).json({
-        success: true,
-        message: "Login successful.",
-        data: formatUserResponse(user),
-      } as SuccessResponse<UserResponse>);
-      console.log("✅", "Google login process completed successfully.");
     }
+
+    // User exists -> proceed with login
+    // Check user is locked
+    if (user.isLocked) {
+      return next(errorHandler(403, "User account is locked."));
+    }
+
+    // Login user
+    user.isEmailVerified = true; // Make sure email is verified for Google users
+    user.lastLogin = new Date();
+    await user.save({ session });
+
+    await session.commitTransaction();
+
+    genJWTAndSetCookie(res, user._id.toString(), true);
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful.",
+      data: formatUserResponse(user),
+    } as SuccessResponse<UserResponse>);
+    console.log("✅", "Google login process completed successfully.");
   } catch (error) {
     if (session.inTransaction()) await session.abortTransaction();
     next(error);
@@ -544,7 +606,9 @@ export async function checkAuth(
 
     res.status(200).json({
       success: true,
-      message: isAuth ? "User is authenticated." : "User is registered but not authenticated.",
+      message: isAuth
+        ? "User is authenticated."
+        : "User is registered but not authenticated.",
       data: {
         user: formatUserResponse(user),
         isAuth,

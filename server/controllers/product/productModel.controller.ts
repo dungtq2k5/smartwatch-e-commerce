@@ -57,7 +57,13 @@ export async function create(
       releaseDate,
       stopSelling,
     } = req.body as ProductModelCreate;
-    // Check of os exists
+
+    // Check if releaseDate is valid
+    if (releaseDate && new Date(releaseDate) > new Date()) {
+      return next(errorHandler(400, "Release date cannot be in the future"));
+    }
+
+    // Check if os exists
     const os = await ProductOs.findById(osId);
     if (!os || os.isDeleted) {
       return next(errorHandler(404, "Product OS not found"));
@@ -193,6 +199,19 @@ export async function update(
     // Business logic
     const updateData = req.body as ProductModelUpdate;
 
+    // Valid releaseDate
+    const updatedReleaseDate = updateData.releaseDate
+      ? new Date(updateData.releaseDate)
+      : model.releaseDate;
+    if (
+      updatedReleaseDate !== model.releaseDate &&
+      updatedReleaseDate > new Date()
+    ) {
+      return next(
+        errorHandler(400, "Release date cannot be in the future")
+      );
+    }
+
     // Check if OS exists and update
     const updatedOsId = updateData.osId
       ? new Types.ObjectId(updateData.osId)
@@ -266,9 +285,7 @@ export async function update(
     model.sensors = updateData.sensors || model.sensors;
     model.caseMaterial = updateData.caseMaterial || model.caseMaterial;
     model.weightMg = updateData.weightMg || model.weightMg;
-    model.releaseDate = updateData.releaseDate
-      ? new Date(updateData.releaseDate)
-      : model.releaseDate;
+    model.releaseDate = updatedReleaseDate;
     model.stopSelling = updateData.stopSelling ?? model.stopSelling;
 
     await model.save();
