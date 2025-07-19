@@ -30,6 +30,12 @@ const requiredEnvVars = [
   "TWILIO_AUTH_PHONE",
   "FIREBASE_USER_AVATAR_BUCKET",
   "FIREBASE_PRODUCT_IMAGE_BUCKET",
+  "EMAIL_HOST",
+  "EMAIL_PORT",
+  "EMAIL_SECURE",
+  "EMAIL_USER",
+  "EMAIL_PASS",
+  "EMAIL_SENDER",
 ];
 for (const varName of requiredEnvVars) {
   if (!process.env[varName]) {

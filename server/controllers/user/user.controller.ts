@@ -26,7 +26,7 @@ import {
   sendPhoneNumberChangeEmail,
   sendPhoneNumberVerifiedEmail,
   sendVerificationEmail,
-} from "../../utils/mailtrap";
+} from "../../utils/email";
 import {
   sendLockAccountChangeSms,
   sendPhoneNumberChangeSms,

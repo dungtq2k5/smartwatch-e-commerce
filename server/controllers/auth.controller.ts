@@ -20,7 +20,7 @@ import {
   sendPasswordResetSuccessEmail,
   sendVerificationEmail,
   sendWelcomeEmail,
-} from "../utils/mailtrap";
+} from "../utils/email";
 import {
   sendPasswordResetSms,
   sendPasswordResetSuccessSms,
@@ -337,7 +337,8 @@ export async function authByGoogle(
     // User not exists -> create new user -> login
     if (!user) {
       // Use accessToken to fetch additional profile data
-      let birth: Date | undefined, gender: typeof USER_GENDER_OPTIONS[number] | undefined;
+      let birth: Date | undefined,
+        gender: (typeof USER_GENDER_OPTIONS)[number] | undefined;
       try {
         const res = await fetch(
           "https://people.googleapis.com/v1/people/me?personFields=birthdays,genders",
