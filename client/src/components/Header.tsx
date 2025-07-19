@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
-import { Search } from "lucide-react";
+import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { memo, useRef, type JSX } from "react";
 import { useAuthStore } from "../store/authStore";
 import defaultAvatar from "../assets/default-avatar.webp";
 
-const Header = memo(function Header() {
+const Header = memo(() => {
   // DEV temp for testing
   const renderCount = useRef(0);
   renderCount.current += 1;
@@ -96,7 +97,7 @@ const Header = memo(function Header() {
               aria-label="Search"
             />
             <button className="btn p-0" type="submit">
-              <Search size={20} />
+              <FontAwesomeIcon icon={faSearch} style={{ width: "20px", height: "20px" }} />
             </button>
           </form>
 

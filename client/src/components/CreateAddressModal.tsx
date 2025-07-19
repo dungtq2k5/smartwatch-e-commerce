@@ -12,7 +12,8 @@ import {
   isValidVnPhoneNumber,
   removeOddSpaces,
 } from "../../../common/utils.common";
-import { TriangleAlert } from "lucide-react";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useUserAddressStore } from "../store/addressStore";
 import type { UserAddressCreate } from "../../../common/types.common";
 import toast from "react-hot-toast";
@@ -307,7 +308,7 @@ export default function CreateAddressModal({
                 <label htmlFor="name">Full name</label>
                 {formData.name.err && (
                   <div className="text-danger small mt-1">
-                    <TriangleAlert size={16} /> {formData.name.err}
+                    <FontAwesomeIcon icon={faTriangleExclamation} /> {formData.name.err}
                   </div>
                 )}
               </div>
@@ -329,7 +330,7 @@ export default function CreateAddressModal({
                 <label htmlFor="phoneNumber">Phone number</label>
                 {formData.phoneNumber.err && (
                   <div className="text-danger small mt-1">
-                    <TriangleAlert size={16} /> {formData.phoneNumber.err}
+                    <FontAwesomeIcon icon={faTriangleExclamation} /> {formData.phoneNumber.err}
                   </div>
                 )}
               </div>
@@ -414,7 +415,7 @@ export default function CreateAddressModal({
                 <label htmlFor="street">Street</label>
                 {formData.street.err && (
                   <div className="text-danger small mt-1">
-                    <TriangleAlert size={16} /> {formData.street.err}
+                    <FontAwesomeIcon icon={faTriangleExclamation} /> {formData.street.err}
                   </div>
                 )}
               </div>
@@ -435,7 +436,7 @@ export default function CreateAddressModal({
                 <label htmlFor="apartmentNumber">Apartment/Building</label>
                 {formData.apartmentNumber.err && (
                   <div className="text-danger small mt-1">
-                    <TriangleAlert size={16} /> {formData.apartmentNumber.err}
+                    <FontAwesomeIcon icon={faTriangleExclamation} /> {formData.apartmentNumber.err}
                   </div>
                 )}
               </div>

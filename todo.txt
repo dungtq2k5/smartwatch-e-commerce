@@ -11,12 +11,12 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
   - Node.js with Express for the backend.
   - MongoDB for the database.
   - Firebase for image storage and authentication.
-  - Mailtrap for email sending services.
+  - Mailtrap/Nodemailer for email sending services.
   - Twilio for SMS sending services.
   - Auto generate JWT secret key: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
   - FrontEnd:
     - popperjs for toasting.
-    - lucide-react for icons.
+    - font-awesome for icons.
     - react-router-dom for routing.
     - zustand for controllers.
     - react-google-maps/api for location.

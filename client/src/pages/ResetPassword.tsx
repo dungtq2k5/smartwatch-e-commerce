@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { PASSWORD_HINT_MESSAGE } from "../../../common/configs.common";
 import type { FormInput } from "../utils/types";
 import { useNavigate, useParams } from "react-router-dom";
 import { isValidPassword } from "../../../common/utils.common";
-import { TriangleAlert } from "lucide-react";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store/authStore";
+import { formatError } from "../utils/utils";
 
 type FormData = {
   password: FormInput;
@@ -19,16 +21,7 @@ export default function ResetPassword() {
   console.log("ResetPassword render count:", renderCount.current);
 
   const { token } = useParams();
-  const {
-    resetPassword,
-    resetPasswordStart,
-    resetPasswordSuccess,
-    resetPasswordFailure,
-    stopLoading,
-    clearError,
-    isLoading,
-    err,
-  } = useAuthStore();
+  const { resetPassword, isLoading } = useAuthStore();
 
   const [formData, setFormData] = useState<FormData>({
     password: { val: "" },
@@ -64,7 +57,6 @@ export default function ResetPassword() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
-      resetPasswordStart();
 
       const validateForm = (): boolean => {
         let allValid = true;
@@ -94,47 +86,21 @@ export default function ResetPassword() {
 
       if (validateForm()) {
         if (!token) {
-          resetPasswordFailure("Token is required for resetting password");
+          toast.error("Token is required for resetting password");
           return;
         }
 
         try {
-          const res = await resetPassword(formData.password.val, token);
-          if (!res.success) {
-            resetPasswordFailure(res.message);
-            return;
-          }
-
-          resetPasswordSuccess();
+          await resetPassword(formData.password.val, token);
           navigate("/login");
           toast.success("Password reset successfully. You can now log in.");
         } catch (error) {
-          resetPasswordFailure(error);
+          toast.error(formatError(error));
         }
-        return;
       }
-
-      stopLoading();
     },
-    [
-      formData,
-      resetPassword,
-      resetPasswordFailure,
-      resetPasswordStart,
-      resetPasswordSuccess,
-      stopLoading,
-      token,
-      navigate,
-    ]
+    [formData, resetPassword, token, navigate]
   );
-
-  useEffect((): void => {
-    console.log(err); // DEV for testing
-    if (err) {
-      toast.error(err);
-      clearError();
-    }
-  }, [err, clearError]);
 
   return (
     <main className="container--center--g">
@@ -159,7 +125,8 @@ export default function ResetPassword() {
           </div>
           {formData.password.err && (
             <div className="text-danger small mt-1">
-              <TriangleAlert size={16} /> {formData.password.err}
+              <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+              {formData.password.err}
             </div>
           )}
         </div>
@@ -182,7 +149,8 @@ export default function ResetPassword() {
           </div>
           {formData.confirmPassword.err && (
             <div className="text-danger small mt-1">
-              <TriangleAlert size={16} /> {formData.confirmPassword.err}
+              <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+              {formData.confirmPassword.err}
             </div>
           )}
         </div>

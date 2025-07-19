@@ -31,7 +31,7 @@ async function request(
   }
 }
 
-export async function get(url: string): Promise<Response> {
+export async function retrieve(url: string): Promise<Response> {
   return await request(url, "GET");
 }
 

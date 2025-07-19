@@ -1,26 +1,19 @@
 import { Link } from "react-router-dom";
 import type { FormInput } from "../utils/types";
 import { useAuthStore } from "../store/authStore";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   isValidEmail,
   isValidVnPhoneNumber,
 } from "../../../common/utils.common";
 import type { UserForgotPassword } from "../../../common/types.common";
-import { TriangleAlert } from "lucide-react";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import toast from "react-hot-toast";
+import { formatError } from "../utils/utils";
 
 export default function ForgotPassword() {
-  const {
-    forgotPassword,
-    forgotPasswordStart,
-    forgotPasswordSuccess,
-    forgotPasswordFailure,
-    stopLoading,
-    clearError,
-    isLoading,
-    err,
-  } = useAuthStore();
+  const { forgotPassword, isLoading } = useAuthStore();
 
   const [emailOrPhone, setEmailOrPhone] = useState<FormInput>({
     val: "",
@@ -46,7 +39,6 @@ export default function ForgotPassword() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
-      forgotPasswordStart();
 
       const validateForm = (): boolean => {
         const val = emailOrPhone.val;
@@ -72,47 +64,28 @@ export default function ForgotPassword() {
         } as unknown as UserForgotPassword;
 
         try {
-          const res = await forgotPassword(data);
-          if (!res.success) {
-            forgotPasswordFailure(res.message);
-            return;
-          }
-
+          await forgotPassword(data);
           setIsSent(true);
-          forgotPasswordSuccess();
         } catch (error) {
-          forgotPasswordFailure(error);
+          toast.error(formatError(error));
+          return;
         }
-        return;
       }
-
-      stopLoading();
     },
-    [
-      emailOrPhone.val,
-      forgotPassword,
-      forgotPasswordFailure,
-      forgotPasswordStart,
-      forgotPasswordSuccess,
-      stopLoading,
-    ]
+    [emailOrPhone.val, forgotPassword]
   );
-
-  useEffect((): void => {
-    if (err) {
-      toast.error(err);
-      clearError();
-    }
-  }, [err, clearError]);
 
   return (
     <main className="container--center--g">
       {isSent ? (
         <div className="border rounded-3 shadow-sm p-4 text-center">
-          <h1 className="h3 mb-3 fw-normal">Check your email or phone number</h1>
+          <h1 className="h3 mb-3 fw-normal">
+            Check your email or phone number
+          </h1>
           <p className="mb-1">
             We have sent you a link to reset your password. Please check your
-            email or SMS for the link, link could take a few minutes to arrive so please wait.
+            email or SMS for the link, link could take a few minutes to arrive
+            so please wait.
           </p>
           <p className="text-muted small">
             If you do not receive the link, please check your spam folder or
@@ -139,7 +112,8 @@ export default function ForgotPassword() {
             <label htmlFor="emailOrPhone">Email or phone number</label>
             {emailOrPhone.err && (
               <div className="text-danger small mt-1">
-                <TriangleAlert size={16} /> {emailOrPhone.err}
+                <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                {emailOrPhone.err}
               </div>
             )}
           </div>

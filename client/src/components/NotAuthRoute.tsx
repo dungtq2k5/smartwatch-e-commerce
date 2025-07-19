@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { memo, useRef } from "react";
 
-const NotAuthRoute = memo(function NotAuthRoute() {
+const NotAuthRoute = memo(() => {
   // DEV temp for testing
   const renderCount = useRef(0);
   renderCount.current += 1;

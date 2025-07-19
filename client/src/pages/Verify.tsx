@@ -4,7 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { VERIFICATION_CODE_LENGTH } from "../../../common/configs.common";
 import type { UserVerify } from "../../../common/types.common";
 import toast from "react-hot-toast";
-import { TriangleAlert } from "lucide-react";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { formatError } from "../utils/utils";
 
 export default function Verify() {
   // DEV for testing
@@ -12,17 +14,7 @@ export default function Verify() {
   renderCount.current += 1;
   console.log("Verify render count:", renderCount.current);
 
-  const {
-    verify,
-    verifyStart,
-    verifySuccess,
-    verifyFailure,
-    stopLoading,
-    clearError,
-    user,
-    isLoading,
-    err,
-  } = useAuthStore();
+  const { user, isLoading, verify } = useAuthStore();
 
   const verifyType = user!.email ? "email" : "phone number";
 
@@ -76,7 +68,6 @@ export default function Verify() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement> | Event): Promise<void> => {
       e.preventDefault();
-      verifyStart();
 
       const validateForm = (): boolean => {
         return code.every((digit) => /^\d$/.test(digit));
@@ -89,33 +80,16 @@ export default function Verify() {
         };
 
         try {
-          const res = await verify(data);
-          if (!res.success) {
-            verifyFailure(res.message);
-            return;
-          }
-
-          verifySuccess();
+          await verify(data);
           navigate("/");
         } catch (error) {
-          verifyFailure(error);
+          toast.error(formatError(error));
         }
-        return;
       }
 
       setInputErr("Please fill all digits with numbers");
-      stopLoading();
     },
-    [
-      code,
-      navigate,
-      stopLoading,
-      user,
-      verify,
-      verifyFailure,
-      verifyStart,
-      verifySuccess,
-    ]
+    [code, navigate, user, verify]
   );
 
   // Auto submit when all digits are filled
@@ -124,13 +98,6 @@ export default function Verify() {
       handleSubmit(new Event("submit"));
     }
   }, [code, handleSubmit]);
-
-  useEffect((): void => {
-    if (err) {
-      toast.error(err);
-      clearError();
-    }
-  }, [err, clearError]);
 
   return (
     <main className="container">
@@ -172,7 +139,7 @@ export default function Verify() {
         </div>
         {inputErr && (
           <div className="text-danger small mb-3">
-            <TriangleAlert size={16} /> {inputErr}
+            <FontAwesomeIcon icon={faTriangleExclamation} /> {inputErr}
           </div>
         )}
 

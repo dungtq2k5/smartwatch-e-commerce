@@ -5,7 +5,7 @@ import type {
   UserAddressResponseList,
   UserAddressUpdate,
 } from "../../../common/types.common";
-import { formatError, get as fetch, patch, remove, post } from "../utils/utils";
+import { formatError, retrieve, patch, remove, post } from "../utils/utils";
 import { SELF_ADDRESSES_URL } from "../configs";
 
 type UserAddressState = {
@@ -40,7 +40,7 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
       set({ isFetching: true, fetchErr: undefined });
 
       try {
-        const res = await fetch(SELF_ADDRESSES_URL);
+        const res = await retrieve(SELF_ADDRESSES_URL);
         if (!res.success) {
           set({ fetchErr: res.message });
           return;
@@ -57,7 +57,6 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
 
   async deleteAddress(addressId: string): Promise<void> {
     set({ isLoading: true });
-
     try {
       const res = await remove(SELF_ADDRESSES_URL, addressId);
       if (!res.success) throw new Error(res.message);
@@ -177,7 +176,7 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
 
     set({ isGetting: true });
     try {
-      const res = await fetch(`${SELF_ADDRESSES_URL}/${addressId}`);
+      const res = await retrieve(`${SELF_ADDRESSES_URL}/${addressId}`);
       if (!res.success) {
         set({ getErr: res.message });
         return;

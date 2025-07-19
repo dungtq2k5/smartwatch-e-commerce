@@ -406,6 +406,8 @@ export async function authByGoogle(
 
       await newUser.save({ session });
 
+      await sendWelcomeEmail(email, fullName);
+
       await session.commitTransaction();
 
       genJWTAndSetCookie(res, newUser._id.toString(), true);

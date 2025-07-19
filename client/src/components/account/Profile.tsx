@@ -82,7 +82,7 @@ export default function Profile() {
                 name="phoneNumber"
                 className="form-control"
                 autoComplete="tel"
-                defaultValue={user.phoneNumber || "Not provided"}
+                defaultValue={user.phoneNumber ?? "Not provided"}
                 disabled
               />
               <button className="btn btn-outline-secondary" type="button">

@@ -1,6 +1,6 @@
 import { memo, useRef } from "react";
 
-const Footer = memo(function Footer() {
+const Footer = memo(() => {
   // DEV temp for testing
   const renderCount = useRef(0);
   renderCount.current += 1;

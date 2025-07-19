@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 
-const NotFound = memo(function NotFound() {
+const NotFound = memo(() => {
   return (
     <main className="container--center--g">
       <div className="text-center">

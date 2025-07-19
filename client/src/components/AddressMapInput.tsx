@@ -1,7 +1,7 @@
 import { GoogleMap, Marker } from "@react-google-maps/api";
 import { memo, useRef } from "react";
 
-const AddressMapInput = memo(function AddressMapInput({
+const AddressMapInput = memo(({
   isMapLoaded,
   location,
   onMapLoad,
@@ -11,7 +11,7 @@ const AddressMapInput = memo(function AddressMapInput({
   location: [number, number]; // [lng, lat]
   onMapLoad: (map: google.maps.Map) => void;
   onMarkerDragEnd: (e: google.maps.MapMouseEvent) => void;
-}>) {
+}>) => {
   // DEV temp for testing
   const renderCount = useRef(0);
   renderCount.current += 1;

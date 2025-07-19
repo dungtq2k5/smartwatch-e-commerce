@@ -1,4 +1,5 @@
-import { Plus, Slash } from "lucide-react";
+import { faPlus, faSlash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useUserAddressStore } from "../../store/addressStore";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Loading from "../Loading";
@@ -91,7 +92,7 @@ export default function Address() {
               }
               disabled={isLoading}
             >
-              <Plus size={16} /> Add new address
+              <FontAwesomeIcon icon={faPlus} size="sm" /> Add new address
             </button>
           </div>
 
@@ -122,7 +123,7 @@ export default function Address() {
                   <div className="flex-grow-1">
                     <div className="d-flex align-items-center gap-2 mb-1">
                       <h3 className="h5 mb-1">{address.name}</h3>
-                      <Slash size={16} />
+                      <FontAwesomeIcon icon={faSlash} rotation={90} size="sm" />
                       <small className="text-muted">
                         {address.phoneNumber}
                       </small>

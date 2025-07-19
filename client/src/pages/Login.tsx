@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import type { UserLogin } from "../../../common/types.common";
 import toast from "react-hot-toast";
@@ -9,7 +9,11 @@ import {
   isValidPassword,
   isValidVnPhoneNumber,
 } from "../../../common/utils.common";
-import { TriangleAlert } from "lucide-react";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { formatError } from "../utils/utils";
+import AuthByGoogleBtn from "../components/AuthByGoogleBtn";
+import HorizontalDivider from "../components/HorizontalDivider";
 
 type FormData = {
   emailOrPhone: FormInput;
@@ -22,25 +26,11 @@ export default function Login() {
   renderCount.current += 1;
   console.log("Login render count:", renderCount.current);
 
-  const {
-    login,
-    loginStart,
-    loginSuccess,
-    loginFailure,
-    stopLoading,
-    clearError,
-    user,
-    isLoading,
-    err,
-  } = useAuthStore();
+  const { login, user, isLoading } = useAuthStore();
 
   const [formData, setFormData] = useState<FormData>({
-    emailOrPhone: {
-      val: "",
-    },
-    password: {
-      val: "",
-    },
+    emailOrPhone: { val: "" },
+    password: { val: "" },
   });
 
   const navigate = useNavigate();
@@ -72,7 +62,6 @@ export default function Login() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
-      loginStart();
 
       const validateForm = (): boolean => {
         let isAllValid = true;
@@ -97,7 +86,6 @@ export default function Login() {
             !isValidVnPhoneNumber(formData.emailOrPhone.val)) ||
           !isValidPassword(formData.password.val)
         ) {
-          stopLoading();
           toast.error("Invalid credentials.");
           return;
         }
@@ -109,41 +97,15 @@ export default function Login() {
         } as unknown as UserLogin;
 
         try {
-          const res = await login(data);
-          if (!res.success) {
-            loginFailure(res.message);
-            return;
-          }
-
-          loginSuccess(res.data);
+          await login(data);
           navigate("/");
         } catch (error) {
-          loginFailure(error);
-        } finally {
-          stopLoading();
+          toast.error(formatError(error));
         }
-        return;
       }
-
-      stopLoading();
     },
-    [
-      loginStart,
-      formData,
-      stopLoading,
-      login,
-      loginSuccess,
-      navigate,
-      loginFailure,
-    ]
+    [formData, login, navigate]
   );
-
-  useEffect(() => {
-    if (err) {
-      toast.error(err);
-      clearError();
-    }
-  }, [err, clearError]);
 
   return (
     <main className="container--center--g">
@@ -168,12 +130,13 @@ export default function Login() {
           <label htmlFor="emailOrPhone">Email or phone number</label>
           {formData.emailOrPhone.err && (
             <div className="text-danger small mt-1">
-              <TriangleAlert size={16} /> {formData.emailOrPhone.err}
+              <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+              {formData.emailOrPhone.err}
             </div>
           )}
         </div>
         {/* Password */}
-        <div className="form-floating mb-3">
+        <div className="form-floating mb-4">
           <input
             type="password"
             className="form-control"
@@ -187,40 +150,43 @@ export default function Login() {
           <label htmlFor="password">Password</label>
           {formData.password.err && (
             <div className="text-danger small mt-1">
-              <TriangleAlert size={16} /> {formData.password.err}
+              <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+              {formData.password.err}
             </div>
           )}
         </div>
 
-        <button
-          className="w-100 btn btn-primary mb-4"
-          type="submit"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <span
-                className="spinner-border spinner-border-sm me-2"
-                aria-hidden="true"
-              ></span>
-              <output>Signing in...</output>
-            </>
-          ) : (
-            "Sign me in"
-          )}
-        </button>
+        <div className="d-flex gap-2 flex-column mb-4">
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  aria-hidden="true"
+                ></span>
+                <output>Signing in...</output>
+              </>
+            ) : (
+              "Sign me in"
+            )}
+          </button>
+          <HorizontalDivider text="or" />
+          <AuthByGoogleBtn />
+        </div>
 
         <p className="mb-1 text-muted">
           Don't have an account? <Link to="/signup">Sign up now</Link>
         </p>
         <p className="mb-1 text-muted">
-          Forgot your password?{" "}
-          <Link to="/forgot-password">Reset it now</Link>
+          Forgot your password? <Link to="/forgot-password">Reset it now</Link>
         </p>
         {user && (
           <p className="mb-0 text-muted">
-            Not verified yet?{" "}
-            <Link to="/verify">Verify your account</Link>
+            Not verified yet? <Link to="/verify">Verify your account</Link>
           </p>
         )}
       </form>

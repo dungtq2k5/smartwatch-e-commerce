@@ -2,7 +2,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function Home() {
   return (
-    <main className="container">
+    <main className="container container--center--g">
       <div className="row p-4 pb-0 pe-lg-0 pt-lg-5 align-items-center rounded-3 border shadow-lg">
         <div className="col-lg-7 p-3 p-lg-5 pt-lg-3">
           <h1 className="display-4 fw-bold lh-1">Your perfect smartwatch is here</h1>

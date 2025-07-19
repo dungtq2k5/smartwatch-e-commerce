@@ -1,6 +1,13 @@
+import { useRef } from "react";
+
 export default function Loading({
   loadingMsg,
 }: Readonly<{ loadingMsg?: string }>) {
+  // DEV temp for testing
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  console.log("Loading rendered", renderCount.current);
+
   return (
     <div className="d-flex justify-content-center align-items-center h-100">
       <div className="spinner-border text-primary">

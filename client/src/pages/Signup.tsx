@@ -1,17 +1,21 @@
 import { Link, useNavigate } from "react-router-dom";
 import { PASSWORD_HINT_MESSAGE } from "../../../common/configs.common";
 import type { FormInput } from "../utils/types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   isValidEmail,
   isValidPassword,
   isValidUserFullName,
   isValidVnPhoneNumber,
 } from "../../../common/utils.common";
-import { TriangleAlert } from "lucide-react";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuthStore } from "../store/authStore";
 import type { UserSignup } from "../../../common/types.common";
 import toast from "react-hot-toast";
+import { formatError } from "../utils/utils";
+import AuthByGoogleBtn from "../components/AuthByGoogleBtn";
+import HorizontalDivider from "../components/HorizontalDivider";
 
 type FormData = {
   fullName: FormInput;
@@ -33,16 +37,7 @@ export default function Signup() {
     password: { val: "" },
     confirmPassword: { val: "" },
   });
-  const {
-    signup,
-    signupStart,
-    signupSuccess,
-    signupFailure,
-    stopLoading,
-    clearError,
-    isLoading,
-    err
-  } = useAuthStore();
+  const { signup, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
   const handleChange = useCallback(
@@ -80,7 +75,6 @@ export default function Signup() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
-      signupStart();
 
       const validateForm = (): boolean => {
         let allValid = true;
@@ -136,39 +130,15 @@ export default function Signup() {
         } as unknown as UserSignup;
 
         try {
-          const res = await signup(user);
-          if (!res.success) {
-            signupFailure(res.message);
-            return;
-          }
-
-          signupSuccess(res.data);
+          await signup(user);
           navigate("/verify");
         } catch (error) {
-          signupFailure(error);
+          toast.error(formatError(error));
         }
-        return;
       }
-
-      stopLoading();
     },
-    [
-      formData,
-      navigate,
-      signup,
-      signupFailure,
-      signupStart,
-      signupSuccess,
-      stopLoading
-    ]
+    [formData, navigate, signup]
   );
-
-  useEffect(() => {
-    if (err) {
-      toast.error(err);
-      clearError();
-    }
-  }, [err, clearError]);
 
   return (
     <main className="container--center--g">
@@ -189,7 +159,8 @@ export default function Signup() {
           <label htmlFor="fullName">Full name</label>
           {formData.fullName.err && (
             <div className="text-danger small mt-1">
-              <TriangleAlert size={16} /> {formData.fullName.err}
+              <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+              {formData.fullName.err}
             </div>
           )}
         </div>
@@ -208,7 +179,8 @@ export default function Signup() {
           <label htmlFor="emailOrPhone">Email or phone number</label>
           {formData.emailOrPhone.err && (
             <div className="text-danger small mt-1">
-              <TriangleAlert size={16} /> {formData.emailOrPhone.err}
+              <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+              {formData.emailOrPhone.err}
             </div>
           )}
         </div>
@@ -231,12 +203,13 @@ export default function Signup() {
           </div>
           {formData.password.err && (
             <div className="text-danger small mt-1">
-              <TriangleAlert size={16} /> {formData.password.err}
+              <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+              {formData.password.err}
             </div>
           )}
         </div>
         {/* Password Confirm */}
-        <div className="form-floating mb-3">
+        <div className="form-floating mb-4">
           <input
             type="password"
             className="form-control"
@@ -254,28 +227,33 @@ export default function Signup() {
           </div>
           {formData.confirmPassword.err && (
             <div className="text-danger small mt-1">
-              <TriangleAlert size={16} /> {formData.confirmPassword.err}
+              <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+              {formData.confirmPassword.err}
             </div>
           )}
         </div>
 
-        <button
-          type="submit"
-          className="w-100 btn btn-primary mt-3 mb-4"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <span
-                className="spinner-border spinner-border-sm me-2"
-                aria-hidden="true"
-              ></span>
-              <output>Signing up...</output>
-            </>
-          ) : (
-            "Sign me up"
-          )}
-        </button>
+        <div className="d-flex gap-2 flex-column mb-4">
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  aria-hidden="true"
+                ></span>
+                <output>Signing up...</output>
+              </>
+            ) : (
+              "Sign me up"
+            )}
+          </button>
+          <HorizontalDivider text="or" />
+          <AuthByGoogleBtn />
+        </div>
 
         <p className="mb-0 text-muted">
           Already have an account? <Link to="/login">Login now</Link>
