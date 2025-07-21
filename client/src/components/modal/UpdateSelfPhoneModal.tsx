@@ -1,0 +1,159 @@
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useAuthStore } from "../../store/authStore";
+import type { FormInput } from "../../utils/types";
+import { Button, Modal } from "react-bootstrap";
+import { isValidVnPhoneNumber } from "../../../../common/utils.common";
+import { formatError } from "../../utils/utils";
+import toast from "react-hot-toast";
+import type { UserUpdateContactInfo } from "../../../../common/types.common";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import VerifyForm from "../VerifyForm";
+
+const UpdateSelfPhoneModal = memo(
+  ({
+    show,
+    onHide,
+  }: Readonly<{
+    show: boolean;
+    onHide: () => void;
+  }>) => {
+    // DEV temp for testing
+    const renderCount = useRef(0);
+    renderCount.current += 1;
+    console.log("UpdateSelfPhoneModal render count:", renderCount.current);
+
+    const { isLoading, updateSelfContactInfo } = useAuthStore();
+    const [phoneNumber, setPhoneNumber] = useState<FormInput>({ val: "" });
+    const [isUpdated, setIsUpdated] = useState<boolean>(false);
+
+    useEffect(() => {
+      if (!show) {
+        setTimeout(() => {
+          setPhoneNumber({ val: "" });
+          setIsUpdated(false);
+        }, 200);
+      }
+    }, [show]);
+
+    const handlePhoneNumberChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { value: val } = e.target;
+
+        setPhoneNumber({
+          val,
+          err: !val
+            ? "Phone number is required"
+            : !isValidVnPhoneNumber(val)
+            ? "Phone number is invalid"
+            : undefined,
+        });
+      },
+      []
+    );
+
+    const handleSubmit = useCallback(
+      async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        const validatePhone = (): boolean => {
+          if (!phoneNumber.val) {
+            setPhoneNumber((prev) => ({
+              ...prev,
+              err: "Phone number is required",
+            }));
+            return false;
+          }
+          if (!isValidVnPhoneNumber(phoneNumber.val)) {
+            setPhoneNumber((prev) => ({
+              ...prev,
+              err: "Phone number is invalid",
+            }));
+            return false;
+          }
+          return true;
+        };
+
+        if (validatePhone()) {
+          const data: UserUpdateContactInfo = {
+            type: "phoneNumber",
+            value: phoneNumber.val,
+          };
+
+          try {
+            await updateSelfContactInfo(data);
+            setIsUpdated(true);
+          } catch (error) {
+            toast.error(formatError(error));
+          }
+        }
+      },
+      [phoneNumber, updateSelfContactInfo]
+    );
+
+    return (
+      <Modal show={show} onHide={onHide} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Update Phone Number</Modal.Title>
+        </Modal.Header>
+
+        {!isUpdated ? (
+          <form onSubmit={handleSubmit}>
+            <Modal.Body>
+              <div className="form-floating">
+                <input
+                  type="phoneNumber"
+                  className="form-control"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  placeholder="name@example.com"
+                  value={phoneNumber.val}
+                  onChange={handlePhoneNumberChange}
+                  aria-describedBy="phoneNumberHelp"
+                />
+                <label htmlFor="phoneNumber">New Phone Number</label>
+                {phoneNumber.err && (
+                  <div className="text-danger small mt-1">
+                    <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                    {phoneNumber.err}
+                  </div>
+                )}
+                <div id="phoneNumberHelp" className="form-text mt-1">
+                  We will send a verification code to this phone number at next step.
+                </div>
+              </div>
+            </Modal.Body>
+
+            <Modal.Footer>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onHide}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      aria-hidden="true"
+                    ></span>
+                    <output>Updating phone...</output>
+                  </>
+                ) : (
+                  "Update phone"
+                )}
+              </Button>
+            </Modal.Footer>
+          </form>
+        ) : (
+          <VerifyForm type="phoneNumber" onSuccess={onHide} />
+        )}
+      </Modal>
+    );
+  }
+);
+
+export default UpdateSelfPhoneModal;

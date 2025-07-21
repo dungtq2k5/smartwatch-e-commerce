@@ -1,5 +1,9 @@
 import type { UserAddressFormat } from "../client/src/utils/types.ts";
 import {
+  AVATAR_ALLOWED_TYPES,
+  AVATAR_MAX_SIZE,
+  AVATAR_MIN_HEIGHT,
+  AVATAR_MIN_WIDTH,
   PASSWORD_MIN_LENGTH,
   PRODUCT_NAME_MAX_LENGTH,
   PRODUCT_NAME_MIN_LENGTH,
@@ -81,6 +85,21 @@ export function convertUtcToLocalISOString(utcIsoString: string): string {
   const seconds = String(date.getSeconds()).padStart(2, "0");
 
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
+export function readFileAsDataUrl(file: File) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (event) => resolve(event.target!.result);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+export function capFirstLetter(str: string): string {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // --- VALIDATION UTILS ---
@@ -200,6 +219,52 @@ export function containsEmoji(text: any): boolean {
 export function isValidCoordinates(coords: { longitude: number; latitude: number }): boolean {
   const { longitude, latitude } = coords;
   return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+}
+
+export function isValidBirthDate(birthDate: any): boolean {
+  if (!(birthDate instanceof Date)) {
+    birthDate = new Date(birthDate);
+  }
+
+  // Check if the date is valid
+  if (isNaN(birthDate.getTime())) return false;
+
+  // Check if the date is in the past
+  const today = new Date();
+  return birthDate < today;
+}
+
+export async function isValidAvatar(file: File): Promise<string[]> {
+  const errors: string[] = [];
+
+  if (!AVATAR_ALLOWED_TYPES.includes(file.type as any)) {
+    errors.push(
+      `Invalid file type. Allowed types: ${AVATAR_ALLOWED_TYPES.join(", ")}`
+    );
+  }
+
+  if (file.size > AVATAR_MAX_SIZE) {
+    errors.push(`File size exceeds the maximum limit of ${AVATAR_MAX_SIZE / 1024 / 1024}MB`);
+  }
+
+  try {
+    const img = new Image();
+    img.src = (await readFileAsDataUrl(file)) as string;
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+    });
+
+    if (img.width < AVATAR_MIN_WIDTH || img.height < AVATAR_MIN_HEIGHT) {
+      errors.push(
+        `Image dimensions must be at least ${AVATAR_MIN_WIDTH}x${AVATAR_MIN_HEIGHT} pixels`
+      );
+    }
+  } catch {
+    errors.push("Uploaded file is not a valid image");
+  }
+
+  return errors;
 }
 
 // --- ADDRESS UTILS ---

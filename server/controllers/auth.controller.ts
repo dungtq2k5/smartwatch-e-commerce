@@ -34,6 +34,7 @@ import {
   UserLogin,
   UserResponse,
   UserSignup,
+  UserValidatePassword,
   UserVerify,
 } from "../../common/types.common";
 import mongoose, { Types } from "mongoose";
@@ -358,7 +359,11 @@ export async function authByGoogle(
         const person = await res.json();
 
         // Extract gender
-        if (person.genders && person.genders.length > 0) {
+        if (
+          person.genders &&
+          person.genders.length > 0 &&
+          person.genders[0].value
+        ) {
           gender = person.genders[0].value.toLowerCase();
         }
 
@@ -396,6 +401,7 @@ export async function authByGoogle(
         password: hashedPassword,
         birth,
         gender,
+        authProvider: "google",
         lastLogin: new Date(),
         roles: [
           {
@@ -618,6 +624,41 @@ export async function checkAuth(
       },
     } as SuccessResponse<CheckAuthResponse>);
     console.log("✅", "Authentication check completed successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function validatePassword(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️", "Validating user password...");
+  const userId = req["auth"].userId;
+  const { password } = req.body as UserValidatePassword;
+
+  try {
+    if (!Types.ObjectId.isValid(userId)) {
+      return next(errorHandler(404, "User not found."));
+    }
+
+    const user = await User.findById(userId);
+    if (!user || user.isDeleted) {
+      return next(errorHandler(404, "User not found."));
+    }
+
+    // Check password
+    const isPasswordValid = bcrypt.compareSync(password, user.password);
+    if (!isPasswordValid) {
+      return next(errorHandler(401, "Invalid password."));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Password is valid.",
+    } as SuccessResponse);
+    console.log("✅", "Password validation completed successfully.");
   } catch (error) {
     next(error);
   }

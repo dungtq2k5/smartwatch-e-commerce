@@ -5,6 +5,11 @@ export type FormInput = {
   err?: string;
 };
 
+export type FormFileInput = {
+  file?: File | string | null; // File when uploading, string when first loaded from server (url string), null when want to remove image
+  err?: string | string[];
+}
+
 export type UserAddressFormat = Omit<
   BaseUserAddress,
   "id" | "userId" | "phoneNumber" | "location" | "fullAddress" | "createdAt" | "updatedAt"

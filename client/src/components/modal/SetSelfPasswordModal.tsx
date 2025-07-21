@@ -1,0 +1,216 @@
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { Button, Modal } from "react-bootstrap";
+import toast from "react-hot-toast";
+import { isValidPassword } from "../../../../common/utils.common";
+import { useAuthStore } from "../../store/authStore";
+import { PASSWORD_HINT_MESSAGE } from "../../../../common/configs.common";
+import type { FormInput } from "../../utils/types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { formatError } from "../../utils/utils";
+
+type FormData = {
+  password: FormInput;
+  confirmPassword: FormInput;
+};
+
+const SetSelfPasswordModal = memo(
+  ({
+    show,
+    onHide,
+  }: Readonly<{
+    show: boolean;
+    onHide: () => void;
+  }>) => {
+    // DEV temp for testing
+    const renderCount = useRef(0);
+    renderCount.current += 1;
+    console.log("SetSelfPasswordModal render count:", renderCount.current);
+
+    const { user, isLoading, setSelfPassword } = useAuthStore();
+
+    const [formData, setFormData] = useState<FormData>({
+      password: { val: "" },
+      confirmPassword: { val: "" },
+    });
+
+    useEffect(() => {
+      if (!show) {
+        setTimeout(() => {
+          setFormData({
+            password: { val: "" },
+            confirmPassword: { val: "" },
+          });
+        }, 200);
+      }
+    }, [show]);
+
+    const handleChange = useCallback(
+      async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value: val } = e.target;
+
+        let err = "";
+        if (!val) {
+          err = `${name} is required`;
+        } else if (name === "password" && !isValidPassword(val)) {
+          err = "Password is invalid";
+        } else if (
+          name === "confirmPassword" &&
+          val !== formData.password.val
+        ) {
+          err = "Confirm password must match the password above";
+        }
+
+        setFormData((prev) => ({
+          ...prev,
+          [name]: { val, err },
+        }));
+      },
+      [formData.password.val]
+    );
+
+    const handleSubmit = useCallback(
+      async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+        e.preventDefault();
+
+        const validateForm = (): boolean => {
+          let isValid = true;
+          const newFormData: FormData = { ...formData };
+
+          if (!newFormData.password.val) {
+            newFormData.password.err = "Password is required";
+            isValid = false;
+          } else if (!isValidPassword(newFormData.password.val)) {
+            newFormData.password.err = "Password is invalid";
+            isValid = false;
+          }
+          if (!newFormData.confirmPassword.val) {
+            newFormData.confirmPassword.err = "Confirm password is required";
+            isValid = false;
+          } else if (
+            newFormData.confirmPassword.val !== newFormData.password.val
+          ) {
+            newFormData.confirmPassword.err = "Confirm password must match";
+            isValid = false;
+          }
+
+          setFormData(newFormData);
+          return isValid;
+        };
+
+        if (validateForm()) {
+          const data = {
+            password: formData.password.val,
+          };
+
+          try {
+            await setSelfPassword(data);
+            onHide();
+            toast.success("Password set successfully");
+          } catch (error) {
+            toast.error(formatError(error));
+          }
+        }
+      },
+      [formData, onHide, setSelfPassword]
+    );
+
+    return (
+      <Modal show={show} onHide={onHide} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Set Password</Modal.Title>
+        </Modal.Header>
+
+        <form onSubmit={handleSubmit}>
+          <Modal.Body>
+            {/* Hidden username field fir accessibility and password managers */}
+            <input
+              type="text"
+              id="fullName2"
+              name="fullName2"
+              autoComplete="username"
+              value={user?.fullName ?? ""}
+              hidden
+              readOnly
+            />
+
+            <p>Enter your new strong password.</p>
+            <div className="form-floating mb-3">
+              <input
+                type="password"
+                className="form-control"
+                id="password"
+                name="password"
+                placeholder="yourVeryStrongPassword1234"
+                value={formData.password.val}
+                onChange={handleChange}
+                aria-describedby="passwordHelp"
+                autoComplete="new-password"
+              />
+              <label htmlFor="password">New Password</label>
+              {formData.password.err && (
+                <div className="text-danger small mt-1">
+                  <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                  {formData.password.err}
+                </div>
+              )}
+              <div id="passwordHelp" className="form-text mt-1">
+                {PASSWORD_HINT_MESSAGE}
+              </div>
+            </div>
+
+            <div className="form-floating">
+              <input
+                type="password"
+                className="form-control"
+                id="confirmPassword"
+                name="confirmPassword"
+                placeholder="yourVeryStrongNewPassword1234"
+                value={formData.confirmPassword.val}
+                onChange={handleChange}
+                aria-describedby="confirmPasswordHelp"
+                autoComplete="new-password"
+              />
+              <label htmlFor="confirmPassword">Confirm New Password</label>
+              <div id="confirmPasswordHelp" className="form-text">
+                Confirm password must match the new password above.
+              </div>
+              {formData.confirmPassword.err && (
+                <div className="text-danger small mt-1">
+                  <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                  {formData.confirmPassword.err}
+                </div>
+              )}
+            </div>
+          </Modal.Body>
+
+          <Modal.Footer>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onHide}
+              disabled={isLoading}
+            >
+              Close
+            </Button>
+            <Button type="submit" variant="primary" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                  ></span>
+                  <output>Setting password...</output>
+                </>
+              ) : (
+                "Set Password"
+              )}
+            </Button>
+          </Modal.Footer>
+        </form>
+      </Modal>
+    );
+  }
+);
+
+export default SetSelfPasswordModal;

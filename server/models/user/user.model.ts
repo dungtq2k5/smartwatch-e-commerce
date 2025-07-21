@@ -4,6 +4,7 @@ import {
   MODIFIABLE_PROTECTED_USER_FIELDS,
   PROTECTED_USER_EMAILS,
   USER_GENDER_OPTIONS,
+  AUTH_PROVIDER_OPTIONS,
 } from "../../../common/configs.common";
 
 const userRole = new mongoose.Schema(
@@ -82,6 +83,11 @@ const userSchema = new mongoose.Schema(
     isLocked: {
       type: Boolean,
       default: false,
+    },
+    authProvider: {
+      type: String,
+      enum: AUTH_PROVIDER_OPTIONS,
+      default: "local",
     },
     isDeleted: {
       type: Boolean,

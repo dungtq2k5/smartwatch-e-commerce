@@ -24,7 +24,6 @@ type FormData = {
   confirmPassword: FormInput;
 };
 
-// TODO auth by google
 export default function Signup() {
   // DEV for testing
   const renderCount = useRef(0);
@@ -55,8 +54,14 @@ export default function Signup() {
         !isValidVnPhoneNumber(val)
       ) {
         err = "Email or phone number is invalid";
-      } else if (name === "password" && !isValidPassword(val)) {
-        err = "Password is invalid";
+      } else if (name === "password") {
+        if (!isValidPassword(val)) err = "Password is invalid";
+        if (val === formData.confirmPassword.val) {
+          setFormData((prev) => ({
+            ...prev,
+            confirmPassword: { ...prev.confirmPassword, err: "" },
+          }));
+        }
       } else if (name === "confirmPassword" && val !== formData.password.val) {
         err = "Confirm password must match the password above";
       }
@@ -198,15 +203,15 @@ export default function Signup() {
             autoComplete="new-password"
           />
           <label htmlFor="password">Password</label>
-          <div id="passwordHelp" className="form-text">
-            {PASSWORD_HINT_MESSAGE}
-          </div>
           {formData.password.err && (
             <div className="text-danger small mt-1">
               <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
               {formData.password.err}
             </div>
           )}
+          <div id="passwordHelp" className="form-text mt-1">
+            {PASSWORD_HINT_MESSAGE}
+          </div>
         </div>
         {/* Password Confirm */}
         <div className="form-floating mb-4">
@@ -222,15 +227,15 @@ export default function Signup() {
             autoComplete="new-password"
           />
           <label htmlFor="confirmPassword">Confirm password</label>
-          <div id="confirmPasswordHelp" className="form-text">
-            Confirm password must match the password above.
-          </div>
           {formData.confirmPassword.err && (
             <div className="text-danger small mt-1">
               <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
               {formData.confirmPassword.err}
             </div>
           )}
+          <div id="confirmPasswordHelp" className="form-text mt-1">
+            Confirm password must match the password above.
+          </div>
         </div>
 
         <div className="d-flex gap-2 flex-column mb-4">

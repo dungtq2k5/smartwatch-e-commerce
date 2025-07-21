@@ -1,4 +1,6 @@
 import type { Response } from "../../../common/types.common";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { productImgStorage, userAvatarStorage } from "./firebase.config";
 
 async function request(
   url: string,
@@ -51,7 +53,7 @@ export async function remove(
 
 export async function patch(
   url: string,
-  id: string | number,
+  id: string | number | undefined,
   data: object
 ): Promise<Response> {
   let method = "PATCH";
@@ -62,12 +64,35 @@ export async function patch(
     headers["X-HTTP-Method-Override"] = "PATCH"; // Override to PATCH
   }
 
-  return await request(`${url}/${id}`, method, data, headers);
+  return await request(id ? `${url}/${id}` : url, method, data, headers);
 }
 
-export function formatError(err: unknown, exceptionMsg: string = "An unknown error occurred"): string {
+export function formatError(
+  err: unknown,
+  exceptionMsg: string = "An unknown error occurred"
+): string {
   if (typeof err === "string") return err;
   if (err instanceof Error) return err.message;
 
   return String(err) || exceptionMsg;
 }
+
+// Return download URL if upload success, undefined otherwise
+export const uploadFile = async (
+  file: File,
+  storageType: "avatar" | "product"
+): Promise<string | undefined> => {
+  try {
+    const storage = storageType === "avatar"
+      ? userAvatarStorage
+      : productImgStorage;
+    const fileName = new Date().getTime() + "_" + file.name; // Ensure unique name
+    const storageRef = ref(storage, fileName);
+    const uploadTaskSnapshot = await uploadBytes(storageRef, file);
+    const downloadUrl = await getDownloadURL(uploadTaskSnapshot.ref);
+
+    return downloadUrl;
+  } catch (error) {
+    console.error("Error uploading file to Firebase:", error);
+  }
+};

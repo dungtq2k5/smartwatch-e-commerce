@@ -63,7 +63,7 @@ body {
 
 .avatar--g {
   border-radius: 50%;
-  background: grey;
+  background: var(--primary-color);
   border: none;
   cursor: pointer;
   object-fit: cover;

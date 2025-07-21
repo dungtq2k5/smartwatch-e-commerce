@@ -12,9 +12,9 @@ type UserAddressState = {
   addresses?: UserAddressResponseList;
   isFetching: boolean;
   fetchErr?: string;
-  isLoading?: boolean; // For delete, create, update operations
+  isLoading?: true; // For delete, create, update operations
   getErr?: string; // For fetching a single address
-  isGetting?: boolean; // For fetching a single address
+  isGetting?: true; // For fetching a single address
 
   fetchAddresses: () => Promise<void>;
   deleteAddress: (addressId: string) => Promise<void>;
@@ -78,7 +78,7 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
     } catch (error) {
       throw new Error(formatError(error));
     } finally {
-      set({ isLoading: false });
+      set({ isLoading: undefined });
     }
   },
 
@@ -118,7 +118,7 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
     } catch (error) {
       throw new Error(formatError(error));
     } finally {
-      set({ isLoading: false });
+      set({ isLoading: undefined });
     }
   },
 
@@ -163,7 +163,7 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
     } catch (error) {
       throw new Error(formatError(error));
     } finally {
-      set({ isLoading: false });
+      set({ isLoading: undefined });
     }
   },
 
@@ -186,7 +186,7 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
     } catch (error) {
       set({ getErr: formatError(error) });
     } finally {
-      set({ isGetting: false });
+      set({ isGetting: undefined });
     }
   }
 }));

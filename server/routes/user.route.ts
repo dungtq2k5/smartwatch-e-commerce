@@ -36,6 +36,22 @@ router.patch(
   userController.updateSelfGeneralInfo
 );
 
+router.patch(
+  "/me/password",
+  verifyPermission("u_usr"),
+  verifyEmptyBody,
+  verifyUserInput("update password"),
+  userController.updateSelfPassword
+);
+
+router.patch(
+  "/me/set-password",
+  verifyPermission("u_usr"),
+  verifyEmptyBody,
+  verifyUserInput("validate password"), // the verify is the same so reuse it
+  userController.setSelfPassword
+)
+
 router.delete("/me", verifyPermission("d_usr"), userController.deleteSelf);
 
 // -- ROUTES FOR CART

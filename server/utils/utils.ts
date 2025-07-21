@@ -224,6 +224,7 @@ export function formatUserResponse(user: any): UserResponse {
     gender: user.gender,
     stripeCustomerId: user.stripeCustomerId ? user.stripeCustomerId : undefined,
     userBalanceCents: user.userBalanceCents,
+    authProvider: user.authProvider,
     lastLogin: user.lastLogin ? user.lastLogin.toISOString() : undefined,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),

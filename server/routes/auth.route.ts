@@ -7,6 +7,7 @@ import {
   logout,
   resetPassword,
   signup,
+  validatePassword,
   verifyUser,
 } from "../controllers/auth.controller";
 import {
@@ -100,6 +101,14 @@ router.get(
   "/check-auth",
   verifyJWTHasUserId,
   checkAuth
+);
+
+router.post(
+  "/validate-password",
+  verifyAuthentication,
+  verifyEmptyBody,
+  verifyUserInput("validate password"),
+  validatePassword
 );
 
 export default router;

@@ -109,6 +109,8 @@ export function verifyUserInput(
     | "update phone number"
     | "update contact info"
     | "create"
+    | "validate password"
+    | "update password"
 ): (req: Request, res: Response, next: NextFunction) => Promise<void> {
   return async (
     req: Request,
@@ -414,6 +416,34 @@ export function verifyUserInput(
           if (roleIds !== undefined && !isValidIdArray(roleIds)) {
             errors.push("roleIds must be an array of valid ids.");
           }
+          break;
+        }
+        case "validate password": {
+          console.log("Validating validate password input...");
+          const { password } = req.body;
+
+          if (!password) {
+            errors.push("password is required.");
+          } else if (!isValidPassword(password)) {
+            errors.push("password is invalid.");
+          }
+          break;
+        }
+        case "update password": {
+          console.log("Validating update password input...");
+          const { currentPassword, newPassword } = req.body;
+
+          if (!currentPassword) {
+            errors.push("currentPassword is required.");
+          } else if (!isValidPassword(currentPassword)) {
+            errors.push("currentPassword is invalid.");
+          }
+          if (!newPassword) {
+            errors.push("newPassword is required.");
+          } else if (!isValidPassword(newPassword)) {
+            errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
+          }
+
         }
       }
 

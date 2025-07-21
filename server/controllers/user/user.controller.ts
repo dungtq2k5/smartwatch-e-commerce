@@ -5,16 +5,19 @@ import {
   formatUserResponse,
   genVerificationCode,
 } from "../../utils/utils";
-import {
+import type {
   AdminUserListResponse,
   AdminUserResponse,
   SuccessResponse,
   UserCreate,
   UserResponse,
+  UserSetSelfPassword,
   UserUpdate,
   UserUpdateContactInfo,
   UserUpdateEmail,
   UserUpdatePhoneNumber,
+  UserUpdateSelfGeneralInfo,
+  UserUpdateSelfPassword,
 } from "../../../common/types.common";
 import { errorHandler } from "../../utils/errorHandler";
 import bcrypt from "bcryptjs";
@@ -319,7 +322,9 @@ export async function updateGeneralInfo(
     // Business logic
     const updateData = req.body as UserUpdate;
 
-    const updatedBirth = updateData.birth ? new Date(updateData.birth) : user.birth;
+    const updatedBirth = updateData.birth
+      ? new Date(updateData.birth)
+      : user.birth;
     if (updatedBirth !== user.birth && updatedBirth > new Date()) {
       return next(errorHandler(400, "Birth date cannot be in the future."));
     }
@@ -399,7 +404,8 @@ export async function updateGeneralInfo(
     user.password = updatedPassword;
     user.birth = updatedBirth;
     user.gender = updateData.gender || user.gender;
-    user.userBalanceCents = updateData.userBalanceCents || user.userBalanceCents;
+    user.userBalanceCents =
+      updateData.userBalanceCents || user.userBalanceCents;
     user.isLocked = updatedIsLocked;
 
     await user.save({ session });
@@ -474,7 +480,9 @@ export async function updateEmail(
       _id: { $ne: user._id }, // Exclude current user
       email: updatedEmail,
       isDeleted: false,
-    }).lean().session(session);
+    })
+      .lean()
+      .session(session);
     if (existingUser) {
       return next(errorHandler(409, "Email already exists."));
     }
@@ -582,7 +590,9 @@ export async function updatePhoneNumber(
       _id: { $ne: user._id }, // Exclude current user
       phoneNumber: updatedPhoneNumber,
       isDeleted: false,
-    }).lean().session(session);
+    })
+      .lean()
+      .session(session);
     if (existingUser) {
       return next(errorHandler(409, "Phone number already exists."));
     }
@@ -744,15 +754,35 @@ export async function updateSelfContactInfo(
       _id: { $ne: user._id }, // Exclude current user
       [type]: value,
       isDeleted: false,
-    }).lean().session(session);
+    })
+      .lean()
+      .session(session);
     if (existingUser) {
       return next(
         errorHandler(
           409,
-          `${type} already exists. If you sure this is your ${type},
-          we think you was registered an account with this ${type} before.
+          `${type} already exists in another account. If you sure this is your ${type},
+          we think you has registered an account with this ${type} before.
           If you want to update your ${type} for the current account,
           we recommend you to login with this ${type} first and change or delete the existing account.`
+        )
+      );
+    }
+
+    // Handle no change case
+    if (type === "email" && value === user.email && user.isEmailVerified) {
+      return next(
+        errorHandler(400, "New email cannot be the same as current email.")
+      );
+    } else if (
+      type === "phoneNumber" &&
+      value === user.phoneNumber &&
+      user.isPhoneNumberVerified
+    ) {
+      return next(
+        errorHandler(
+          400,
+          "New phone number cannot be the same as current phone number."
         )
       );
     }
@@ -875,9 +905,9 @@ export async function updateSelfGeneralInfo(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing update user request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
   const user = req["user"];
-  const { fullName, avatarUrl, password, birth, gender } = req.body as UserUpdate;
+  const { fullName, avatarUrl, birth, gender } =
+    req.body as UserUpdateSelfGeneralInfo;
 
   try {
     // Business logic
@@ -893,10 +923,6 @@ export async function updateSelfGeneralInfo(
           ? undefined
           : avatarUrl
         : (user.avatarUrl as string | undefined);
-    const updatedPassword =
-      password !== undefined
-        ? await bcrypt.hash(password, HASH_SALT)
-        : user.password;
 
     if (user.avatarUrl !== updatedAvatarUrl && user.avatarUrl) {
       await deleteFileFromFirebaseStorage(user.avatarUrl, "user-avatar");
@@ -905,7 +931,6 @@ export async function updateSelfGeneralInfo(
     // Save changes
     user.fullName = updatedFullName;
     user.avatarUrl = updatedAvatarUrl;
-    user.password = updatedPassword;
     user.birth = updatedBirth;
     user.gender = gender || user.gender;
     await user.save();
@@ -913,11 +938,91 @@ export async function updateSelfGeneralInfo(
     res.status(200).json({
       success: true,
       message: "User updated successfully",
-      data: isBuyerOnly
-        ? formatUserResponse(user)
-        : formatAdminUserResponse(user),
-    } as SuccessResponse<UserResponse | AdminUserResponse>);
+      data: formatUserResponse(user),
+    } as SuccessResponse<UserResponse>);
     console.log("✅", "User updated successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateSelfPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing update user password request...");
+  const user = req["user"];
+  const { currentPassword, newPassword } = req.body as UserUpdateSelfPassword;
+
+  try {
+    // Only for user who auth by local
+    if (user.authProvider !== "local") {
+      return next(
+        errorHandler(
+          403,
+          "This action is not available for accounts created with provider(Google)."
+        )
+      );
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return next(errorHandler(401, "Current password is incorrect."));
+    }
+
+    if (currentPassword === newPassword) {
+      return next(
+        errorHandler(
+          400,
+          "New password cannot be the same as current password."
+        )
+      );
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, HASH_SALT);
+    user.password = hashedNewPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "User password updated successfully",
+      data: formatUserResponse(user),
+    } as SuccessResponse<UserResponse>);
+    console.log("✅", "User password updated successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function setSelfPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing set user password request...");
+  const user = req["user"];
+  const { password } = req.body as UserSetSelfPassword;
+
+  try {
+    // Only for user who auth by provider
+    if (user.authProvider === "local") {
+      return next(
+        errorHandler(403, "Password has already been set for this account.")
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(password, HASH_SALT);
+    user.password = hashedPassword;
+    user.authProvider = "local";
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "User password set successfully",
+      data: formatUserResponse(user),
+    } as SuccessResponse<UserResponse>);
+    console.log("✅", "User password set successfully.");
   } catch (error) {
     next(error);
   }

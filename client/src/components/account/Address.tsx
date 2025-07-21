@@ -4,10 +4,10 @@ import { useUserAddressStore } from "../../store/addressStore";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Loading from "../Loading";
 import ApiError from "../ApiError";
-import DeleteConfirmModal from "../ConfirmDeleteModal";
+import ConfirmDeleteModal from "../modal/ConfirmDeleteModal";
 import toast from "react-hot-toast";
-import CreateAddressModal from "../CreateAddressModal";
-import UpdateAddressModal from "../UpdateAddressModal";
+import CreateAddressModal from "../modal/CreateAddressModal";
+import UpdateAddressModal from "../modal/UpdateAddressModal";
 import { formatError } from "../../utils/utils";
 
 type ModalState = {
@@ -182,7 +182,7 @@ export default function Address() {
           )}
 
           {/* Modals */}
-          <DeleteConfirmModal
+          <ConfirmDeleteModal
             title="Are you sure you want to delete this address? This action cannot be undone."
             show={modalState.addressIdToDelete !== undefined}
             onHide={closeModal}
@@ -195,14 +195,11 @@ export default function Address() {
             onHide={closeModal}
           />
 
-          {modalState.addressIdToUpdate && (
-            <UpdateAddressModal
-              isOnlyOneAddress={addresses.total === 1}
-              addressId={modalState.addressIdToUpdate}
-              show={modalState.addressIdToUpdate !== undefined}
-              onHide={closeModal}
-            />
-          )}
+          <UpdateAddressModal
+            isOnlyOneAddress={addresses.total === 1}
+            addressId={modalState.addressIdToUpdate}
+            onHide={closeModal}
+          />
         </>
       )}
     </>

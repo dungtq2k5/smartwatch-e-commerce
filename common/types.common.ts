@@ -1,5 +1,5 @@
 import { PERMISSION_LIST } from "../server/configs/configs";
-import { USER_GENDER_OPTIONS } from "./configs.common";
+import { USER_GENDER_OPTIONS, AUTH_PROVIDER_OPTIONS } from "./configs.common";
 
 export type ErrorResponse = {
   readonly success: false;
@@ -24,6 +24,7 @@ type BaseUserResponse = {
   gender: (typeof USER_GENDER_OPTIONS)[number];
   stripeCustomerId?: string;
   userBalanceCents: number;
+  authProvider: (typeof AUTH_PROVIDER_OPTIONS)[number];
   lastLogin?: string;
   createdAt: string;
   updatedAt: string;
@@ -79,8 +80,10 @@ export type UserLogin = {
   password: string;
 } & EmailOrPhoneNumber;
 
+export type VerifyType = "email" | "phoneNumber";
+
 export type UserVerify = {
-  type: "email" | "phoneNumber";
+  type: VerifyType;
   code: string;
 };
 
@@ -112,10 +115,24 @@ export type UserUpdate = {
   roleIds?: string[];
 };
 
+export type UserUpdateSelfGeneralInfo = Omit<
+  UserUpdate,
+  "password" | "userBalanceCents" | "isLocked" | "roleIds"
+>;
+
+export type UserUpdateSelfPassword = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+export type UserSetSelfPassword = { // For user who auth by Google
+  password: string;
+}
+
 export type GeoJSONPoint = {
   readonly type: "Point";
   coordinates: [number, number]; // [longitude, latitude]
-}
+};
 
 export type BaseUserAddress = {
   id: string;
@@ -144,16 +161,22 @@ export type UserAddressResponseList = {
 
 export type UserAddressCreate = Omit<
   BaseUserAddress,
-  "id" | "userId" | "location" | "fullAddress" | "createdAt" | "updatedAt" | "isDefault"
+  | "id"
+  | "userId"
+  | "location"
+  | "fullAddress"
+  | "createdAt"
+  | "updatedAt"
+  | "isDefault"
 > & {
   location: {
     longitude: number;
     latitude: number;
-  }
-  isDefault?: boolean
+  };
+  isDefault?: boolean;
 };
 
-export type UserAddressUpdate = Optional<UserAddressCreate>;
+export type UserAddressUpdate = Partial<UserAddressCreate>;
 
 export type AdminUserAddressResponse = UserAddressResponse & {
   userId: string;
@@ -180,12 +203,12 @@ export type UserCartCreate = {
 };
 
 export type CreateOtp = {
-  type: "email" | "phoneNumber";
+  type: VerifyType;
   userId: string;
 };
 
 export type UserUpdateContactInfo = {
-  type: "email" | "phoneNumber";
+  type: VerifyType;
   value: string;
 };
 
@@ -244,7 +267,7 @@ export type ProductCreate = {
   stopSelling?: boolean;
 };
 
-export type ProductUpdate = Optional<ProductCreate>;
+export type ProductUpdate = Partial<ProductCreate>;
 
 export type ProductResponse = {
   id: string;
@@ -270,7 +293,7 @@ export type ProductBrandCreate = {
   name: string;
 };
 
-export type ProductBrandUpdate = Optional<ProductBrandCreate>;
+export type ProductBrandUpdate = Partial<ProductBrandCreate>;
 
 export type ProductBrandResponse = {
   id: string;
@@ -287,7 +310,7 @@ export type ProductBrandListResponse = {
 };
 
 export type ProductCategoryCreate = ProductBrandCreate;
-export type ProductCategoryUpdate = Optional<ProductCategoryCreate>;
+export type ProductCategoryUpdate = Partial<ProductCategoryCreate>;
 export type ProductCategoryResponse = ProductBrandResponse;
 export type ProductCategoryListResponse = {
   total: number;
@@ -297,7 +320,7 @@ export type ProductCategoryListResponse = {
 };
 
 export type ProductOsCreate = ProductBrandCreate;
-export type ProductOsUpdate = Optional<ProductOsCreate>;
+export type ProductOsUpdate = Partial<ProductOsCreate>;
 export type ProductOsResponse = ProductBrandResponse;
 export type ProductOsListResponse = {
   total: number;
@@ -331,7 +354,7 @@ export type ProductModelCreate = {
   stopSelling?: boolean;
 };
 
-export type ProductModelUpdate = Optional<ProductModelCreate>;
+export type ProductModelUpdate = Partial<ProductModelCreate>;
 
 export type ProductModelResponse = NoneOptional<ProductModelCreate> & {
   id: string;
@@ -376,7 +399,7 @@ export type ModelVariationResponse = NoneOptional<BaseModelVariationCreate> & {
   );
 
 export type ModelVariationUpdate<T = ModelVariationColor | ModelVariationBand> =
-  Optional<BaseModelVariationCreate> & Optional<T>;
+  Partial<BaseModelVariationCreate> & Partial<T>;
 
 export type VariationInstanceCreate = {
   supplierSerialNumber: string;
@@ -399,7 +422,7 @@ export type VariationInstanceResponse = {
 };
 
 export type VariationInstanceUpdate = Omit<
-  Optional<VariationInstanceCreate>,
+  Partial<VariationInstanceCreate>,
   "supplierImeiNumber"
 > & {
   supplierImeiNumber?: string | null;
@@ -421,7 +444,7 @@ export type ProviderResponse = {
   updatedAt: string;
 };
 
-export type ProviderUpdate = Optional<ProviderCreate>;
+export type ProviderUpdate = Partial<ProviderCreate>;
 
 export type OrderCreate = {
   userAddressId: string;
@@ -447,7 +470,10 @@ export type OrderResponse = {
   deliveryStateId: string;
   estimateReceivedDate: string;
   receivedDate?: string;
-  deliveryAddress: Omit<BaseUserAddress, "id" | "userId" | "isDefault" | "createdAt" | "updatedAt">;
+  deliveryAddress: Omit<
+    BaseUserAddress,
+    "id" | "userId" | "isDefault" | "createdAt" | "updatedAt"
+  >;
   createdAt: string;
   updatedAt: string;
 };
@@ -458,11 +484,11 @@ export type OrderUpdate = {
   deliveryAddressId?: string;
 };
 
-// --- HELPER TYPES ---
-export type Optional<T> = {
-  [K in keyof T]?: T[K];
+export type UserValidatePassword = {
+  password: string;
 };
 
+// --- HELPER TYPES ---
 export type NoneOptional<T> = {
   [K in keyof T]-?: T[K];
 };

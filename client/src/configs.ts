@@ -1,13 +1,25 @@
 const ROOT_URL = "/api";
+const AUTH_URL = `${ROOT_URL}/auth`;
+const USER_URL = `${ROOT_URL}/users`;
 
-export const SIGNUP_URL = `${ROOT_URL}/auth/signup`;
-export const AUTH_BY_GOOGLE_URL = `${ROOT_URL}/auth/google`;
-export const VERIFY_USER_URL = `${ROOT_URL}/auth/verify-user`;
-export const CHECK_AUTH_URL = `${ROOT_URL}/auth/check-auth`;
-export const LOGIN_URL = `${ROOT_URL}/auth/login`;
-export const FORGOT_PASSWORD_URL = `${ROOT_URL}/auth/forgot-password`;
-export const RESET_PASSWORD_URL = `${ROOT_URL}/auth/reset-password`;
+export const SIGNUP_URL = `${AUTH_URL}/signup`;
+export const AUTH_BY_GOOGLE_URL = `${AUTH_URL}/google`;
+export const VERIFY_USER_URL = `${AUTH_URL}/verify-user`;
+export const CHECK_AUTH_URL = `${AUTH_URL}/check-auth`;
+export const LOGIN_URL = `${AUTH_URL}/login`;
+export const LOGOUT_URL = `${AUTH_URL}/logout`;
+export const FORGOT_PASSWORD_URL = `${AUTH_URL}/forgot-password`;
+export const RESET_PASSWORD_URL = `${AUTH_URL}/reset-password`;
 
-export const SELF_ADDRESSES_URL = `${ROOT_URL}/users/me/addresses`;
+export const SELF_ADDRESSES_URL = `${USER_URL}/me/addresses`;
+export const USER_UPDATE_SELF_GENERAL_INFO_URL = `${USER_URL}/me`;
+export const USER_UPDATE_SELF_CONTACT_INFO_URL = `${USER_URL}/me/contact-info`;
+export const USER_UPDATE_SELF_PASSWORD = `${USER_URL}/me/password`;
+export const USER_SET_SELF_PASSWORD = `${USER_URL}/me/set-password`;
+export const USER_DELETE_ACCOUNT = `${USER_URL}/me`;
 
-export const AVATAR_HINT_MESSAGE = "Avatar must be a valid image, with a maximum size of 5MB and dimensions between 200x200 and 1000x1000 pixels. Allowed formats are JPG and PNG.";
+export const AVATAR_HINT_MESSAGE = `
+  File size: maximum 5MB.
+  File extensions: JPG, PNG.
+  File dimensions between 200x200 and 1000x1000 pixels.
+`;
