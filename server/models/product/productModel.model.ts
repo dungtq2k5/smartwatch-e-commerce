@@ -25,7 +25,7 @@ const productModelSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    basePriceCents: {
+    stockPriceCents: {
       type: Number,
       required: true,
       min: 0,

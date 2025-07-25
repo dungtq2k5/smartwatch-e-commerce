@@ -38,7 +38,7 @@ export async function create(
       name,
       watchSizeMm,
       priceCents,
-      basePriceCents,
+      stockPriceCents,
       imageUrls,
       displaySizeMm,
       displayType,
@@ -89,7 +89,7 @@ export async function create(
       name,
       watchSizeMm,
       priceCents,
-      basePriceCents,
+      stockPriceCents,
       imageUrls,
       displaySizeMm,
       displayType,
@@ -267,7 +267,7 @@ export async function update(
     model.name = updateData.name || model.name;
     model.watchSizeMm = updatedSizeMm;
     model.priceCents = updateData.priceCents ?? model.priceCents;
-    model.basePriceCents = updateData.basePriceCents ?? model.basePriceCents;
+    model.stockPriceCents = updateData.stockPriceCents ?? model.stockPriceCents;
     model.imageUrls = updateData.imageUrls || model.imageUrls;
     model.displaySizeMm = updateData.displaySizeMm || model.displaySizeMm;
     model.displayType = updateData.displayType || model.displayType;

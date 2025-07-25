@@ -47,12 +47,9 @@ export async function createSystemUser(
       ],
       { session }
     );
-    console.log("🫘 ", "System user created successfully");
+    console.log("✅ ", "System user created successfully");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error creating system user:", error);
-    process.exit(1);
+    throw new Error(`Error creating system user: ${error}`);
   }
 }
 
@@ -72,12 +69,9 @@ export async function seedGrnStatuses(
       { name: "draft" },
     ];
     await GrnStatus.insertMany(grnStatuses, { session });
-    console.log("🫘 ", "GrnStatuses seeded successfully!");
+    console.log("✅ ", "GrnStatuses seeded successfully!");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error seeding GrnStatuses:", error);
-    process.exit(1);
+    throw new Error(`Error seeding GrnStatuses: ${error}`);
   }
 }
 
@@ -134,12 +128,9 @@ export async function seedInventoryMovementTypes(
       },
     ];
     await inventoryMovementType.insertMany(movementTypes, { session });
-    console.log("🫘 ", "InventoryMovementTypes seeded successfully!");
+    console.log("✅ ", "InventoryMovementTypes seeded successfully!");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error seeding InventoryMovementTypes:", error);
-    process.exit(1);
+    throw new Error(`Error seeding InventoryMovementTypes: ${error}`);
   }
 }
 
@@ -165,12 +156,9 @@ export async function seedDeliveryStates(
       { name: "returned", level: 9 },
     ];
     await DeliveryState.insertMany(deliveryStates, { session });
-    console.log("🫘 ", "DeliveryStates seeded successfully!");
+    console.log("✅ ", "DeliveryStates seeded successfully!");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error seeding DeliveryStates:", error);
-    process.exit(1);
+    throw new Error(`Error seeding DeliveryStates: ${error}`);
   }
 }
 
@@ -193,12 +181,9 @@ export async function seedPaymentMethods(
       { name: "user balance" },
     ];
     await PaymentMethod.insertMany(paymentMethods, { session });
-    console.log("🫘 ", "PaymentMethods seeded successfully!");
+    console.log("✅ ", "PaymentMethods seeded successfully!");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error seeding PaymentMethods:", error);
-    process.exit(1);
+    throw new Error(`Error seeding PaymentMethods: ${error}`);
   }
 }
 
@@ -220,12 +205,9 @@ export async function seedPaymentStatus(
       { name: "cancelled" },
     ];
     await PaymentStatus.insertMany(paymentStatuses, { session });
-    console.log("🫘 ", "PaymentStatuses seeded successfully!");
+    console.log("✅ ", "PaymentStatuses seeded successfully!");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error seeding PaymentStatuses:", error);
-    process.exit(1);
+    throw new Error(`Error seeding PaymentStatuses: ${error}`);
   }
 }
 
@@ -246,12 +228,9 @@ export async function seedInstanceConditions(
       { name: "defective" },
     ];
     await InstanceCondition.insertMany(instanceConditions, { session });
-    console.log("🫘 ", "InstanceConditions seeded successfully!");
+    console.log("✅ ", "InstanceConditions seeded successfully!");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error seeding InstanceConditions:", error);
-    process.exit(1);
+    throw new Error(`Error seeding InstanceConditions: ${error}`);
   }
 }
 
@@ -273,12 +252,9 @@ export async function seedRefundStatus(
       { name: "rejected" },
     ];
     await RefundStatus.insertMany(refundStatuses, { session });
-    console.log("🫘 ", "RefundStatuses seeded successfully!");
+    console.log("✅ ", "RefundStatuses seeded successfully!");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error seeding RefundStatuses:", error);
-    process.exit(1);
+    throw new Error(`Error seeding RefundStatuses: ${error}`);
   }
 }
 
@@ -302,12 +278,9 @@ export async function seedReturnStatuses(
       { name: "cancelled" },
     ];
     await ReturnStatus.insertMany(returnStatuses, { session });
-    console.log("🫘 ", "ReturnStatuses seeded successfully!");
+    console.log("✅ ", "ReturnStatuses seeded successfully!");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error seeding ReturnStatuses:", error);
-    process.exit(1);
+    throw new Error(`Error seeding ReturnStatuses: ${error}`);
   }
 }
 
@@ -330,12 +303,9 @@ export async function seedReturnReasons(
       { name: "other" },
     ];
     await ReturnReason.insertMany(returnReasons, { session });
-    console.log("🫘 ", "ReturnReasons seeded successfully!");
+    console.log("✅ ", "ReturnReasons seeded successfully!");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error seeding ReturnReasons:", error);
-    process.exit(1);
+    throw new Error(`Error seeding ReturnReasons: ${error}`);
   }
 }
 
@@ -350,12 +320,9 @@ export async function seedPermissions(
       return;
     }
     await Permission.insertMany(PERMISSION_LIST, { session });
-    console.log("🫘 ", "Permissions seeded successfully!");
+    console.log("✅ ", "Permissions seeded successfully!");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error seeding Permissions:", error);
-    process.exit(1);
+    throw new Error(`Error seeding Permissions: ${error}`);
   }
 }
 
@@ -420,12 +387,9 @@ export async function seedRoles(
     ];
 
     await Role.insertMany(roles, { session });
-    console.log("🫘 ", "Roles seeded successfully!");
+    console.log("✅ ", "Roles seeded successfully!");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error seeding Roles:", error);
-    process.exit(1);
+    throw new Error(`Error seeding Roles: ${error}`);
   }
 }
 
@@ -478,12 +442,9 @@ export async function createBaseAdminUser(
       ],
       { session }
     );
-    console.log("🫘 ", "Base admin user created successfully");
+    console.log("✅ ", "Base admin user created successfully");
   } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    console.error("❌", "Error creating base admin user:", error);
-    process.exit(1);
+    throw new Error(`Error creating base admin user: ${error}`);
   }
 }
 
@@ -493,22 +454,30 @@ export async function seedAllCollections(): Promise<void> {
   const session = await mongoose.startSession();
   session.startTransaction();
 
-  await createSystemUser(session);
-  await seedGrnStatuses(session);
-  await seedInventoryMovementTypes(session);
-  await seedDeliveryStates(session);
-  await seedPaymentMethods(session);
-  await seedPaymentStatus(session);
-  await seedInstanceConditions(session);
-  await seedRefundStatus(session);
-  await seedReturnStatuses(session);
-  await seedReturnReasons(session);
-  await seedPermissions(session);
-  await seedRoles(session);
-  await createBaseAdminUser(session);
+  try {
+    await createSystemUser(session);
+    await seedGrnStatuses(session);
+    await seedInventoryMovementTypes(session);
+    await seedDeliveryStates(session);
+    await seedPaymentMethods(session);
+    await seedPaymentStatus(session);
+    await seedInstanceConditions(session);
+    await seedRefundStatus(session);
+    await seedReturnStatuses(session);
+    await seedReturnReasons(session);
+    await seedPermissions(session);
+    await seedRoles(session);
+    await createBaseAdminUser(session);
 
-  await session.commitTransaction();
-  session.endSession();
+    await session.commitTransaction();
+    console.log("✅ ", "All collections seeded successfully!");
+  } catch (error) {
+    await session.abortTransaction();
+    console.error("❌ ", "Error seeding collections:", error);
+    process.exit(1);
+  } finally {
+    await session.endSession();
+  }
 
-  console.log("🫘 ", "All collections seeded successfully!");
 }
+

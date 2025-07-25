@@ -1,5 +1,5 @@
 import { PERMISSION_LIST } from "../server/configs/configs";
-import { USER_GENDER_OPTIONS, AUTH_PROVIDER_OPTIONS } from "./configs.common";
+import { USER_GENDER_OPTIONS, AUTH_PROVIDER_OPTIONS, PRODUCT_SEARCH_SORT_OPTIONS } from "./configs.common";
 
 export type ErrorResponse = {
   readonly success: false;
@@ -130,7 +130,7 @@ export type UserSetSelfPassword = { // For user who auth by Google
 }
 
 export type GeoJSONPoint = {
-  readonly type: "Point";
+  readonly type: "point";
   coordinates: [number, number]; // [longitude, latitude]
 };
 
@@ -216,7 +216,7 @@ export type PermissionCode = (typeof PERMISSION_LIST)[number]["code"];
 
 export type UserCreate = {
   fullName: string;
-  avatarUrl?: string;
+  avatarUrl: string;
   email?: string;
   isEmailVerified?: boolean;
   phoneNumber?: string;
@@ -265,6 +265,7 @@ export type ProductCreate = {
   description: string;
   imageUrls?: string[];
   stopSelling?: boolean;
+  basePriceCents: number;
 };
 
 export type ProductUpdate = Partial<ProductCreate>;
@@ -280,53 +281,74 @@ export type ProductResponse = {
   createdAt: string;
   updatedAt: string;
   stopSelling: boolean;
+  basePriceCents: number;
 };
 
 export type ProductListResponse = {
-  total: number;
-  products: ProductResponse[];
+  products: {
+    total: number;
+    products: ProductResponse[];
+  };
   offset: number;
   limit: number;
+  total: number; // Total filter match but exclude offset or limit
 };
 
 export type ProductBrandCreate = {
   name: string;
+  logoUrl?: string;
+  description?: string;
 };
 
-export type ProductBrandUpdate = Partial<ProductBrandCreate>;
+export type ProductBrandUpdate = {
+  name?: string;
+  logoUrl?: string | null;
+  description?: string | null;
+};
 
 export type ProductBrandResponse = {
   id: string;
   name: string;
+  logoUrl?: string;
+  description?: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
 };
 export type ProductBrandListResponse = {
-  total: number;
-  brands: ProductBrandResponse[];
+  brands: {
+    total: number;
+    brands: ProductBrandResponse[];
+  };
   offset: number;
   limit: number;
+  total: number;
 };
 
-export type ProductCategoryCreate = ProductBrandCreate;
-export type ProductCategoryUpdate = Partial<ProductCategoryCreate>;
-export type ProductCategoryResponse = ProductBrandResponse;
+export type ProductCategoryCreate = Omit<ProductBrandCreate, "logoUrl">;
+export type ProductCategoryUpdate = Omit<ProductBrandUpdate, "logoUrl">;
+export type ProductCategoryResponse = Omit<ProductBrandResponse, "logoUrl">;
 export type ProductCategoryListResponse = {
-  total: number;
-  categories: ProductCategoryResponse[];
+  categories: {
+    total: number;
+    categories: ProductCategoryResponse[];
+  };
   offset: number;
   limit: number;
+  total: number;
 };
 
 export type ProductOsCreate = ProductBrandCreate;
-export type ProductOsUpdate = Partial<ProductOsCreate>;
+export type ProductOsUpdate = ProductBrandUpdate;
 export type ProductOsResponse = ProductBrandResponse;
 export type ProductOsListResponse = {
-  total: number;
-  osList: ProductOsResponse[];
+  osList: {
+    total: number;
+    osList: ProductOsResponse[];
+  };
   offset: number;
   limit: number;
+  total: number;
 };
 
 export type ProductModelCreate = {
@@ -334,7 +356,7 @@ export type ProductModelCreate = {
   name: string;
   watchSizeMm: number;
   priceCents: number;
-  basePriceCents: number;
+  stockPriceCents: number;
   imageUrls?: string[];
   displaySizeMm: number;
   displayType: string;
@@ -380,7 +402,7 @@ export type ModelVariationBand = {
   sizeMm: number;
   weightMg: number;
   priceCents: number;
-  basePriceCents: number;
+  stockPriceCents: number;
 };
 
 export type ModelVariationCreate<T = ModelVariationColor | ModelVariationBand> =
@@ -487,6 +509,18 @@ export type OrderUpdate = {
 export type UserValidatePassword = {
   password: string;
 };
+
+export type ProductSearchQuery = Partial<{
+  limit: string;
+  offset: string;
+  searchTerm: string;
+  brandId: string;
+  categoryId: string;
+  stopSelling: "true" | "false";
+  priceCentsMin: string;
+  priceCentsMax: string;
+  sortBy: (typeof PRODUCT_SEARCH_SORT_OPTIONS)[number];
+}>;
 
 // --- HELPER TYPES ---
 export type NoneOptional<T> = {

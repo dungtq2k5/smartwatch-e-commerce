@@ -4,9 +4,9 @@ export default function Loading({
   loadingMsg,
 }: Readonly<{ loadingMsg?: string }>) {
   // DEV temp for testing
-  const renderCount = useRef(0);
-  renderCount.current += 1;
-  console.log("Loading rendered", renderCount.current);
+  // const renderCount = useRef(0);
+  // renderCount.current += 1;
+  // console.log("Loading rendered", renderCount.current);
 
   return (
     <div className="d-flex justify-content-center align-items-center h-100">

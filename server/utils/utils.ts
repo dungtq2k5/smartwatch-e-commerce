@@ -306,23 +306,28 @@ export function formatProductResponse(product: any): ProductResponse {
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
     stopSelling: product.stopSelling,
+    basePriceCents: product.basePriceCents,
   };
 }
 
 export function formatProductBrandResponse(brand: any): ProductBrandResponse {
   return {
-    id: brand._id.toString(),
-    name: brand.name,
-    createdBy: brand.createdBy.toString(),
-    createdAt: brand.createdAt.toISOString(),
-    updatedAt: brand.updatedAt.toISOString(),
+    ...formatProductCategoryResponse(brand),
+    logoUrl: brand.logoUrl,
   };
 }
 
 export function formatProductCategoryResponse(
   category: any
 ): ProductCategoryResponse {
-  return formatProductBrandResponse(category);
+  return {
+    id: category._id.toString(),
+    name: category.name,
+    description: category.description,
+    createdBy: category.createdBy.toString(),
+    createdAt: category.createdAt.toISOString(),
+    updatedAt: category.updatedAt.toISOString(),
+  };
 }
 
 export function formatProductOsResponse(os: any): ProductOsResponse {
@@ -337,7 +342,7 @@ export function formatProductModelResponse(model: any): ProductModelResponse {
     name: model.name,
     watchSizeMm: model.watchSizeMm,
     priceCents: model.priceCents,
-    basePriceCents: model.basePriceCents,
+    stockPriceCents: model.stockPriceCents,
     imageUrls: model.imageUrls,
     displaySizeMm: model.displaySizeMm,
     displayType: model.displayType,
@@ -391,7 +396,7 @@ export function formatModelVariationResponse(
       sizeMm: variation.sizeMm,
       weightMg: variation.weightMg,
       priceCents: variation.priceCents,
-      basePriceCents: variation.basePriceCents,
+      stockPriceCents: variation.stockPriceCents,
     });
   }
 

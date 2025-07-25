@@ -15,7 +15,7 @@
 
 body {
   font-family: 'Roboto', sans-serif;
-  background-color: var(--light-color);
+  background-color: white;
   color: var(--dark-color);
   min-height: 100vh;
 }
@@ -35,6 +35,7 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1em;
+  width: 100%;
 }
 
 .container--center--g {
@@ -47,9 +48,9 @@ body {
 }
 
 .btn {
-  padding: .5em 1em;
+  padding: .25em .5em;
   font-size: 1rem;
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
 .btn-primary {
@@ -96,4 +97,23 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5em;
+}
+
+.product-img--g {
+  height: 12em;
+  width: 100%;
+  object-fit: contain;
+}
+
+.shadow--g {
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+}
+
+.product-description--g {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

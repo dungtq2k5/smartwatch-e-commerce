@@ -102,6 +102,18 @@ export function capFirstLetter(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+export function centsToUSD(cents: number, locale: string = "en-US"): string {
+  const dollars = cents / 100;
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "USD",
+  }).format(dollars);
+}
+
+export function randNum(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 // --- VALIDATION UTILS ---
 export function isValidUserFullName(fullName: any): boolean {
   if (typeof fullName !== "string") return false;
@@ -216,9 +228,14 @@ export function containsEmoji(text: any): boolean {
   return emojiRegex.test(text);
 }
 
-export function isValidCoordinates(coords: { longitude: number; latitude: number }): boolean {
+export function isValidCoordinates(coords: {
+  longitude: number;
+  latitude: number;
+}): boolean {
   const { longitude, latitude } = coords;
-  return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+  return (
+    latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
+  );
 }
 
 export function isValidBirthDate(birthDate: any): boolean {
@@ -244,7 +261,11 @@ export async function isValidAvatar(file: File): Promise<string[]> {
   }
 
   if (file.size > AVATAR_MAX_SIZE) {
-    errors.push(`File size exceeds the maximum limit of ${AVATAR_MAX_SIZE / 1024 / 1024}MB`);
+    errors.push(
+      `File size exceeds the maximum limit of ${
+        AVATAR_MAX_SIZE / 1024 / 1024
+      }MB`
+    );
   }
 
   try {
@@ -265,6 +286,20 @@ export async function isValidAvatar(file: File): Promise<string[]> {
   }
 
   return errors;
+}
+
+export function isValidNumString(numString: any): boolean {
+  if (typeof numString !== "string") return false;
+
+  // Check if the string is a valid number
+  const num = Number(numString);
+  if (isNaN(num)) return false;
+
+  // Check if the number is finite
+  if (!isFinite(num)) return false;
+
+  // Check if the string representation matches the number
+  return numString === String(num);
 }
 
 // --- ADDRESS UTILS ---
@@ -292,13 +327,12 @@ export function getCityProvince(cityProvinceCode: string) {
   return provinces.data.find((province) => province.code === cityProvinceCode);
 }
 
-export function isValidAddress(
-  address: {
-  wardCode: string,
-  districtCode: string,
-  cityProvinceCode: string }
-): boolean {
-  const {  wardCode, districtCode, cityProvinceCode } = address;
+export function isValidAddress(address: {
+  wardCode: string;
+  districtCode: string;
+  cityProvinceCode: string;
+}): boolean {
+  const { wardCode, districtCode, cityProvinceCode } = address;
 
   const cityProvince = getCityProvince(cityProvinceCode);
   if (!cityProvince) return false;

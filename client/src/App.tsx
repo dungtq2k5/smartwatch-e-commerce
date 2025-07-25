@@ -18,6 +18,8 @@ import Profile from "./components/account/Profile.tsx";
 import Address from "./components/account/Address.tsx";
 import BankAndCard from "./components/account/BankAndCard.tsx";
 import Loading from "./components/Loading.tsx";
+import SearchProduct from "./pages/SearchProduct.tsx";
+import ProductDetail from "./pages/ProductDetail.tsx";
 
 export default function App() {
   // DEV for testing
@@ -42,6 +44,13 @@ export default function App() {
 
       <Routes>
         <Route path="/" element={<Home />}></Route>
+        <Route path="/products" element={<SearchProduct />}></Route>
+        <Route path="/products/:id" element={<ProductDetail />}></Route>
+        {/*
+          TODO next...
+          - search product page (via search bar on header)
+          - product details page
+        */}
 
         <Route element={<NotAuthRoute />}>
           <Route path="/signup" element={<Signup />}></Route>
@@ -57,7 +66,6 @@ export default function App() {
         <Route element={<AuthRoute />}>
           {/*
             TODO
-            - user account page (infos, password change, address management)
             - user cart page
             - user orders page
           */}

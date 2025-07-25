@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { PRODUCT_MODEL_VARIATION_TYPES } from "../../../common/configs.common";
 
 const modelVariationSchema = new mongoose.Schema(
   {
@@ -10,7 +11,7 @@ const modelVariationSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["color", "band"],
+      enum: PRODUCT_MODEL_VARIATION_TYPES,
     },
     name: {
       type: String,
@@ -72,7 +73,7 @@ const modelVariationSchema = new mongoose.Schema(
       type: Number,
       min: 0,
     },
-    basePriceCents: {
+    stockPriceCents: {
       type: Number,
       min: 0,
     },

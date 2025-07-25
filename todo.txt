@@ -21,6 +21,7 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - zustand for controllers.
     - react-google-maps/api for location.
     - lodash.debounce for geocoding (geographic coordinates).
+  - Faker for mocking data.
 
 - 📝 Todos:
   - Frontend:
@@ -43,7 +44,8 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - Better user friendly when sending email or SMS (with datetime for lock/unlock) ❌.
 
   - Database init:
-    - Init roles & permissions ❌.
+    - Init roles & permissions ✅.
+    - Mock data ✅.
 
   - Features:
     - Dynamic default avatar for user profile ❌.

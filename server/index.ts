@@ -15,6 +15,7 @@ import { errorHandler as errorHandlerMiddleware } from "./utils/middlewares/erro
 import connectDB from "./db/connectDB";
 import { initAppCache } from "./configs/cache";
 import { errorHandler } from "./utils/errorHandler";
+import { mockAllData } from "./utils/mock";
 
 dotenv.config();
 const requiredEnvVars = [
@@ -62,9 +63,9 @@ app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/roles", roleRoute);
 app.use("/api/products", productRoute);
-app.use("/api/product-brands", productBrandRoute);
-app.use("/api/product-categories", productCategoryRoute);
-app.use("/api/product-os", productOsRoute);
+app.use("/api/products-brands", productBrandRoute);
+app.use("/api/products-categories", productCategoryRoute);
+app.use("/api/products-os", productOsRoute);
 app.use("/api/providers", Provider);
 
 app.use((req, res, next) => {
@@ -79,7 +80,8 @@ const port = process.env.SERVER_PORT;
 app.listen(port, async () => {
   console.log("🔗", "Connecting to MongoDB...");
   await connectDB();
-  await seedAllCollections(); // Init Mongo collections when first time running the server
+  // await seedAllCollections(); // Init Mongo collections when first time running the server
   await initAppCache(); // Init application cache
+  // await mockAllData(); // DEV Mock data for testing
   console.log("🚀", `Server is running on http://localhost:${port}`);
 });

@@ -17,7 +17,6 @@ router.post(
 
 router.get(
   "/",
-  verifyPermission("r_product_cat"),
   getAll
 );
 

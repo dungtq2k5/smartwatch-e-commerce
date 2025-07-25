@@ -234,7 +234,7 @@ export async function createBand(
       material,
       sizeMm,
       priceCents,
-      basePriceCents,
+      stockPriceCents,
     } = req.body as ModelVariationCreate<ModelVariationBand>;
 
     // Check variation exists
@@ -259,7 +259,7 @@ export async function createBand(
       material,
       sizeMm,
       priceCents,
-      basePriceCents,
+      stockPriceCents,
       createBy: reqUserId,
     });
     await variation.save();
@@ -369,8 +369,8 @@ export async function updateBand(
     variation.sizeMm = updateData.sizeMm || variation.sizeMm;
     variation.weightMg = updateData.weightMg || variation.weightMg;
     variation.priceCents = updateData.priceCents || variation.priceCents;
-    variation.basePriceCents =
-      updateData.basePriceCents || variation.basePriceCents;
+    variation.stockPriceCents =
+      updateData.stockPriceCents || variation.stockPriceCents;
 
     await variation.save();
 

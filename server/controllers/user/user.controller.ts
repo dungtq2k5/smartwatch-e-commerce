@@ -330,11 +330,9 @@ export async function updateGeneralInfo(
     }
 
     const updatedAvatarUrl =
-      updateData.avatarUrl !== undefined
-        ? updateData.avatarUrl === null
-          ? undefined
-          : updateData.avatarUrl
-        : (user.avatarUrl as string | undefined);
+      updateData.avatarUrl === null
+        ? undefined
+        : updateData.avatarUrl || (user.avatarUrl as string | undefined);
     const updatedPassword =
       updateData.password !== undefined
         ? await bcrypt.hash(updateData.password, HASH_SALT)
@@ -918,11 +916,9 @@ export async function updateSelfGeneralInfo(
 
     const updatedFullName = fullName !== undefined ? fullName : user.fullName;
     const updatedAvatarUrl =
-      avatarUrl !== undefined
-        ? avatarUrl === null
-          ? undefined
-          : avatarUrl
-        : (user.avatarUrl as string | undefined);
+      avatarUrl === null
+        ? undefined
+        : avatarUrl || (user.avatarUrl as string | undefined);
 
     if (user.avatarUrl !== updatedAvatarUrl && user.avatarUrl) {
       await deleteFileFromFirebaseStorage(user.avatarUrl, "user-avatar");

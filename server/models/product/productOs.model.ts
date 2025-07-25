@@ -10,6 +10,12 @@ const productOsSchema = new mongoose.Schema(
         partialFilterExpression: { isDeleted: false },
       },
     },
+    logoUrl: {
+      type: String,
+    },
+    description: {
+      type: String,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

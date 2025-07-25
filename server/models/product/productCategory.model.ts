@@ -10,6 +10,9 @@ const productCategorySchema = new mongoose.Schema(
         partialFilterExpression: { isDeleted: false },
       },
     },
+    description: {
+      type: String,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

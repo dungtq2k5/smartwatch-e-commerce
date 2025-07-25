@@ -19,7 +19,7 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating product category...");
-  const { name } = req.body as ProductCategoryCreate;
+  const { name, description } = req.body as ProductCategoryCreate;
 
   try {
     // Check category exists
@@ -35,6 +35,7 @@ export async function create(
     const { userId } = req["auth"] as RequestAuth;
     const category = new ProductCategory({
       name,
+      description: description || undefined,
       createdBy: userId,
     });
 
@@ -65,10 +66,13 @@ export async function getAll(
       success: true,
       message: "Product categories fetched successfully.",
       data: {
-        total: categories.length,
-        categories: categories.map(formatProductCategoryResponse),
+        categories: {
+          total: categories.length,
+          categories: categories.map(formatProductCategoryResponse),
+        },
         offset: 0, // No pagination for this endpoint
         limit: categories.length, // Return all categories
+        total: categories.length,
       },
     } as SuccessResponse<ProductCategoryListResponse>);
     console.log("✅ ", "Product categories fetched successfully.");
@@ -96,17 +100,24 @@ export async function update(
     }
 
     // Check if name is updated and exists
-    const { name } = req.body as ProductCategoryUpdate;
-    if (name && name !== category.name) {
+    const updateData = req.body as ProductCategoryUpdate;
+
+    const updatedName = updateData.name || category.name;
+    const updatedDescription =
+      updateData.description || (category.description as string | undefined);
+
+    if (updatedName !== category.name) {
       const existingCategory = await ProductCategory.findOne({
         isDeleted: false,
-        name,
+        name: updatedName,
       }).lean();
       if (existingCategory) {
         return next(errorHandler(409, "Product category already exists."));
       }
-      category.name = name;
     }
+
+    category.name = updatedName;
+    category.description = updatedDescription;
 
     await category.save();
 
@@ -180,7 +191,7 @@ async function hasConstraints(categoryId: Types.ObjectId): Promise<boolean> {
     }
     return hasConstraints;
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }
 
@@ -200,6 +211,6 @@ async function executeDeletion(
 
     await categoryToDelete.deleteOne();
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }

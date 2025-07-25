@@ -309,6 +309,14 @@ export default function Profile() {
                 <div className="mb-3">
                   <label htmlFor="email" className="form-label">
                     Email
+                    {user.email &&
+                      (user.isEmailVerified ? (
+                        <span className="badge bg-success ms-2">verified</span>
+                      ) : (
+                        <span className="badge bg-warning text-dark ms-2">
+                          not verified
+                        </span>
+                      ))}
                   </label>
                   <div className="input-group">
                     <input
@@ -353,6 +361,14 @@ export default function Profile() {
                 <div className="mb-3">
                   <label htmlFor="phoneNumber" className="form-label">
                     Phone number
+                    {user.phoneNumber &&
+                      (user.isPhoneNumberVerified ? (
+                        <span className="badge bg-success ms-2">verified</span>
+                      ) : (
+                        <span className="badge bg-warning text-dark ms-2">
+                          not verified
+                        </span>
+                      ))}
                   </label>
                   <div className="input-group">
                     <input

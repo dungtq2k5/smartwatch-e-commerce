@@ -12,10 +12,10 @@ export default function ApiError({ errMsg }: Readonly<{ errMsg?: string }>) {
     <div className="text-center">
       <FontAwesomeIcon
         icon={faFaceFrown}
-        size="4x"
+        size="2x"
         className="text-danger mb-3"
       />
-      <h1 className="h2 mb-3">Oops! An error occurred.</h1>
+      <p className="h3 mb-3">Oops! An error occurred.</p>
       <p className="lead text-muted">
         {errMsg ?? "Something went wrong on our end."}
       </p>

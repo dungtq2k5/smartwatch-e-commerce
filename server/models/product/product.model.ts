@@ -28,6 +28,11 @@ const productSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    basePriceCents: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -4,10 +4,11 @@ import Product from "../../models/product/product.model";
 import { errorHandler } from "../../utils/errorHandler";
 import ProductBrand from "../../models/product/productBrand.model";
 import ProductCategory from "../../models/product/productCategory.model";
-import {
+import type {
   ProductCreate,
   ProductListResponse,
   ProductResponse,
+  ProductSearchQuery,
   ProductUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
@@ -29,6 +30,7 @@ export async function create(
     description,
     imageUrls,
     stopSelling,
+    basePriceCents,
   } = req.body as ProductCreate;
 
   try {
@@ -62,6 +64,7 @@ export async function create(
       description,
       imageUrls,
       stopSelling,
+      basePriceCents,
       createdBy: userId,
     });
 
@@ -109,38 +112,50 @@ export async function search(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Searching products...");
-  const limit = req.query.limit ? parseInt(req.query.limit as string) : 9;
-  const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+  const reqQuery = req.query as ProductSearchQuery;
+
+  const limit = reqQuery.limit ? parseInt(reqQuery.limit) : 9;
+  const offset = reqQuery.offset ? parseInt(reqQuery.offset) : 0;
   const query: any = {};
 
-  if (req.query.searchTerm) {
+  if (reqQuery.searchTerm) {
     query.$or = [
-      { name: { $regex: req.query.searchTerm as string, $options: "i" } },
+      { name: { $regex: reqQuery.searchTerm, $options: "i" } },
       {
-        description: { $regex: req.query.searchTerm as string, $options: "i" },
+        description: { $regex: reqQuery.searchTerm, $options: "i" },
       },
     ];
   }
 
-  if (req.query.brandId) {
-    if (!Types.ObjectId.isValid(req.query.brandId as string)) {
+  if (reqQuery.brandId) {
+    if (!Types.ObjectId.isValid(reqQuery.brandId)) {
       return next(errorHandler(400, "Invalid brand ID."));
     }
-    query.brandId = new Types.ObjectId(req.query.brandId as string);
+    query.brandId = new Types.ObjectId(reqQuery.brandId);
   }
 
-  if (req.query.categoryId) {
-    if (!Types.ObjectId.isValid(req.query.categoryId as string)) {
+  if (reqQuery.categoryId) {
+    if (!Types.ObjectId.isValid(reqQuery.categoryId)) {
       return next(errorHandler(400, "Invalid category ID."));
     }
-    query.categoryId = new Types.ObjectId(req.query.categoryId as string);
+    query.categoryId = new Types.ObjectId(reqQuery.categoryId);
   }
 
-  if (req.query.stopSelling) {
-    query.stopSelling = req.query.stopSelling === "true";
+  if (reqQuery.stopSelling) {
+    query.stopSelling = reqQuery.stopSelling === "true";
   }
 
-  const sort = ((req.query.sortBy as string) || "createdAt").split("_");
+  if (reqQuery.priceCentsMin || reqQuery.priceCentsMax) {
+    query.basePriceCents = {};
+    if (reqQuery.priceCentsMin) {
+      query.basePriceCents.$gte = parseInt(reqQuery.priceCentsMin, 10);
+    }
+    if (reqQuery.priceCentsMax) {
+      query.basePriceCents.$lte = parseInt(reqQuery.priceCentsMax, 10);
+    }
+  }
+
+  const sort = (reqQuery.sortBy || "createdAt").split("_");
   const sortField = sort[0];
   const sortBy = sort[1] === "desc" ? -1 : 1;
   const sortStage: any = { [sortField]: sortBy, _id: 1 };
@@ -164,6 +179,7 @@ export async function search(
                 categoryId: 1,
                 description: 1,
                 imageUrls: 1,
+                basePriceCents: 1,
                 createdBy: 1,
                 createdAt: 1,
                 updatedAt: 1,
@@ -182,10 +198,13 @@ export async function search(
       success: true,
       message: "Products searched successfully.",
       data: {
-        total,
-        products,
+        products: {
+          total: products.length,
+          products,
+        },
         offset,
         limit,
+        total,
       },
     } as SuccessResponse<ProductListResponse>);
     console.log("✅ ", "Products searched successfully.");
@@ -278,6 +297,8 @@ export async function update(
     product.description = updateData.description || product.description;
     product.imageUrls = updateData.imageUrls || product.imageUrls;
     product.stopSelling = updateData.stopSelling ?? product.stopSelling;
+    product.basePriceCents =
+      updateData.basePriceCents ?? product.basePriceCents;
 
     await product.save();
 

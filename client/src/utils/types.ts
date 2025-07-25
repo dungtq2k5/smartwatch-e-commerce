@@ -8,11 +8,15 @@ export type FormInput = {
 export type FormFileInput = {
   file?: File | string | null; // File when uploading, string when first loaded from server (url string), null when want to remove image
   err?: string | string[];
-}
+};
 
-export type UserAddressFormat = Omit<
+export type UserAddressFormat = Pick<
   BaseUserAddress,
-  "id" | "userId" | "phoneNumber" | "location" | "fullAddress" | "createdAt" | "updatedAt"
+  | "street"
+  | "apartmentNumber"
+  | "wardCode"
+  | "districtCode"
+  | "cityProvinceCode"
 >;
 
 export type AddressFormData = {

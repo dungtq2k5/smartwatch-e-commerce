@@ -25,18 +25,14 @@ router.post(
   productController.create
 );
 
-router.get("/:id", verifyPermission("r_product"), productController.get);
+router.get("/:id", productController.get);
 
-/*
-  limit, offset
-  searchTerm (name, model, description)
-  stopSelling,
-  brandId,
-  categoryId,
-  sortBy: name, model, createdAt,...
-  ...
-*/
-router.get("/", verifyPermission("r_product"), productController.search);
+router.get(
+  "/",
+  inputSanitizer("product search"),
+  verifyProductInput("search"),
+  productController.search
+);
 
 router.patch(
   "/:id",
@@ -61,7 +57,6 @@ router.post(
 
 router.get(
   "/:productId/models/:id",
-  verifyPermission("r_product_model"),
   modelController.get
 );
 
@@ -82,7 +77,7 @@ router.delete(
 
 // --- MODEL VARIATION ROUTES ---
 
-// -- COLOR VARIATION
+// -- color variation
 router.post(
   "/:productId/models/:modelId/colors",
   verifyPermission("c_model_variation"),
@@ -101,7 +96,7 @@ router.patch(
   variationController.updateColor
 );
 
-// -- BAND VARIATION
+// -- band variation
 router.post(
   "/:productId/models/:modelId/bands",
   verifyPermission("c_model_variation"),
@@ -120,7 +115,7 @@ router.patch(
   variationController.updateBand
 );
 
-// -- BOTH VARIATIONS
+// -- both variations
 router.get(
   "/:productId/models/:modelId/variations/:id",
   verifyPermission("r_model_variation"),

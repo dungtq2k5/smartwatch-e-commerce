@@ -4,10 +4,13 @@ import {
   isValidProductName,
   isValidDateTimeString,
   isValidHexColor,
+  isValidNumString,
 } from "../../../common/utils.common";
 import {
+  PRODUCT_MODEL_VARIATION_TYPES,
   PRODUCT_NAME_MAX_LENGTH,
   PRODUCT_NAME_MIN_LENGTH,
+  PRODUCT_SEARCH_SORT_OPTIONS,
 } from "../../../common/configs.common";
 import { errorHandler } from "../errorHandler";
 import { isArrayOfStrings, isValidImgUrls } from "../../utils/utils";
@@ -33,21 +36,6 @@ function sanitizeProductInput(
   next();
 }
 
-function sanitizeSimpleNameInput(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  console.log("▶️ ", "Sanitizing simple name input...");
-  const { name } = req.body;
-
-  if (typeof name === "string") {
-    req.body.name = removeOddSpaces(name);
-  }
-
-  next();
-}
-
 function sanitizeModelVariationInput(
   req: Request,
   res: Response,
@@ -66,9 +54,24 @@ function sanitizeModelVariationInput(
   next();
 }
 
-const sanitizeBrandInput = sanitizeSimpleNameInput;
-const sanitizeCategoryInput = sanitizeSimpleNameInput;
-const sanitizeOsInput = sanitizeSimpleNameInput;
+function sanitizeSearchProduct(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing product search input...");
+  const { searchTerm } = req.query;
+
+  if (searchTerm && typeof searchTerm === "string") {
+    req.query.searchTerm = removeOddSpaces(searchTerm);
+  }
+
+  next();
+}
+
+const sanitizeBrandInput = sanitizeProductInput;
+const sanitizeCategoryInput = sanitizeProductInput;
+const sanitizeOsInput = sanitizeProductInput;
 
 function sanitizeProductModelInput(
   req: Request,
@@ -113,7 +116,14 @@ function sanitizeProductModelInput(
 }
 
 export function inputSanitizer(
-  type: "product" | "brand" | "category" | "os" | "model" | "variation"
+  type:
+    | "product"
+    | "brand"
+    | "category"
+    | "os"
+    | "model"
+    | "variation"
+    | "product search"
 ): (req: Request, res: Response, next: NextFunction) => void {
   switch (type) {
     case "product":
@@ -128,11 +138,13 @@ export function inputSanitizer(
       return sanitizeProductModelInput;
     case "variation":
       return sanitizeModelVariationInput;
+    case "product search":
+      return sanitizeSearchProduct;
   }
 }
 
 export function verifyProductInput(
-  type: "create" | "update"
+  type: "create" | "update" | "search"
 ): (req: Request, res: Response, next: NextFunction) => void {
   return async (
     req: Request,
@@ -153,6 +165,7 @@ export function verifyProductInput(
             imageUrls,
             description,
             stopSelling,
+            basePriceCents,
           } = req.body;
 
           if (!name) {
@@ -181,6 +194,11 @@ export function verifyProductInput(
           if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
             errors.push("Product stopSelling must be a boolean.");
           }
+          if (basePriceCents === undefined || basePriceCents === null) {
+            errors.push("Product base price is required.");
+          } else if (typeof basePriceCents !== "number" || basePriceCents < 0) {
+            errors.push("Product base price must be a non-negative number.");
+          }
           break;
         }
         case "update": {
@@ -192,6 +210,7 @@ export function verifyProductInput(
             imageUrls,
             description,
             stopSelling,
+            basePriceCents,
           } = req.body;
 
           if (name !== undefined && !isValidProductName(name)) {
@@ -218,6 +237,94 @@ export function verifyProductInput(
           if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
             errors.push("Product stopSelling must be a boolean.");
           }
+          if (basePriceCents !== undefined) {
+            if (basePriceCents === null) {
+              errors.push("Product base price cannot be null.");
+            } else if (typeof basePriceCents !== "number") {
+              errors.push("Product base price must be a number.");
+            } else if (basePriceCents < 0) {
+              errors.push("Product base price must be a non-negative number.");
+            }
+          }
+          break;
+        }
+        case "search": {
+          console.log("Validating product search input...");
+          const {
+            limit,
+            offset,
+            searchTerm,
+            brandId,
+            categoryId,
+            stopSelling,
+            priceCentsMin,
+            priceCentsMax,
+            sortBy,
+          } = req.query;
+
+          if (limit !== undefined && !isValidNumString(limit)) {
+            errors.push("Product limit must be a valid number string.");
+          }
+          if (offset !== undefined && !isValidNumString(offset)) {
+            errors.push("Product offset must be a valid number string.");
+          }
+          if (searchTerm !== undefined && typeof searchTerm !== "string") {
+            errors.push("Product search term must be a string.");
+          }
+          if (brandId !== undefined && typeof brandId !== "string") {
+            errors.push("Product brand ID must be a string.");
+          }
+          if (categoryId !== undefined && typeof categoryId !== "string") {
+            errors.push("Product category ID must be a string.");
+          }
+          if (
+            stopSelling !== undefined &&
+            !["true", "false"].includes(stopSelling as any)
+          ) {
+            errors.push("Product stopSelling must be a boolean string.");
+          }
+          if (priceCentsMin !== undefined) {
+            if (!isValidNumString(priceCentsMin)) {
+              errors.push(
+                "Product priceCentsMin must be a valid number string."
+              );
+            } else if (parseInt(priceCentsMin as string, 10) < 0) {
+              errors.push(
+                "Product priceCentsMin must be a non-negative number."
+              );
+            }
+          }
+          if (priceCentsMax !== undefined) {
+            if (!isValidNumString(priceCentsMax)) {
+              errors.push(
+                "Product priceCentsMax must be a valid number string."
+              );
+            } else if (parseInt(priceCentsMax as string, 10) < 0) {
+              errors.push(
+                "Product priceCentsMax must be a non-negative number."
+              );
+            }
+          }
+          if (
+            priceCentsMin !== undefined &&
+            priceCentsMax !== undefined &&
+            parseInt(priceCentsMin as string, 10) >
+              parseInt(priceCentsMax as string, 10)
+          ) {
+            errors.push(
+              "Product priceCentsMin cannot be greater than priceCentsMax."
+            );
+          }
+          if (
+            sortBy !== undefined &&
+            !PRODUCT_SEARCH_SORT_OPTIONS.includes(sortBy as any)
+          ) {
+            errors.push(
+              `Product sortBy must be one of the following: ${PRODUCT_SEARCH_SORT_OPTIONS.join(
+                ", "
+              )}`
+            );
+          }
           break;
         }
       }
@@ -235,27 +342,53 @@ export function verifyProductInput(
 export function verifyBrandInput(
   type: "create" | "update"
 ): (req: Request, res: Response, next: NextFunction) => void {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     console.log("▶️ ", "Validating product brand input...");
 
     let errors: string[] = [];
     try {
       switch (type) {
         case "create": {
-          const { name } = req.body;
+          const { name, logoUrl, description } = req.body;
 
           if (!name) {
             errors.push("Product brand name is required.");
           } else if (typeof name !== "string" || !name) {
             errors.push("Product brand name must be a non-empty string.");
           }
+          if (logoUrl !== undefined && !(await isValidImgUrls(logoUrl))) {
+            errors.push("Product brand logo URL must be a valid image URL.");
+          }
+          if (description !== undefined && typeof description !== "string") {
+            errors.push("Product brand description must be a string.");
+          }
           break;
         }
         case "update": {
-          const { name } = req.body;
+          const { name, logoUrl, description } = req.body;
 
           if (name !== undefined && (typeof name !== "string" || !name)) {
             errors.push("Product brand name must be a non-empty string.");
+          }
+          if (
+            logoUrl !== undefined &&
+            logoUrl !== null &&
+            !(await isValidImgUrls(logoUrl))
+          ) {
+            errors.push(
+              "Product brand logo URL must be a valid image URL or null."
+            );
+          }
+          if (
+            description !== undefined &&
+            description !== null &&
+            typeof description !== "string"
+          ) {
+            errors.push("Product brand description must be a string or null.");
           }
           break;
         }
@@ -281,20 +414,32 @@ export function verifyCategoryInput(
     try {
       switch (type) {
         case "create": {
-          const { name } = req.body;
+          const { name, description } = req.body;
 
           if (!name) {
             errors.push("Product category name is required.");
           } else if (typeof name !== "string" || !name) {
             errors.push("Product category name must be a non-empty string.");
           }
+          if (description !== undefined && typeof description !== "string") {
+            errors.push("Product category description must be a string.");
+          }
           break;
         }
         case "update": {
-          const { name } = req.body;
+          const { name, description } = req.body;
 
           if (name !== undefined && (typeof name !== "string" || !name)) {
             errors.push("Product category name must be a non-empty string.");
+          }
+          if (
+            description !== undefined &&
+            description !== null &&
+            typeof description !== "string"
+          ) {
+            errors.push(
+              "Product category description must be a string or null."
+            );
           }
           break;
         }
@@ -313,27 +458,51 @@ export function verifyCategoryInput(
 export function verifyOsInput(
   type: "create" | "update"
 ): (req: Request, res: Response, next: NextFunction) => void {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     console.log("▶️ ", "Validating product OS input...");
 
     let errors: string[] = [];
     try {
       switch (type) {
         case "create": {
-          const { name } = req.body;
+          const { name, logoUrl, description } = req.body;
 
           if (!name) {
             errors.push("Product OS name is required.");
           } else if (typeof name !== "string" || !name) {
             errors.push("Product OS name must be a non-empty string.");
           }
+          if (logoUrl !== undefined && !(await isValidImgUrls(logoUrl))) {
+            errors.push("Product OS logo URL must be a valid image URL.");
+          }
+          if (description !== undefined && typeof description !== "string") {
+            errors.push("Product OS description must be a string.");
+          }
           break;
         }
         case "update": {
-          const { name } = req.body;
+          const { name, logoUrl, description } = req.body;
 
           if (name !== undefined && (typeof name !== "string" || !name)) {
             errors.push("Product OS name must be a non-empty string.");
+          }
+          if (
+            logoUrl !== undefined &&
+            logoUrl !== null &&
+            !(await isValidImgUrls(logoUrl))
+          ) {
+            errors.push("Product OS logo URL must be a valid image URL.");
+          }
+          if (
+            description !== undefined &&
+            description !== null &&
+            typeof description !== "string"
+          ) {
+            errors.push("Product OS description must be a string or null.");
           }
           break;
         }
@@ -368,7 +537,7 @@ export function verifyProductModelInput(
             name,
             watchSizeMm,
             priceCents,
-            basePriceCents,
+            stockPriceCents,
             imageUrls,
             displaySizeMm,
             displayType,
@@ -416,11 +585,14 @@ export function verifyProductModelInput(
           } else if (typeof priceCents !== "number" || priceCents < 0) {
             errors.push("Product model price must be a non-negative number.");
           }
-          if (basePriceCents === undefined || basePriceCents === null) {
-            errors.push("Product model base price is required.");
-          } else if (typeof basePriceCents !== "number" || basePriceCents < 0) {
+          if (stockPriceCents === undefined || stockPriceCents === null) {
+            errors.push("Product model stock price is required.");
+          } else if (
+            typeof stockPriceCents !== "number" ||
+            stockPriceCents < 0
+          ) {
             errors.push(
-              "Product model base price must be a non-negative number."
+              "Product model stock price must be a non-negative number."
             );
           }
           if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
@@ -549,7 +721,7 @@ export function verifyProductModelInput(
             name,
             watchSizeMm,
             priceCents,
-            basePriceCents,
+            stockPriceCents,
             imageUrls,
             displaySizeMm,
             displayType,
@@ -596,11 +768,11 @@ export function verifyProductModelInput(
             errors.push("Product model price must be a non-negative number.");
           }
           if (
-            basePriceCents !== undefined &&
-            (typeof basePriceCents !== "number" || basePriceCents < 0)
+            stockPriceCents !== undefined &&
+            (typeof stockPriceCents !== "number" || stockPriceCents < 0)
           ) {
             errors.push(
-              "Product model base price must be a non-negative number."
+              "Product model stock price must be a non-negative number."
             );
           }
           if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
@@ -737,7 +909,7 @@ export function verifyProductModelInput(
 
 export function verifyModelVariationInput(
   type: "create" | "update",
-  variation: "color" | "band"
+  variation: typeof PRODUCT_MODEL_VARIATION_TYPES[number]
 ): (req: Request, res: Response, next: NextFunction) => void {
   return async (
     req: Request,
@@ -764,7 +936,7 @@ export function verifyModelVariationInput(
             sizeMm,
             weightMg,
             priceCents,
-            basePriceCents,
+            stockPriceCents,
           } = req.body;
 
           if (!name) {
@@ -832,14 +1004,14 @@ export function verifyModelVariationInput(
                 "Product model variation price must be a non-negative number."
               );
             }
-            if (basePriceCents === undefined || basePriceCents === null) {
-              errors.push("Product model variation base price is required.");
+            if (stockPriceCents === undefined || stockPriceCents === null) {
+              errors.push("Product model variation stock price is required.");
             } else if (
-              typeof basePriceCents !== "number" ||
-              basePriceCents < 0
+              typeof stockPriceCents !== "number" ||
+              stockPriceCents < 0
             ) {
               errors.push(
-                "Product model variation base price must be a non-negative number."
+                "Product model variation stock price must be a non-negative number."
               );
             }
           }
@@ -860,7 +1032,7 @@ export function verifyModelVariationInput(
             sizeMm,
             weightMg,
             priceCents,
-            basePriceCents,
+            stockPriceCents,
           } = req.body;
 
           if (name !== undefined && !isValidProductName(name)) {
@@ -921,15 +1093,15 @@ export function verifyModelVariationInput(
               );
             }
             if (
-              basePriceCents !== undefined &&
-              typeof basePriceCents !== "number"
+              stockPriceCents !== undefined &&
+              typeof stockPriceCents !== "number"
             ) {
               errors.push(
-                "Product model variation base price must be a number."
+                "Product model variation stock price must be a number."
               );
-            } else if (basePriceCents && basePriceCents < 0) {
+            } else if (stockPriceCents && stockPriceCents < 0) {
               errors.push(
-                "Product model variation base price must be a non-negative number."
+                "Product model variation stock price must be a non-negative number."
               );
             }
             break;

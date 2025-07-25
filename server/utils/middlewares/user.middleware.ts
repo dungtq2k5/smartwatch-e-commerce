@@ -111,6 +111,7 @@ export function verifyUserInput(
     | "create"
     | "validate password"
     | "update password"
+    | "set password"
 ): (req: Request, res: Response, next: NextFunction) => Promise<void> {
   return async (
     req: Request,
@@ -418,7 +419,8 @@ export function verifyUserInput(
           }
           break;
         }
-        case "validate password": {
+        case "validate password":
+        case "set password": {
           console.log("Validating validate password input...");
           const { password } = req.body;
 
@@ -466,6 +468,7 @@ export function verifyAddressInput(
     let errors: string[] = [];
     try {
       switch (type) {
+        // Validations of address code will be handled in controller
         case "create": {
           console.log("Validating create address input...");
           const {

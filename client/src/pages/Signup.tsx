@@ -74,7 +74,7 @@ export default function Signup() {
         },
       }));
     },
-    [formData.password.val]
+    [formData.confirmPassword.val, formData.password.val]
   );
 
   const handleSubmit = useCallback(

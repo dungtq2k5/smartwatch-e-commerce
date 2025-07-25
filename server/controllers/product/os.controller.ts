@@ -12,6 +12,7 @@ import {
 import { formatProductOsResponse } from "../../utils/utils";
 import { Types } from "mongoose";
 import ProductModel from "../../models/product/productModel.model";
+import { deleteFileFromFirebaseStorage } from "../../utils/firebase";
 
 export async function create(
   req: Request,
@@ -19,7 +20,7 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating product os...");
-  const { name } = req.body as ProductOsCreate;
+  const { name, logoUrl, description } = req.body as ProductOsCreate;
 
   try {
     // Check os exists
@@ -35,6 +36,8 @@ export async function create(
     const { userId } = req["auth"] as RequestAuth;
     const os = new ProductOs({
       name,
+      logoUrl: logoUrl || undefined,
+      description: description || undefined,
       createdBy: userId,
     });
 
@@ -65,10 +68,13 @@ export async function getAll(
       success: true,
       message: "Product os fetched successfully.",
       data: {
-        total: os.length,
-        osList: os.map(formatProductOsResponse),
+        osList: {
+          total: os.length,
+          osList: os.map(formatProductOsResponse),
+        },
         offset: 0, // No pagination for this endpoint
         limit: os.length, // Return all os
+        total: os.length,
       },
     } as SuccessResponse<ProductOsListResponse>);
     console.log("✅ ", "Product os fetched successfully.");
@@ -96,17 +102,33 @@ export async function update(
     }
 
     // Check if name is updated and exists
-    const { name } = req.body as ProductOsUpdate;
-    if (name && name !== os.name) {
+    const updateData = req.body as ProductOsUpdate;
+
+    const updatedName = updateData.name || os.name;
+    const updatedLogoUrl =
+      updateData.logoUrl === null
+        ? undefined
+        : updateData.logoUrl || (os.logoUrl as string | undefined);
+    const updatedDescription =
+      updateData.description || (os.description as string | undefined);
+
+    if (updatedName !== os.name) {
       const existingOs = await ProductOs.findOne({
         isDeleted: false,
-        name,
+        name: updatedName,
       }).lean();
       if (existingOs) {
         return next(errorHandler(409, "Product os already exists."));
       }
-      os.name = name;
     }
+
+    if (updatedLogoUrl !== os.logoUrl && os.logoUrl) {
+      await deleteFileFromFirebaseStorage(os.logoUrl, "product-image");
+    }
+
+    os.name = updatedName;
+    os.logoUrl = updatedLogoUrl;
+    os.description = updatedDescription;
 
     await os.save();
 
@@ -180,7 +202,7 @@ async function hasConstraints(osId: Types.ObjectId): Promise<boolean> {
     }
     return hasConstraints;
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }
 
@@ -198,8 +220,11 @@ async function executeDeletion(
       return;
     }
 
+    if (osToDelete.logoUrl) {
+      await deleteFileFromFirebaseStorage(osToDelete.logoUrl, "product-image");
+    }
     await osToDelete.deleteOne();
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }

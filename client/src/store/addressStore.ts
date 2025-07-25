@@ -10,7 +10,7 @@ import { SELF_ADDRESSES_URL } from "../configs";
 
 type UserAddressState = {
   addresses?: UserAddressResponseList;
-  isFetching: boolean;
+  isFetching?: true;
   fetchErr?: string;
   isLoading?: true; // For delete, create, update operations
   getErr?: string; // For fetching a single address
@@ -28,7 +28,7 @@ type UserAddressState = {
 
 export const useUserAddressStore = create<UserAddressState>((set, get) => ({
   addresses: undefined,
-  isFetching: true,
+  isFetching: undefined,
   fetchErr: undefined,
   isLoading: undefined,
   getErr: undefined,
@@ -50,7 +50,7 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
       } catch (error) {
         set({ fetchErr: formatError(error) });
       } finally {
-        set({ isFetching: false });
+        set({ isFetching: undefined });
       }
     }
   },

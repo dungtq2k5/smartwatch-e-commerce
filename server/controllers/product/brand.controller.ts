@@ -12,6 +12,7 @@ import {
 import { formatProductBrandResponse } from "../../utils/utils";
 import { Types } from "mongoose";
 import Product from "../../models/product/product.model";
+import { deleteFileFromFirebaseStorage } from "../../utils/firebase";
 
 export async function create(
   req: Request,
@@ -19,7 +20,7 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating product brand...");
-  const { name } = req.body as ProductBrandCreate;
+  const { name, logoUrl, description } = req.body as ProductBrandCreate;
 
   try {
     // Check brand exists
@@ -35,6 +36,8 @@ export async function create(
     const { userId } = req["auth"] as RequestAuth;
     const brand = new ProductBrand({
       name,
+      logoUrl: logoUrl || undefined,
+      description: description || undefined,
       createdBy: userId,
     });
 
@@ -65,10 +68,13 @@ export async function getAll(
       success: true,
       message: "Product brands fetched successfully.",
       data: {
-        total: brands.length,
-        brands: brands.map(formatProductBrandResponse),
+        brands: {
+          total: brands.length,
+          brands: brands.map(formatProductBrandResponse),
+        },
         offset: 0, // No pagination for this endpoint
         limit: brands.length, // Return all brands
+        total: brands.length,
       },
     } as SuccessResponse<ProductBrandListResponse>);
     console.log("✅ ", "Product brands fetched successfully.");
@@ -96,17 +102,33 @@ export async function update(
     }
 
     // Check if name is updated and exists
-    const { name } = req.body as ProductBrandUpdate;
-    if (name && name !== brand.name) {
+    const updateData = req.body as ProductBrandUpdate;
+
+    const updatedName = updateData.name || brand.name;
+    const updatedLogoUrl =
+      updateData.logoUrl === null
+        ? undefined
+        : updateData.logoUrl || (brand.logoUrl as string | undefined);
+    const updatedDescription =
+      updateData.description || (brand.description as string | undefined);
+
+    if (updatedName !== brand.name) {
       const existingBrand = await ProductBrand.findOne({
         isDeleted: false,
-        name,
+        name: updatedName,
       }).lean();
       if (existingBrand) {
         return next(errorHandler(409, "Product brand already exists."));
       }
-      brand.name = name;
     }
+
+    if (updatedLogoUrl !== brand.logoUrl && brand.logoUrl) {
+      await deleteFileFromFirebaseStorage(brand.logoUrl, "product-image");
+    }
+
+    brand.name = updatedName;
+    brand.logoUrl = updatedLogoUrl;
+    brand.description = updatedDescription;
 
     await brand.save();
 
@@ -144,7 +166,7 @@ export async function remove(
 
     res.status(200).json({
       success: true,
-      message: "Product brand deleted successfully."
+      message: "Product brand deleted successfully.",
     } as SuccessResponse);
     console.log("✅ ", "Product brand deleted successfully.");
   } catch (error) {
@@ -180,7 +202,7 @@ async function hasConstraints(brandId: Types.ObjectId): Promise<boolean> {
     }
     return hasConstraints;
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }
 
@@ -198,8 +220,14 @@ async function executeDeletion(
       return;
     }
 
+    if (brandToDelete.logoUrl) {
+      await deleteFileFromFirebaseStorage(
+        brandToDelete.logoUrl,
+        "product-image"
+      );
+    }
     await brandToDelete.deleteOne();
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }

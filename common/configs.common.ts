@@ -36,6 +36,8 @@ export const PRODUCT_IMAGE_MIN_WIDTH = 200;
 export const PRODUCT_IMAGE_MIN_HEIGHT = 200;
 export const PRODUCT_IMAGE_MAX_WIDTH = 1500; // Increased for better detail/zoom capabilities
 export const PRODUCT_IMAGE_MAX_HEIGHT = 1500; // Increased for better detail/zoom capabilities
+export const PRODUCT_IMAGE_BEST_WIDTH = 600;
+export const PRODUCT_IMAGE_BEST_HEIGHT = 696;
 export const PRODUCT_IMAGE_HINT_MESSAGE = `Product image must be a valid image URL or file. Recommended maximum size: 2MB. Recommended dimensions: Between 200x200 pixels and 1500x1500 pixels. Allowed formats: JPG, PNG, and WebP.`; // Added WebP and clarified "recommended" sizes/dimensions
 
 export const IMMUTABILITY_USER_EMAILS: string[] = [SYSTEM_USER.email] as const;
@@ -70,3 +72,65 @@ export const USER_DEFAULT_BIRTH_GAP = 20; // Default age gap from current for us
 export const VN_COUNTRY_CODE = "84"; // Vietnam's country code
 
 export const AUTH_PROVIDER_OPTIONS = ["local", "google"] as const;
+
+export const PRODUCT_SEARCH_SORT_OPTIONS = [
+  // Must match the field names in the backend
+  "name_desc",
+  "name_asc",
+  "model_desc",
+  "model_asc",
+  "createdAt_desc",
+  "createdAt_asc",
+  "basePriceCents_desc",
+  "basePriceCents_asc",
+] as const;
+
+export const PRODUCT_MOCK_OPTIONS = {
+  MODEL_DISPLAY_TYPE_OPTIONS: [
+    "AMOLED",
+    "LCD",
+    "OLED",
+    "TFT",
+    "IPS",
+    "Retina",
+    "Super AMOLED",
+  ] as const,
+
+  MODEL_CONNECTIVITY_OPTIONS: [
+    "Bluetooth",
+    "Wi-Fi",
+    "NFC",
+    "GPS",
+    "Cellular",
+  ] as const,
+
+  MODEL_SENSORS_OPTIONS: [
+    "Accelerometer",
+    "Heart Rate",
+    "GPS",
+    "Gyroscope",
+    "Barometer",
+    "Compass",
+  ] as const,
+
+  MODAL_CASE_MATERIAL_OPTIONS: [
+    "stainless steel",
+    "aluminum",
+    "plastic",
+    "ceramic",
+    "titanium",
+  ] as const,
+
+  VARIATION_BAND_MATERIAL_OPTIONS: [
+    "leather",
+    "silicone",
+    "metal",
+    "fabric",
+    "plastic",
+  ] as const,
+} as const;
+
+export const PRODUCT_MODEL_VARIATION_TYPES = [
+  "color",
+  "band",
+] as const;

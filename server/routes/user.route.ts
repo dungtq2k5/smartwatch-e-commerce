@@ -10,16 +10,44 @@ import {
 import * as userController from "../controllers/user/user.controller";
 import * as cartController from "../controllers/user/cart.controller";
 import * as addressController from "../controllers/user/address.controller";
+import rateLimit from "express-rate-limit";
 
 const router = express.Router();
 
+const isDev = process.env.NODE_ENV !== "production";
+
+const updateSelfGeneralInfoLimiter = rateLimit({
+  windowMs: isDev ? 1 * 60 * 1000 : 15 * 60 * 1000,
+  max: isDev ? 5 : 10,
+  skipSuccessfulRequests: true,
+  message: {
+    success: false,
+    message: "Too many requests, please try again later.",
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+const updateSelfContactInfoLimiter = rateLimit({
+  windowMs: isDev ? 1 * 60 * 1000 : 15 * 60 * 1000,
+  max: isDev ? 100 : 5,
+  skipSuccessfulRequests: true,
+  message: {
+    success: false,
+    message: "Too many requests, please try again later.",
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
 // --- ROUTES FOR THE AUTH BUYER (/me) ---
 
-// -- ROUTES FOR PROFILE
+// -- routes for profile
 router.get("/me", verifyPermission("r_usr"), userController.getSelf);
 
 router.patch(
   "/me/contact-info",
+  updateSelfContactInfoLimiter,
   verifyPermission("u_usr"),
   verifyEmptyBody,
   inputSanitizer("user"),
@@ -29,6 +57,7 @@ router.patch(
 
 router.patch(
   "/me",
+  updateSelfGeneralInfoLimiter,
   verifyPermission("u_usr"),
   verifyEmptyBody,
   inputSanitizer("user"),
@@ -38,6 +67,7 @@ router.patch(
 
 router.patch(
   "/me/password",
+  updateSelfGeneralInfoLimiter,
   verifyPermission("u_usr"),
   verifyEmptyBody,
   verifyUserInput("update password"),
@@ -46,15 +76,16 @@ router.patch(
 
 router.patch(
   "/me/set-password",
+  updateSelfGeneralInfoLimiter,
   verifyPermission("u_usr"),
   verifyEmptyBody,
-  verifyUserInput("validate password"), // the verify is the same so reuse it
+  verifyUserInput("set password"),
   userController.setSelfPassword
-)
+);
 
 router.delete("/me", verifyPermission("d_usr"), userController.deleteSelf);
 
-// -- ROUTES FOR CART
+// -- routes for cart
 router.post(
   "/me/carts",
   verifyPermission("c_usr_cart"),
@@ -80,7 +111,7 @@ router.delete(
   cartController.removeSelf
 );
 
-// -- ROUTES FOR ADDRESS
+// -- routes for address
 router.post(
   "/me/addresses",
   verifyPermission("c_usr_addr"),
@@ -119,7 +150,7 @@ router.delete(
 
 // --- ROUTES FOR ADMIN MANAGEMENT ---
 
-// -- ROUTES FOR USER
+// -- routes for user
 router.post(
   "/",
   verifyPermission("c_usr"),
@@ -169,7 +200,7 @@ router.patch(
 
 router.delete("/:id", verifyPermission("d_usr"), userController.remove);
 
-// -- ROUTES FOR ADDRESS
+// -- routes for address
 router.post(
   "/:id/addresses",
   verifyPermission("c_usr_addr"),
