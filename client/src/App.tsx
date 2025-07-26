@@ -10,7 +10,7 @@ import Login from "./pages/Login.tsx";
 import Verify from "./pages/Verify.tsx";
 import ForgotPassword from "./pages/ForgotPassword.tsx";
 import { Toaster } from "react-hot-toast";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Account from "./pages/Account.tsx";
@@ -18,14 +18,14 @@ import Profile from "./components/account/Profile.tsx";
 import Address from "./components/account/Address.tsx";
 import BankAndCard from "./components/account/BankAndCard.tsx";
 import Loading from "./components/Loading.tsx";
-import SearchProduct from "./pages/SearchProduct.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
+import SearchProduct from "./pages/SearchProduct.tsx";
 
 export default function App() {
   // DEV for testing
-  const renderCount = useRef(0);
-  renderCount.current += 1;
-  console.log("App render count:", renderCount.current);
+  // const renderCount = useRef(0);
+  // renderCount.current += 1;
+  // console.log("App render count:", renderCount.current);
 
   const { checkAuth, isCheckingAuth } = useAuthStore();
 
@@ -44,7 +44,7 @@ export default function App() {
 
       <Routes>
         <Route path="/" element={<Home />}></Route>
-        <Route path="/products" element={<SearchProduct />}></Route>
+        <Route path="/search" element={<SearchProduct />}></Route>
         <Route path="/products/:id" element={<ProductDetail />}></Route>
         {/*
           TODO next...

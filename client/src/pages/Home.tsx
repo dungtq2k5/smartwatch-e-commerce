@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type JSX } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import { useProductStore } from "../store/product/productStore";
@@ -19,6 +19,7 @@ import { centsToUSD } from "../../../common/utils.common";
 import HorizontalDivider from "../components/HorizontalDivider";
 import ProductCardSkeleton from "../components/skeleton/ProductCardSkeleton";
 import FilterSidebarSkeleton from "../components/skeleton/FilterSidebarSkeleton";
+import Pagination from "../components/Pagination";
 
 type FetchingState = {
   searchProducts: boolean;
@@ -81,7 +82,7 @@ export default function Home() {
     searchTerm: "",
   });
 
-  const handleFetchProducts = useCallback(
+  const handleFetchSearchProducts = useCallback(
     async (query: SearchForm): Promise<void> => {
       setApiError((prev) => ({ ...prev, searchProducts: undefined }));
       setIsFetching((prev) => ({ ...prev, searchProducts: true }));
@@ -107,7 +108,7 @@ export default function Home() {
 
   const allSmartwatchesSectionRef = useRef<HTMLDivElement>(null);
 
-  // Fetch initial when first loaded: popular products, brands, categories, and set max price
+  // Fetch initial when first loaded: popular products, searchProducts, brands, categories, and set max price
   useEffect(() => {
     const handleFetchInitialData = async (): Promise<void> => {
       // Fetch popular products
@@ -131,6 +132,9 @@ export default function Home() {
       } finally {
         setIsFetching((prev) => ({ ...prev, mostPopularProducts: false }));
       }
+
+      // Fetch search products
+      handleFetchSearchProducts(searchForm);
 
       // Fetch brands
       fetchBrands();
@@ -168,92 +172,8 @@ export default function Home() {
     };
 
     handleFetchInitialData();
-  }, [fetchBrands, fetchCategories, fetchProducts]);
-
-  // Fetch products when first loaded or pagination changes
-  useEffect(() => {
-    handleFetchProducts(searchForm);
-
-    if (allSmartwatchesSectionRef.current && products.mostPopularProducts) { // Avoid first loaded
-      allSmartwatchesSectionRef.current.scrollIntoView({ behavior: "smooth" });
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchForm.offset, searchForm.limit]);
-
-  const renderPagination = useCallback((): JSX.Element => {
-    if (!products.searchProducts) return <></>;
-
-    const totalPages = Math.ceil(
-      products.searchProducts.total / MAX_PRODUCTS_PER_PAGE
-    );
-    if (totalPages <= 1) return <></>;
-
-    const offset = parseInt(searchForm.offset, 10);
-    const limit = parseInt(searchForm.limit, 10);
-
-    return (
-      <nav>
-        <ul className="pagination">
-          <li className={`page-item ${offset === 0 ? "disabled" : ""}`}>
-            <button
-              className="page-link"
-              aria-label="Previous"
-              onClick={() => {
-                setSearchForm((prev) => ({
-                  ...prev,
-                  offset: String(Math.max(offset - limit, 0)),
-                }));
-              }}
-            >
-              <span aria-hidden="true">&laquo;</span>
-            </button>
-          </li>
-
-          {Array.from({ length: totalPages }, (_, i) => {
-            const page = i + 1;
-            const isCurrent = offset / limit === i;
-            return (
-              <li
-                key={page}
-                className={`page-item ${isCurrent ? "active" : ""}`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() =>
-                    setSearchForm((prev) => ({
-                      ...prev,
-                      offset: String(i * limit),
-                    }))
-                  }
-                >
-                  {page}
-                </button>
-              </li>
-            );
-          })}
-
-          <li
-            className={`page-item ${
-              offset + limit >= products.searchProducts.total ? "disabled" : ""
-            }`}
-          >
-            <button
-              className="page-link"
-              aria-label="Next"
-              onClick={() => {
-                setSearchForm((prev) => ({
-                  ...prev,
-                  offset: String(offset + limit),
-                }));
-              }}
-            >
-              <span aria-hidden="true">&raquo;</span>
-            </button>
-          </li>
-        </ul>
-      </nav>
-    );
-  }, [products.searchProducts, searchForm.limit, searchForm.offset]);
+  }, []);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
@@ -274,9 +194,9 @@ export default function Home() {
       };
       setSearchForm(newSearchForm);
 
-      await handleFetchProducts(newSearchForm);
+      await handleFetchSearchProducts(newSearchForm);
     },
-    [handleFetchProducts, searchForm]
+    [handleFetchSearchProducts, searchForm]
   );
 
   const handleSort = useCallback(
@@ -289,9 +209,9 @@ export default function Home() {
       };
       setSearchForm(newSearchForm);
 
-      await handleFetchProducts(newSearchForm);
+      await handleFetchSearchProducts(newSearchForm);
     },
-    [handleFetchProducts, searchForm]
+    [handleFetchSearchProducts, searchForm]
   );
 
   const handleClearFilters = useCallback(async (): Promise<void> => {
@@ -302,8 +222,21 @@ export default function Home() {
     };
     setSearchForm(newSearchForm);
 
-    await handleFetchProducts(newSearchForm);
-  }, [handleFetchProducts]);
+    await handleFetchSearchProducts(newSearchForm);
+  }, [handleFetchSearchProducts]);
+
+  const handleOffsetChange = useCallback((newOffset: number) => {
+    const newSearchForm = {
+      ...searchForm,
+      offset: newOffset.toString(),
+    };
+    setSearchForm(newSearchForm);
+    handleFetchSearchProducts(newSearchForm);
+
+    if (allSmartwatchesSectionRef.current) {
+      allSmartwatchesSectionRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [handleFetchSearchProducts, searchForm]);
 
   return (
     <main className="container--g">
@@ -580,7 +513,14 @@ export default function Home() {
               )}
             </div>
             {/* Pagination */}
-            {renderPagination()}
+            {!!products.searchProducts?.total && (
+              <Pagination
+                totalItems={products.searchProducts.total}
+                itemsPerPage={MAX_PRODUCTS_PER_PAGE}
+                currentOffset={parseInt(searchForm.offset, 10)}
+                onOffsetChange={handleOffsetChange}
+              />
+            )}
           </div>
         </div>
       </section>

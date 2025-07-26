@@ -4,7 +4,7 @@ const ProductCardSkeleton = memo(() => {
   return (
     <div className="card h-100 shadow--g border-0" aria-hidden="true">
       <div
-        className="card-img-top product-img--g mt-2 placeholder"
+        className="card-img-top product-img--g placeholder"
         style={{ height: "12em", width: "100%" }}
       ></div>
       <div className="card-body d-flex flex-column placeholder-glow">

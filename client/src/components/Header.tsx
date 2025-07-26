@@ -1,9 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { memo, useRef, type JSX } from "react";
+import { memo, useCallback, useEffect, useState, type JSX } from "react";
 import { useAuthStore } from "../store/authStore";
 import defaultAvatar from "../assets/default-avatar.webp";
+import { removeOddSpaces } from "../../../common/utils.common";
 
 const Header = memo(() => {
   // DEV temp for testing
@@ -12,6 +13,31 @@ const Header = memo(() => {
   // console.log("Header rendered", renderCount.current);
 
   const { user, isAuth } = useAuthStore();
+
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Handle searchTerm change by updating the URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const urlSearchTerm = urlParams.get("searchTerm");
+    if (urlSearchTerm) setSearchTerm(urlSearchTerm);
+  }, [location.search]);
+
+  const handleSearch = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+
+      const urlParams = new URLSearchParams(location.search);
+      urlParams.set("searchTerm", removeOddSpaces(searchTerm));
+
+      const searchQuery = urlParams.toString();
+      navigate(`/search?${searchQuery}`);
+    },
+    [location.search, navigate, searchTerm]
+  );
 
   const renderBtns = (): JSX.Element => {
     if (user && isAuth) {
@@ -49,6 +75,7 @@ const Header = memo(() => {
   return (
     <header className="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
       <div className="container-fluid">
+        {/* Logo */}
         <Link className="navbar-brand" to="/">
           SmartWatch
         </Link>
@@ -66,6 +93,7 @@ const Header = memo(() => {
         </button>
 
         <div className="collapse navbar-collapse" id="navbarSupportedContent">
+          {/* Navigation links */}
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
             <li className="nav-item">
               <Link className="nav-link" to="/">
@@ -83,8 +111,8 @@ const Header = memo(() => {
               </Link>
             </li>
           </ul>
-
-          <form className="d-flex">
+          {/* Search bar */}
+          <form className="d-flex" onSubmit={handleSearch}>
             <label htmlFor="search" hidden aria-hidden="true">
               Search
             </label>
@@ -94,13 +122,15 @@ const Header = memo(() => {
               id="search"
               name="search"
               placeholder="Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               aria-label="Search"
             />
-            <button className="btn p-0" type="submit">
-              <FontAwesomeIcon icon={faSearch} style={{ width: "20px", height: "20px" }} />
+            <button type="submit" className="btn p-0">
+              <FontAwesomeIcon icon={faSearch} />
             </button>
           </form>
-
+          {/* User account or auth buttons */}
           <div className="d-flex align-items-center ms-lg-3 mt-2 mt-lg-0">
             {renderBtns()}
           </div>
