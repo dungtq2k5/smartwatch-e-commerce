@@ -55,10 +55,7 @@ router.post(
   modelController.create
 );
 
-router.get(
-  "/:productId/models/:id",
-  modelController.get
-);
+router.get("/:productId/models/:id", modelController.get);
 
 router.patch(
   "/:productId/models/:id",
@@ -76,46 +73,24 @@ router.delete(
 );
 
 // --- MODEL VARIATION ROUTES ---
-
-// -- color variation
 router.post(
-  "/:productId/models/:modelId/colors",
+  "/:productId/models/:modelId/variations",
   verifyPermission("c_model_variation"),
   verifyEmptyBody,
   inputSanitizer("variation"),
-  verifyModelVariationInput("create", "color"),
-  variationController.createColor
+  verifyModelVariationInput("create"),
+  variationController.create
 );
 
 router.patch(
-  "/:productId/models/:modelId/colors/:id",
+  "/:productId/models/:modelId/variations/:id",
   verifyPermission("u_model_variation"),
   verifyEmptyBody,
   inputSanitizer("variation"),
-  verifyModelVariationInput("update", "color"),
-  variationController.updateColor
+  verifyModelVariationInput("update"),
+  variationController.update
 );
 
-// -- band variation
-router.post(
-  "/:productId/models/:modelId/bands",
-  verifyPermission("c_model_variation"),
-  verifyEmptyBody,
-  inputSanitizer("variation"),
-  verifyModelVariationInput("create", "band"),
-  variationController.createBand
-);
-
-router.patch(
-  "/:productId/models/:modelId/bands/:id",
-  verifyPermission("u_model_variation"),
-  verifyEmptyBody,
-  inputSanitizer("variation"),
-  verifyModelVariationInput("update", "band"),
-  variationController.updateBand
-);
-
-// -- both variations
 router.get(
   "/:productId/models/:modelId/variations/:id",
   verifyPermission("r_model_variation"),

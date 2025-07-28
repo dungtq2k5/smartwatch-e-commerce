@@ -1,0 +1,3 @@
+- Modify compatibleBandLugWidthMm field for productModel modal and all the related processes.
+- Remove type field and modify some band fields for modelVariation modal and all the related processes.
+- Make nested fields for productModel and modelVariation.

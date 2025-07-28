@@ -34,38 +34,57 @@ const productModelSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-    displaySizeMm: {
-      type: Number,
+    display: {
+      type: {
+        sizeMm: {
+          type: Number,
+          required: true,
+          min: 0
+        },
+        type: {
+          type: String,
+          required: true,
+        }
+      },
       required: true,
-      min: 0,
     },
-    displayType: {
-      type: String,
+    resolution: {
+      type: {
+        hPx: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        wPx: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+      },
       required: true,
     },
-    resolutionHPx: {
-      type: Number,
+    memory: {
+      type: {
+        ramBytes: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        romBytes: {
+          type: Number,
+          required: true,
+          min: 0,
+        }
+      },
       required: true,
-      min: 0,
-    },
-    resolutionWPx: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    ramBytes: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    romBytes: {
-      type: Number,
-      required: true,
-      min: 0,
     },
     osId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ProductOs",
+      required: true,
+    },
+    chipset: {
+      type: String,
       required: true,
     },
     connectivities: {
@@ -77,12 +96,7 @@ const productModelSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    waterResistanceValue: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    waterResistanceUnit: {
+    waterResistance: {
       type: String,
       required: true,
     },
@@ -95,6 +109,11 @@ const productModelSchema = new mongoose.Schema(
       required: true,
     },
     weightMg: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    compatibleBandLugWidthMm: {
       type: Number,
       required: true,
       min: 0,

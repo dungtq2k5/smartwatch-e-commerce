@@ -48,7 +48,6 @@ export default function App() {
         <Route path="/products/:id" element={<ProductDetail />}></Route>
         {/*
           TODO next...
-          - search product page (via search bar on header)
           - product details page
         */}
 

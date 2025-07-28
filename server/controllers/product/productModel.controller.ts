@@ -40,20 +40,18 @@ export async function create(
       priceCents,
       stockPriceCents,
       imageUrls,
-      displaySizeMm,
-      displayType,
-      resolutionHPx,
-      resolutionWPx,
-      ramBytes,
-      romBytes,
+      display,
+      resolution,
+      memory,
       osId,
+      chipset,
       connectivities,
       batteryLifeMah,
-      waterResistanceValue,
-      waterResistanceUnit,
+      waterResistance,
       sensors,
       caseMaterial,
       weightMg,
+      compatibleBandLugWidthMm,
       releaseDate,
       stopSelling,
     } = req.body as ProductModelCreate;
@@ -91,20 +89,18 @@ export async function create(
       priceCents,
       stockPriceCents,
       imageUrls,
-      displaySizeMm,
-      displayType,
-      resolutionHPx,
-      resolutionWPx,
-      ramBytes,
-      romBytes,
+      display,
+      resolution,
+      memory,
       osId,
+      chipset,
       connectivities,
       batteryLifeMah,
-      waterResistanceValue,
-      waterResistanceUnit,
+      waterResistance,
       sensors,
       caseMaterial,
       weightMg,
+      compatibleBandLugWidthMm,
       releaseDate,
       stopSelling,
       createdBy: reqUserId,
@@ -207,9 +203,7 @@ export async function update(
       updatedReleaseDate !== model.releaseDate &&
       updatedReleaseDate > new Date()
     ) {
-      return next(
-        errorHandler(400, "Release date cannot be in the future")
-      );
+      return next(errorHandler(400, "Release date cannot be in the future"));
     }
 
     // Check if OS exists and update
@@ -269,22 +263,25 @@ export async function update(
     model.priceCents = updateData.priceCents ?? model.priceCents;
     model.stockPriceCents = updateData.stockPriceCents ?? model.stockPriceCents;
     model.imageUrls = updateData.imageUrls || model.imageUrls;
-    model.displaySizeMm = updateData.displaySizeMm || model.displaySizeMm;
-    model.displayType = updateData.displayType || model.displayType;
-    model.resolutionHPx = updateData.resolutionHPx || model.resolutionHPx;
-    model.resolutionWPx = updateData.resolutionWPx || model.resolutionWPx;
-    model.ramBytes = updateData.ramBytes ?? model.ramBytes;
-    model.romBytes = updateData.romBytes ?? model.romBytes;
+    (model.display as any) = updateData.display
+      ? { ...model.toObject().display, ...updateData.display }
+      : model.display;
+    model.resolution = updateData.resolution
+      ? { ...model.toObject().resolution, ...updateData.resolution }
+      : model.resolution;
+    model.memory = updateData.memory
+      ? { ...model.toObject().memory, ...updateData.memory }
+      : model.memory;
     model.osId = updatedOsId;
+    model.chipset = updateData.chipset || model.chipset;
     model.connectivities = updateData.connectivities || model.connectivities;
     model.batteryLifeMah = updateData.batteryLifeMah || model.batteryLifeMah;
-    model.waterResistanceValue =
-      updateData.waterResistanceValue || model.waterResistanceValue;
-    model.waterResistanceUnit =
-      updateData.waterResistanceUnit || model.waterResistanceUnit;
+    model.waterResistance = updateData.waterResistance || model.waterResistance;
     model.sensors = updateData.sensors || model.sensors;
     model.caseMaterial = updateData.caseMaterial || model.caseMaterial;
     model.weightMg = updateData.weightMg || model.weightMg;
+    model.compatibleBandLugWidthMm =
+      updateData.compatibleBandLugWidthMm || model.compatibleBandLugWidthMm;
     model.releaseDate = updatedReleaseDate;
     model.stopSelling = updateData.stopSelling ?? model.stopSelling;
 
@@ -375,7 +372,7 @@ async function hasConstraints(modelId: Types.ObjectId): Promise<boolean> {
     }
     return hasConstraints;
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }
 
@@ -401,6 +398,6 @@ async function executeDeletion(
 
     await modelToDelete.deleteOne();
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }

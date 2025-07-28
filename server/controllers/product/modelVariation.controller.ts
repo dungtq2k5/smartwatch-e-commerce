@@ -1,11 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { Model, Types } from "mongoose";
+import { Types } from "mongoose";
 import { errorHandler } from "../../utils/errorHandler";
 import Product from "../../models/product/product.model";
 import ProductModel from "../../models/product/productModel.model";
 import {
-  ModelVariationBand,
-  ModelVariationColor,
   ModelVariationCreate,
   ModelVariationResponse,
   ModelVariationUpdate,
@@ -17,184 +15,7 @@ import { formatModelVariationResponse } from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 
 // --- COLOR VARIATION ---
-export async function createColor(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Creating product model variation...");
-  const { productId, modelId } = req.params;
-
-  try {
-    // Check product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found."));
-    }
-    const product = await Product.findById(productId);
-    if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
-    }
-
-    // Check model exists
-    if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found."));
-    }
-    const model = await ProductModel.findOne({
-      isDeleted: false,
-      _id: modelId,
-      productId,
-    });
-    if (!model) {
-      return next(errorHandler(404, "Product model not found."));
-    }
-
-    // Business logic
-    const { name, colorHex, imageUrls, stopSelling, additionalPriceCents } =
-      req.body as ModelVariationCreate<ModelVariationColor>;
-
-    // Check variation exists
-    const existingVariation = await ModelVariation.findOne({
-      isDeleted: false,
-      productModelId: modelId,
-      type: "color",
-      $or: [{ name }, { colorHex }],
-    }).lean();
-    if (existingVariation) {
-      return next(errorHandler(409, "Product model variation already exists."));
-    }
-
-    const reqUserId = (req["auth"] as RequestAuth).userId;
-    const variation = new ModelVariation({
-      productModelId: modelId,
-      type: "color",
-      name,
-      colorHex,
-      imageUrls,
-      stopSelling,
-      additionalPriceCents,
-      createBy: reqUserId,
-    });
-    await variation.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Product model variation created successfully.",
-      data: formatModelVariationResponse(variation),
-    } as SuccessResponse<ModelVariationResponse>);
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function updateColor(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Updating product model variation...");
-  const { productId, modelId, id } = req.params;
-
-  try {
-    // Check product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found."));
-    }
-    const product = await Product.findById(productId);
-    if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
-    }
-
-    // Check model exists
-    if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found."));
-    }
-    const model = await ProductModel.findOne({
-      isDeleted: false,
-      _id: modelId,
-      productId: product._id,
-    });
-    if (!model) {
-      return next(errorHandler(404, "Product model not found."));
-    }
-
-    // Check variation id exists
-    if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product model variation not found."));
-    }
-    const variation = await ModelVariation.findOne({
-      isDeleted: false,
-      _id: id,
-      type: "color",
-      productModelId: modelId,
-    });
-    if (!variation) {
-      return next(errorHandler(404, "Product model variation not found."));
-    }
-
-    // Business logic
-    const updateData = req.body as ModelVariationUpdate<ModelVariationColor>;
-
-    // Check name exists
-    const updatedName = updateData.name || variation.name;
-    const updatedColorHex = updateData.colorHex || variation.colorHex;
-    const orConditions: ({ name: string } | { colorHex: string })[] = [];
-
-    if (updatedName !== variation.name) {
-      orConditions.push({ name: updatedName });
-    }
-    if (updatedColorHex !== variation.colorHex) {
-      orConditions.push({ colorHex: updatedColorHex });
-    }
-    if (orConditions.length > 0) {
-      const existingVariation = await ModelVariation.findOne({
-        isDeleted: false,
-        productModelId: modelId,
-        type: "color",
-        $or: orConditions,
-      }).lean();
-      if (existingVariation) {
-        return next(
-          errorHandler(409, "Product model variation name already exists.")
-        );
-      }
-    }
-
-    // Handle remove imageUrls on Firebase Storage
-    if (updateData.imageUrls) {
-      const imgUrlToRemove = variation.imageUrls.filter(
-        (url) => !updateData.imageUrls!.includes(url)
-      );
-      if (imgUrlToRemove.length > 0) {
-        await deleteManyFileFromFirebaseStorage(
-          imgUrlToRemove,
-          "product-image"
-        );
-      }
-    }
-
-    // Update variation
-    variation.name = updatedName;
-    variation.colorHex = updatedColorHex;
-    variation.imageUrls = updateData.imageUrls || variation.imageUrls;
-    variation.stopSelling = updateData.stopSelling ?? variation.stopSelling;
-    variation.additionalPriceCents =
-      updateData.additionalPriceCents ?? variation.additionalPriceCents;
-
-    await variation.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Product model variation updated successfully.",
-      data: formatModelVariationResponse(variation),
-    } as SuccessResponse<ModelVariationResponse>);
-    console.log("✅ ", "Product model variation updated successfully.");
-  } catch (error) {
-    next(error);
-  }
-}
-
-// --- BAND VARIATION ---
-export async function createBand(
+export async function create(
   req: Request,
   res: Response,
   next: NextFunction
@@ -230,37 +51,31 @@ export async function createBand(
       name,
       colorHex,
       imageUrls,
+      additionalPriceCents,
+      band,
       stopSelling,
-      material,
-      sizeMm,
-      priceCents,
-      stockPriceCents,
-    } = req.body as ModelVariationCreate<ModelVariationBand>;
+    } = req.body as ModelVariationCreate;
 
     // Check variation exists
     const existingVariation = await ModelVariation.findOne({
       isDeleted: false,
       productModelId: modelId,
-      type: "band",
       $or: [{ name }, { colorHex }],
     }).lean();
     if (existingVariation) {
       return next(errorHandler(409, "Product model variation already exists."));
     }
 
-    const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
+    const reqUserId = (req["auth"] as RequestAuth).userId;
     const variation = new ModelVariation({
-      productId,
-      type: "band",
+      productModelId: modelId,
       name,
       colorHex,
       imageUrls,
       stopSelling,
-      material,
-      sizeMm,
-      priceCents,
-      stockPriceCents,
-      createBy: reqUserId,
+      additionalPriceCents,
+      band,
+      createdBy: reqUserId,
     });
     await variation.save();
 
@@ -274,118 +89,6 @@ export async function createBand(
   }
 }
 
-export async function updateBand(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Updating product model variation...");
-  const { productId, modelId, id } = req.params;
-
-  try {
-    // Check product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found."));
-    }
-    const product = await Product.findById(productId);
-    if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
-    }
-
-    // Check model exists
-    if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found."));
-    }
-    const model = await ProductModel.findOne({
-      isDeleted: false,
-      _id: modelId,
-      productId: product._id,
-    });
-    if (!model) {
-      return next(errorHandler(404, "Product model not found."));
-    }
-
-    // Check variation id exists
-    if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product model variation not found."));
-    }
-    const variation = await ModelVariation.findOne({
-      isDeleted: false,
-      _id: id,
-      type: "band",
-      productModelId: modelId,
-    });
-    if (!variation) {
-      return next(errorHandler(404, "Product model variation not found."));
-    }
-
-    // Business logic
-    const updateData = req.body as ModelVariationUpdate<ModelVariationBand>;
-
-    // Check name exists
-    const updatedName = updateData.name || variation.name;
-    const updatedColorHex = updateData.colorHex || variation.colorHex;
-    const orConditions: ({ name: string } | { colorHex: string })[] = [];
-
-    if (updatedName !== variation.name) {
-      orConditions.push({ name: updatedName });
-    }
-    if (updatedColorHex !== variation.colorHex) {
-      orConditions.push({ colorHex: updatedColorHex });
-    }
-    if (orConditions.length > 0) {
-      const existingVariation = await ModelVariation.findOne({
-        isDeleted: false,
-        productModelId: modelId,
-        type: "band",
-        $or: orConditions,
-      }).lean();
-      if (existingVariation) {
-        return next(
-          errorHandler(409, "Product model variation name already exists.")
-        );
-      }
-    }
-
-    // Handle remove imageUrls on Firebase Storage
-    if (updateData.imageUrls) {
-      const imgUrlToRemove = variation.imageUrls.filter(
-        (url) => !updateData.imageUrls!.includes(url)
-      );
-      if (imgUrlToRemove.length > 0) {
-        await deleteManyFileFromFirebaseStorage(
-          imgUrlToRemove,
-          "product-image"
-        );
-      }
-    }
-
-    // Update variation
-    variation.name = updatedName;
-    variation.colorHex = updatedColorHex;
-    variation.imageUrls = updateData.imageUrls || variation.imageUrls;
-    variation.stopSelling = updateData.stopSelling ?? variation.stopSelling;
-    variation.material = updateData.material || variation.material;
-    variation.sizeMm = updateData.sizeMm || variation.sizeMm;
-    variation.weightMg = updateData.weightMg || variation.weightMg;
-    variation.priceCents = updateData.priceCents || variation.priceCents;
-    variation.stockPriceCents =
-      updateData.stockPriceCents || variation.stockPriceCents;
-
-    await variation.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Product model variation updated successfully.",
-      data: formatModelVariationResponse(variation),
-    } as SuccessResponse<ModelVariationResponse>);
-    console.log("✅ ", "Product model variation updated successfully.");
-  } catch (error) {
-    next(error);
-  }
-}
-
-// --- BOTH VARIATION ---
 export async function get(
   req: Request,
   res: Response,
@@ -435,6 +138,136 @@ export async function get(
       message: "Product model variation retrieved successfully.",
       data: formatModelVariationResponse(variation),
     } as SuccessResponse<ModelVariationResponse>);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function update(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Updating product model variation...");
+  const { productId, modelId, id } = req.params;
+
+  try {
+    // Check product exists
+    if (!Types.ObjectId.isValid(productId)) {
+      return next(errorHandler(404, "Product not found."));
+    }
+    const product = await Product.findById(productId);
+    if (!product || product.isDeleted) {
+      return next(errorHandler(404, "Product not found."));
+    }
+
+    // Check model exists
+    if (!Types.ObjectId.isValid(modelId)) {
+      return next(errorHandler(404, "Product model not found."));
+    }
+    const model = await ProductModel.findOne({
+      isDeleted: false,
+      _id: modelId,
+      productId: product._id,
+    });
+    if (!model) {
+      return next(errorHandler(404, "Product model not found."));
+    }
+
+    // Check variation id exists
+    if (!Types.ObjectId.isValid(id)) {
+      return next(errorHandler(404, "Product model variation not found."));
+    }
+    const variation = await ModelVariation.findOne({
+      isDeleted: false,
+      _id: id,
+      productModelId: modelId,
+    });
+    if (!variation) {
+      return next(errorHandler(404, "Product model variation not found."));
+    }
+
+    // Business logic
+    const updateData = req.body as ModelVariationUpdate;
+
+    // Check name exists
+    const updatedName = updateData.name || variation.name;
+    const updatedColorHex = updateData.colorHex || variation.colorHex;
+    const orConditions: ({ name: string } | { colorHex: string })[] = [];
+
+    if (updatedName !== variation.name) {
+      orConditions.push({ name: updatedName });
+    }
+    if (updatedColorHex !== variation.colorHex) {
+      orConditions.push({ colorHex: updatedColorHex });
+    }
+    if (orConditions.length > 0) {
+      const existingVariation = await ModelVariation.findOne({
+        isDeleted: false,
+        productModelId: modelId,
+        $or: orConditions,
+      }).lean();
+      if (existingVariation) {
+        return next(
+          errorHandler(409, "Product model variation name already exists.")
+        );
+      }
+    }
+
+    // Handle remove imageUrls on Firebase Storage
+    if (updateData.imageUrls) {
+      const imgUrlToRemove = variation.imageUrls.filter(
+        (url) => !updateData.imageUrls!.includes(url)
+      );
+      if (imgUrlToRemove.length > 0) {
+        await deleteManyFileFromFirebaseStorage(
+          imgUrlToRemove,
+          "product-image"
+        );
+      }
+    }
+
+    // Update variation
+    variation.name = updatedName;
+    variation.colorHex = updatedColorHex;
+    variation.imageUrls = updateData.imageUrls || variation.imageUrls;
+    variation.additionalPriceCents =
+      updateData.additionalPriceCents ?? variation.additionalPriceCents;
+    if (updateData.band) {
+      variation.band.lugWidthMm =
+        updateData.band.lugWidthMm || variation.band.lugWidthMm;
+      variation.band.material =
+        updateData.band.material || variation.band.material;
+      variation.band.colorsHex =
+        updateData.band.colorsHex || variation.band.colorsHex;
+      variation.band.claspType =
+        updateData.band.claspType || variation.band.claspType;
+      variation.band.adjustableRangeMm = updateData.band.adjustableRangeMm
+        ? {
+            ...variation.toObject().band.adjustableRangeMm,
+            ...updateData.band.adjustableRangeMm,
+          }
+        : variation.band.adjustableRangeMm;
+      variation.band.style = updateData.band.style || variation.band.style;
+      variation.band.quickRelease =
+        updateData.band.quickRelease ?? variation.band.quickRelease;
+      variation.band.waterResistance =
+        updateData.band.waterResistance ?? variation.band.waterResistance;
+      variation.band.hypoallergenic =
+        updateData.band.hypoallergenic ?? variation.band.hypoallergenic;
+      variation.band.weightMg =
+        updateData.band.weightMg || variation.band.weightMg;
+    }
+    variation.stopSelling = updateData.stopSelling ?? variation.stopSelling;
+
+    await variation.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Product model variation updated successfully.",
+      data: formatModelVariationResponse(variation),
+    } as SuccessResponse<ModelVariationResponse>);
+    console.log("✅ ", "Product model variation updated successfully.");
   } catch (error) {
     next(error);
   }
@@ -520,6 +353,6 @@ async function executeDeletion(
 
     await variationToDelete.deleteOne();
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }

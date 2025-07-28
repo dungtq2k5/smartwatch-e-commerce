@@ -129,8 +129,3 @@ export const PRODUCT_MOCK_OPTIONS = {
     "plastic",
   ] as const,
 } as const;
-
-export const PRODUCT_MODEL_VARIATION_TYPES = [
-  "color",
-  "band",
-] as const;

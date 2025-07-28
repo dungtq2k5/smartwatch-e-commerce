@@ -203,7 +203,7 @@ export function isValidDateTimeString(dateTimeString: any): boolean {
   return !isNaN(date.getTime());
 }
 
-export function isValidHexColor(colorCode: any): boolean {
+export function isValidColorHex(colorCode: any): boolean {
   if (typeof colorCode !== "string") return false;
 
   // This regex matches hex color codes of length 3, 4, 6, or 8,
@@ -211,6 +211,12 @@ export function isValidHexColor(colorCode: any): boolean {
   // It supports formats like #rgb, #rgba, #rrggbb, and #rrggbbaa.
   const hexColorRegex = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
   return hexColorRegex.test(colorCode);
+}
+
+export function isValidListOfColorsHex(colors: any): boolean {
+  if (!Array.isArray(colors)) return false;
+
+  return colors.every((color) => isValidColorHex(color));
 }
 
 export function containsEmoji(text: any): boolean {

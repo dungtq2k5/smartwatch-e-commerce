@@ -358,27 +358,34 @@ export type ProductModelCreate = {
   priceCents: number;
   stockPriceCents: number;
   imageUrls?: string[];
-  displaySizeMm: number;
-  displayType: string;
-  resolutionHPx: number;
-  resolutionWPx: number;
-  ramBytes: number;
-  romBytes: number;
+  display: {
+    sizeMm: number;
+    type: string;
+  };
+  resolution: {
+    hPx: number;
+    wPx: number;
+  };
+  memory: {
+    ramBytes: number;
+    romBytes: number;
+  };
   osId: string;
+  chipset: string;
   connectivities: string[];
   batteryLifeMah: number;
-  waterResistanceValue: number;
-  waterResistanceUnit: string;
+  waterResistance: string;
   sensors: string[];
   caseMaterial: string;
   weightMg: number;
+  compatibleBandLugWidthMm: number;
   releaseDate?: string;
   stopSelling?: boolean;
 };
 
-export type ProductModelUpdate = Partial<ProductModelCreate>;
+export type ProductModelUpdate = DeepPartial<ProductModelCreate>;
 
-export type ProductModelResponse = NoneOptional<ProductModelCreate> & {
+export type ProductModelResponse = DeepNoneOptional<ProductModelCreate> & {
   id: string;
   productId: string;
   createdBy: string;
@@ -386,42 +393,40 @@ export type ProductModelResponse = NoneOptional<ProductModelCreate> & {
   updatedAt: string;
 };
 
-export type BaseModelVariationCreate = {
+export type ModelVariationCreate = {
   name: string;
   colorHex: string;
   imageUrls?: string[];
+  additionalPriceCents?: number;
+  band: {
+    lugWidthMm: number;
+    material: string;
+    colorsHex: string[];
+    claspType: string;
+    adjustableRangeMm: {
+      min: number;
+      max: number;
+    };
+    style: string;
+    quickRelease?: boolean;
+    waterResistance?: boolean;
+    hypoallergenic?: boolean;
+    weightMg: number;
+  };
   stopSelling?: boolean;
 };
 
-export type ModelVariationColor = {
-  additionalPriceCents?: number;
-};
-
-export type ModelVariationBand = {
-  material: string;
-  sizeMm: number;
-  weightMg: number;
-  priceCents: number;
-  stockPriceCents: number;
-};
-
-export type ModelVariationCreate<T = ModelVariationColor | ModelVariationBand> =
-  BaseModelVariationCreate & T;
-
-export type ModelVariationResponse = NoneOptional<BaseModelVariationCreate> & {
+export type ModelVariationResponse = DeepNoneOptional<ModelVariationCreate> & {
   id: string;
   productModelId: string;
+  stockQuantity: number;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
   stopSelling: boolean;
-} & (
-    | (NoneOptional<ModelVariationColor> & { type: "color" })
-    | (NoneOptional<ModelVariationBand> & { type: "band" })
-  );
+};
 
-export type ModelVariationUpdate<T = ModelVariationColor | ModelVariationBand> =
-  Partial<BaseModelVariationCreate> & Partial<T>;
+export type ModelVariationUpdate = DeepPartial<ModelVariationCreate>;
 
 export type VariationInstanceCreate = {
   supplierSerialNumber: string;
@@ -525,4 +530,36 @@ export type ProductSearchQuery = Partial<{
 // --- HELPER TYPES ---
 export type NoneOptional<T> = {
   [K in keyof T]-?: T[K];
+};
+
+/**
+ * Helper type to check if a type is an array.
+ */
+type IsArray<T> = T extends Array<any> ? true : false;
+
+/**
+ * Helper type to check if a type is an object (but not an array).
+ */
+type IsObject<T> = T extends object
+  ? T extends Array<any>
+    ? false
+    : true
+  : false;
+
+/**
+ * Makes all properties of an object optional, including nested objects.
+ * It correctly handles arrays, making the array itself optional but not its contents.
+ */
+export type DeepPartial<T> = {
+  [P in keyof T]?: IsArray<T[P]> extends true
+    ? T[P]
+    : IsObject<T[P]> extends true
+      ? DeepPartial<T[P]>
+      : T[P];
+};
+
+export type DeepNoneOptional<T> = {
+  [K in keyof T]-?: T[K] extends object | undefined
+    ? DeepNoneOptional<T[K]>
+    : T[K];
 };

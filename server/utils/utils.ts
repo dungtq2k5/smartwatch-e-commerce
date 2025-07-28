@@ -180,18 +180,15 @@ export async function genInstanceSku(
   // 3. Watch Size (e.g., 45)
   const sizeMm = productModel.watchSizeMm;
 
-  // 4. Variation Type Code (e.g., "color" -> "CLR")
-  const varTypeCode = variation.type.substring(0, 3).toUpperCase();
-
-  // 5. Variation Name Code (e.g., "Midnight" -> "MID")
+  // 4. Variation Name Code (e.g., "Midnight" -> "MID")
   const varNameCode = variation.name.substring(0, 3).toUpperCase();
 
-  // 6. Unique ID (e.g., "L9SO2A1")
+  // 5. Unique ID (e.g., "L9SO2A1")
   const uniqueId =
     Date.now().toString(36).slice(-4).toUpperCase() +
     Math.random().toString(36).slice(-3).toUpperCase();
 
-  return `${brandCode}-${modelName}-${sizeMm}-${varTypeCode}-${varNameCode}-${uniqueId}`;
+  return `${brandCode}-${modelName}-${sizeMm}-${varNameCode}-${uniqueId}`;
 }
 
 export function compareAddress(
@@ -344,20 +341,18 @@ export function formatProductModelResponse(model: any): ProductModelResponse {
     priceCents: model.priceCents,
     stockPriceCents: model.stockPriceCents,
     imageUrls: model.imageUrls,
-    displaySizeMm: model.displaySizeMm,
-    displayType: model.displayType,
-    resolutionHPx: model.resolutionHPx,
-    resolutionWPx: model.resolutionWPx,
-    ramBytes: model.ramBytes,
-    romBytes: model.romBytes,
+    display: model.display,
+    resolution: model.resolution,
+    memory: model.memory,
+    chipset: model.chipset,
     osId: model.osId.toString(),
     connectivities: model.connectivities,
     batteryLifeMah: model.batteryLifeMah,
-    waterResistanceValue: model.waterResistanceValue,
-    waterResistanceUnit: model.waterResistanceUnit,
+    waterResistance: model.waterResistance,
     sensors: model.sensors,
     caseMaterial: model.caseMaterial,
     weightMg: model.weightMg,
+    compatibleBandLugWidthMm: model.compatibleBandLugWidthMm,
     releaseDate: model.releaseDate.toISOString(),
     createdBy: model.createdBy.toString(),
     createdAt: model.createdAt.toISOString(),
@@ -369,38 +364,31 @@ export function formatProductModelResponse(model: any): ProductModelResponse {
 export function formatModelVariationResponse(
   variation: any
 ): ModelVariationResponse {
-  const type = variation.type;
-  const formattedVariation: any = {};
-
-  // Common fields for all types
-  Object.assign(formattedVariation, {
+  return {
     id: variation._id.toString(),
     productModelId: variation.productModelId.toString(),
-    type,
     name: variation.name,
     colorHex: variation.colorHex,
     imageUrls: variation.imageUrls,
+    additionalPriceCents: variation.additionalPriceCents,
+    band: {
+      lugWidthMm: variation.band.lugWidthMm,
+      material: variation.band.material,
+      colorsHex: variation.band.colorsHex,
+      claspType: variation.band.claspType,
+      adjustableRangeMm: variation.band.adjustableRangeMm,
+      style: variation.band.style,
+      quickRelease: variation.band.quickRelease,
+      waterResistance: variation.band.waterResistance,
+      hypoallergenic: variation.band.hypoallergenic,
+      weightMg: variation.band.weightMg,
+    },
     stockQuantity: variation.stockQuantity,
     createdBy: variation.createdBy.toString(),
     createdAt: variation.createdAt.toISOString(),
     updatedAt: variation.updatedAt.toISOString(),
     stopSelling: variation.stopSelling,
-  });
-
-  // Specific fields for each type
-  if (type === "color") {
-    formattedVariation.additionalPriceCents = variation.additionalPriceCents;
-  } else if (type === "band") {
-    Object.assign(formattedVariation, {
-      material: variation.material,
-      sizeMm: variation.sizeMm,
-      weightMg: variation.weightMg,
-      priceCents: variation.priceCents,
-      stockPriceCents: variation.stockPriceCents,
-    });
-  }
-
-  return formattedVariation;
+  };
 }
 
 export function formatVariationInstanceResponse(
