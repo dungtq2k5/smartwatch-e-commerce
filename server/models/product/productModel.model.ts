@@ -41,12 +41,13 @@ const productModelSchema = new mongoose.Schema(
           required: true,
           min: 0
         },
-        type: {
+        displayType: {
           type: String,
           required: true,
         }
       },
       required: true,
+      _id: false,
     },
     resolution: {
       type: {
@@ -62,6 +63,7 @@ const productModelSchema = new mongoose.Schema(
         },
       },
       required: true,
+      _id: false,
     },
     memory: {
       type: {
@@ -77,6 +79,7 @@ const productModelSchema = new mongoose.Schema(
         }
       },
       required: true,
+      _id: false,
     },
     osId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -96,9 +99,8 @@ const productModelSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    waterResistance: {
+    waterResistance: { // Can be undefined if not applicable
       type: String,
-      required: true,
     },
     sensors: {
       type: [String],

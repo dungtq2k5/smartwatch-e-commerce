@@ -130,7 +130,7 @@ export type UserSetSelfPassword = { // For user who auth by Google
 }
 
 export type GeoJSONPoint = {
-  readonly type: "point";
+  readonly locationType: "point";
   coordinates: [number, number]; // [longitude, latitude]
 };
 
@@ -360,7 +360,7 @@ export type ProductModelCreate = {
   imageUrls?: string[];
   display: {
     sizeMm: number;
-    type: string;
+    displayType: string;
   };
   resolution: {
     hPx: number;
@@ -374,7 +374,7 @@ export type ProductModelCreate = {
   chipset: string;
   connectivities: string[];
   batteryLifeMah: number;
-  waterResistance: string;
+  waterResistance?: string | null;
   sensors: string[];
   caseMaterial: string;
   weightMg: number;
@@ -384,13 +384,21 @@ export type ProductModelCreate = {
 };
 
 export type ProductModelUpdate = DeepPartial<ProductModelCreate>;
-
 export type ProductModelResponse = DeepNoneOptional<ProductModelCreate> & {
   id: string;
   productId: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+};
+export type ProductModelListResponse = {
+  models: {
+    total: number;
+    models: ProductModelResponse[];
+  };
+  offset: number;
+  limit: number;
+  total: number;
 };
 
 export type ModelVariationCreate = {
@@ -403,9 +411,9 @@ export type ModelVariationCreate = {
     material: string;
     colorsHex: string[];
     claspType: string;
-    adjustableRangeMm: {
-      min: number;
-      max: number;
+    adjustableRange: {
+      minMm: number;
+      maxMm: number;
     };
     style: string;
     quickRelease?: boolean;
@@ -415,7 +423,6 @@ export type ModelVariationCreate = {
   };
   stopSelling?: boolean;
 };
-
 export type ModelVariationResponse = DeepNoneOptional<ModelVariationCreate> & {
   id: string;
   productModelId: string;
@@ -425,8 +432,16 @@ export type ModelVariationResponse = DeepNoneOptional<ModelVariationCreate> & {
   updatedAt: string;
   stopSelling: boolean;
 };
-
 export type ModelVariationUpdate = DeepPartial<ModelVariationCreate>;
+export type ModelVariationListResponse = {
+  variations: {
+    total: number;
+    variations: ModelVariationResponse[];
+  };
+  offset: number;
+  limit: number;
+  total: number;
+};
 
 export type VariationInstanceCreate = {
   supplierSerialNumber: string;

@@ -1,3 +1,6 @@
-- Modify compatibleBandLugWidthMm field for productModel modal and all the related processes.
-- Remove type field and modify some band fields for modelVariation modal and all the related processes.
-- Make nested fields for productModel and modelVariation.
+BackEnd:
+  - Change and modify some fields of productModel and modelVariation for more robust.
+  - Modify get function to handle get all of all model which are related to product model.
+  - Fix spread operator case in productModel and modelVariation update function.
+  - Modify conditional statements when check nested fields in product middleware.
+FrontEnd:

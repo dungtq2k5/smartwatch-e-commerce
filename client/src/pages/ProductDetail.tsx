@@ -1,4 +1,4 @@
-import type { ProductResponse } from "../../../common/types.common";
+import type { ModelVariationResponse, ProductModelResponse, ProductResponse } from "../../../common/types.common";
 import { centsToUSD } from "../../../common/utils.common";
 
 export default function ProductDetail() {
@@ -19,6 +19,14 @@ export default function ProductDetail() {
     updatedAt: "2025-07-24T15:38:36.122Z",
     stopSelling: false,
     basePriceCents: 27276,
+  };
+
+  const model: ProductModelResponse = {
+
+  };
+
+  const variation: ModelVariationResponse = {
+
   };
 
   // TODO skeleton loading for product details
@@ -70,22 +78,18 @@ export default function ProductDetail() {
               <li>Blue</li>
             </ul>
           </div>
-          {/* Bands */}
+          {/* Add to cart button */}
           <div>
-            {/* Bands picker */}
-            <div>
-              <p>Band</p>
-              <ul>
-                <li>Leather</li>
-                <li>Metal</li>
-                <li>Silicone</li>
-              </ul>
-            </div>
-            {/* display  */}
-            <div>
-
-            </div>
+            <button>add to cart</button>
+            <button>buy now</button>
           </div>
+        </div>
+      </div>
+      {/* Bottom section */}
+      <div>
+        <h2>Product specifications</h2>
+        <div>
+
         </div>
       </div>
     </main>

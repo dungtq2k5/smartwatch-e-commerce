@@ -82,6 +82,6 @@ app.listen(port, async () => {
   await connectDB();
   // await seedAllCollections(); // Init Mongo collections when first time running the server
   await initAppCache(); // Init application cache
-  // await mockAllData(); // DEV Mock data for testing
+  await mockAllData(); // DEV Mock data for testing
   console.log("🚀", `Server is running on http://localhost:${port}`);
 });

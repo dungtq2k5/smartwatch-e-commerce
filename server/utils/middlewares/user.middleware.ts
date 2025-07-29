@@ -504,8 +504,8 @@ export function verifyAddressInput(
             errors.push("location is required.");
           } else if (
             typeof location !== "object" ||
-            !location.longitude ||
-            !location.latitude
+            location.longitude === undefined ||
+            location.latitude === undefined
           ) {
             errors.push(
               "location must be an object with latitude and longitude."

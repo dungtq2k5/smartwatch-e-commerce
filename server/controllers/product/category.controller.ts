@@ -52,15 +52,35 @@ export async function create(
   }
 }
 
-export async function getAll(
+export async function get(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️ ", "Fetching all product categories...");
+  console.log("▶️ ", "Fetching product categories...");
+  const { id } = req.params;
 
   try {
-    const categories = await ProductCategory.find({ isDeleted: false });
+    // Fetch single category by ID
+    if (id) {
+      if (!Types.ObjectId.isValid(id)) {
+        return next(errorHandler(404, "Product category not found."));
+      }
+      const category = await ProductCategory.findById(id).lean();
+      if (!category || category.isDeleted) {
+        return next(errorHandler(404, "Product category not found."));
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Product category fetched successfully.",
+        data: formatProductCategoryResponse(category),
+      } as SuccessResponse<ProductCategoryResponse>);
+      console.log("✅ ", "Product category fetched successfully.");
+      return;
+    }
+
+    const categories = await ProductCategory.find({ isDeleted: false }).lean();
 
     res.status(200).json({
       success: true,

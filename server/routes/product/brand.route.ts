@@ -2,7 +2,7 @@ import express from "express";
 import { verifyPermission } from "../../utils/middlewares/auth.middleware";
 import { verifyEmptyBody }  from "../../utils/middlewares/general.middleware";
 import { inputSanitizer, verifyBrandInput } from "../../utils/middlewares/product.middleware";
-import { create, getAll, remove, update } from "../../controllers/product/brand.controller";
+import { create, get, remove, update } from "../../controllers/product/brand.controller";
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ router.post(
 
 router.get(
   "/",
-  getAll
+  get
 );
 
 router.patch(

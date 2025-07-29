@@ -55,6 +55,12 @@ router.post(
   modelController.create
 );
 
+router.get(
+  "/:productId/models",
+  verifyPermission("r_product_model"),
+  modelController.get
+);
+
 router.get("/:productId/models/:id", modelController.get);
 
 router.patch(
@@ -89,6 +95,12 @@ router.patch(
   inputSanitizer("variation"),
   verifyModelVariationInput("update"),
   variationController.update
+);
+
+router.get(
+  "/:productId/models/:modelId/variations",
+  verifyPermission("r_model_variation"),
+  variationController.get
 );
 
 router.get(

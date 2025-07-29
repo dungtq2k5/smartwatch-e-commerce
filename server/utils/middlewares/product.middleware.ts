@@ -41,7 +41,7 @@ function sanitizeModelVariationInput(
   res: Response,
   next: NextFunction
 ): void {
-  console.log("▶️ ", "Sanitizing model variation input...");
+  console.log("▶️ ", "Sanitizing model input...");
   const { name, band } = req.body;
 
   if (typeof name === "string") {
@@ -104,8 +104,8 @@ function sanitizeProductModelInput(
   if (typeof name === "string") {
     req.body.name = removeOddSpaces(name);
   }
-  if (display.type && typeof display.type === "string") {
-    req.body.display.type = removeOddSpaces(display.type);
+  if (display && typeof display.displayType === "string") {
+    req.body.display.displayType = removeOddSpaces(display.displayType);
   }
   if (isArrayOfStrings(connectivities)) {
     req.body.connectivities = connectivities.map((item: string) =>
@@ -182,35 +182,33 @@ export function verifyProductInput(
           } = req.body;
 
           if (!name) {
-            errors.push("Product name is required.");
+            errors.push("name is required.");
           } else if (!isValidProductName(name)) {
             errors.push(
-              `Product name must be between
+              `name must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
               and cannot contain special characters.`
             );
           }
           if (!brandId) {
-            errors.push("Product brand ID is required.");
+            errors.push("ID is required.");
           }
           if (!categoryId) {
-            errors.push("Product category ID is required.");
+            errors.push("ID is required.");
           }
           if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
-            errors.push(
-              "Product image URLs must be an array of valid image URLs."
-            );
+            errors.push("image URLs must be an array of valid image URLs.");
           }
           if (typeof description !== "string" || !description) {
-            errors.push("Product description is required.");
+            errors.push("description is required.");
           }
           if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
-            errors.push("Product stopSelling must be a boolean.");
+            errors.push("stopSelling must be a boolean.");
           }
           if (basePriceCents === undefined) {
-            errors.push("Product base price is required.");
+            errors.push("base price is required.");
           } else if (typeof basePriceCents !== "number" || basePriceCents < 0) {
-            errors.push("Product base price must be a non-negative number.");
+            errors.push("base price must be a non-negative number.");
           }
           break;
         }
@@ -228,7 +226,7 @@ export function verifyProductInput(
 
           if (name !== undefined && !isValidProductName(name)) {
             errors.push(
-              `Product name must be between
+              `name must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
               and cannot contain special characters.`
             );
@@ -237,33 +235,31 @@ export function verifyProductInput(
             brandId !== undefined &&
             (typeof brandId !== "string" || !brandId)
           ) {
-            errors.push("Product brand ID must be a non-empty string.");
+            errors.push("ID must be a non-empty string.");
           }
           if (
             categoryId !== undefined &&
             (typeof categoryId !== "string" || !categoryId)
           ) {
-            errors.push("Product category ID must be a non-empty string.");
+            errors.push("ID must be a non-empty string.");
           }
           if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
-            errors.push(
-              "Product image URLs must be an array of valid image URLs."
-            );
+            errors.push("image URLs must be an array of valid image URLs.");
           }
           if (
             description !== undefined &&
             (typeof description !== "string" || !description)
           ) {
-            errors.push("Product description must be a non-empty string.");
+            errors.push("description must be a non-empty string.");
           }
           if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
-            errors.push("Product stopSelling must be a boolean.");
+            errors.push("stopSelling must be a boolean.");
           }
           if (
             basePriceCents !== undefined &&
             (typeof basePriceCents !== "number" || basePriceCents < 0)
           ) {
-            errors.push("Product base price must be a non-negative number.");
+            errors.push("base price must be a non-negative number.");
           }
           break;
         }
@@ -282,55 +278,47 @@ export function verifyProductInput(
           } = req.query;
 
           if (limit !== undefined && !isValidNumString(limit)) {
-            errors.push("Product limit must be a valid number string.");
+            errors.push("limit must be a valid number string.");
           }
           if (offset !== undefined && !isValidNumString(offset)) {
-            errors.push("Product offset must be a valid number string.");
+            errors.push("offset must be a valid number string.");
           }
           if (
             searchTerm !== undefined &&
             (typeof searchTerm !== "string" || !searchTerm)
           ) {
-            errors.push("Product search term must be a non-empty string.");
+            errors.push("search term must be a non-empty string.");
           }
           if (
             brandId !== undefined &&
             (typeof brandId !== "string" || !brandId)
           ) {
-            errors.push("Product brand ID must be a non-empty string.");
+            errors.push("ID must be a non-empty string.");
           }
           if (
             categoryId !== undefined &&
             (typeof categoryId !== "string" || !categoryId)
           ) {
-            errors.push("Product category ID must be a non-empty string.");
+            errors.push("ID must be a non-empty string.");
           }
           if (
             stopSelling !== undefined &&
             !["true", "false"].includes(stopSelling as any)
           ) {
-            errors.push("Product stopSelling must be a boolean string.");
+            errors.push("stopSelling must be a boolean string.");
           }
           if (priceCentsMin !== undefined) {
             if (!isValidNumString(priceCentsMin)) {
-              errors.push(
-                "Product priceCentsMin must be a valid number string."
-              );
+              errors.push("priceCentsMin must be a valid number string.");
             } else if (parseInt(priceCentsMin as string, 10) < 0) {
-              errors.push(
-                "Product priceCentsMin must be a non-negative number."
-              );
+              errors.push("priceCentsMin must be a non-negative number.");
             }
           }
           if (priceCentsMax !== undefined) {
             if (!isValidNumString(priceCentsMax)) {
-              errors.push(
-                "Product priceCentsMax must be a valid number string."
-              );
+              errors.push("priceCentsMax must be a valid number string.");
             } else if (parseInt(priceCentsMax as string, 10) < 0) {
-              errors.push(
-                "Product priceCentsMax must be a non-negative number."
-              );
+              errors.push("priceCentsMax must be a non-negative number.");
             }
           }
           if (
@@ -339,16 +327,14 @@ export function verifyProductInput(
             parseInt(priceCentsMin as string, 10) >
               parseInt(priceCentsMax as string, 10)
           ) {
-            errors.push(
-              "Product priceCentsMin cannot be greater than priceCentsMax."
-            );
+            errors.push("priceCentsMin cannot be greater than priceCentsMax.");
           }
           if (
             sortBy !== undefined &&
             !PRODUCT_SEARCH_SORT_OPTIONS.includes(sortBy as any)
           ) {
             errors.push(
-              `Product sortBy must be one of the following: ${PRODUCT_SEARCH_SORT_OPTIONS.join(
+              `sortBy must be one of the following: ${PRODUCT_SEARCH_SORT_OPTIONS.join(
                 ", "
               )}`
             );
@@ -384,20 +370,18 @@ export function verifyBrandInput(
           const { name, logoUrl, description } = req.body;
 
           if (!name) {
-            errors.push("Product brand name is required.");
+            errors.push("name is required.");
           } else if (typeof name !== "string" || !name) {
-            errors.push("Product brand name must be a non-empty string.");
+            errors.push("name must be a non-empty string.");
           }
           if (logoUrl !== undefined && !(await isValidImgUrls(logoUrl))) {
-            errors.push("Product brand logo URL must be a valid image URL.");
+            errors.push("logo URL must be a valid image URL.");
           }
           if (
             description !== undefined &&
             (typeof description !== "string" || !description)
           ) {
-            errors.push(
-              "Product brand description must be a non-empty string."
-            );
+            errors.push("description must be a non-empty string.");
           }
           break;
         }
@@ -405,25 +389,21 @@ export function verifyBrandInput(
           const { name, logoUrl, description } = req.body;
 
           if (name !== undefined && (typeof name !== "string" || !name)) {
-            errors.push("Product brand name must be a non-empty string.");
+            errors.push("name must be a non-empty string.");
           }
           if (
             logoUrl !== undefined &&
             logoUrl !== null &&
             !(await isValidImgUrls(logoUrl))
           ) {
-            errors.push(
-              "Product brand logo URL must be a valid image URL or null."
-            );
+            errors.push("logo URL must be a valid image URL or null.");
           }
           if (
             description !== undefined &&
             description !== null &&
             (typeof description !== "string" || !description)
           ) {
-            errors.push(
-              "Product brand description must be a non-empty string or null."
-            );
+            errors.push("description must be a non-empty string or null.");
           }
           break;
         }
@@ -452,17 +432,15 @@ export function verifyCategoryInput(
           const { name, description } = req.body;
 
           if (!name) {
-            errors.push("Product category name is required.");
+            errors.push("name is required.");
           } else if (typeof name !== "string" || !name) {
-            errors.push("Product category name must be a non-empty string.");
+            errors.push("name must be a non-empty string.");
           }
           if (
             description !== undefined &&
             (typeof description !== "string" || !description)
           ) {
-            errors.push(
-              "Product category description must be a non-empty string."
-            );
+            errors.push("description must be a non-empty string.");
           }
           break;
         }
@@ -470,16 +448,14 @@ export function verifyCategoryInput(
           const { name, description } = req.body;
 
           if (name !== undefined && (typeof name !== "string" || !name)) {
-            errors.push("Product category name must be a non-empty string.");
+            errors.push("name must be a non-empty string.");
           }
           if (
             description !== undefined &&
             description !== null &&
             (typeof description !== "string" || !description)
           ) {
-            errors.push(
-              "Product category description must be a non-empty string or null."
-            );
+            errors.push("description must be a non-empty string or null.");
           }
           break;
         }
@@ -512,18 +488,18 @@ export function verifyOsInput(
           const { name, logoUrl, description } = req.body;
 
           if (!name) {
-            errors.push("Product OS name is required.");
+            errors.push("name is required.");
           } else if (typeof name !== "string" || !name) {
-            errors.push("Product OS name must be a non-empty string.");
+            errors.push("name must be a non-empty string.");
           }
           if (logoUrl !== undefined && !(await isValidImgUrls(logoUrl))) {
-            errors.push("Product OS logo URL must be a valid image URL.");
+            errors.push("logo URL must be a valid image URL.");
           }
           if (
             description !== undefined &&
             (typeof description !== "string" || !description)
           ) {
-            errors.push("Product OS description must be a non-empty string.");
+            errors.push("description must be a non-empty string.");
           }
           break;
         }
@@ -531,23 +507,21 @@ export function verifyOsInput(
           const { name, logoUrl, description } = req.body;
 
           if (name !== undefined && (typeof name !== "string" || !name)) {
-            errors.push("Product OS name must be a non-empty string.");
+            errors.push("name must be a non-empty string.");
           }
           if (
             logoUrl !== undefined &&
             logoUrl !== null &&
             !(await isValidImgUrls(logoUrl))
           ) {
-            errors.push("Product OS logo URL must be a valid image URL.");
+            errors.push("logo URL must be a valid image URL.");
           }
           if (
             description !== undefined &&
             description !== null &&
             (typeof description !== "string" || !description)
           ) {
-            errors.push(
-              "Product OS description must be a non-empty string or null."
-            );
+            errors.push("description must be a non-empty string or null.");
           }
           break;
         }
@@ -591,7 +565,7 @@ export function verifyProductModelInput(
             chipset,
             connectivities,
             batteryLifeMah,
-            waterResistance,
+            waterResistance, // Optional and can be null
             sensors,
             caseMaterial,
             weightMg,
@@ -601,189 +575,161 @@ export function verifyProductModelInput(
           } = req.body;
 
           if (!model) {
-            errors.push("Product model model is required.");
+            errors.push("model is required.");
           } else if (!isValidProductName(model)) {
             errors.push(
-              `Product model model must be between
+              `model must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
               and cannot contain special characters.`
             );
           }
           if (!name) {
-            errors.push("Product model name is required.");
+            errors.push("name is required.");
           } else if (!isValidProductName(name)) {
             errors.push(
-              `Product model name must be between
+              `name must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
               and cannot contain special characters.`
             );
           }
           if (watchSizeMm === undefined) {
-            errors.push("Product model watch size is required.");
+            errors.push("watch size is required.");
           } else if (typeof watchSizeMm !== "number" || watchSizeMm <= 0) {
-            errors.push("Product model watch size must be a positive number.");
+            errors.push("watch size must be a positive number.");
           }
           if (priceCents === undefined) {
-            errors.push("Product model price is required.");
+            errors.push("price is required.");
           } else if (typeof priceCents !== "number" || priceCents < 0) {
-            errors.push("Product model price must be a non-negative number.");
+            errors.push("price must be a non-negative number.");
           }
           if (stockPriceCents === undefined) {
-            errors.push("Product model stock price is required.");
+            errors.push("stock price is required.");
           } else if (
             typeof stockPriceCents !== "number" ||
             stockPriceCents < 0
           ) {
-            errors.push(
-              "Product model stock price must be a non-negative number."
-            );
+            errors.push("stock price must be a non-negative number.");
           }
           if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
-            errors.push(
-              "Product model image URLs must be an array of valid image URLs."
-            );
+            errors.push("image URLs must be an array of valid image URLs.");
           }
           if (!display) {
-            errors.push("Product model display is required.");
+            errors.push("display is required.");
+          } else if (
+            typeof display !== "object" ||
+            display.sizeMm === undefined ||
+            !display.displayType
+          ) {
+            errors.push(
+              "display must be an object with sizeMm and displayType."
+            );
           } else {
-            if (display.sizeMm === undefined) {
-              errors.push("Product model display size is required.");
-            } else if (
-              typeof display.sizeMm !== "number" ||
-              display.sizeMm <= 0
-            ) {
-              errors.push(
-                "Product model display size must be a positive number."
-              );
+            if (typeof display.sizeMm !== "number" || display.sizeMm <= 0) {
+              errors.push("display size must be a positive number.");
             }
-            if (!display.type) {
-              errors.push("Product model display type is required.");
-            } else if (typeof display.type !== "string" || !display.type) {
-              errors.push(
-                "Product model display type must be a non-empty string."
-              );
+            if (
+              typeof display.displayType !== "string" ||
+              !display.displayType
+            ) {
+              errors.push("display type must be a non-empty string.");
             }
           }
           if (!resolution) {
-            errors.push("Product model resolution is required.");
-          } else {
-            if (resolution.hPx === undefined) {
-              errors.push("Product model resolution H is required.");
-            } else if (
-              typeof resolution.hPx !== "number" ||
-              resolution.hPx <= 0
-            ) {
-              errors.push(
-                "Product model resolution H must be a positive number."
-              );
-            }
-            if (resolution.wPx === undefined) {
-              errors.push("Product model resolution W is required.");
-            } else if (
-              typeof resolution.wPx !== "number" ||
-              resolution.wPx <= 0
-            ) {
-              errors.push(
-                "Product model resolution W must be a positive number."
-              );
-            }
+            errors.push("resolution is required.");
+          } else if (
+            typeof resolution !== "object" ||
+            resolution.hPx === undefined ||
+            resolution.wPx === undefined
+          ) {
+            errors.push("resolution must be an object with hPx and wPx.");
+          } else if (
+            typeof resolution.hPx !== "number" ||
+            resolution.hPx <= 0 ||
+            typeof resolution.wPx !== "number" ||
+            resolution.wPx <= 0
+          ) {
+            errors.push("resolution hPx and wPx must be positive numbers.");
           }
           if (!memory) {
-            errors.push("Product model memory is required.");
-          } else {
-            if (memory.ramBytes === undefined) {
-              errors.push("Product model RAM is required.");
-            } else if (
-              typeof memory.ramBytes !== "number" ||
-              memory.ramBytes < 0
-            ) {
-              errors.push("Product model RAM must be a non-negative number.");
-            }
-            if (memory.romBytes === undefined) {
-              errors.push("Product model ROM is required.");
-            } else if (
-              typeof memory.romBytes !== "number" ||
-              memory.romBytes < 0
-            ) {
-              errors.push("Product model ROM must be a non-negative number.");
-            }
+            errors.push("memory is required.");
+          } else if (
+            typeof memory !== "object" ||
+            memory.ramBytes === undefined ||
+            memory.romBytes === undefined
+          ) {
+            errors.push("memory must be an object with ramBytes and romBytes.");
+          } else if (
+            typeof memory.ramBytes !== "number" ||
+            memory.ramBytes < 0 ||
+            typeof memory.romBytes !== "number" ||
+            memory.romBytes < 0
+          ) {
+            errors.push("memory RAM and ROM must be non-negative numbers.");
           }
           if (!osId) {
-            errors.push("Product model OS ID is required.");
+            errors.push("OS ID is required.");
           } else if (typeof osId !== "string" || !osId) {
-            errors.push("Product model OS ID must be a non-empty string.");
+            errors.push("OS ID must be a non-empty string.");
           }
           if (!chipset) {
-            errors.push("Product model chipset is required.");
+            errors.push("chipset is required.");
           } else if (typeof chipset !== "string" || !chipset) {
-            errors.push("Product model chipset must be a non-empty string.");
+            errors.push("chipset must be a non-empty string.");
           }
           if (!connectivities) {
-            errors.push("Product model connectivities are required.");
+            errors.push("connectivities are required.");
           } else if (
             !isArrayOfStrings(connectivities) ||
             !connectivities.length
           ) {
-            errors.push(
-              "Product model connectivities must be a non-empty array of strings."
-            );
+            errors.push("connectivities must be a non-empty array of strings.");
           }
           if (batteryLifeMah === undefined) {
-            errors.push("Product model battery life is required.");
+            errors.push("battery life is required.");
           } else if (
             typeof batteryLifeMah !== "number" ||
             batteryLifeMah <= 0
           ) {
-            errors.push(
-              "Product model battery life must be a positive number."
-            );
+            errors.push("battery life must be a positive number.");
           }
-          if (!waterResistance) {
-            errors.push("Product model water resistance is required.");
-          } else if (typeof waterResistance !== "string" || !waterResistance) {
-            errors.push(
-              "Product model water resistance must be a non-empty string."
-            );
+          if (
+            waterResistance !== undefined &&
+            waterResistance !== null &&
+            (typeof waterResistance !== "string" || !waterResistance)
+          ) {
+            errors.push("water resistance must be a non-empty string or null.");
           }
           if (!sensors) {
-            errors.push("Product model sensors is required.");
+            errors.push("sensors is required.");
           } else if (!isArrayOfStrings(sensors) || !sensors.length) {
-            errors.push(
-              "Product model sensors must be a non-empty array of strings."
-            );
+            errors.push("sensors must be a non-empty array of strings.");
           }
           if (!caseMaterial) {
-            errors.push("Product model case material is required.");
+            errors.push("case material is required.");
           } else if (typeof caseMaterial !== "string" || !caseMaterial) {
-            errors.push(
-              "Product model case material must be a non-empty string."
-            );
+            errors.push("case material must be a non-empty string.");
           }
           if (weightMg === undefined) {
-            errors.push("Product model weight is required.");
+            errors.push("weight is required.");
           } else if (typeof weightMg !== "number" || weightMg <= 0) {
-            errors.push("Product model weight must be a positive number.");
+            errors.push("weight must be a positive number.");
           }
           if (compatibleBandLugWidthMm === undefined) {
-            errors.push("Product model compatible band lug width is required.");
+            errors.push("compatible band lug width is required.");
           } else if (
             typeof compatibleBandLugWidthMm !== "number" ||
             compatibleBandLugWidthMm <= 0
           ) {
-            errors.push(
-              "Product model compatible band lug width must be a positive number."
-            );
+            errors.push("compatible band lug width must be a positive number.");
           }
           if (
             releaseDate !== undefined &&
             !isValidDateTimeString(releaseDate)
           ) {
-            errors.push(
-              "Product model release date must be a valid date time string."
-            );
+            errors.push("release date must be a valid date time string.");
           }
           if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
-            errors.push("Product model stopSelling must be a boolean.");
+            errors.push("stopSelling must be a boolean.");
           }
           break;
         }
@@ -802,7 +748,7 @@ export function verifyProductModelInput(
             chipset,
             connectivities,
             batteryLifeMah,
-            waterResistance,
+            waterResistance, // Can be null
             sensors,
             caseMaterial,
             weightMg,
@@ -813,14 +759,14 @@ export function verifyProductModelInput(
 
           if (model !== undefined && !isValidProductName(model)) {
             errors.push(
-              `Product model model must be between
+              `model must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
               and cannot contain special characters.`
             );
           }
           if (name !== undefined && !isValidProductName(name)) {
             errors.push(
-              `Product model name must be between
+              `name must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
               and cannot contain special characters.`
             );
@@ -829,151 +775,139 @@ export function verifyProductModelInput(
             watchSizeMm !== undefined &&
             (typeof watchSizeMm !== "number" || watchSizeMm <= 0)
           ) {
-            errors.push("Product model watch size must be a positive number.");
+            errors.push("watch size must be a positive number.");
           }
           if (
             priceCents !== undefined &&
             (typeof priceCents !== "number" || priceCents < 0)
           ) {
-            errors.push("Product model price must be a non-negative number.");
+            errors.push("price must be a non-negative number.");
           }
           if (
             stockPriceCents !== undefined &&
             (typeof stockPriceCents !== "number" || stockPriceCents < 0)
           ) {
-            errors.push(
-              "Product model stock price must be a non-negative number."
-            );
+            errors.push("stock price must be a non-negative number.");
           }
           if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
-            errors.push(
-              "Product model image URLs must be an array of valid image URLs."
-            );
+            errors.push("image URLs must be an array of valid image URLs.");
           }
           if (display !== undefined) {
-            if (
-              display.sizeMm !== undefined &&
-              (typeof display.sizeMm !== "number" || display.sizeMm <= 0)
-            ) {
-              errors.push(
-                "Product model display size must be a positive number."
-              );
-            }
-            if (
-              display.type !== undefined &&
-              (typeof display.type !== "string" || !display.type)
-            ) {
-              errors.push(
-                "Product model display type must be a non-empty string."
-              );
+            if (typeof display !== "object" || display === null) {
+              errors.push("display must be an object.");
+            } else if (Object.keys(display).length > 0) {
+              if (
+                display.sizeMm !== undefined &&
+                (typeof display.sizeMm !== "number" || display.sizeMm <= 0)
+              ) {
+                errors.push("display size must be a positive number.");
+              }
+              if (
+                display.displayType !== undefined &&
+                (typeof display.displayType !== "string" ||
+                  !display.displayType)
+              ) {
+                errors.push("display type must be a non-empty string.");
+              }
             }
           }
           if (resolution !== undefined) {
-            if (
-              resolution.hPx !== undefined &&
-              (typeof resolution.hPx !== "number" || resolution.hPx <= 0)
-            ) {
-              errors.push(
-                "Product model resolution H must be a positive number."
-              );
-            }
-            if (
-              resolution.wPx !== undefined &&
-              (typeof resolution.wPx !== "number" || resolution.wPx <= 0)
-            ) {
-              errors.push(
-                "Product model resolution W must be a positive number."
-              );
+            if (typeof resolution !== "object" || resolution === null) {
+              errors.push("resolution must be an object.");
+            } else if (Object.keys(resolution).length > 0) {
+              if (
+                resolution.hPx !== undefined &&
+                (typeof resolution.hPx !== "number" || resolution.hPx <= 0)
+              ) {
+                errors.push("resolution hPx must be a positive number.");
+              }
+              if (
+                resolution.wPx !== undefined &&
+                (typeof resolution.wPx !== "number" || resolution.wPx <= 0)
+              ) {
+                errors.push("resolution wPx must be a positive number.");
+              }
             }
           }
           if (memory !== undefined) {
-            if (
-              memory.ramBytes !== undefined &&
-              (typeof memory.ramBytes !== "number" || memory.ramBytes < 0)
-            ) {
-              errors.push("Product model RAM must be a non-negative number.");
-            }
-            if (
-              memory.romBytes !== undefined &&
-              (typeof memory.romBytes !== "number" || memory.romBytes < 0)
-            ) {
-              errors.push("Product model ROM must be a non-negative number.");
+            if (typeof memory !== "object" || memory === null) {
+              errors.push("memory must be an object.");
+            } else if (Object.keys(memory).length > 0) {
+              if (
+                memory.ramBytes !== undefined &&
+                (typeof memory.ramBytes !== "number" || memory.ramBytes < 0)
+              ) {
+                errors.push("memory RAM must be a non-negative number.");
+              }
+              if (
+                memory.romBytes !== undefined &&
+                (typeof memory.romBytes !== "number" || memory.romBytes < 0)
+              ) {
+                errors.push("memory ROM must be a non-negative number.");
+              }
             }
           }
           if (osId !== undefined && (typeof osId !== "string" || !osId)) {
-            errors.push("Product model OS ID must be a non-empty string.");
+            errors.push("OS ID must be a non-empty string.");
           }
           if (
             chipset !== undefined &&
             (typeof chipset !== "string" || !chipset)
           ) {
-            errors.push("Product model chipset must be a non-empty string.");
+            errors.push("chipset must be a non-empty string.");
           }
           if (
             connectivities !== undefined &&
             (!isArrayOfStrings(connectivities) || !connectivities.length)
           ) {
-            errors.push(
-              "Product model connectivities must be a non-empty array of strings."
-            );
+            errors.push("connectivities must be a non-empty array of strings.");
           }
           if (
             batteryLifeMah !== undefined &&
             (typeof batteryLifeMah !== "number" || batteryLifeMah <= 0)
           ) {
-            errors.push(
-              "Product model battery life must be a positive number."
-            );
+            errors.push("battery life must be a positive number.");
           }
           if (
             waterResistance !== undefined &&
+            waterResistance !== null &&
             (typeof waterResistance !== "string" || !waterResistance)
           ) {
-            errors.push(
-              "Product model water resistance must be a non-empty string."
-            );
+            errors.push("water resistance must be a non-empty string or null.");
           }
           if (
             sensors !== undefined &&
             (!isArrayOfStrings(sensors) || !sensors.length)
           ) {
-            errors.push(
-              "Product model sensors must be a non-empty array of strings."
-            );
+            errors.push("sensors must be a non-empty array of strings.");
           }
           if (
             caseMaterial !== undefined &&
             (typeof caseMaterial !== "string" || !caseMaterial)
           ) {
-            errors.push(
-              "Product model case material must be a non-empty string."
-            );
+            errors.push("case material must be a non-empty string.");
           }
           if (
             weightMg !== undefined &&
             (typeof weightMg !== "number" || weightMg <= 0)
           ) {
-            errors.push("Product model weight must be a positive number.");
+            errors.push("weight must be a positive number.");
           }
           if (
             compatibleBandLugWidthMm !== undefined &&
             (typeof compatibleBandLugWidthMm !== "number" ||
               compatibleBandLugWidthMm <= 0)
           ) {
-            errors.push(
-              "Product model compatible band lug width must be a positive number."
-            );
+            errors.push("compatible band lug width must be a positive number.");
           }
           if (
             releaseDate !== undefined &&
             !isValidDateTimeString(releaseDate)
           ) {
-            errors.push(
-              "Product model release date must be a valid date time string."
-            );
+            errors.push("release date must be a valid date time string.");
           }
           if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
-            errors.push("Product model stopSelling must be a boolean.");
+            errors.push("stopSelling must be a boolean.");
           }
           break;
         }
@@ -997,7 +931,7 @@ export function verifyModelVariationInput(
     res: Response,
     next: NextFunction
   ): Promise<void> => {
-    console.log("▶️ ", "Validating product model variation input...");
+    console.log("▶️ ", "Validating product variation model input...");
 
     let errors: string[] = [];
     try {
@@ -1013,145 +947,125 @@ export function verifyModelVariationInput(
           } = req.body;
 
           if (!name) {
-            errors.push("Product model variation name is required.");
+            errors.push("name is required.");
           } else if (!isValidProductName(name)) {
             errors.push(
-              `Product model variation name must be between
+              `name must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
               and cannot contain special characters.`
             );
           }
           if (!colorHex) {
-            errors.push("Product model variation color hex is required.");
+            errors.push("color hex is required.");
           } else if (!isValidColorHex(colorHex)) {
-            errors.push(
-              "Product model variation color hex must be a valid color hex."
-            );
+            errors.push("color hex must be a valid color hex.");
           }
           if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
-            errors.push(
-              "Product model variation image URLs must be an array of valid image URLs."
-            );
+            errors.push("image URLs must be an array of valid image URLs.");
           }
           if (
             additionalPriceCents !== undefined &&
             (typeof additionalPriceCents !== "number" ||
               additionalPriceCents < 0)
           ) {
-            errors.push(
-              "Product model variation additional price must be a non-negative number."
-            );
+            errors.push("additional price must be a non-negative number.");
           }
 
           if (!band) {
-            errors.push("Product model variation band is required.");
+            errors.push("band is required.");
+          } else if (typeof band !== "object" || band === null) {
+            errors.push("band must be an object.");
           } else {
             if (band.lugWidthMm === undefined) {
-              errors.push(
-                "Product model variation band lug width is required."
-              );
+              errors.push("band lug width is required.");
             } else if (
               typeof band.lugWidthMm !== "number" ||
               band.lugWidthMm <= 0
             ) {
-              errors.push(
-                "Product model variation band lug width must be a positive number."
-              );
+              errors.push("band lug width must be a positive number.");
             }
             if (!band.material) {
-              errors.push("Product model variation band material is required.");
+              errors.push("band material is required.");
             } else if (typeof band.material !== "string" || !band.material) {
-              errors.push(
-                "Product model variation band material must be a non-empty string."
-              );
+              errors.push("band material must be a non-empty string.");
             }
             if (!band.colorsHex) {
-              errors.push(
-                "Product model variation band colors hex are required."
-              );
+              errors.push("band colors hex are required.");
             } else if (!isValidListOfColorsHex(band.colorsHex)) {
               errors.push(
-                "Product model variation band colors hex must be a list of valid colors hex."
+                "band colors hex must be a list of valid colors hex."
               );
             }
             if (!band.claspType) {
-              errors.push(
-                "Product model variation band clasp type is required."
-              );
+              errors.push("band clasp type is required.");
             } else if (typeof band.claspType !== "string" || !band.claspType) {
-              errors.push(
-                "Product model variation band clasp type must be a non-empty string."
-              );
+              errors.push("band clasp type must be a non-empty string.");
             }
-            if (
-              !band.adjustableRangeMm ||
-              typeof band.adjustableRangeMm.min !== "number" ||
-              typeof band.adjustableRangeMm.max !== "number"
-            ) {
-              errors.push(
-                "Product model variation band adjustable range is required and must have numeric min and max properties."
-              );
+            if (!band.adjustableRange) {
+              errors.push("band adjustable range is required.");
             } else if (
-              band.adjustableRangeMm.min <= 0 ||
-              band.adjustableRangeMm.max <= 0
+              typeof band.adjustableRange !== "object" ||
+              band.adjustableRange.minMm === undefined ||
+              band.adjustableRange.maxMm === undefined
             ) {
               errors.push(
-                "Product model variation band adjustable range min and max must be positive numbers."
+                "band adjustable range must be an object with minMm and maxMm."
               );
-            } else if (
-              band.adjustableRangeMm.min >= band.adjustableRangeMm.max
-            ) {
-              errors.push(
-                "Product model variation band adjustable range min must be less than max."
-              );
+            } else {
+              if (
+                typeof band.adjustableRange.minMm !== "number" ||
+                band.adjustableRange.minMm <= 0
+              ) {
+                errors.push(
+                  "band adjustable range min must be a positive number."
+                );
+              }
+              if (
+                typeof band.adjustableRange.maxMm !== "number" ||
+                band.adjustableRange.maxMm <= 0
+              ) {
+                errors.push(
+                  "band adjustable range max must be a positive number."
+                );
+              }
+              if (band.adjustableRange.minMm >= band.adjustableRange.maxMm) {
+                errors.push("band adjustable range min must be less than max.");
+              }
             }
             if (!band.style) {
-              errors.push("Product model variation band style is required.");
+              errors.push("band style is required.");
             } else if (typeof band.style !== "string" || !band.style) {
-              errors.push(
-                "Product model variation band style must be a non-empty string."
-              );
+              errors.push("band style must be a non-empty string.");
             }
             if (
               band.quickRelease !== undefined &&
               typeof band.quickRelease !== "boolean"
             ) {
-              errors.push(
-                "Product model variation band quick release must be a boolean."
-              );
+              errors.push("band quick release must be a boolean.");
             }
             if (
               band.waterResistance !== undefined &&
               typeof band.waterResistance !== "boolean"
             ) {
-              errors.push(
-                "Product model variation band water resistance must be a boolean."
-              );
+              errors.push("band water resistance must be a boolean.");
             }
             if (
               band.hypoallergenic !== undefined &&
               typeof band.hypoallergenic !== "boolean"
             ) {
-              errors.push(
-                "Product model variation band hypoallergenic must be a boolean."
-              );
+              errors.push("band hypoallergenic must be a boolean.");
             }
             if (band.weightMg === undefined) {
-              errors.push("Product model variation band weight is required.");
+              errors.push("band weight is required.");
             } else if (
               typeof band.weightMg !== "number" ||
               band.weightMg <= 0
             ) {
-              errors.push(
-                "Product model variation band weight must be a positive number."
-              );
+              errors.push("band weight must be a positive number.");
             }
           }
-
           if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
-            errors.push(
-              "Product model variation stopSelling must be a boolean."
-            );
+            errors.push("stopSelling must be a boolean.");
           }
           break;
         }
@@ -1167,128 +1081,124 @@ export function verifyModelVariationInput(
 
           if (name !== undefined && !isValidProductName(name)) {
             errors.push(
-              `Product model variation name must be between
+              `name must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
               and cannot contain special characters.`
             );
           }
           if (colorHex !== undefined && !isValidColorHex(colorHex)) {
-            errors.push(
-              "Product model variation color hex must be a valid color hex."
-            );
+            errors.push("color hex must be a valid color hex.");
           }
           if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
-            errors.push(
-              "Product model variation image URLs must be an array of valid image URLs."
-            );
+            errors.push("image URLs must be an array of valid image URLs.");
           }
           if (
             additionalPriceCents !== undefined &&
             (typeof additionalPriceCents !== "number" ||
               additionalPriceCents < 0)
           ) {
-            errors.push(
-              "Product model variation additional price must be a non-negative number."
-            );
+            errors.push("additional price must be a non-negative number.");
           }
           if (band !== undefined) {
-            if (
-              band.lugWidthMm !== undefined &&
-              (typeof band.lugWidthMm !== "number" || band.lugWidthMm <= 0)
-            ) {
-              errors.push(
-                "Product model variation band lug width must be a positive number."
-              );
-            }
-            if (
-              band.material !== undefined &&
-              (typeof band.material !== "string" || !band.material)
-            ) {
-              errors.push(
-                "Product model variation band material must be a non-empty string."
-              );
-            }
-            if (
-              band.colorsHex !== undefined &&
-              !isValidListOfColorsHex(band.colorsHex)
-            ) {
-              errors.push(
-                "Product model variation band colors hex must be a list of valid colors hex."
-              );
-            }
-            if (
-              band.claspType !== undefined &&
-              (typeof band.claspType !== "string" || !band.claspType)
-            ) {
-              errors.push(
-                "Product model variation band clasp type must be a non-empty string."
-              );
-            }
-            if (band.adjustableRangeMm !== undefined) {
+            if (typeof band !== "object" || band === null) {
+              errors.push("band must be an object.");
+            } else if (Object.keys(band).length > 0) {
               if (
-                band.adjustableRangeMm.min !== undefined &&
-                (typeof band.adjustableRangeMm.min !== "number" ||
-                  band.adjustableRangeMm.min <= 0)
+                band.lugWidthMm !== undefined &&
+                (typeof band.lugWidthMm !== "number" || band.lugWidthMm <= 0)
+              ) {
+                errors.push("band lug width must be a positive number.");
+              }
+              if (
+                band.material !== undefined &&
+                (typeof band.material !== "string" || !band.material)
+              ) {
+                errors.push("band material must be a non-empty string.");
+              }
+              if (
+                band.colorsHex !== undefined &&
+                !isValidListOfColorsHex(band.colorsHex)
               ) {
                 errors.push(
-                  "Product model variation band adjustable range min must be a positive number."
+                  "band colors hex must be a list of valid colors hex."
                 );
               }
               if (
-                band.adjustableRangeMm.max !== undefined &&
-                (typeof band.adjustableRangeMm.max !== "number" ||
-                  band.adjustableRangeMm.max <= 0)
+                band.claspType !== undefined &&
+                (typeof band.claspType !== "string" || !band.claspType)
               ) {
-                errors.push(
-                  "Product model variation band adjustable range max must be a positive number."
-                );
+                errors.push("band clasp type must be a non-empty string.");
               }
-            }
-            if (
-              band.style !== undefined &&
-              (typeof band.style !== "string" || !band.style)
-            ) {
-              errors.push(
-                "Product model variation band style must be a non-empty string."
-              );
-            }
-            if (
-              band.quickRelease !== undefined &&
-              typeof band.quickRelease !== "boolean"
-            ) {
-              errors.push(
-                "Product model variation band quick release must be a boolean."
-              );
-            }
-            if (
-              band.waterResistance !== undefined &&
-              typeof band.waterResistance !== "boolean"
-            ) {
-              errors.push(
-                "Product model variation band water resistance must be a boolean."
-              );
-            }
-            if (
-              band.hypoallergenic !== undefined &&
-              typeof band.hypoallergenic !== "boolean"
-            ) {
-              errors.push(
-                "Product model variation band hypoallergenic must be a boolean."
-              );
-            }
-            if (
-              band.weightMg !== undefined &&
-              (typeof band.weightMg !== "number" || band.weightMg <= 0)
-            ) {
-              errors.push(
-                "Product model variation band weight must be a positive number."
-              );
+              if (band.adjustableRange !== undefined) {
+                if (
+                  typeof band.adjustableRange !== "object" ||
+                  band.adjustableRange === null
+                ) {
+                  errors.push("band adjustable range must be an object.");
+                } else if (Object.keys(band.adjustableRange).length > 0) {
+                  if (
+                    band.adjustableRange.minMm !== undefined &&
+                    (typeof band.adjustableRange.minMm !== "number" ||
+                      band.adjustableRange.minMm <= 0)
+                  ) {
+                    errors.push(
+                      "band adjustable range min must be a positive number."
+                    );
+                  }
+                  if (
+                    band.adjustableRange.maxMm !== undefined &&
+                    (typeof band.adjustableRange.maxMm !== "number" ||
+                      band.adjustableRange.maxMm <= 0)
+                  ) {
+                    errors.push(
+                      "band adjustable range max must be a positive number."
+                    );
+                  }
+                  if (
+                    band.adjustableRange.minMm !== undefined &&
+                    band.adjustableRange.maxMm !== undefined &&
+                    band.adjustableRange.minMm >= band.adjustableRange.maxMm
+                  ) {
+                    errors.push(
+                      "band adjustable range min must be less than max."
+                    );
+                  }
+                }
+              }
+              if (
+                band.style !== undefined &&
+                (typeof band.style !== "string" || !band.style)
+              ) {
+                errors.push("band style must be a non-empty string.");
+              }
+              if (
+                band.quickRelease !== undefined &&
+                typeof band.quickRelease !== "boolean"
+              ) {
+                errors.push("band quick release must be a boolean.");
+              }
+              if (
+                band.waterResistance !== undefined &&
+                typeof band.waterResistance !== "boolean"
+              ) {
+                errors.push("band water resistance must be a boolean.");
+              }
+              if (
+                band.hypoallergenic !== undefined &&
+                typeof band.hypoallergenic !== "boolean"
+              ) {
+                errors.push("band hypoallergenic must be a boolean.");
+              }
+              if (
+                band.weightMg !== undefined &&
+                (typeof band.weightMg !== "number" || band.weightMg <= 0)
+              ) {
+                errors.push("band weight must be a positive number.");
+              }
             }
           }
           if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
-            errors.push(
-              "Product model variation stopSelling must be a boolean."
-            );
+            errors.push("stopSelling must be a boolean.");
           }
           break;
         }
@@ -1308,7 +1218,7 @@ export function verifyVariationInstanceInput(
   type: "create" | "update"
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
-    console.log("▶️ ", "Validating variation instance input...");
+    console.log("▶️ ", "Validating instance input...");
 
     let errors: string[] = [];
     try {

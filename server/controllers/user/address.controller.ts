@@ -268,14 +268,11 @@ export async function update(
       }
 
       address.fullAddress = formatAddress({
-        name: updatedName,
         street: updatedStreet,
         apartmentNumber: updatedApartmentNumber,
         wardCode: updatedWardCode,
         districtCode: updatedDistrictCode,
         cityProvinceCode: updatedCityProvinceCode,
-        countryCode: address.countryCode,
-        isDefault: updatedIsDefault,
       });
     }
 
@@ -306,7 +303,7 @@ export async function update(
     address.cityProvinceCode = updatedCityProvinceCode;
     if (location)
       address.location = {
-        type: "point",
+        locationType: "point",
         coordinates: [location.longitude, location.latitude],
       };
     address.phoneNumber = updatedPhoneNumber;

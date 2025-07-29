@@ -113,7 +113,7 @@ export const PRODUCT_MOCK_OPTIONS = {
     "Compass",
   ] as const,
 
-  MODAL_CASE_MATERIAL_OPTIONS: [
+  MODEL_CASE_MATERIAL_OPTIONS: [
     "stainless steel",
     "aluminum",
     "plastic",
@@ -121,11 +121,47 @@ export const PRODUCT_MOCK_OPTIONS = {
     "titanium",
   ] as const,
 
+  MODEL_CHIPSET_OPTIONS: [
+    "Exynos",
+    "Snapdragon",
+    "Apple S",
+    "MediaTek",
+    "Kirin",
+  ] as const,
+
+  MODEL_WATER_RESISTANCE_OPTIONS: [
+    "IP67",
+    "IP68",
+    "5 ATM",
+    "10 ATM",
+    "Water Resistant",
+    null,
+  ] as const,
+
+  MODEL_COMPATIBLE_BAND_LUG_WIDTH_MM_OPTIONS: [18, 20, 22, 24] as const,
+
   VARIATION_BAND_MATERIAL_OPTIONS: [
     "leather",
     "silicone",
     "metal",
     "fabric",
     "plastic",
+  ] as const,
+
+  VARIATION_BAND_CLASP_TYPE_OPTIONS: [
+    "buckle",
+    "deployant",
+    "magnetic",
+    "velcro",
+    "snap",
+  ] as const,
+
+  VARIATION_BAND_STYLE_OPTIONS: [
+    "sport",
+    "dress",
+    "casual",
+    "luxury",
+    "tactical",
+    "smart",
   ] as const,
 } as const;

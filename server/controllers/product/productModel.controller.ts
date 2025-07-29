@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import {
   ProductModelCreate,
+  ProductModelListResponse,
   ProductModelResponse,
   ProductModelUpdate,
   SuccessResponse,
@@ -14,6 +15,7 @@ import { RequestAuth } from "../../utils/types";
 import { formatProductModelResponse } from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 import ModelVariation from "../../models/product/modelVariation.model";
+import { mergeNested } from "../../../common/utils.common";
 
 export async function create(
   req: Request,
@@ -96,7 +98,7 @@ export async function create(
       chipset,
       connectivities,
       batteryLifeMah,
-      waterResistance,
+      waterResistance: waterResistance || undefined,
       sensors,
       caseMaterial,
       weightMg,
@@ -137,24 +139,48 @@ export async function get(
       return next(errorHandler(404, "Product not found"));
     }
 
-    // Check if model exists
-    if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found"));
+    // Fetch single model
+    if (modelId) {
+      if (!Types.ObjectId.isValid(modelId)) {
+        return next(errorHandler(404, "Product model not found"));
+      }
+      const model = await ProductModel.findOne({
+        isDeleted: false,
+        _id: modelId,
+        productId: productId,
+      }).lean();
+      if (!model) {
+        return next(errorHandler(404, "Product model not found"));
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Product model retrieved successfully",
+        data: formatProductModelResponse(model),
+      } as SuccessResponse<ProductModelResponse>);
+      console.log("✅ ", "Product model retrieved successfully");
+      return;
     }
-    const model = await ProductModel.findOne({
+
+    // Fetch all models for product
+    const models = await ProductModel.find({
       isDeleted: false,
-      _id: modelId,
       productId: productId,
-    });
-    if (!model) {
-      return next(errorHandler(404, "Product model not found"));
-    }
+    }).lean();
 
     res.status(200).json({
       success: true,
-      message: "Product model retrieved successfully",
-      data: formatProductModelResponse(model),
-    } as SuccessResponse<ProductModelResponse>);
+      message: "Product models retrieved successfully",
+      data: {
+        models: {
+          total: models.length,
+          models: models.map(formatProductModelResponse),
+        },
+        offset: 0,
+        limit: models.length,
+        total: models.length,
+      },
+    } as SuccessResponse<ProductModelListResponse>);
     console.log("✅ ", "Product model retrieved successfully");
   } catch (error) {
     next(error);
@@ -263,20 +289,20 @@ export async function update(
     model.priceCents = updateData.priceCents ?? model.priceCents;
     model.stockPriceCents = updateData.stockPriceCents ?? model.stockPriceCents;
     model.imageUrls = updateData.imageUrls || model.imageUrls;
-    (model.display as any) = updateData.display
-      ? { ...model.toObject().display, ...updateData.display }
-      : model.display;
-    model.resolution = updateData.resolution
-      ? { ...model.toObject().resolution, ...updateData.resolution }
-      : model.resolution;
-    model.memory = updateData.memory
-      ? { ...model.toObject().memory, ...updateData.memory }
-      : model.memory;
+    model.display = mergeNested(model.toObject().display, updateData.display);
+    model.resolution = mergeNested(
+      model.toObject().resolution,
+      updateData.resolution
+    );
+    model.memory = mergeNested(model.toObject().memory, updateData.memory);
     model.osId = updatedOsId;
     model.chipset = updateData.chipset || model.chipset;
     model.connectivities = updateData.connectivities || model.connectivities;
     model.batteryLifeMah = updateData.batteryLifeMah || model.batteryLifeMah;
-    model.waterResistance = updateData.waterResistance || model.waterResistance;
+    model.waterResistance =
+      updateData.waterResistance === null
+        ? undefined
+        : updateData.waterResistance || model.waterResistance;
     model.sensors = updateData.sensors || model.sensors;
     model.caseMaterial = updateData.caseMaterial || model.caseMaterial;
     model.weightMg = updateData.weightMg || model.weightMg;

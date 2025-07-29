@@ -114,6 +114,20 @@ export function randNum(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+export function mergeNested(original: any, update: any): any {
+  if (!update) {
+    return original;
+  }
+  const cleanedUpdate = Object.entries(update).reduce((acc, [key, value]) => {
+    if (value !== undefined) {
+      acc[key] = value;
+    }
+    return acc;
+  }, {});
+
+  return { ...original, ...cleanedUpdate };
+}
+
 // --- VALIDATION UTILS ---
 export function isValidUserFullName(fullName: any): boolean {
   if (typeof fullName !== "string") return false;

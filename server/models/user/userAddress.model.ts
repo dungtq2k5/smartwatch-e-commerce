@@ -46,14 +46,18 @@ const userAddressSchema = new mongoose.Schema(
     },
     location: {
       type: {
-        type: String,
-        enum: ["point"],
-        default: "point",
+        locationType: {
+          type: String,
+          enum: ["point"],
+          default: "point",
+        },
+        coordinates: {
+          type: [Number], // [longitude, latitude]
+          required: true,
+        },
       },
-      coordinates: {
-        type: [Number], // [longitude, latitude]
-        required: true,
-      },
+      required: true,
+      _id: false,
     },
     isDefault: {
       type: Boolean,

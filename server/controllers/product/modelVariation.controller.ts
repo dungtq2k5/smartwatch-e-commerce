@@ -5,6 +5,7 @@ import Product from "../../models/product/product.model";
 import ProductModel from "../../models/product/productModel.model";
 import {
   ModelVariationCreate,
+  ModelVariationListResponse,
   ModelVariationResponse,
   ModelVariationUpdate,
   SuccessResponse,
@@ -13,6 +14,7 @@ import ModelVariation from "../../models/product/modelVariation.model";
 import { RequestAuth } from "../../utils/types";
 import { formatModelVariationResponse } from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
+import { mergeNested } from "../../../common/utils.common";
 
 // --- COLOR VARIATION ---
 export async function create(
@@ -120,24 +122,49 @@ export async function get(
       return next(errorHandler(404, "Product model not found."));
     }
 
-    // Check variation id exists
-    if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product model variation not found."));
+    // Fetch single variation by ID
+    if (id) {
+      if (!Types.ObjectId.isValid(id)) {
+        return next(errorHandler(404, "Product model variation not found."));
+      }
+      const variation = await ModelVariation.findOne({
+        isDeleted: false,
+        _id: id,
+        productModelId: modelId,
+      }).lean();
+      if (!variation) {
+        return next(errorHandler(404, "Product model variation not found."));
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Product model variation retrieved successfully.",
+        data: formatModelVariationResponse(variation),
+      } as SuccessResponse<ModelVariationResponse>);
+      console.log("✅ ", "Product model variation retrieved successfully.");
+      return;
     }
-    const variation = await ModelVariation.findOne({
+
+    // Fetch all variations for the model
+    const variations = await ModelVariation.find({
       isDeleted: false,
-      _id: id,
       productModelId: modelId,
-    });
-    if (!variation) {
-      return next(errorHandler(404, "Product model variation not found."));
-    }
+    }).lean();
 
     res.status(200).json({
       success: true,
-      message: "Product model variation retrieved successfully.",
-      data: formatModelVariationResponse(variation),
-    } as SuccessResponse<ModelVariationResponse>);
+      message: "Product model variations retrieved successfully.",
+      data: {
+        variations: {
+          total: variations.length,
+          variations: variations.map(formatModelVariationResponse),
+        },
+        offset: 0,
+        limit: variations.length,
+        total: variations.length,
+      },
+    } as SuccessResponse<ModelVariationListResponse>);
+    console.log("✅ ", "Product model variations retrieved successfully.");
   } catch (error) {
     next(error);
   }
@@ -189,6 +216,19 @@ export async function update(
 
     // Business logic
     const updateData = req.body as ModelVariationUpdate;
+
+    // Check band.adjustableRange is valid since it is partial update
+    const updatedBandAdjustableRange = (updateData.band && updateData.band.adjustableRange)
+      ? mergeNested(variation.toObject().band.adjustableRange, updateData.band.adjustableRange)
+      : variation.toObject().band.adjustableRange;
+    if (updatedBandAdjustableRange.minMm > updatedBandAdjustableRange.maxMm) {
+      return next(
+        errorHandler(
+          400,
+          "Band adjustable range minimum cannot be greater than maximum."
+        )
+      );
+    }
 
     // Check name exists
     const updatedName = updateData.name || variation.name;
@@ -242,12 +282,7 @@ export async function update(
         updateData.band.colorsHex || variation.band.colorsHex;
       variation.band.claspType =
         updateData.band.claspType || variation.band.claspType;
-      variation.band.adjustableRangeMm = updateData.band.adjustableRangeMm
-        ? {
-            ...variation.toObject().band.adjustableRangeMm,
-            ...updateData.band.adjustableRangeMm,
-          }
-        : variation.band.adjustableRangeMm;
+      variation.band.adjustableRange = updatedBandAdjustableRange;
       variation.band.style = updateData.band.style || variation.band.style;
       variation.band.quickRelease =
         updateData.band.quickRelease ?? variation.band.quickRelease;

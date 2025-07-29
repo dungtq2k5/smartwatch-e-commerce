@@ -43,20 +43,21 @@ const modelVariationSchema = new mongoose.Schema(
           type: String,
           required: true,
         },
-        adjustableRangeMm: {
+        adjustableRange: {
           type: {
-            min: {
+            minMm: {
               type: Number,
               required: true,
               min: 0,
             },
-            max: {
+            maxMm: {
               type: Number,
               required: true,
               min: 0,
             },
           },
           required: true,
+          _id: false,
         },
         style: {
           type: String,
@@ -81,6 +82,7 @@ const modelVariationSchema = new mongoose.Schema(
         },
       },
       required: true,
+      _id: false,
     },
     stockQuantity: {
       type: Number,

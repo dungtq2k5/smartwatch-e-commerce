@@ -47,7 +47,6 @@ export default function App() {
         <Route path="/search" element={<SearchProduct />}></Route>
         <Route path="/products/:id" element={<ProductDetail />}></Route>
         {/*
-          TODO next...
           - product details page
         */}
 

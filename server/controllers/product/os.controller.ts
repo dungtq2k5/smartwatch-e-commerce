@@ -54,15 +54,34 @@ export async function create(
   }
 }
 
-export async function getAll(
+export async function get(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️ ", "Fetching all product os...");
+  console.log("▶️ ", "Fetching product os...");
+  const { id } = req.params;
 
   try {
-    const os = await ProductOs.find({ isDeleted: false });
+    // Fetch single os by ID
+    if (id) {
+      if (!Types.ObjectId.isValid(id)) {
+        return next(errorHandler(404, "Product os not found."));
+      }
+      const os = await ProductOs.findById(id).lean();
+      if (!os || os.isDeleted) {
+        return next(errorHandler(404, "Product os not found."));
+      }
+      res.status(200).json({
+        success: true,
+        message: "Product os fetched successfully.",
+        data: formatProductOsResponse(os),
+      } as SuccessResponse<ProductOsResponse>);
+      console.log("✅ ", "Product os fetched successfully.");
+      return;
+    }
+
+    const os = await ProductOs.find({ isDeleted: false }).lean();
 
     res.status(200).json({
       success: true,
@@ -72,8 +91,8 @@ export async function getAll(
           total: os.length,
           osList: os.map(formatProductOsResponse),
         },
-        offset: 0, // No pagination for this endpoint
-        limit: os.length, // Return all os
+        offset: 0,
+        limit: os.length,
         total: os.length,
       },
     } as SuccessResponse<ProductOsListResponse>);

@@ -5,7 +5,6 @@ import {
   AUTH_PROVIDER_OPTIONS,
   IMMUTABILITY_USER_EMAILS,
   PRODUCT_MOCK_OPTIONS,
-  PRODUCT_MODEL_VARIATION_TYPES,
   PROTECTED_USER_EMAILS,
   USER_GENDER_OPTIONS,
   VN_COUNTRY_CODE,
@@ -186,7 +185,7 @@ async function mockUserAddresses(
           phoneNumber,
           fullAddress: formatAddress(addressDetails),
           location: {
-            type: "point",
+            locationType: "point",
             coordinates: [
               parseFloat(faker.location.longitude().toFixed(6)),
               parseFloat(faker.location.latitude().toFixed(6)),
@@ -435,33 +434,49 @@ async function mockProductModels(
             stockPriceCents + faker.number.int({ min: 10_00, max: 100_00 }),
           stockPriceCents,
           imageUrls: genRandImgUrls(randNum(1, 5), imgSpecs),
-          displaySizeMm: faker.number.int({ min: 15, max: 25 }),
-          displayType: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.MODEL_DISPLAY_TYPE_OPTIONS
+          display: {
+            sizeMm: faker.number.int({ min: 15, max: 25 }),
+            displayType: faker.helpers.arrayElement(
+              PRODUCT_MOCK_OPTIONS.MODEL_DISPLAY_TYPE_OPTIONS
+            ),
+          },
+          resolution: {
+            hPx: faker.number.int({ min: 720, max: 2160 }),
+            wPx: faker.number.int({ min: 1280, max: 3840 }),
+          },
+          memory: {
+            ramBytes: faker.number.int({
+              min: 512_000_000,
+              max: 2_000_000_000,
+            }), // 512MB to 2GB
+            romBytes: faker.number.int({
+              min: 4_000_000_000,
+              max: 32_000_000_000,
+            }), // 4GB to 32GB
+          },
+          chipset: faker.helpers.arrayElement(
+            PRODUCT_MOCK_OPTIONS.MODEL_CHIPSET_OPTIONS
           ),
-          resolutionHPx: faker.number.int({ min: 720, max: 2160 }),
-          resolutionWPx: faker.number.int({ min: 1280, max: 3840 }),
-          ramBytes: faker.number.int({ min: 512_000_000, max: 2_000_000_000 }), // 512MB to 2GB
-          romBytes: faker.number.int({
-            min: 4_000_000_000,
-            max: 32_000_000_000,
-          }), // 4GB to 32GB
           osId: osId[randNum(0, osId.length - 1)]._id,
           connectivities: genArrayWithRandEles(
             PRODUCT_MOCK_OPTIONS.MODEL_CONNECTIVITY_OPTIONS as any,
             randNum(1, 3)
           ),
           batteryLifeMah: faker.number.int({ min: 200, max: 5000 }),
-          waterResistanceValue: faker.number.int({ min: 0, max: 100 }),
-          waterResistanceUnit: "m",
+          waterResistance: faker.helpers.arrayElement(
+            PRODUCT_MOCK_OPTIONS.MODEL_WATER_RESISTANCE_OPTIONS
+          ),
           sensors: genArrayWithRandEles(
             PRODUCT_MOCK_OPTIONS.MODEL_SENSORS_OPTIONS as any,
             randNum(1, 3)
           ),
           caseMaterial: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.MODAL_CASE_MATERIAL_OPTIONS
+            PRODUCT_MOCK_OPTIONS.MODEL_CASE_MATERIAL_OPTIONS
           ),
           weightMg: faker.number.int({ min: 50, max: 200 }),
+          compatibleBandLugWidthMm: faker.helpers.arrayElement(
+            PRODUCT_MOCK_OPTIONS.MODEL_COMPATIBLE_BAND_LUG_WIDTH_MM_OPTIONS
+          ),
           releaseDate: faker.date.past(),
           createdBy: appCache.systemUserId,
         };
@@ -517,47 +532,45 @@ async function mockModelVariations(
       const usedColorHexes = new Set<string>(); // Track used color hexes to ensure uniqueness
 
       for (let i = 0; i < count; i++) {
-        const type = faker.helpers.arrayElement(PRODUCT_MODEL_VARIATION_TYPES);
-        let variationDetails: any;
-
-        if (type === "color") {
-          variationDetails = {
-            additionalPriceCents: faker.number.int({ min: 0, max: 100_00 }),
-          };
-        } else if (type === "band") {
-          const stockPriceCents = faker.number.int({
-            min: 100_00,
-            max: 1000_00,
-          });
-          variationDetails = {
-            material: faker.helpers.arrayElement(
-              PRODUCT_MOCK_OPTIONS.VARIATION_BAND_MATERIAL_OPTIONS
-            ),
-            sizeMm: faker.number.int({ min: 10, max: 30 }),
-            weightMg: faker.number.int({ min: 50, max: 200 }),
-            priceCents:
-              stockPriceCents + faker.number.int({ min: 10_00, max: 100_00 }),
-            stockPriceCents,
-          };
-        }
-
         let colorHex: string;
         do {
           colorHex = faker.color.rgb({ format: "hex" });
-        } while (usedColorHexes.has(`${type}:${colorHex}`));
-        usedColorHexes.add(`${type}:${colorHex}`);
+        } while (usedColorHexes.has(colorHex));
+        usedColorHexes.add(colorHex);
+
+        const band = {
+          lugWidthMm: model.compatibleBandLugWidthMm,
+          material: faker.helpers.arrayElement(
+            PRODUCT_MOCK_OPTIONS.VARIATION_BAND_MATERIAL_OPTIONS
+          ),
+          colorsHex: genRandHexColors(randNum(1, 3)),
+          claspType: faker.helpers.arrayElement(
+            PRODUCT_MOCK_OPTIONS.VARIATION_BAND_CLASP_TYPE_OPTIONS
+          ),
+          adjustableRange: {
+            minMm: faker.number.int({ min: 130, max: 160 }),
+            maxMm: faker.number.int({ min: 170, max: 210 }),
+          },
+          style: faker.helpers.arrayElement(
+            PRODUCT_MOCK_OPTIONS.VARIATION_BAND_STYLE_OPTIONS
+          ),
+          quickRelease: faker.datatype.boolean(),
+          waterResistance: faker.datatype.boolean(),
+          hypoallergenic: faker.datatype.boolean(),
+          weightMg: faker.number.int({ min: 20, max: 50 }),
+        };
 
         const variation = {
           productModelId: model._id,
-          type,
           name: `${faker.commerce.productName()} ${faker.string.alphanumeric(
             5
           )}`, // unique
           colorHex, // unique
           imageUrls: genRandImgUrls(randNum(1, 5), imgSpecs),
+          additionalPriceCents: faker.number.int({ min: 0, max: 100_00 }),
+          band,
           stockQuantity: faker.number.int({ min: 0, max: 50 }),
           createdBy: appCache.systemUserId,
-          ...variationDetails,
         };
 
         variationsToCreate.push(variation);
@@ -770,4 +783,12 @@ function genRandImgUrls(
 function genArrayWithRandEles(eles: any[], count: number): any[] {
   const shuffled = eles.sort(() => 0.5 - Math.random());
   return shuffled.slice(0, count);
+}
+
+function genRandHexColors(count: number): string[] {
+  const colors: string[] = [];
+  for (let i = 0; i < count; i++) {
+    colors.push(faker.color.rgb({ format: "hex" }));
+  }
+  return colors;
 }

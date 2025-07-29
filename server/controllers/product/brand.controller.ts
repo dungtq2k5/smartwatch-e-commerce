@@ -54,15 +54,35 @@ export async function create(
   }
 }
 
-export async function getAll(
+export async function get(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️ ", "Fetching all product brands...");
+  console.log("▶️ ", "Fetching product brands...");
+  const { id } = req.params;
 
   try {
-    const brands = await ProductBrand.find({ isDeleted: false });
+    // Fetch single brand by ID
+    if (id) {
+      if (!Types.ObjectId.isValid(id)) {
+        return next(errorHandler(404, "Product brand not found."));
+      }
+      const brand = await ProductBrand.findById(id).lean();
+      if (!brand || brand.isDeleted) {
+        return next(errorHandler(404, "Product brand not found."));
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Product brand fetched successfully.",
+        data: formatProductBrandResponse(brand),
+      } as SuccessResponse<ProductBrandResponse>);
+      console.log("✅ ", "Product brand fetched successfully.");
+      return;
+    }
+
+    const brands = await ProductBrand.find({ isDeleted: false }).lean();
 
     res.status(200).json({
       success: true,
