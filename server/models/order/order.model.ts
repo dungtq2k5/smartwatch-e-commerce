@@ -43,6 +43,7 @@ const orderItemSchema = new mongoose.Schema(
     },
     quantity: {
       type: Number,
+      required: false,
       default: 1,
       min: 1,
     },
@@ -87,18 +88,24 @@ const deliveryAddressSchema = new mongoose.Schema(
     },
     countryCode: {
       type: String,
+      required: false,
       default: VN_COUNTRY_CODE,
     },
     location: {
       type: {
-        type: String,
-        enum: ["Point"],
-        default: "Point",
+        locationType: {
+          type: String,
+          enum: ["point"],
+          required: false,
+          default: "point",
+        },
+        coordinates: {
+          type: [Number], // [longitude, latitude]
+          required: true,
+        },
       },
-      coordinates: {
-        type: [Number], // [longitude, latitude]
-        required: true,
-      },
+      required: true,
+      _id: false,
     },
     phoneNumber: {
       type: String,
@@ -139,6 +146,8 @@ const orderSchema = new mongoose.Schema(
     },
     receivedDate: {
       type: Date,
+      required: false,
+      default: null,
     },
     deliveryAddress: {
       type: deliveryAddressSchema,

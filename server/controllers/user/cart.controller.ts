@@ -22,9 +22,11 @@ export async function getSelfAll(
   const { userId } = req["auth"] as RequestAuth;
 
   try {
-    const carts = await Cart.find({ userId }).sort({
-      createdAt: -1,
-    });
+    const carts = await Cart.find({ userId })
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -46,10 +48,7 @@ export async function createSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing create user cart request...");
-  const {
-    variationId,
-    quantity
-  } = req.body as UserCartCreate;
+  const { variationId, quantity } = req.body as UserCartCreate;
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -58,9 +57,9 @@ export async function createSelf(
     if (!Types.ObjectId.isValid(variationId)) {
       return next(errorHandler(404, "Variation not found."));
     }
-    const variation = await ModelVariation.findById(variationId).session(
-      session
-    );
+    const variation = await ModelVariation.findById(variationId)
+      .lean()
+      .session(session);
     if (!variation || variation.isDeleted) {
       return next(errorHandler(404, "Variation not found."));
     }
@@ -74,9 +73,9 @@ export async function createSelf(
       variationId,
     }).session(session);
     const totalQuantity = existingCart
-      ? existingCart.quantity + (quantity || 1)
+      ? existingCart.quantity! + (quantity || 1)
       : quantity || 1;
-    if (totalQuantity > variation.stockQuantity) {
+    if (totalQuantity > variation.stockQuantity!) {
       return next(
         errorHandler(
           400,
@@ -129,7 +128,7 @@ export async function updateSelf(
     if (!Types.ObjectId.isValid(variationId)) {
       return next(errorHandler(404, "Variation not found."));
     }
-    const variation = await ModelVariation.findById(variationId);
+    const variation = await ModelVariation.findById(variationId).lean();
     if (!variation || variation.isDeleted) {
       return next(errorHandler(404, "Variation not found."));
     }
@@ -146,7 +145,7 @@ export async function updateSelf(
 
     // Business logic
     const quantity = req.body.quantity as number;
-    if (quantity > variation.stockQuantity) {
+    if (quantity > variation.stockQuantity!) {
       return next(
         errorHandler(
           400,
@@ -191,7 +190,7 @@ export async function removeSelf(
     if (!Types.ObjectId.isValid(variationId)) {
       return next(errorHandler(404, "Variation not found."));
     }
-    const variation = await ModelVariation.findById(variationId);
+    const variation = await ModelVariation.findById(variationId).lean();
     if (!variation || variation.isDeleted) {
       return next(errorHandler(404, "Variation not found."));
     }

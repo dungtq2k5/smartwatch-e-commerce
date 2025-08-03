@@ -18,10 +18,11 @@ export const USER_UPDATE_SELF_PASSWORD = `${USER_URL}/me/password`;
 export const USER_SET_SELF_PASSWORD = `${USER_URL}/me/set-password`;
 export const USER_DELETE_ACCOUNT = `${USER_URL}/me`;
 
-const PRODUCT_URL = `${ROOT_URL}/products`;
+export const PRODUCT_URL = `${ROOT_URL}/products`;
 export const PRODUCT_SEARCH_URL = PRODUCT_URL;
 export const PRODUCT_CATEGORIES_URL = `${PRODUCT_URL}-categories`;
 export const PRODUCT_BRANDS_URL = `${PRODUCT_URL}-brands`;
+export const PRODUCT_OS_URL = `${PRODUCT_URL}-oses`;
 
 export const AVATAR_HINT_MESSAGE = `
   File size: maximum 5MB.

@@ -36,8 +36,8 @@ export async function create(
     const { userId } = req["auth"] as RequestAuth;
     const os = new ProductOs({
       name,
-      logoUrl: logoUrl || undefined,
-      description: description || undefined,
+      logoUrl,
+      description,
       createdBy: userId,
     });
 
@@ -63,40 +63,47 @@ export async function get(
   const { id } = req.params;
 
   try {
-    // Fetch single os by ID
-    if (id) {
-      if (!Types.ObjectId.isValid(id)) {
-        return next(errorHandler(404, "Product os not found."));
-      }
-      const os = await ProductOs.findById(id).lean();
-      if (!os || os.isDeleted) {
-        return next(errorHandler(404, "Product os not found."));
-      }
-      res.status(200).json({
-        success: true,
-        message: "Product os fetched successfully.",
-        data: formatProductOsResponse(os),
-      } as SuccessResponse<ProductOsResponse>);
-      console.log("✅ ", "Product os fetched successfully.");
-      return;
+    if (!Types.ObjectId.isValid(id)) {
+      return next(errorHandler(404, "Product os not found."));
     }
-
-    const os = await ProductOs.find({ isDeleted: false }).lean();
-
+    const os = await ProductOs.findById(id).lean();
+    if (!os || os.isDeleted) {
+      return next(errorHandler(404, "Product os not found."));
+    }
     res.status(200).json({
       success: true,
       message: "Product os fetched successfully.",
+      data: formatProductOsResponse(os),
+    } as SuccessResponse<ProductOsResponse>);
+    console.log("✅ ", "Product os fetched successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAll(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Fetching all product os...");
+  try {
+    const oses = await ProductOs.find({ isDeleted: false }).lean();
+
+    res.status(200).json({
+      success: true,
+      message: "Product oses fetched successfully.",
       data: {
-        osList: {
-          total: os.length,
-          osList: os.map(formatProductOsResponse),
+        oses: {
+          total: oses.length,
+          oses: oses.map(formatProductOsResponse),
         },
         offset: 0,
-        limit: os.length,
-        total: os.length,
+        limit: oses.length,
+        total: oses.length,
       },
     } as SuccessResponse<ProductOsListResponse>);
-    console.log("✅ ", "Product os fetched successfully.");
+    console.log("✅ ", "Product oses fetched successfully.");
   } catch (error) {
     next(error);
   }
@@ -124,13 +131,6 @@ export async function update(
     const updateData = req.body as ProductOsUpdate;
 
     const updatedName = updateData.name || os.name;
-    const updatedLogoUrl =
-      updateData.logoUrl === null
-        ? undefined
-        : updateData.logoUrl || (os.logoUrl as string | undefined);
-    const updatedDescription =
-      updateData.description || (os.description as string | undefined);
-
     if (updatedName !== os.name) {
       const existingOs = await ProductOs.findOne({
         isDeleted: false,
@@ -141,13 +141,18 @@ export async function update(
       }
     }
 
+    const updatedLogoUrl =
+      updateData.logoUrl === null ? null : updateData.logoUrl || os.logoUrl;
     if (updatedLogoUrl !== os.logoUrl && os.logoUrl) {
       await deleteFileFromFirebaseStorage(os.logoUrl, "product-image");
     }
 
     os.name = updatedName;
     os.logoUrl = updatedLogoUrl;
-    os.description = updatedDescription;
+    os.description =
+      updateData.description === null
+        ? null
+        : updateData.description || os.description;
 
     await os.save();
 
@@ -203,7 +208,9 @@ async function hasConstraints(osId: Types.ObjectId): Promise<boolean> {
       Blocking constraints:
         - ProductModel (osId)
     */
-    const constraintChecks = [ProductModel.exists({ osId })];
+    const constraintChecks = [
+      ProductModel.exists({ "config.osId": osId })
+    ];
 
     const results = await Promise.all(constraintChecks);
     const hasConstraints = results.some((result) => result !== null);

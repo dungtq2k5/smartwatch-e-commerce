@@ -1,8 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
-import { PASSWORD_HINT_MESSAGE } from "../../../common/configs.common";
+import {
+  PASSWORD_HINT_MESSAGE,
+  USER_GENDER_OPTIONS,
+} from "../../../common/configs.common";
 import type { FormInput } from "../utils/types";
 import { useCallback, useRef, useState } from "react";
 import {
+  capFirstLetter,
+  isValidBirthDate,
   isValidEmail,
   isValidPassword,
   isValidUserFullName,
@@ -22,6 +27,8 @@ type FormData = {
   emailOrPhone: FormInput;
   password: FormInput;
   confirmPassword: FormInput;
+  birth: FormInput;
+  gender: (typeof USER_GENDER_OPTIONS)[number];
 };
 
 export default function Signup() {
@@ -35,13 +42,24 @@ export default function Signup() {
     emailOrPhone: { val: "" },
     password: { val: "" },
     confirmPassword: { val: "" },
+    birth: { val: "" },
+    gender: "other",
   });
   const { signup, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>): void => {
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
       const { name, value: val } = e.target;
+
+      if (name === "gender") {
+        // select input
+        setFormData((prev) => ({
+          ...prev,
+          gender: val as (typeof USER_GENDER_OPTIONS)[number],
+        }));
+        return;
+      }
 
       let err = "";
       if (!val) {
@@ -64,6 +82,8 @@ export default function Signup() {
         }
       } else if (name === "confirmPassword" && val !== formData.password.val) {
         err = "Confirm password must match the password above";
+      } else if (name === "birth" && !isValidBirthDate(val)) {
+        err = "Birth date is invalid";
       }
 
       setFormData((prev) => ({
@@ -119,6 +139,13 @@ export default function Signup() {
             "Confirm password must match the password above";
           allValid = false;
         }
+        if (!newFormData.birth.val) {
+          newFormData.birth.err = "Birth date is required";
+          allValid = false;
+        } else if (!isValidBirthDate(newFormData.birth.val)) {
+          newFormData.birth.err = "Birth date is invalid";
+          allValid = false;
+        }
 
         setFormData(newFormData);
         return allValid;
@@ -132,6 +159,8 @@ export default function Signup() {
           fullName: formData.fullName.val,
           [emailOrPhone]: formData.emailOrPhone.val,
           password: formData.password.val,
+          birth: formData.birth.val,
+          gender: formData.gender,
         } as unknown as UserSignup;
 
         try {
@@ -214,7 +243,7 @@ export default function Signup() {
           </div>
         </div>
         {/* Password Confirm */}
-        <div className="form-floating mb-4">
+        <div className="form-floating mb-3">
           <input
             type="password"
             className="form-control"
@@ -236,6 +265,41 @@ export default function Signup() {
           <div id="confirmPasswordHelp" className="form-text mt-1">
             Confirm password must match the password above.
           </div>
+        </div>
+        {/* Birth */}
+        <div className="form-floating mb-3">
+          <input
+            type="date"
+            className="form-control"
+            id="birth"
+            name="birth"
+            value={formData.birth.val}
+            onChange={handleChange}
+          />
+          <label htmlFor="birth">Birth date</label>
+          {formData.birth.err && (
+            <div className="text-danger small mt-1">
+              <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+              {formData.birth.err}
+            </div>
+          )}
+        </div>
+        {/* Gender */}
+        <div className="form-floating mb-4">
+          <select
+            className="form-select"
+            id="gender"
+            name="gender"
+            value={formData.gender}
+            onChange={handleChange}
+          >
+            {USER_GENDER_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {capFirstLetter(option)}
+              </option>
+            ))}
+          </select>
+          <label htmlFor="gender">Gender</label>
         </div>
 
         <div className="d-flex gap-2 flex-column mb-4">

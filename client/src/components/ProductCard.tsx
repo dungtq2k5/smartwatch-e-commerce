@@ -12,6 +12,7 @@ const ProductCard = memo(({
         src={product.imageUrls[0] || defaultProductImg}
         className="card-img-top product-img--g mt-2"
         alt={product.name}
+        loading="lazy"
       />
       <div className="card-body d-flex flex-column justify-content-between">
         <p className="card-title">{product.name}</p>

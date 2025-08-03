@@ -40,7 +40,7 @@ import mongoose, { Types } from "mongoose";
 import { deleteFileFromFirebaseStorage } from "../../utils/firebase";
 import Otp from "../../models/user/otp.model";
 import PasswordResetToken from "../../models/user/passwordResetToken.model";
-import { VERIFICATION_CODE_TTL } from "../../../common/configs.common";
+import { USER_GENDER_OPTIONS, VERIFICATION_CODE_TTL } from "../../../common/configs.common";
 import { RequestAuth } from "../../utils/types";
 import Role from "../../models/role/role.model";
 import Order from "../../models/order/order.model";
@@ -183,7 +183,7 @@ export async function get(
     if (!Types.ObjectId.isValid(userId)) {
       return next(errorHandler(404, "User not found."));
     }
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).lean();
     if (!user || user.isDeleted) {
       return next(errorHandler(404, "User not found."));
     }
@@ -250,38 +250,43 @@ export async function search(
             { $sort: sortStage },
             { $skip: offset },
             { $limit: limit },
-            {
-              $project: {
-                id: "$_id", // Rename _id to id
-                _id: 0, // Exclude _id from the output
-                fullName: 1,
-                avatarUrl: 1,
-                email: 1,
-                isEmailVerified: 1,
-                phoneNumber: 1,
-                isPhoneNumberVerified: 1,
-                stripeCustomerId: 1,
-                userBalanceCents: 1,
-                lastLogin: 1,
-                createdAt: 1,
-                updatedAt: 1,
-                isLocked: 1,
-              },
-            },
+            // {
+            //   $project: {
+            //     id: "$_id", // Rename _id to id
+            //     _id: 0, // Exclude _id from the output
+            //     fullName: 1,
+            //     avatarUrl: 1,
+            //     email: 1,
+            //     isEmailVerified: 1,
+            //     phoneNumber: 1,
+            //     isPhoneNumberVerified: 1,
+            //     stripeCustomerId: 1,
+            //     userBalanceCents: 1,
+            //     lastLogin: 1,
+            //     createdAt: 1,
+            //     updatedAt: 1,
+            //     isLocked: 1,
+            //   },
+            // },
           ],
         },
       },
     ]);
 
-    const users = aggregationResult[0].data;
-    const totalUsers = aggregationResult[0].metadata[0]?.total || 0;
+    const users: AdminUserResponse[] = aggregationResult[0].data.map(
+      (user: any) => formatAdminUserResponse(user)
+    );
+    const total = aggregationResult[0].metadata[0]?.total || 0;
 
     res.status(200).json({
       success: true,
       message: "Users retrieved successfully",
       data: {
-        total: totalUsers,
-        users: users,
+        total,
+        users: {
+          total: users.length,
+          users,
+        },
         offset,
         limit,
       },
@@ -331,22 +336,31 @@ export async function updateGeneralInfo(
 
     const updatedAvatarUrl =
       updateData.avatarUrl === null
-        ? undefined
-        : updateData.avatarUrl || (user.avatarUrl as string | undefined);
-    const updatedPassword =
-      updateData.password !== undefined
-        ? await bcrypt.hash(updateData.password, HASH_SALT)
-        : user.password;
-    const updatedIsLocked =
-      updateData.isLocked !== undefined ? updateData.isLocked : user.isLocked;
+        ? null
+        : updateData.avatarUrl || (user.avatarUrl as string | null);
+    const updatedPassword = updateData.password
+      ? await bcrypt.hash(updateData.password, HASH_SALT)
+      : user.password;
+    const updatedIsLocked = updateData.isLocked ?? (user.isLocked as boolean);
 
     if (user.avatarUrl !== updatedAvatarUrl && user.avatarUrl) {
       await deleteFileFromFirebaseStorage(user.avatarUrl, "user-avatar");
     }
 
     const updatedRoleIds = updateData.roleIds;
-    if (updatedRoleIds) {
-      const currentRoleIds = user.roles.map(
+    if (updatedRoleIds === null) {
+      // If roleIds is null, remove all roles
+      if (user.roles && user.roles.length > 0) {
+        const roleIdsToRemove = user.roles.map((role) => role.id);
+        await Role.updateMany(
+          { _id: { $in: roleIdsToRemove } },
+          { $inc: { userAssigned: -1 } },
+          { session }
+        );
+        user.roles.splice(0, user.roles.length); // Clear roles
+      }
+    } else if (updatedRoleIds) {
+      const currentRoleIds = user.roles!.map(
         (role) => role.id.toString() as string
       );
 
@@ -374,7 +388,7 @@ export async function updateGeneralInfo(
         const reqUserId = new Types.ObjectId(
           (req["auth"] as RequestAuth).userId
         );
-        user.roles.push(
+        user.roles!.push(
           ...rolesToAdd.map((id) => ({
             id: new Types.ObjectId(id),
             assignedBy: reqUserId,
@@ -389,7 +403,7 @@ export async function updateGeneralInfo(
           { session }
         );
         rolesToRemove.forEach((removeId) => {
-          user.roles.pull({ id: new Types.ObjectId(removeId) });
+          user.roles!.pull({ id: new Types.ObjectId(removeId) });
         });
       }
     }
@@ -465,14 +479,9 @@ export async function updateEmail(
 
     // Business logic
     const { email, isEmailVerified } = req.body as UserUpdateEmail;
-    const updatedEmail =
-      email !== undefined
-        ? email === null
-          ? undefined
-          : email
-        : (user.email as string | undefined);
+    const updatedEmail = email === null ? null : email || user.email;
     const updatedIsEmailVerified =
-      isEmailVerified !== undefined ? isEmailVerified : user.isEmailVerified;
+      isEmailVerified ?? (user.isEmailVerified as boolean);
 
     const existingUser = await User.findOne({
       _id: { $ne: user._id }, // Exclude current user
@@ -573,16 +582,11 @@ export async function updatePhoneNumber(
     // Business logic
     const { phoneNumber, isPhoneNumberVerified } =
       req.body as UserUpdatePhoneNumber;
+
     const updatedPhoneNumber =
-      phoneNumber !== undefined
-        ? phoneNumber === null
-          ? undefined
-          : phoneNumber
-        : (user.phoneNumber as string | undefined);
+      phoneNumber === null ? null : phoneNumber || user.phoneNumber;
     const updatedIsPhoneNumberVerified =
-      isPhoneNumberVerified !== undefined
-        ? isPhoneNumberVerified
-        : user.isPhoneNumberVerified;
+      isPhoneNumberVerified ?? (user.isPhoneNumberVerified as boolean);
 
     const existingUser = await User.findOne({
       _id: { $ne: user._id }, // Exclude current user
@@ -851,7 +855,10 @@ export async function deleteSelf(
   session.startTransaction();
 
   try {
-    const user = (await User.findById(userId).session(session))!;
+    const user = await User.findById(userId).session(session);
+    if (!user || user.isDeleted) {
+      return next(errorHandler(404, "User not found."));
+    }
 
     await executeDeletion(user, reqUser._id, session);
 
@@ -909,23 +916,19 @@ export async function updateSelfGeneralInfo(
 
   try {
     // Business logic
-    const updatedBirth = birth ? new Date(birth) : user.birth;
+    const updatedBirth = birth ? new Date(birth) : user.birth as Date;
     if (updatedBirth !== user.birth && updatedBirth > new Date()) {
       return next(errorHandler(400, "Birth date cannot be in the future."));
     }
 
-    const updatedFullName = fullName !== undefined ? fullName : user.fullName;
     const updatedAvatarUrl =
-      avatarUrl === null
-        ? undefined
-        : avatarUrl || (user.avatarUrl as string | undefined);
-
+      avatarUrl === null ? null : avatarUrl || user.avatarUrl as string | null;
     if (user.avatarUrl !== updatedAvatarUrl && user.avatarUrl) {
       await deleteFileFromFirebaseStorage(user.avatarUrl, "user-avatar");
     }
 
     // Save changes
-    user.fullName = updatedFullName;
+    user.fullName = fullName || user.fullName;
     user.avatarUrl = updatedAvatarUrl;
     user.birth = updatedBirth;
     user.gender = gender || user.gender;

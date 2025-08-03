@@ -91,7 +91,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user, isAuth });
       console.log("User authenticated:", user); // DEV temp for testing
     } catch {
-      // Do nothing if the user is not authenticated
+      set({ user: undefined, isAuth: false });
     } finally {
       set({ isCheckingAuth: undefined });
     }

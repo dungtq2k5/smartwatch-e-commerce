@@ -68,7 +68,8 @@ export async function get(
     if (!Types.ObjectId.isValid(id)) {
       return next(errorHandler(404, "Provider not found."));
     }
-    const provider = await Provider.findById(id);
+
+    const provider = await Provider.findById(id).lean();
     if (!provider || provider.isDeleted) {
       return next(errorHandler(404, "Provider not found."));
     }

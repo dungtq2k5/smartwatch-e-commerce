@@ -1,6 +1,9 @@
-BackEnd:
-  - Change and modify some fields of productModel and modelVariation for more robust.
-  - Modify get function to handle get all of all model which are related to product model.
-  - Fix spread operator case in productModel and modelVariation update function.
-  - Modify conditional statements when check nested fields in product middleware.
-FrontEnd:
+refactor: update backend and frontend for improved consistency and robustness
+
+- Remove toISOString() and toString() from format functions in utils.ts; handled by res.json().
+- Return band, category, and os objects instead of their IDs in product and productModel via virtuals.
+- Use lean() in all controllers where possible.
+- Fix minor bugs.
+- Refactor request handling to accept both null and undefined for optional fields; responses now consistently return values or null.
+- Update schema fields with nested objects for greater robustness and realism.
+- Apply frontend changes to align with updated API.

@@ -39,14 +39,16 @@ export async function getAll(
     if (!Types.ObjectId.isValid(userId)) {
       return next(errorHandler(404, "User not found."));
     }
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).lean();
     if (!user || user.isDeleted) {
       return next(errorHandler(404, "User not found."));
     }
 
-    const addresses = await UserAddress.find({ userId }).sort({
-      createdAt: -1,
-    });
+    const addresses = await UserAddress.find({ userId })
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -86,7 +88,7 @@ export async function create(
     if (!Types.ObjectId.isValid(userId)) {
       return next(errorHandler(404, "User not found."));
     }
-    const user = await User.findById(userId).session(session);
+    const user = await User.findById(userId).lean().session(session);
     if (!user || user.isDeleted) {
       return next(errorHandler(404, "User not found."));
     }
@@ -123,7 +125,7 @@ export async function create(
     } else {
       // Case when first address create but isDefault = false
       const addressCount = await UserAddress.countDocuments({
-        userId
+        userId,
       }).session(session);
       if (addressCount === 0) {
         return next(
@@ -176,9 +178,11 @@ export async function getSelfAll(
   const { userId } = req["auth"] as RequestAuth;
 
   try {
-    const addresses = await UserAddress.find({ userId }).sort({
-      createdAt: -1,
-    });
+    const addresses = await UserAddress.find({ userId })
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -285,7 +289,9 @@ export async function update(
      */
     if (updatedIsDefault !== address.isDefault) {
       if (updatedIsDefault === false && address.isDefault === true) {
-        return next(errorHandler(409, "Can't update default address to false."));
+        return next(
+          errorHandler(409, "Can't update default address to false.")
+        );
       } else {
         await UserAddress.updateMany(
           { userId: targetUserId, isDefault: true },
@@ -293,7 +299,7 @@ export async function update(
           { session }
         );
       }
-      }
+    }
 
     address.name = updatedName;
     address.street = updatedStreet;
@@ -424,7 +430,6 @@ export async function createSelf(
       districtCode,
       cityProvinceCode,
       location: {
-        type: "point",
         coordinates: [location.longitude, location.latitude],
       },
       phoneNumber,
@@ -467,7 +472,7 @@ export async function getSelf(
     const address = await UserAddress.findOne({
       _id: addressId,
       userId,
-    });
+    }).lean();
     if (!address) {
       return next(errorHandler(404, "Address not found."));
     }

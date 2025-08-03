@@ -13,6 +13,7 @@ const rolePermission = new mongoose.Schema(
     },
     assignedAt: {
       type: Date,
+      required: false,
       default: Date.now,
     },
     assignedBy: {
@@ -34,11 +35,13 @@ const roleSchema = new mongoose.Schema(
     },
     userAssigned: {
       type: Number,
+      required: false,
       default: 0,
       min: 0,
     },
     permissions: {
       type: [rolePermission],
+      required: false,
       default: [],
     },
     createdBy: {

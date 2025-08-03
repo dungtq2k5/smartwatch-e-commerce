@@ -10,6 +10,7 @@ import {
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "./configs.common.ts";
+import type { DeepPartial } from "./types.common.ts";
 import { districts, wards, provinces } from "./vnAddresses.ts";
 
 export function removeOddSpaces(val: string): string {
@@ -114,18 +115,124 @@ export function randNum(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export function mergeNested(original: any, update: any): any {
-  if (!update) {
-    return original;
-  }
-  const cleanedUpdate = Object.entries(update).reduce((acc, [key, value]) => {
-    if (value !== undefined) {
-      acc[key] = value;
-    }
-    return acc;
-  }, {});
+/**
+ * Checks if an item is a non-array object (since null or array is also an object).
+ * @param item - The item to check.
+ * @returns True if the item is a non-array object, false otherwise.
+ */
+export const isNoneArrObj = (item: any): item is Record<string, any> => {
+  return (
+    item && typeof item === "object" && item !== null && !Array.isArray(item)
+  );
+};
 
-  return { ...original, ...cleanedUpdate };
+/**
+ * Recursively removes keys from an object that have `undefined` values or are empty objects.
+ * Keys with `null` values are kept.
+ * @param obj The object to clean.
+ * @returns The cleaned object.
+ */
+export function cleanObj<T extends object>(obj: T): T {
+  const newObj = { ...obj };
+
+  for (const key in newObj) {
+    if (Object.hasOwn(newObj, key)) {
+      const value = newObj[key as keyof T];
+
+      if (isNoneArrObj(value)) {
+        // Recursively clean nested objects
+        const cleanedValue = cleanObj(value);
+        // If the nested object is empty after cleaning, remove it
+        if (Object.keys(cleanedValue).length === 0) {
+          delete newObj[key as keyof T];
+        } else {
+          newObj[key as keyof T] = cleanedValue as T[keyof T];
+        }
+      } else if (value === undefined) {
+        // Remove keys with undefined values
+        delete newObj[key as keyof T];
+      }
+    }
+  }
+  return newObj;
+}
+
+/**
+ * Deeply merges two objects, giving precedence to defined properties in the source object.
+ * Undefined properties in the source object are ignored. After merging, it recursively
+ * removes any keys that have `undefined` values or are empty objects.
+ *
+ * @param target - The original object to merge into.
+ * @param source - The object containing updated properties.
+ * @returns A new object with deeply merged and cleaned properties.
+ */
+export function deepMerge<T extends object>(
+  target: T,
+  source?: DeepPartial<T>
+): T {
+  if (!source) return target;
+
+  const output = { ...target };
+
+  for (const key in source) {
+    if (Object.hasOwn(source, key)) {
+      const sourceValue = source[key as keyof T];
+      const targetValue = output[key as keyof T];
+
+      if (sourceValue === undefined) {
+        continue; // Skip undefined properties in the source
+      }
+
+      // If both the target and source values are objects, recursively merge them
+      if (isNoneArrObj(targetValue) && isNoneArrObj(sourceValue)) {
+        output[key as keyof T] = deepMerge(targetValue, sourceValue);
+      }
+      // Otherwise, assign the value from the source
+      else {
+        output[key as keyof T] = sourceValue as T[keyof T];
+      }
+    }
+  }
+
+  return cleanObj(output);
+}
+
+/**
+ * Merges the properties of a source object into a target object at a shallow level.
+ * It ignores properties with `undefined` values in the source object.
+ * Unlike `deepMerge`, it does not recursively merge nested objects; it replaces them.
+ *
+ * @param target - The original object to merge into.
+ * @param source - The object containing updated properties.
+ * @returns A new object with shallowly merged properties.
+ */
+export function shallowMerge<T extends object>(
+  target: T,
+  source?: Partial<T>
+): T {
+  if (!source) return target;
+
+  const output = { ...target };
+
+  for (const key in source) {
+    if (Object.hasOwn(source, key)) {
+      const sourceValue = source[key as keyof T];
+
+      if (sourceValue !== undefined) {
+        output[key as keyof T] = sourceValue as T[keyof T];
+      }
+    }
+  }
+
+  return output;
+}
+
+export function bytesToMB(bytes: number): string {
+  if (bytes < 0) {
+    throw new Error("Bytes cannot be negative");
+  }
+  const mb = bytes / (1024 * 1024);
+  return mb.toFixed(2); // Return as a string with 2 decimal places
 }
 
 // --- VALIDATION UTILS ---
@@ -231,6 +338,18 @@ export function isValidListOfColorsHex(colors: any): boolean {
   if (!Array.isArray(colors)) return false;
 
   return colors.every((color) => isValidColorHex(color));
+}
+
+// List of colors with name and hex
+export function isValidListOfColorObj(colors: any): boolean {
+  if (!Array.isArray(colors)) return false;
+
+  return colors.every(
+    (color) =>
+      isValidColorHex(color.hex) &&
+      typeof color.name === "string" &&
+      !!color.name.trim()
+  );
 }
 
 export function containsEmoji(text: any): boolean {

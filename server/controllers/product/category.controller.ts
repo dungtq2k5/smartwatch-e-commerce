@@ -35,7 +35,7 @@ export async function create(
     const { userId } = req["auth"] as RequestAuth;
     const category = new ProductCategory({
       name,
-      description: description || undefined,
+      description,
       createdBy: userId,
     });
 
@@ -61,25 +61,33 @@ export async function get(
   const { id } = req.params;
 
   try {
-    // Fetch single category by ID
-    if (id) {
-      if (!Types.ObjectId.isValid(id)) {
-        return next(errorHandler(404, "Product category not found."));
-      }
-      const category = await ProductCategory.findById(id).lean();
-      if (!category || category.isDeleted) {
-        return next(errorHandler(404, "Product category not found."));
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "Product category fetched successfully.",
-        data: formatProductCategoryResponse(category),
-      } as SuccessResponse<ProductCategoryResponse>);
-      console.log("✅ ", "Product category fetched successfully.");
-      return;
+    if (!Types.ObjectId.isValid(id)) {
+      return next(errorHandler(404, "Product category not found."));
+    }
+    const category = await ProductCategory.findById(id).lean();
+    if (!category || category.isDeleted) {
+      return next(errorHandler(404, "Product category not found."));
     }
 
+    res.status(200).json({
+      success: true,
+      message: "Product category fetched successfully.",
+      data: formatProductCategoryResponse(category),
+    } as SuccessResponse<ProductCategoryResponse>);
+    console.log("✅ ", "Product category fetched successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAll(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Fetching all product categories...");
+
+  try {
     const categories = await ProductCategory.find({ isDeleted: false }).lean();
 
     res.status(200).json({
@@ -123,9 +131,6 @@ export async function update(
     const updateData = req.body as ProductCategoryUpdate;
 
     const updatedName = updateData.name || category.name;
-    const updatedDescription =
-      updateData.description || (category.description as string | undefined);
-
     if (updatedName !== category.name) {
       const existingCategory = await ProductCategory.findOne({
         isDeleted: false,
@@ -137,7 +142,10 @@ export async function update(
     }
 
     category.name = updatedName;
-    category.description = updatedDescription;
+    category.description =
+      updateData.description === null
+        ? null
+        : updateData.description || category.description;
 
     await category.save();
 

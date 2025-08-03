@@ -33,14 +33,19 @@ const providerSchema = new mongoose.Schema(
     },
     isDeleted: {
       type: Boolean,
+      required: false,
       default: false,
     },
     deletedAt: {
       type: Date,
+      required: false,
+      default: null,
     },
     deletedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: false,
+      default: null,
     },
   },
   { timestamps: true }

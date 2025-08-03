@@ -6,14 +6,22 @@ import {
   isValidColorHex,
   isValidNumString,
   isValidListOfColorsHex,
+  removeAllSpaces,
+  isValidListOfColorObj,
+  isNoneArrObj,
 } from "../../../common/utils.common";
 import {
   PRODUCT_NAME_MAX_LENGTH,
   PRODUCT_NAME_MIN_LENGTH,
   PRODUCT_SEARCH_SORT_OPTIONS,
+  PRODUCT_TYPES,
 } from "../../../common/configs.common";
 import { errorHandler } from "../errorHandler";
-import { isArrayOfStrings, isValidImgUrls } from "../../utils/utils";
+import {
+  isArrayOfNonEmptyStrings,
+  isPresent,
+  isValidImgUrls,
+} from "../../utils/utils";
 
 function sanitizeProductInput(
   req: Request,
@@ -21,13 +29,13 @@ function sanitizeProductInput(
   next: NextFunction
 ): void {
   console.log("▶️ ", "Sanitizing product input...");
-  const { name, model, description } = req.body;
+  const { name, type, description } = req.body;
 
   if (typeof name === "string") {
     req.body.name = removeOddSpaces(name);
   }
-  if (typeof model === "string") {
-    req.body.model = removeOddSpaces(model);
+  if (typeof type === "string") {
+    req.body.type = removeOddSpaces(type).toLowerCase();
   }
   if (typeof description === "string") {
     req.body.description = removeOddSpaces(description);
@@ -42,20 +50,41 @@ function sanitizeModelVariationInput(
   next: NextFunction
 ): void {
   console.log("▶️ ", "Sanitizing model input...");
-  const { name, band } = req.body;
+  const { name, color, band } = req.body;
 
   if (typeof name === "string") {
     req.body.name = removeOddSpaces(name);
   }
+  if (color && typeof color === "object") {
+    if (typeof color.name === "string") {
+      req.body.color.name = removeOddSpaces(color.name);
+    }
+    if (typeof color.hex === "string") {
+      req.body.color.hex = removeOddSpaces(color.hex);
+    }
+  }
   if (band) {
-    if (typeof band.material === "string") {
-      req.body.band.material = removeOddSpaces(band.material);
+    const { material, colors, claspType, style } = band;
+
+    if (typeof material === "string") {
+      req.body.band.material = removeOddSpaces(material);
     }
-    if (typeof band.claspType === "string") {
-      req.body.band.claspType = removeOddSpaces(band.claspType);
+    if (
+      Array.isArray(colors) &&
+      colors.every(
+        (c: any) => typeof c.hex === "string" && typeof c.name === "string"
+      )
+    ) {
+      req.body.band.colors = colors.map((c: any) => ({
+        hex: removeOddSpaces(c.hex),
+        name: removeOddSpaces(c.name),
+      }));
     }
-    if (typeof band.type === "string") {
-      req.body.band.type = removeOddSpaces(band.type);
+    if (typeof claspType === "string") {
+      req.body.band.claspType = removeOddSpaces(claspType);
+    }
+    if (typeof style === "string") {
+      req.body.band.style = removeOddSpaces(style);
     }
   }
 
@@ -68,10 +97,16 @@ function sanitizeSearchProduct(
   next: NextFunction
 ): void {
   console.log("▶️ ", "Sanitizing product search input...");
-  const { searchTerm } = req.query;
+  const { searchTerm, type, stopSelling } = req.query;
 
-  if (searchTerm && typeof searchTerm === "string") {
+  if (typeof searchTerm === "string") {
     req.query.searchTerm = removeOddSpaces(searchTerm);
+  }
+  if (typeof type === "string") {
+    req.query.type = removeOddSpaces(type).toLowerCase();
+  }
+  if (typeof stopSelling === "string") {
+    req.query.stopSelling = removeAllSpaces(stopSelling.toLowerCase());
   }
 
   next();
@@ -87,42 +122,154 @@ function sanitizeProductModelInput(
   next: NextFunction
 ): void {
   console.log("▶️ ", "Sanitizing product model input...");
-  const {
-    model,
-    name,
-    display, // type
-    connectivities,
-    waterResistance,
-    chipset,
-    sensors,
-    caseMaterial,
-  } = req.body;
+  const { name, feature, config, battery, screen, caseMaterial } = req.body;
 
-  if (typeof model === "string") {
-    req.body.model = removeOddSpaces(model);
-  }
   if (typeof name === "string") {
     req.body.name = removeOddSpaces(name);
   }
-  if (display && typeof display.displayType === "string") {
-    req.body.display.displayType = removeOddSpaces(display.displayType);
-  }
-  if (isArrayOfStrings(connectivities)) {
-    req.body.connectivities = connectivities.map((item: string) =>
-      removeOddSpaces(item)
-    );
-  }
-  if (typeof waterResistance === "string") {
-    req.body.waterResistance = removeOddSpaces(waterResistance);
-  }
-  if (typeof chipset === "string") {
-    req.body.chipset = removeOddSpaces(chipset);
-  }
-  if (isArrayOfStrings(sensors)) {
-    req.body.sensors = sensors.map((item: string) => removeOddSpaces(item));
-  }
   if (typeof caseMaterial === "string") {
     req.body.caseMaterial = removeOddSpaces(caseMaterial);
+  }
+  if (feature && typeof feature === "object") {
+    const {
+      waterResistance, // rating, description
+      utilities, // list of healths, sports, specials, others
+      supportedAppsForNotifications,
+    } = feature;
+
+    if (waterResistance && typeof waterResistance === "object") {
+      if (typeof waterResistance.rating === "string") {
+        req.body.feature.waterResistance.rating = removeOddSpaces(
+          waterResistance.rating
+        );
+      }
+      if (typeof waterResistance.description === "string") {
+        req.body.feature.waterResistance.description = removeOddSpaces(
+          waterResistance.description
+        );
+      }
+    }
+    if (utilities && typeof utilities === "object") {
+      if (isArrayOfNonEmptyStrings(utilities.healths)) {
+        req.body.feature.utilities.healths = utilities.healths.map(
+          (item: string) => removeOddSpaces(item)
+        );
+      }
+      if (isArrayOfNonEmptyStrings(utilities.sports)) {
+        req.body.feature.utilities.sports = utilities.sports.map(
+          (item: string) => removeOddSpaces(item)
+        );
+      }
+      if (isArrayOfNonEmptyStrings(utilities.specials)) {
+        req.body.feature.utilities.specials = utilities.specials.map(
+          (item: string) => removeOddSpaces(item)
+        );
+      }
+      if (isArrayOfNonEmptyStrings(utilities.others)) {
+        req.body.feature.utilities.others = utilities.others.map(
+          (item: string) => removeOddSpaces(item)
+        );
+      }
+    }
+    if (isArrayOfNonEmptyStrings(supportedAppsForNotifications)) {
+      req.body.feature.supportedAppsForNotifications =
+        supportedAppsForNotifications.map((item: string) =>
+          removeOddSpaces(item)
+        );
+    }
+  }
+  if (config && typeof config === "object") {
+    const {
+      connectivities,
+      camera,
+      chipset,
+      compatiblePhoneOs,
+      appsConnect,
+      sensors,
+    } = config;
+
+    if (isArrayOfNonEmptyStrings(connectivities)) {
+      req.body.config.connectivities = connectivities.map((item: string) =>
+        removeOddSpaces(item)
+      );
+    }
+    if (
+      camera &&
+      typeof camera === "object" &&
+      isArrayOfNonEmptyStrings(camera.features)
+    ) {
+      req.body.config.camera.features = camera.features.map((item: string) =>
+        removeOddSpaces(item)
+      );
+    }
+    if (typeof chipset === "string") {
+      req.body.config.chipset = removeOddSpaces(chipset);
+    }
+    if (isArrayOfNonEmptyStrings(compatiblePhoneOs)) {
+      req.body.config.compatiblePhoneOs = compatiblePhoneOs.map(
+        (item: string) => removeOddSpaces(item)
+      );
+    }
+    if (isArrayOfNonEmptyStrings(appsConnect)) {
+      req.body.config.appsConnect = appsConnect.map((item: string) =>
+        removeOddSpaces(item)
+      );
+    }
+    if (isArrayOfNonEmptyStrings(sensors)) {
+      req.body.config.sensors = sensors.map((item: string) =>
+        removeOddSpaces(item)
+      );
+    }
+  }
+  if (battery && typeof battery === "object") {
+    const { chargingType } = battery;
+    if (typeof chargingType === "string") {
+      req.body.battery.chargingType = removeOddSpaces(chargingType);
+    }
+  }
+  if (screen && typeof screen === "object") {
+    const { display, glassMaterial, bezelMaterial, shape } = screen;
+
+    if (
+      display &&
+      typeof display === "object" &&
+      typeof display.displayType === "string"
+    ) {
+      req.body.screen.display.displayType = removeOddSpaces(
+        display.displayType
+      );
+    }
+    if (typeof glassMaterial === "string") {
+      req.body.screen.glassMaterial = removeOddSpaces(glassMaterial);
+    }
+    if (typeof bezelMaterial === "string") {
+      req.body.screen.bezelMaterial = removeOddSpaces(bezelMaterial);
+    }
+    if (typeof shape === "string") {
+      req.body.screen.shape = removeOddSpaces(shape);
+    }
+  }
+
+  next();
+}
+
+function sanitizeProductDetailQuery(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing product detail query input...");
+  const { modelStopSelling, variationStopSelling } = req.query;
+
+  if (typeof modelStopSelling === "string") {
+    req.query.modelStopSelling = removeAllSpaces(
+      modelStopSelling.toLowerCase()
+    );
+  }
+  if (typeof variationStopSelling === "string") {
+    req.query.variationStopSelling = removeAllSpaces(
+      variationStopSelling.toLowerCase()
+    );
   }
 
   next();
@@ -137,6 +284,7 @@ export function inputSanitizer(
     | "model"
     | "variation"
     | "product search"
+    | "product details"
 ): (req: Request, res: Response, next: NextFunction) => void {
   switch (type) {
     case "product":
@@ -153,11 +301,13 @@ export function inputSanitizer(
       return sanitizeModelVariationInput;
     case "product search":
       return sanitizeSearchProduct;
+    case "product details":
+      return sanitizeProductDetailQuery;
   }
 }
 
 export function verifyProductInput(
-  type: "create" | "update" | "search"
+  type: "create" | "update" | "search" | "details"
 ): (req: Request, res: Response, next: NextFunction) => void {
   return async (
     req: Request,
@@ -173,6 +323,7 @@ export function verifyProductInput(
           console.log("Validating product creation input...");
           const {
             name,
+            type,
             brandId,
             categoryId,
             imageUrls,
@@ -190,13 +341,20 @@ export function verifyProductInput(
               and cannot contain special characters.`
             );
           }
+          if (!type) {
+            errors.push("type is required.");
+          } else if (!PRODUCT_TYPES.includes(type)) {
+            errors.push(
+              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`
+            );
+          }
           if (!brandId) {
             errors.push("ID is required.");
           }
           if (!categoryId) {
             errors.push("ID is required.");
           }
-          if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
+          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
           if (typeof description !== "string" || !description) {
@@ -216,6 +374,7 @@ export function verifyProductInput(
           console.log("Validating product update input...");
           const {
             name,
+            type,
             brandId,
             categoryId,
             imageUrls,
@@ -231,6 +390,11 @@ export function verifyProductInput(
               and cannot contain special characters.`
             );
           }
+          if (type !== undefined && !PRODUCT_TYPES.includes(type)) {
+            errors.push(
+              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`
+            );
+          }
           if (
             brandId !== undefined &&
             (typeof brandId !== "string" || !brandId)
@@ -243,7 +407,7 @@ export function verifyProductInput(
           ) {
             errors.push("ID must be a non-empty string.");
           }
-          if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
+          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
           if (
@@ -269,6 +433,7 @@ export function verifyProductInput(
             limit,
             offset,
             searchTerm,
+            type,
             brandId,
             categoryId,
             stopSelling,
@@ -288,6 +453,12 @@ export function verifyProductInput(
             (typeof searchTerm !== "string" || !searchTerm)
           ) {
             errors.push("search term must be a non-empty string.");
+          }
+          if (type !== undefined &&
+            !PRODUCT_TYPES.includes(type as any)) {
+            errors.push(
+              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`
+            );
           }
           if (
             brandId !== undefined &&
@@ -341,11 +512,30 @@ export function verifyProductInput(
           }
           break;
         }
+        case "details": {
+          console.log("Validating product details input...");
+          const { modelStopSelling, variationStopSelling } = req.query;
+
+          if (
+            modelStopSelling !== undefined &&
+            !["true", "false"].includes(modelStopSelling as any)
+          ) {
+            errors.push("modelStopSelling must be a boolean string.");
+          }
+          if (
+            variationStopSelling !== undefined &&
+            !["true", "false"].includes(variationStopSelling as any)
+          ) {
+            errors.push("variationStopSelling must be a boolean string.");
+          }
+          break;
+        }
       }
 
       if (errors.length > 0) {
         return next(errorHandler(400, errors));
       }
+
       next();
     } catch (error) {
       next(error);
@@ -371,14 +561,14 @@ export function verifyBrandInput(
 
           if (!name) {
             errors.push("name is required.");
-          } else if (typeof name !== "string" || !name) {
+          } else if (typeof name !== "string") {
             errors.push("name must be a non-empty string.");
           }
-          if (logoUrl !== undefined && !(await isValidImgUrls(logoUrl))) {
+          if (isPresent(logoUrl) && !(await isValidImgUrls(logoUrl))) {
             errors.push("logo URL must be a valid image URL.");
           }
           if (
-            description !== undefined &&
+            isPresent(description) &&
             (typeof description !== "string" || !description)
           ) {
             errors.push("description must be a non-empty string.");
@@ -391,16 +581,11 @@ export function verifyBrandInput(
           if (name !== undefined && (typeof name !== "string" || !name)) {
             errors.push("name must be a non-empty string.");
           }
-          if (
-            logoUrl !== undefined &&
-            logoUrl !== null &&
-            !(await isValidImgUrls(logoUrl))
-          ) {
+          if (isPresent(logoUrl) && !(await isValidImgUrls(logoUrl))) {
             errors.push("logo URL must be a valid image URL or null.");
           }
           if (
-            description !== undefined &&
-            description !== null &&
+            isPresent(description) &&
             (typeof description !== "string" || !description)
           ) {
             errors.push("description must be a non-empty string or null.");
@@ -433,11 +618,11 @@ export function verifyCategoryInput(
 
           if (!name) {
             errors.push("name is required.");
-          } else if (typeof name !== "string" || !name) {
+          } else if (typeof name !== "string") {
             errors.push("name must be a non-empty string.");
           }
           if (
-            description !== undefined &&
+            isPresent(description) &&
             (typeof description !== "string" || !description)
           ) {
             errors.push("description must be a non-empty string.");
@@ -451,8 +636,7 @@ export function verifyCategoryInput(
             errors.push("name must be a non-empty string.");
           }
           if (
-            description !== undefined &&
-            description !== null &&
+            isPresent(description) &&
             (typeof description !== "string" || !description)
           ) {
             errors.push("description must be a non-empty string or null.");
@@ -489,14 +673,14 @@ export function verifyOsInput(
 
           if (!name) {
             errors.push("name is required.");
-          } else if (typeof name !== "string" || !name) {
+          } else if (typeof name !== "string") {
             errors.push("name must be a non-empty string.");
           }
-          if (logoUrl !== undefined && !(await isValidImgUrls(logoUrl))) {
+          if (isPresent(logoUrl) && !(await isValidImgUrls(logoUrl))) {
             errors.push("logo URL must be a valid image URL.");
           }
           if (
-            description !== undefined &&
+            isPresent(description) &&
             (typeof description !== "string" || !description)
           ) {
             errors.push("description must be a non-empty string.");
@@ -509,16 +693,11 @@ export function verifyOsInput(
           if (name !== undefined && (typeof name !== "string" || !name)) {
             errors.push("name must be a non-empty string.");
           }
-          if (
-            logoUrl !== undefined &&
-            logoUrl !== null &&
-            !(await isValidImgUrls(logoUrl))
-          ) {
+          if (isPresent(logoUrl) && !(await isValidImgUrls(logoUrl))) {
             errors.push("logo URL must be a valid image URL.");
           }
           if (
-            description !== undefined &&
-            description !== null &&
+            isPresent(description) &&
             (typeof description !== "string" || !description)
           ) {
             errors.push("description must be a non-empty string or null.");
@@ -552,37 +731,21 @@ export function verifyProductModelInput(
       switch (type) {
         case "create": {
           const {
-            model,
             name,
-            watchSizeMm,
             priceCents,
             stockPriceCents,
             imageUrls,
-            display,
-            resolution,
-            memory,
-            osId,
-            chipset,
-            connectivities,
-            batteryLifeMah,
-            waterResistance, // Optional and can be null
-            sensors,
+            feature,
+            config,
+            battery,
+            screen,
             caseMaterial,
-            weightMg,
+            watchWeightMg,
             compatibleBandLugWidthMm,
             releaseDate,
             stopSelling,
           } = req.body;
 
-          if (!model) {
-            errors.push("model is required.");
-          } else if (!isValidProductName(model)) {
-            errors.push(
-              `model must be between
-              ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
-              and cannot contain special characters.`
-            );
-          }
           if (!name) {
             errors.push("name is required.");
           } else if (!isValidProductName(name)) {
@@ -591,11 +754,6 @@ export function verifyProductModelInput(
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
               and cannot contain special characters.`
             );
-          }
-          if (watchSizeMm === undefined) {
-            errors.push("watch size is required.");
-          } else if (typeof watchSizeMm !== "number" || watchSizeMm <= 0) {
-            errors.push("watch size must be a positive number.");
           }
           if (priceCents === undefined) {
             errors.push("price is required.");
@@ -610,109 +768,414 @@ export function verifyProductModelInput(
           ) {
             errors.push("stock price must be a non-negative number.");
           }
-          if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
+          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
-          if (!display) {
-            errors.push("display is required.");
-          } else if (
-            typeof display !== "object" ||
-            display.sizeMm === undefined ||
-            !display.displayType
-          ) {
-            errors.push(
-              "display must be an object with sizeMm and displayType."
-            );
+          if (!feature) {
+            errors.push("feature is required.");
+          } else if (!isNoneArrObj(feature)) {
+            errors.push("feature must be an object.");
           } else {
-            if (typeof display.sizeMm !== "number" || display.sizeMm <= 0) {
-              errors.push("display size must be a positive number.");
+            const {
+              speakerAndMicrophone,
+              waterResistance,
+              utilities,
+              supportedAppsForNotifications,
+            } = feature;
+
+            if (
+              speakerAndMicrophone !== undefined &&
+              typeof speakerAndMicrophone !== "boolean"
+            ) {
+              errors.push("speakerAndMicrophone must be a boolean.");
+            }
+            if (isPresent(waterResistance)) {
+              if (!isNoneArrObj(waterResistance)) {
+                errors.push("waterResistance must be an object.");
+              } else {
+                // If an obj must have rating
+                const { rating, description } = waterResistance;
+
+                if (!rating) {
+                  errors.push("waterResistance rating is required.");
+                } else if (typeof rating !== "string") {
+                  errors.push(
+                    "waterResistance rating must be a non-empty string."
+                  );
+                }
+                if (
+                  isPresent(description) &&
+                  (typeof description !== "string" || !description)
+                ) {
+                  errors.push(
+                    "waterResistance description must be a non-empty string."
+                  );
+                }
+              }
+            }
+            if (isPresent(utilities)) {
+              if (!isNoneArrObj(utilities)) {
+                errors.push("utilities must be an object.");
+              } else if (Object.keys(utilities).length) {
+                const { healths, sports, specials, others } = utilities;
+
+                if (isPresent(healths) && !isArrayOfNonEmptyStrings(healths)) {
+                  errors.push(
+                    "utilities healths must be an array of non-empty strings."
+                  );
+                }
+                if (isPresent(sports) && !isArrayOfNonEmptyStrings(sports)) {
+                  errors.push(
+                    "utilities sports must be an array of non-empty strings."
+                  );
+                }
+                if (
+                  isPresent(specials) &&
+                  !isArrayOfNonEmptyStrings(specials)
+                ) {
+                  errors.push(
+                    "utilities specials must be an array of non-empty strings."
+                  );
+                }
+                if (isPresent(others) && !isArrayOfNonEmptyStrings(others)) {
+                  errors.push(
+                    "utilities others must be an array of non-empty strings."
+                  );
+                }
+              }
             }
             if (
-              typeof display.displayType !== "string" ||
-              !display.displayType
+              isPresent(supportedAppsForNotifications) &&
+              !isArrayOfNonEmptyStrings(supportedAppsForNotifications)
             ) {
-              errors.push("display type must be a non-empty string.");
+              errors.push(
+                "supportedAppsForNotifications must be an array of non-empty strings."
+              );
             }
           }
-          if (!resolution) {
-            errors.push("resolution is required.");
-          } else if (
-            typeof resolution !== "object" ||
-            resolution.hPx === undefined ||
-            resolution.wPx === undefined
-          ) {
-            errors.push("resolution must be an object with hPx and wPx.");
-          } else if (
-            typeof resolution.hPx !== "number" ||
-            resolution.hPx <= 0 ||
-            typeof resolution.wPx !== "number" ||
-            resolution.wPx <= 0
-          ) {
-            errors.push("resolution hPx and wPx must be positive numbers.");
+          if (!config) {
+            errors.push("config is required.");
+          } else if (!isNoneArrObj(config)) {
+            errors.push("config must be an object.");
+          } else {
+            const {
+              connectivities,
+              camera,
+              chipset,
+              memory,
+              osId,
+              compatiblePhoneOs,
+              appsConnect,
+              sensors,
+            } = config;
+
+            if (
+              isPresent(connectivities) &&
+              !isArrayOfNonEmptyStrings(connectivities)
+            ) {
+              errors.push(
+                "connectivities must be an array of non-empty strings."
+              );
+            }
+            if (isPresent(camera)) {
+              if (!isNoneArrObj(camera)) {
+                errors.push("camera must be an object.");
+              } else {
+                const { resolutionMp, features } = camera;
+                if (resolutionMp === undefined) {
+                  errors.push("camera resolution is required.");
+                } else if (
+                  typeof resolutionMp !== "number" ||
+                  resolutionMp < 0
+                ) {
+                  errors.push(
+                    "camera resolution must be a non-negative number."
+                  );
+                }
+                if (
+                  isPresent(features) &&
+                  !isArrayOfNonEmptyStrings(features)
+                ) {
+                  errors.push(
+                    "camera features must be an array of non-empty strings."
+                  );
+                }
+              }
+            }
+            if (!chipset) {
+              errors.push("chipset is required.");
+            } else if (typeof chipset !== "string") {
+              errors.push("chipset must be a non-empty string.");
+            }
+            if (!memory) {
+              errors.push("memory is required.");
+            } else if (!isNoneArrObj(memory)) {
+              errors.push("memory must be an object.");
+            } else {
+              const { ramBytes, storageBytes } = memory;
+              if (ramBytes === undefined) {
+                errors.push("memory RAM is required.");
+              } else if (typeof ramBytes !== "number" || ramBytes < 0) {
+                errors.push("memory RAM must be a non-negative number.");
+              }
+              if (storageBytes === undefined) {
+                errors.push("memory storage is required.");
+              } else if (typeof storageBytes !== "number" || storageBytes < 0) {
+                errors.push("memory storage must be a non-negative number.");
+              }
+            }
+            if (!osId) {
+              errors.push("OS ID is required.");
+            } else if (typeof osId !== "string") {
+              errors.push("OS ID must be a non-empty string.");
+            }
+            if (
+              isPresent(compatiblePhoneOs) &&
+              !isArrayOfNonEmptyStrings(compatiblePhoneOs)
+            ) {
+              errors.push(
+                "compatiblePhoneOs must be an array of non-empty strings."
+              );
+            }
+            if (
+              isPresent(appsConnect) &&
+              !isArrayOfNonEmptyStrings(appsConnect)
+            ) {
+              errors.push("appsConnect must be an array of non-empty strings.");
+            }
+            if (isPresent(sensors) && !isArrayOfNonEmptyStrings(sensors)) {
+              errors.push("sensors must be an array of non-empty strings.");
+            }
           }
-          if (!memory) {
-            errors.push("memory is required.");
-          } else if (
-            typeof memory !== "object" ||
-            memory.ramBytes === undefined ||
-            memory.romBytes === undefined
-          ) {
-            errors.push("memory must be an object with ramBytes and romBytes.");
-          } else if (
-            typeof memory.ramBytes !== "number" ||
-            memory.ramBytes < 0 ||
-            typeof memory.romBytes !== "number" ||
-            memory.romBytes < 0
-          ) {
-            errors.push("memory RAM and ROM must be non-negative numbers.");
+          if (!battery) {
+            errors.push("battery is required.");
+          } else if (!isNoneArrObj(battery)) {
+            errors.push("battery must be an object.");
+          } else {
+            const { capacityMah, timeOnline, timeFullChargeMin, chargingType } =
+              battery;
+            if (capacityMah === undefined) {
+              errors.push("battery capacity is required.");
+            } else if (typeof capacityMah !== "number" || capacityMah <= 0) {
+              errors.push("battery capacity must be a positive number.");
+            }
+            if (!timeOnline) {
+              errors.push("battery time online is required.");
+            } else if (!isNoneArrObj(timeOnline)) {
+              errors.push("battery time online must be an object.");
+            } else {
+              const { aodOnMin, aodOffMin, typicalUsageMin, standByMin } =
+                timeOnline;
+              if (aodOnMin === undefined) {
+                errors.push("battery AOD on time is required.");
+              } else if (typeof aodOnMin !== "number" || aodOnMin < 0) {
+                errors.push(
+                  "battery AOD on time must be a non-negative number."
+                );
+              }
+              if (aodOffMin === undefined) {
+                errors.push("battery AOD off time is required.");
+              } else if (typeof aodOffMin !== "number" || aodOffMin < 0) {
+                errors.push(
+                  "battery AOD off time must be a non-negative number."
+                );
+              }
+              if (
+                isPresent(typicalUsageMin) &&
+                (typeof typicalUsageMin !== "number" || typicalUsageMin < 0)
+              ) {
+                errors.push(
+                  "battery typical usage time must be a non-negative number."
+                );
+              }
+              if (
+                isPresent(standByMin) &&
+                (typeof standByMin !== "number" || standByMin < 0)
+              ) {
+                errors.push(
+                  "battery stand by time must be a non-negative number."
+                );
+              }
+            }
+            if (timeFullChargeMin === undefined) {
+              errors.push("battery time full charge is required.");
+            } else if (
+              typeof timeFullChargeMin !== "number" ||
+              timeFullChargeMin <= 0
+            ) {
+              errors.push(
+                "battery time full charge must be a positive number."
+              );
+            }
+            if (!chargingType) {
+              errors.push("battery charging type is required.");
+            } else if (typeof chargingType !== "string") {
+              errors.push("battery charging type must be a non-empty string.");
+            }
           }
-          if (!osId) {
-            errors.push("OS ID is required.");
-          } else if (typeof osId !== "string" || !osId) {
-            errors.push("OS ID must be a non-empty string.");
-          }
-          if (!chipset) {
-            errors.push("chipset is required.");
-          } else if (typeof chipset !== "string" || !chipset) {
-            errors.push("chipset must be a non-empty string.");
-          }
-          if (!connectivities) {
-            errors.push("connectivities are required.");
-          } else if (
-            !isArrayOfStrings(connectivities) ||
-            !connectivities.length
-          ) {
-            errors.push("connectivities must be a non-empty array of strings.");
-          }
-          if (batteryLifeMah === undefined) {
-            errors.push("battery life is required.");
-          } else if (
-            typeof batteryLifeMah !== "number" ||
-            batteryLifeMah <= 0
-          ) {
-            errors.push("battery life must be a positive number.");
-          }
-          if (
-            waterResistance !== undefined &&
-            waterResistance !== null &&
-            (typeof waterResistance !== "string" || !waterResistance)
-          ) {
-            errors.push("water resistance must be a non-empty string or null.");
-          }
-          if (!sensors) {
-            errors.push("sensors is required.");
-          } else if (!isArrayOfStrings(sensors) || !sensors.length) {
-            errors.push("sensors must be a non-empty array of strings.");
+          if (!screen) {
+            errors.push("screen is required.");
+          } else if (!isNoneArrObj(screen)) {
+            errors.push("screen must be an object.");
+          } else {
+            const {
+              display,
+              brightness,
+              resolution,
+              glassMaterial,
+              bezelMaterial,
+              isCircular,
+              diameterMm,
+              dimension,
+              shape,
+            } = screen;
+            if (!display) {
+              errors.push("screen display is required.");
+            } else if (!isNoneArrObj(display)) {
+              errors.push("screen display must be an object.");
+            } else {
+              const { diagonalSizeInch, displayType } = display;
+              if (diagonalSizeInch === undefined) {
+                errors.push("screen display diagonal size is required.");
+              } else if (
+                typeof diagonalSizeInch !== "number" ||
+                diagonalSizeInch <= 0
+              ) {
+                errors.push(
+                  "screen display diagonal size must be a positive number."
+                );
+              }
+              if (!displayType) {
+                errors.push("screen display type is required.");
+              } else if (typeof displayType !== "string") {
+                errors.push("screen display type must be a non-empty string.");
+              }
+            }
+            if (!brightness) {
+              errors.push("screen brightness is required.");
+            } else if (!isNoneArrObj(brightness)) {
+              errors.push("screen brightness must be an object.");
+            } else {
+              const { minNits, maxNits } = brightness;
+              if (minNits === undefined) {
+                errors.push("screen brightness min nits is required.");
+              } else if (typeof minNits !== "number" || minNits < 0) {
+                errors.push(
+                  "screen brightness min nits must be a non-negative number."
+                );
+              }
+              if (maxNits === undefined) {
+                errors.push("screen brightness max nits is required.");
+              } else if (typeof maxNits !== "number" || maxNits < 0) {
+                errors.push(
+                  "screen brightness max nits must be a non-negative number."
+                );
+              }
+            }
+            if (!resolution) {
+              errors.push("screen resolution is required.");
+            } else if (!isNoneArrObj(resolution)) {
+              errors.push("screen resolution must be an object.");
+            } else {
+              const { hPx, wPx } = resolution;
+              if (hPx === undefined) {
+                errors.push("screen resolution height pixels is required.");
+              } else if (typeof hPx !== "number" || hPx <= 0) {
+                errors.push(
+                  "screen resolution height pixels must be a positive number."
+                );
+              }
+              if (wPx === undefined) {
+                errors.push("screen resolution width pixels is required.");
+              } else if (typeof wPx !== "number" || wPx <= 0) {
+                errors.push(
+                  "screen resolution width pixels must be a positive number."
+                );
+              }
+            }
+            if (!glassMaterial) {
+              errors.push("screen glass material is required.");
+            } else if (typeof glassMaterial !== "string") {
+              errors.push("screen glass material must be a non-empty string.");
+            }
+            if (!bezelMaterial) {
+              errors.push("screen bezel material is required.");
+            } else if (typeof bezelMaterial !== "string") {
+              errors.push("screen bezel material must be a non-empty string.");
+            }
+            if (isCircular === undefined) {
+              errors.push("screen isCircular is required.");
+            } else if (typeof isCircular !== "boolean") {
+              errors.push("screen isCircular must be a boolean.");
+            } else if (isCircular) {
+              if (diameterMm === undefined) {
+                errors.push(
+                  "screen diameter is required for circular screens."
+                );
+              } else if (typeof diameterMm !== "number" || diameterMm <= 0) {
+                errors.push("screen diameter must be a positive number.");
+              }
+              if (isPresent(dimension)) {
+                errors.push(
+                  "screen dimension must be null or not provided for circular screens."
+                );
+              }
+            } else {
+              // isCircular is false
+              if (!dimension) {
+                errors.push(
+                  "screen dimension is required for non-circular screens."
+                );
+              } else if (!isNoneArrObj(dimension)) {
+                errors.push("screen dimension must be an object.");
+              } else {
+                const { wMm, hMm, thicknessMm } = dimension;
+                if (wMm === undefined) {
+                  errors.push(
+                    "screen width is required for non-circular screens."
+                  );
+                } else if (typeof wMm !== "number" || wMm <= 0) {
+                  errors.push("screen width must be a positive number.");
+                }
+                if (hMm === undefined) {
+                  errors.push(
+                    "screen height is required for non-circular screens."
+                  );
+                } else if (typeof hMm !== "number" || hMm <= 0) {
+                  errors.push("screen height must be a positive number.");
+                }
+                if (thicknessMm === undefined) {
+                  errors.push(
+                    "screen thickness is required for non-circular screens."
+                  );
+                } else if (
+                  typeof thicknessMm !== "number" ||
+                  thicknessMm <= 0
+                ) {
+                  errors.push("screen thickness must be a positive number.");
+                }
+                if (isPresent(diameterMm)) {
+                  errors.push(
+                    "screen diameter must be null or not provided for non-circular screens."
+                  );
+                }
+              }
+            }
+            if (!shape) {
+              errors.push("screen shape is required.");
+            } else if (typeof shape !== "string") {
+              errors.push("screen shape must be a non-empty string.");
+            }
           }
           if (!caseMaterial) {
             errors.push("case material is required.");
-          } else if (typeof caseMaterial !== "string" || !caseMaterial) {
+          } else if (typeof caseMaterial !== "string") {
             errors.push("case material must be a non-empty string.");
           }
-          if (weightMg === undefined) {
-            errors.push("weight is required.");
-          } else if (typeof weightMg !== "number" || weightMg <= 0) {
-            errors.push("weight must be a positive number.");
+          if (watchWeightMg === undefined) {
+            errors.push("watch weight is required.");
+          } else if (typeof watchWeightMg !== "number" || watchWeightMg <= 0) {
+            errors.push("watch weight must be a positive number.");
           }
           if (compatibleBandLugWidthMm === undefined) {
             errors.push("compatible band lug width is required.");
@@ -722,10 +1185,9 @@ export function verifyProductModelInput(
           ) {
             errors.push("compatible band lug width must be a positive number.");
           }
-          if (
-            releaseDate !== undefined &&
-            !isValidDateTimeString(releaseDate)
-          ) {
+          if (!releaseDate) {
+            errors.push("release date is required.");
+          } else if (!isValidDateTimeString(releaseDate)) {
             errors.push("release date must be a valid date time string.");
           }
           if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
@@ -735,47 +1197,27 @@ export function verifyProductModelInput(
         }
         case "update": {
           const {
-            model,
             name,
-            watchSizeMm,
             priceCents,
             stockPriceCents,
             imageUrls,
-            display,
-            resolution,
-            memory,
-            osId,
-            chipset,
-            connectivities,
-            batteryLifeMah,
-            waterResistance, // Can be null
-            sensors,
+            feature,
+            config,
+            battery,
+            screen,
             caseMaterial,
-            weightMg,
+            watchWeightMg,
             compatibleBandLugWidthMm,
             releaseDate,
             stopSelling,
           } = req.body;
 
-          if (model !== undefined && !isValidProductName(model)) {
-            errors.push(
-              `model must be between
-              ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
-              and cannot contain special characters.`
-            );
-          }
           if (name !== undefined && !isValidProductName(name)) {
             errors.push(
               `name must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
               and cannot contain special characters.`
             );
-          }
-          if (
-            watchSizeMm !== undefined &&
-            (typeof watchSizeMm !== "number" || watchSizeMm <= 0)
-          ) {
-            errors.push("watch size must be a positive number.");
           }
           if (
             priceCents !== undefined &&
@@ -789,97 +1231,411 @@ export function verifyProductModelInput(
           ) {
             errors.push("stock price must be a non-negative number.");
           }
-          if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
+          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
-          if (display !== undefined) {
-            if (typeof display !== "object" || display === null) {
-              errors.push("display must be an object.");
-            } else if (Object.keys(display).length > 0) {
+          if (feature !== undefined) {
+            if (!isNoneArrObj(feature)) {
+              errors.push("feature must be an object.");
+            } else {
+              const {
+                speakerAndMicrophone,
+                waterResistance,
+                utilities,
+                supportedAppsForNotifications,
+              } = feature;
+
               if (
-                display.sizeMm !== undefined &&
-                (typeof display.sizeMm !== "number" || display.sizeMm <= 0)
+                speakerAndMicrophone !== undefined &&
+                typeof speakerAndMicrophone !== "boolean"
               ) {
-                errors.push("display size must be a positive number.");
+                errors.push("speakerAndMicrophone must be a boolean.");
+              }
+              if (isPresent(waterResistance)) {
+                if (!isNoneArrObj(waterResistance)) {
+                  errors.push("waterResistance must be an object.");
+                } else if (Object.keys(waterResistance).length) {
+                  // If empty obj nothing changes
+                  const { rating, description } = waterResistance;
+
+                  if (
+                    rating !== undefined &&
+                    (typeof rating !== "string" || !rating)
+                  ) {
+                    errors.push(
+                      "waterResistance rating must be a non-empty string."
+                    );
+                  }
+                  if (
+                    isPresent(description) &&
+                    (typeof description !== "string" || !description)
+                  ) {
+                    errors.push(
+                      "waterResistance description must be a non-empty string."
+                    );
+                  }
+                }
+              }
+              if (isPresent(utilities)) {
+                if (!isNoneArrObj(utilities)) {
+                  errors.push("utilities must be an object.");
+                } else if (Object.keys(utilities).length) {
+                  const { healths, sports, specials, others } = utilities;
+
+                  if (
+                    isPresent(healths) &&
+                    !isArrayOfNonEmptyStrings(healths)
+                  ) {
+                    errors.push(
+                      "utilities healths must be an array of non-empty strings."
+                    );
+                  }
+                  if (isPresent(sports) && !isArrayOfNonEmptyStrings(sports)) {
+                    errors.push(
+                      "utilities sports must be an array of non-empty strings."
+                    );
+                  }
+                  if (
+                    isPresent(specials) &&
+                    !isArrayOfNonEmptyStrings(specials)
+                  ) {
+                    errors.push(
+                      "utilities specials must be an array of non-empty strings."
+                    );
+                  }
+                  if (isPresent(others) && !isArrayOfNonEmptyStrings(others)) {
+                    errors.push(
+                      "utilities others must be an array of non-empty strings."
+                    );
+                  }
+                }
               }
               if (
-                display.displayType !== undefined &&
-                (typeof display.displayType !== "string" ||
-                  !display.displayType)
+                isPresent(supportedAppsForNotifications) &&
+                !isArrayOfNonEmptyStrings(supportedAppsForNotifications)
               ) {
-                errors.push("display type must be a non-empty string.");
+                errors.push(
+                  "supportedAppsForNotifications must be an array of non-empty strings."
+                );
               }
             }
           }
-          if (resolution !== undefined) {
-            if (typeof resolution !== "object" || resolution === null) {
-              errors.push("resolution must be an object.");
-            } else if (Object.keys(resolution).length > 0) {
+          if (config !== undefined) {
+            if (!isNoneArrObj(config)) {
+              errors.push("config must be an object.");
+            } else {
+              const {
+                connectivities,
+                camera,
+                chipset,
+                memory,
+                osId,
+                compatiblePhoneOs,
+                appsConnect,
+                sensors,
+              } = config;
+
               if (
-                resolution.hPx !== undefined &&
-                (typeof resolution.hPx !== "number" || resolution.hPx <= 0)
+                isPresent(connectivities) &&
+                !isArrayOfNonEmptyStrings(connectivities)
               ) {
-                errors.push("resolution hPx must be a positive number.");
+                errors.push(
+                  "connectivities must be an array of non-empty strings."
+                );
+              }
+              if (isPresent(camera)) {
+                if (!isNoneArrObj(camera)) {
+                  errors.push("camera must be an object.");
+                } else if (Object.keys(camera).length) {
+                  const { resolutionMp, features } = camera;
+                  if (
+                    resolutionMp !== undefined &&
+                    (typeof resolutionMp !== "number" || resolutionMp < 0)
+                  ) {
+                    errors.push(
+                      "camera resolution must be a non-negative number."
+                    );
+                  }
+                  if (
+                    isPresent(features) &&
+                    !isArrayOfNonEmptyStrings(features)
+                  ) {
+                    errors.push(
+                      "camera features must be an array of non-empty strings."
+                    );
+                  }
+                }
               }
               if (
-                resolution.wPx !== undefined &&
-                (typeof resolution.wPx !== "number" || resolution.wPx <= 0)
+                chipset !== undefined &&
+                (typeof chipset !== "string" || !chipset)
               ) {
-                errors.push("resolution wPx must be a positive number.");
+                errors.push("chipset must be a non-empty string.");
+              }
+              if (memory !== undefined) {
+                if (!isNoneArrObj(memory)) {
+                  errors.push("memory must be an object.");
+                } else {
+                  const { ramBytes, storageBytes } = memory;
+                  if (
+                    ramBytes !== undefined &&
+                    (typeof ramBytes !== "number" || ramBytes < 0)
+                  ) {
+                    errors.push("memory RAM must be a non-negative number.");
+                  }
+                  if (
+                    storageBytes !== undefined &&
+                    (typeof storageBytes !== "number" || storageBytes < 0)
+                  ) {
+                    errors.push(
+                      "memory storage must be a non-negative number."
+                    );
+                  }
+                }
+              }
+              if (osId !== undefined && (typeof osId !== "string" || !osId)) {
+                errors.push("OS ID must be a non-empty string.");
+              }
+              if (
+                isPresent(compatiblePhoneOs) &&
+                !isArrayOfNonEmptyStrings(compatiblePhoneOs)
+              ) {
+                errors.push(
+                  "compatiblePhoneOs must be an array of non-empty strings."
+                );
+              }
+              if (
+                isPresent(appsConnect) &&
+                !isArrayOfNonEmptyStrings(appsConnect)
+              ) {
+                errors.push(
+                  "appsConnect must be an array of non-empty strings."
+                );
+              }
+              if (isPresent(sensors) && !isArrayOfNonEmptyStrings(sensors)) {
+                errors.push("sensors must be an array of non-empty strings.");
               }
             }
           }
-          if (memory !== undefined) {
-            if (typeof memory !== "object" || memory === null) {
-              errors.push("memory must be an object.");
-            } else if (Object.keys(memory).length > 0) {
+          if (battery !== undefined) {
+            if (!isNoneArrObj(battery)) {
+              errors.push("battery must be an object.");
+            } else {
+              const {
+                capacityMah,
+                timeOnline,
+                timeFullChargeMin,
+                chargingType,
+              } = battery;
               if (
-                memory.ramBytes !== undefined &&
-                (typeof memory.ramBytes !== "number" || memory.ramBytes < 0)
+                capacityMah !== undefined &&
+                (typeof capacityMah !== "number" || capacityMah <= 0)
               ) {
-                errors.push("memory RAM must be a non-negative number.");
+                errors.push("battery capacity must be a positive number.");
+              }
+              if (timeOnline !== undefined) {
+                if (!isNoneArrObj(timeOnline)) {
+                  errors.push("battery time online must be an object.");
+                } else {
+                  const { aodOnMin, aodOffMin, typicalUsageMin, standByMin } =
+                    timeOnline;
+                  if (
+                    aodOnMin !== undefined &&
+                    (typeof aodOnMin !== "number" || aodOnMin < 0)
+                  ) {
+                    errors.push(
+                      "battery AOD on time must be a non-negative number."
+                    );
+                  }
+                  if (
+                    aodOffMin !== undefined &&
+                    (typeof aodOffMin !== "number" || aodOffMin < 0)
+                  ) {
+                    errors.push(
+                      "battery AOD off time must be a non-negative number."
+                    );
+                  }
+                  if (
+                    isPresent(typicalUsageMin) &&
+                    (typeof typicalUsageMin !== "number" || typicalUsageMin < 0)
+                  ) {
+                    errors.push(
+                      "battery typical usage time must be a non-negative number."
+                    );
+                  }
+                  if (
+                    isPresent(standByMin) &&
+                    (typeof standByMin !== "number" || standByMin < 0)
+                  ) {
+                    errors.push(
+                      "battery stand by time must be a non-negative number."
+                    );
+                  }
+                }
               }
               if (
-                memory.romBytes !== undefined &&
-                (typeof memory.romBytes !== "number" || memory.romBytes < 0)
+                timeFullChargeMin !== undefined &&
+                (typeof timeFullChargeMin !== "number" ||
+                  timeFullChargeMin <= 0)
               ) {
-                errors.push("memory ROM must be a non-negative number.");
+                errors.push(
+                  "battery time full charge must be a positive number."
+                );
+              }
+              if (
+                chargingType !== undefined &&
+                (typeof chargingType !== "string" || !chargingType)
+              ) {
+                errors.push(
+                  "battery charging type must be a non-empty string."
+                );
               }
             }
           }
-          if (osId !== undefined && (typeof osId !== "string" || !osId)) {
-            errors.push("OS ID must be a non-empty string.");
-          }
-          if (
-            chipset !== undefined &&
-            (typeof chipset !== "string" || !chipset)
-          ) {
-            errors.push("chipset must be a non-empty string.");
-          }
-          if (
-            connectivities !== undefined &&
-            (!isArrayOfStrings(connectivities) || !connectivities.length)
-          ) {
-            errors.push("connectivities must be a non-empty array of strings.");
-          }
-          if (
-            batteryLifeMah !== undefined &&
-            (typeof batteryLifeMah !== "number" || batteryLifeMah <= 0)
-          ) {
-            errors.push("battery life must be a positive number.");
-          }
-          if (
-            waterResistance !== undefined &&
-            waterResistance !== null &&
-            (typeof waterResistance !== "string" || !waterResistance)
-          ) {
-            errors.push("water resistance must be a non-empty string or null.");
-          }
-          if (
-            sensors !== undefined &&
-            (!isArrayOfStrings(sensors) || !sensors.length)
-          ) {
-            errors.push("sensors must be a non-empty array of strings.");
+          if (screen !== undefined) {
+            if (!isNoneArrObj(screen)) {
+              errors.push("screen must be an object.");
+            } else {
+              const {
+                display,
+                brightness,
+                resolution,
+                glassMaterial,
+                bezelMaterial,
+                isCircular,
+                diameterMm,
+                dimension,
+                shape,
+              } = screen;
+              if (display !== undefined) {
+                if (!isNoneArrObj(display)) {
+                  errors.push("screen display must be an object.");
+                } else if (Object.keys(display).length) {
+                  const { diagonalSizeInch, displayType } = display;
+                  if (
+                    diagonalSizeInch !== undefined &&
+                    (typeof diagonalSizeInch !== "number" ||
+                      diagonalSizeInch <= 0)
+                  ) {
+                    errors.push(
+                      "screen display diagonal size must be a positive number."
+                    );
+                  }
+                  if (
+                    displayType !== undefined &&
+                    (typeof displayType !== "string" || !displayType)
+                  ) {
+                    errors.push(
+                      "screen display type must be a non-empty string."
+                    );
+                  }
+                }
+              }
+              if (brightness !== undefined) {
+                if (!isNoneArrObj(brightness)) {
+                  errors.push("screen brightness must be an object.");
+                } else if (Object.keys(brightness).length) {
+                  const { minNits, maxNits } = brightness;
+                  if (
+                    minNits !== undefined &&
+                    (typeof minNits !== "number" || minNits < 0)
+                  ) {
+                    errors.push(
+                      "screen brightness min nits must be a non-negative number."
+                    );
+                  }
+                  if (
+                    maxNits !== undefined &&
+                    (typeof maxNits !== "number" || maxNits < 0)
+                  ) {
+                    errors.push(
+                      "screen brightness max nits must be a non-negative number."
+                    );
+                  }
+                }
+              }
+              if (resolution !== undefined) {
+                if (!isNoneArrObj(resolution)) {
+                  errors.push("screen resolution must be an object.");
+                } else if (Object.keys(resolution).length) {
+                  const { hPx, wPx } = resolution;
+                  if (
+                    hPx !== undefined &&
+                    (typeof hPx !== "number" || hPx <= 0)
+                  ) {
+                    errors.push(
+                      "screen resolution height pixels must be a positive number."
+                    );
+                  }
+                  if (
+                    wPx !== undefined &&
+                    (typeof wPx !== "number" || wPx <= 0)
+                  ) {
+                    errors.push(
+                      "screen resolution width pixels must be a positive number."
+                    );
+                  }
+                }
+              }
+              if (
+                glassMaterial !== undefined &&
+                (typeof glassMaterial !== "string" || !glassMaterial)
+              ) {
+                errors.push(
+                  "screen glass material must be a non-empty string."
+                );
+              }
+              if (
+                bezelMaterial !== undefined &&
+                (typeof bezelMaterial !== "string" || !bezelMaterial)
+              ) {
+                errors.push(
+                  "screen bezel material must be a non-empty string."
+                );
+              }
+              // Depending on isCircular, either diameterMm or dimension must be provided, handled in controllers
+              // Just check valid data types, business logic will be handled in controllers
+              if (isCircular !== undefined && typeof isCircular !== "boolean") {
+                errors.push("screen isCircular must be a boolean.");
+              }
+              if (
+                diameterMm !== undefined &&
+                (typeof diameterMm !== "number" || diameterMm <= 0)
+              ) {
+                errors.push("screen diameter must be a positive number.");
+              }
+              if (dimension !== undefined) {
+                if (!isNoneArrObj(dimension)) {
+                  errors.push("screen dimension must be an object.");
+                } else if (Object.keys(dimension).length) {
+                  const { wMm, hMm, thicknessMm } = dimension;
+                  if (
+                    wMm !== undefined &&
+                    (typeof wMm !== "number" || wMm <= 0)
+                  ) {
+                    errors.push("screen width must be a positive number.");
+                  }
+                  if (
+                    hMm !== undefined &&
+                    (typeof hMm !== "number" || hMm <= 0)
+                  ) {
+                    errors.push("screen height must be a positive number.");
+                  }
+                  if (
+                    thicknessMm !== undefined &&
+                    (typeof thicknessMm !== "number" || thicknessMm <= 0)
+                  ) {
+                    errors.push("screen thickness must be a positive number.");
+                  }
+                }
+              }
+              if (
+                shape !== undefined &&
+                (typeof shape !== "string" || !shape)
+              ) {
+                errors.push("screen shape must be a non-empty string.");
+              }
+            }
           }
           if (
             caseMaterial !== undefined &&
@@ -888,10 +1644,10 @@ export function verifyProductModelInput(
             errors.push("case material must be a non-empty string.");
           }
           if (
-            weightMg !== undefined &&
-            (typeof weightMg !== "number" || weightMg <= 0)
+            watchWeightMg !== undefined &&
+            (typeof watchWeightMg !== "number" || watchWeightMg <= 0)
           ) {
-            errors.push("weight must be a positive number.");
+            errors.push("watch weight must be a positive number.");
           }
           if (
             compatibleBandLugWidthMm !== undefined &&
@@ -939,11 +1695,11 @@ export function verifyModelVariationInput(
         case "create": {
           const {
             name,
-            colorHex,
-            imageUrls, // Optional
-            additionalPriceCents, // Optional
+            color,
+            imageUrls,
+            additionalPriceCents,
             band,
-            stopSelling, // Optional
+            stopSelling,
           } = req.body;
 
           if (!name) {
@@ -955,112 +1711,132 @@ export function verifyModelVariationInput(
               and cannot contain special characters.`
             );
           }
-          if (!colorHex) {
-            errors.push("color hex is required.");
-          } else if (!isValidColorHex(colorHex)) {
-            errors.push("color hex must be a valid color hex.");
+          if (!color) {
+            errors.push("color is required.");
+          } else if (!isNoneArrObj(color)) {
+            errors.push("color must be an object.");
+          } else {
+            const { hex, name } = color;
+            if (!hex) {
+              errors.push("color hex is required.");
+            } else if (!isValidColorHex(hex)) {
+              errors.push("color hex must be a valid color hex.");
+            }
+            if (!name) {
+              errors.push("color name is required.");
+            } else if (typeof name !== "string") {
+              errors.push("color name must be a non-empty string.");
+            }
           }
-          if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
+          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
           if (
-            additionalPriceCents !== undefined &&
+            isPresent(additionalPriceCents) &&
             (typeof additionalPriceCents !== "number" ||
               additionalPriceCents < 0)
           ) {
             errors.push("additional price must be a non-negative number.");
           }
-
           if (!band) {
             errors.push("band is required.");
-          } else if (typeof band !== "object" || band === null) {
+          } else if (!isNoneArrObj(band)) {
             errors.push("band must be an object.");
           } else {
-            if (band.lugWidthMm === undefined) {
+            const {
+              widthMm,
+              lugWidthMm,
+              material,
+              colors,
+              claspType,
+              adjustableRange,
+              style,
+              quickRelease,
+              waterResistance,
+              hypoallergenic,
+              weightMg,
+            } = band;
+
+            if (widthMm === undefined) {
+              errors.push("band width is required.");
+            } else if (typeof widthMm !== "number" || widthMm <= 0) {
+              errors.push("band width must be a positive number.");
+            }
+            if (lugWidthMm === undefined) {
               errors.push("band lug width is required.");
-            } else if (
-              typeof band.lugWidthMm !== "number" ||
-              band.lugWidthMm <= 0
-            ) {
+            } else if (typeof lugWidthMm !== "number" || lugWidthMm <= 0) {
               errors.push("band lug width must be a positive number.");
             }
-            if (!band.material) {
+            if (!material) {
               errors.push("band material is required.");
-            } else if (typeof band.material !== "string" || !band.material) {
+            } else if (typeof material !== "string") {
               errors.push("band material must be a non-empty string.");
             }
-            if (!band.colorsHex) {
-              errors.push("band colors hex are required.");
-            } else if (!isValidListOfColorsHex(band.colorsHex)) {
-              errors.push(
-                "band colors hex must be a list of valid colors hex."
-              );
+            if (!colors) {
+              errors.push("band colors are required.");
+            } else if (!isValidListOfColorObj(colors)) {
+              errors.push("band colors must be a list of valid color objects.");
             }
-            if (!band.claspType) {
+            if (!claspType) {
               errors.push("band clasp type is required.");
-            } else if (typeof band.claspType !== "string" || !band.claspType) {
+            } else if (typeof claspType !== "string") {
               errors.push("band clasp type must be a non-empty string.");
             }
-            if (!band.adjustableRange) {
+            if (!adjustableRange) {
               errors.push("band adjustable range is required.");
-            } else if (
-              typeof band.adjustableRange !== "object" ||
-              band.adjustableRange.minMm === undefined ||
-              band.adjustableRange.maxMm === undefined
-            ) {
-              errors.push(
-                "band adjustable range must be an object with minMm and maxMm."
-              );
+            } else if (!isNoneArrObj(adjustableRange)) {
+              errors.push("band adjustable range must be an object.");
             } else {
-              if (
-                typeof band.adjustableRange.minMm !== "number" ||
-                band.adjustableRange.minMm <= 0
-              ) {
+              const { minMm, maxMm } = adjustableRange;
+              let isValidRange = true;
+              if (minMm === undefined) {
+                errors.push("band adjustable range min is required.");
+                isValidRange = false;
+              } else if (typeof minMm !== "number" || minMm <= 0) {
                 errors.push(
                   "band adjustable range min must be a positive number."
                 );
+                isValidRange = false;
               }
-              if (
-                typeof band.adjustableRange.maxMm !== "number" ||
-                band.adjustableRange.maxMm <= 0
-              ) {
+              if (maxMm === undefined) {
+                errors.push("band adjustable range max is required.");
+                isValidRange = false;
+              } else if (typeof maxMm !== "number" || maxMm <= 0) {
                 errors.push(
                   "band adjustable range max must be a positive number."
                 );
+                isValidRange = false;
               }
-              if (band.adjustableRange.minMm >= band.adjustableRange.maxMm) {
+              if (isValidRange && minMm >= maxMm) {
                 errors.push("band adjustable range min must be less than max.");
               }
             }
-            if (!band.style) {
+            if (!style) {
               errors.push("band style is required.");
-            } else if (typeof band.style !== "string" || !band.style) {
+            } else if (typeof style !== "string") {
               errors.push("band style must be a non-empty string.");
             }
             if (
-              band.quickRelease !== undefined &&
-              typeof band.quickRelease !== "boolean"
+              quickRelease !== undefined &&
+              typeof quickRelease !== "boolean"
             ) {
               errors.push("band quick release must be a boolean.");
             }
             if (
-              band.waterResistance !== undefined &&
-              typeof band.waterResistance !== "boolean"
+              waterResistance !== undefined &&
+              typeof waterResistance !== "boolean"
             ) {
               errors.push("band water resistance must be a boolean.");
             }
             if (
-              band.hypoallergenic !== undefined &&
-              typeof band.hypoallergenic !== "boolean"
+              hypoallergenic !== undefined &&
+              typeof hypoallergenic !== "boolean"
             ) {
               errors.push("band hypoallergenic must be a boolean.");
             }
-            if (band.weightMg === undefined) {
+            if (weightMg === undefined) {
               errors.push("band weight is required.");
-            } else if (
-              typeof band.weightMg !== "number" ||
-              band.weightMg <= 0
-            ) {
+            } else if (typeof weightMg !== "number" || weightMg <= 0) {
               errors.push("band weight must be a positive number.");
             }
           }
@@ -1072,11 +1848,11 @@ export function verifyModelVariationInput(
         case "update": {
           const {
             name,
-            colorHex,
-            imageUrls, // Optional
-            additionalPriceCents, // Optional
+            color,
+            imageUrls,
+            additionalPriceCents,
             band,
-            stopSelling, // Optional
+            stopSelling,
           } = req.body;
 
           if (name !== undefined && !isValidProductName(name)) {
@@ -1086,10 +1862,20 @@ export function verifyModelVariationInput(
               and cannot contain special characters.`
             );
           }
-          if (colorHex !== undefined && !isValidColorHex(colorHex)) {
-            errors.push("color hex must be a valid color hex.");
+          if (color !== undefined) {
+            if (!isNoneArrObj(color)) {
+              errors.push("color must be an object.");
+            } else {
+              const { hex, name } = color;
+              if (hex !== undefined && !isValidColorHex(hex)) {
+                errors.push("color hex must be a valid color hex.");
+              }
+              if (name !== undefined && (typeof name !== "string" || !name)) {
+                errors.push("color name must be a non-empty string.");
+              }
+            }
           }
-          if (imageUrls !== undefined && !(await isValidImgUrls(imageUrls))) {
+          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
           if (
@@ -1100,64 +1886,83 @@ export function verifyModelVariationInput(
             errors.push("additional price must be a non-negative number.");
           }
           if (band !== undefined) {
-            if (typeof band !== "object" || band === null) {
+            if (!isNoneArrObj(band)) {
               errors.push("band must be an object.");
-            } else if (Object.keys(band).length > 0) {
+            } else if (Object.keys(band).length) {
+              const {
+                widthMm,
+                lugWidthMm,
+                material,
+                colors,
+                claspType,
+                adjustableRange,
+                style,
+                quickRelease,
+                waterResistance,
+                hypoallergenic,
+                weightMg,
+              } = band;
+
               if (
-                band.lugWidthMm !== undefined &&
-                (typeof band.lugWidthMm !== "number" || band.lugWidthMm <= 0)
+                widthMm !== undefined &&
+                (typeof widthMm !== "number" || widthMm <= 0)
+              ) {
+                errors.push("band width must be a positive number.");
+              }
+              if (
+                lugWidthMm !== undefined &&
+                (typeof lugWidthMm !== "number" || lugWidthMm <= 0)
               ) {
                 errors.push("band lug width must be a positive number.");
               }
               if (
-                band.material !== undefined &&
-                (typeof band.material !== "string" || !band.material)
+                material !== undefined &&
+                (typeof material !== "string" || !material)
               ) {
                 errors.push("band material must be a non-empty string.");
               }
-              if (
-                band.colorsHex !== undefined &&
-                !isValidListOfColorsHex(band.colorsHex)
-              ) {
+              if (isPresent(colors) && !isValidListOfColorObj(colors)) {
                 errors.push(
-                  "band colors hex must be a list of valid colors hex."
+                  "band colors must be a list of valid color objects."
                 );
               }
               if (
-                band.claspType !== undefined &&
-                (typeof band.claspType !== "string" || !band.claspType)
+                claspType !== undefined &&
+                (typeof claspType !== "string" || !claspType)
               ) {
                 errors.push("band clasp type must be a non-empty string.");
               }
-              if (band.adjustableRange !== undefined) {
-                if (
-                  typeof band.adjustableRange !== "object" ||
-                  band.adjustableRange === null
-                ) {
+              if (adjustableRange !== undefined) {
+                if (!isNoneArrObj(adjustableRange)) {
                   errors.push("band adjustable range must be an object.");
-                } else if (Object.keys(band.adjustableRange).length > 0) {
+                } else if (Object.keys(adjustableRange).length) {
+                  const { minMm, maxMm } = adjustableRange;
+                  let isValidRange = true;
+
                   if (
-                    band.adjustableRange.minMm !== undefined &&
-                    (typeof band.adjustableRange.minMm !== "number" ||
-                      band.adjustableRange.minMm <= 0)
+                    minMm !== undefined &&
+                    (typeof minMm !== "number" || minMm <= 0)
                   ) {
                     errors.push(
                       "band adjustable range min must be a positive number."
                     );
+                    isValidRange = false;
                   }
                   if (
-                    band.adjustableRange.maxMm !== undefined &&
-                    (typeof band.adjustableRange.maxMm !== "number" ||
-                      band.adjustableRange.maxMm <= 0)
+                    maxMm !== undefined &&
+                    (typeof maxMm !== "number" || maxMm <= 0)
                   ) {
                     errors.push(
                       "band adjustable range max must be a positive number."
                     );
+                    isValidRange = false;
                   }
+                  // Only check if both are defined, for partial updates check will be handled in controllers
                   if (
-                    band.adjustableRange.minMm !== undefined &&
-                    band.adjustableRange.maxMm !== undefined &&
-                    band.adjustableRange.minMm >= band.adjustableRange.maxMm
+                    isValidRange &&
+                    minMm !== undefined &&
+                    maxMm !== undefined &&
+                    minMm >= maxMm
                   ) {
                     errors.push(
                       "band adjustable range min must be less than max."
@@ -1166,32 +1971,32 @@ export function verifyModelVariationInput(
                 }
               }
               if (
-                band.style !== undefined &&
-                (typeof band.style !== "string" || !band.style)
+                style !== undefined &&
+                (typeof style !== "string" || !style)
               ) {
                 errors.push("band style must be a non-empty string.");
               }
               if (
-                band.quickRelease !== undefined &&
-                typeof band.quickRelease !== "boolean"
+                quickRelease !== undefined &&
+                typeof quickRelease !== "boolean"
               ) {
                 errors.push("band quick release must be a boolean.");
               }
               if (
-                band.waterResistance !== undefined &&
-                typeof band.waterResistance !== "boolean"
+                waterResistance !== undefined &&
+                typeof waterResistance !== "boolean"
               ) {
                 errors.push("band water resistance must be a boolean.");
               }
               if (
-                band.hypoallergenic !== undefined &&
-                typeof band.hypoallergenic !== "boolean"
+                hypoallergenic !== undefined &&
+                typeof hypoallergenic !== "boolean"
               ) {
                 errors.push("band hypoallergenic must be a boolean.");
               }
               if (
-                band.weightMg !== undefined &&
-                (typeof band.weightMg !== "number" || band.weightMg <= 0)
+                weightMg !== undefined &&
+                (typeof weightMg !== "number" || weightMg <= 0)
               ) {
                 errors.push("band weight must be a positive number.");
               }
@@ -1235,16 +2040,13 @@ export function verifyVariationInstanceInput(
             errors.push(
               "Variation instance supplier serial number is required."
             );
-          } else if (
-            typeof supplierSerialNumber !== "string" ||
-            !supplierSerialNumber
-          ) {
+          } else if (typeof supplierSerialNumber !== "string") {
             errors.push(
               "Variation instance supplier serial number must be a none-empty string."
             );
           }
           if (
-            supplierImeiNumber !== undefined &&
+            isPresent(supplierImeiNumber) &&
             (typeof supplierImeiNumber !== "string" || !supplierImeiNumber)
           ) {
             errors.push(
@@ -1252,7 +2054,7 @@ export function verifyVariationInstanceInput(
             );
           }
           if (
-            conditionId !== undefined &&
+            isPresent(conditionId) &&
             (typeof conditionId !== "string" || !conditionId)
           ) {
             errors.push(
@@ -1281,8 +2083,7 @@ export function verifyVariationInstanceInput(
             );
           }
           if (
-            supplierImeiNumber !== undefined &&
-            supplierImeiNumber !== null &&
+            isPresent(supplierImeiNumber) &&
             (typeof supplierImeiNumber !== "string" || !supplierImeiNumber)
           ) {
             errors.push(
@@ -1290,7 +2091,7 @@ export function verifyVariationInstanceInput(
             );
           }
           if (
-            conditionId !== undefined &&
+            isPresent(conditionId) &&
             (typeof conditionId !== "string" || !conditionId)
           ) {
             errors.push(

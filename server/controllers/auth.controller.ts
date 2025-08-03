@@ -262,7 +262,7 @@ export async function verifyUser(
       type,
       isUsed: false,
       expiresAt: { $gt: new Date() },
-    }).session(session);
+    }).lean().session(session);
     if (!otp) {
       return next(errorHandler(400, "Invalid or expired verification code."));
     }
@@ -476,7 +476,7 @@ export async function forgotPassword(
     const user = await User.findOne({
       isDeleted: false,
       $or: orConditions,
-    });
+    }).lean();
     if (!user) {
       return next(errorHandler(404, "User not found."));
     }
@@ -536,7 +536,7 @@ export async function resetPassword(
       token: resetToken,
       expiresAt: { $gt: new Date() },
       isUsed: false,
-    }).session(session);
+    }).lean().session(session);
     if (!passwordResetToken) {
       return next(
         errorHandler(400, "Invalid or expired password reset token.")
@@ -643,7 +643,7 @@ export async function validatePassword(
       return next(errorHandler(404, "User not found."));
     }
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).lean();
     if (!user || user.isDeleted) {
       return next(errorHandler(404, "User not found."));
     }

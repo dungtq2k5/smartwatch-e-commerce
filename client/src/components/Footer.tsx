@@ -1,4 +1,4 @@
-import { memo, useRef } from "react";
+import { memo } from "react";
 
 const Footer = memo(() => {
   // DEV temp for testing

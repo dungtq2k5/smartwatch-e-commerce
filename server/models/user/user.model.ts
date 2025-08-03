@@ -21,6 +21,7 @@ const userRole = new mongoose.Schema(
     },
     assignedAt: {
       type: Date,
+      required: false,
       default: Date.now,
     },
   },
@@ -35,25 +36,33 @@ const userSchema = new mongoose.Schema(
     },
     avatarUrl: {
       type: String,
+      required: false,
+      default: null,
     },
     email: {
-      // Can be undefined if phoneNumber is provided
+      // Can be null if phoneNumber is provided
       type: String,
       unique: true,
       sparse: true,
+      required: false,
+      default: null,
     },
     isEmailVerified: {
       type: Boolean,
+      required: false,
       default: false,
     },
     phoneNumber: {
-      // Can be undefined if email is provided
+      // Can be null if email is provided
       type: String,
       unique: true,
       sparse: true,
+      required: false,
+      default: null,
     },
     isPhoneNumberVerified: {
       type: Boolean,
+      required: false,
       default: false,
     },
     password: {
@@ -71,37 +80,50 @@ const userSchema = new mongoose.Schema(
     },
     stripeCustomerId: {
       type: String,
+      required: false,
+      default: null,
     },
     userBalanceCents: {
       type: Number,
+      required: false,
       default: 0,
       min: 0,
     },
     lastLogin: {
       type: Date,
+      required: false,
+      default: null,
     },
     isLocked: {
       type: Boolean,
+      required: false,
       default: false,
     },
     authProvider: {
       type: String,
       enum: AUTH_PROVIDER_OPTIONS,
+      required: false,
       default: "local",
     },
     isDeleted: {
       type: Boolean,
+      required: false,
       default: false,
     },
     deletedAt: {
       type: Date,
+      required: false,
+      default: null,
     },
     deletedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: false,
+      default: null,
     },
     roles: {
       type: [userRole],
+      required: false,
       default: [],
     },
   },

@@ -57,6 +57,7 @@ export default function SearchProduct() {
           ...query,
           offset: query.offset.toString(),
           limit: query.limit.toString(),
+          stopSelling: "false", // Always query products that are not stopped selling
         });
 
         setProducts((prev) => ({

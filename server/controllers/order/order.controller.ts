@@ -112,18 +112,11 @@ export async function create(
 
       const productModel = variation.productModelId as any;
 
-      // If type is color -> priceCents + additionalPriceCents
-      // If type is band -> priceCents  from band
-      const totalCents =
-        variation.type === "color"
-          ? (productModel.priceCents + variation.additionalPriceCents) *
-            quantity
-          : variation.priceCents! * quantity;
-
       orderItemsInsert.push({
         variationId,
         quantity,
-        totalCents,
+        totalCents:
+          (productModel.priceCents + variation.additionalPriceCents) * quantity,
         instanceIds: instances.map((instance) => ({
           id: instance._id,
           sku: instance.sku,
@@ -131,7 +124,7 @@ export async function create(
       });
 
       // Update variation quantity
-      variation.stockQuantity -= quantity;
+      variation.stockQuantity! -= quantity;
       await variation.save({ session });
 
       // Update instance isActive to false
@@ -204,7 +197,7 @@ export async function get(
     if (!Types.ObjectId.isValid(id)) {
       return next(errorHandler(404, "Order not found."));
     }
-    const order = await Order.findById(id);
+    const order = await Order.findById(id).lean();
     if (!order) {
       return next(errorHandler(404, "Order not found."));
     }
@@ -276,13 +269,10 @@ export async function update(
 
     const { deliveryStateId, estimateReceivedDate, deliveryAddressId } =
       req.body as OrderUpdate;
+
     const updatedDeliveryStateId = deliveryStateId
       ? new Types.ObjectId(deliveryStateId)
       : order.deliveryStateId;
-    const updatedEstimateReceivedDate = estimateReceivedDate
-      ? new Date(estimateReceivedDate)
-      : order.estimateReceivedDate;
-
     if (
       !updatedDeliveryStateId.equals(order.deliveryStateId) &&
       getDeliveryStateLevel(updatedDeliveryStateId) <
@@ -293,6 +283,9 @@ export async function update(
       );
     }
 
+    const updatedEstimateReceivedDate = estimateReceivedDate
+      ? new Date(estimateReceivedDate)
+      : order.estimateReceivedDate;
     if (
       updatedEstimateReceivedDate !== order.estimateReceivedDate &&
       updatedEstimateReceivedDate <= order.createdAt

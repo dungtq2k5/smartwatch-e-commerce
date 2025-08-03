@@ -36,7 +36,7 @@ export async function create(
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found."));
     }
-    const product = await Product.findById(productId).session(session);
+    const product = await Product.findById(productId).lean().session(session);
     if (!product || product.isDeleted) {
       return next(errorHandler(404, "Product not found."));
     }
@@ -49,7 +49,9 @@ export async function create(
       isDeleted: false,
       _id: modelId,
       productId,
-    }).session(session);
+    })
+      .lean()
+      .session(session);
     if (!model) {
       return next(errorHandler(404, "Model not found."));
     }
@@ -70,9 +72,6 @@ export async function create(
     // Business logic
     const { supplierSerialNumber, supplierImeiNumber, conditionId, isActive } =
       req.body as VariationInstanceCreate;
-    if (supplierImeiNumber && variation.type === "band") {
-      return next(errorHandler(400, "Band variation cannot have IMEI number."));
-    }
 
     // Check supplier serial number is unique
     const orConditions: (
@@ -83,7 +82,9 @@ export async function create(
     const existingInstance = await VariationInstance.findOne({
       modelVariationId: variationId,
       $or: orConditions,
-    }).lean().session(session);
+    })
+      .lean()
+      .session(session);
     if (existingInstance) {
       return next(errorHandler(409, "Variation instance already exists."));
     }
@@ -127,7 +128,7 @@ export async function create(
     await inventoryMovement.save({ session });
 
     // Increase stock
-    variation.stockQuantity += 1;
+    variation.stockQuantity! += 1;
     await variation.save({ session });
 
     // Commit transaction
@@ -160,7 +161,7 @@ export async function get(
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found."));
     }
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
       return next(errorHandler(404, "Product not found."));
     }
@@ -173,7 +174,7 @@ export async function get(
       isDeleted: false,
       _id: modelId,
       productId,
-    });
+    }).lean();
     if (!model) {
       return next(errorHandler(404, "Model not found."));
     }
@@ -186,7 +187,7 @@ export async function get(
       isDeleted: false,
       _id: variationId,
       productModelId: modelId,
-    });
+    }).lean();
     if (!variation) {
       return next(errorHandler(404, "Variation not found."));
     }
@@ -199,7 +200,7 @@ export async function get(
       isDeleted: false,
       _id: id,
       modelVariationId: variationId,
-    });
+    }).lean();
     if (!instance) {
       return next(errorHandler(404, "Variation instance not found."));
     }
@@ -228,7 +229,7 @@ export async function update(
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found."));
     }
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
       return next(errorHandler(404, "Product not found."));
     }
@@ -241,7 +242,7 @@ export async function update(
       isDeleted: false,
       _id: modelId,
       productId,
-    });
+    }).lean();
     if (!model) {
       return next(errorHandler(404, "Model not found."));
     }
@@ -254,7 +255,7 @@ export async function update(
       isDeleted: false,
       _id: variationId,
       productModelId: modelId,
-    });
+    }).lean();
     if (!variation) {
       return next(errorHandler(404, "Variation not found."));
     }
@@ -275,10 +276,13 @@ export async function update(
     // Business logic
     const { supplierSerialNumber, supplierImeiNumber, conditionId, isActive } =
       req.body as VariationInstanceUpdate;
+
     // Check conditionId exists
-    const updatedConditionId = conditionId
-      ? new Types.ObjectId(conditionId)
-      : instance.conditionId;
+    const updatedConditionId = conditionId === null
+      ? getConditionId("new")
+      : conditionId
+        ? new Types.ObjectId(conditionId)
+        : instance.conditionId;
     if (!updatedConditionId.equals(instance.conditionId)) {
       if (!Types.ObjectId.isValid(updatedConditionId)) {
         return next(errorHandler(404, "Condition not found."));
@@ -290,26 +294,20 @@ export async function update(
       }
     }
 
-    // If variation type = band and supplierImeiNumber is provided, return error
-    if (supplierImeiNumber && variation.type === "band") {
-      return next(errorHandler(400, "Band variation cannot have IMEI number."));
-    }
-
     // Check existing supplier serial and imei
     const updatedSupplierSerialNumber =
       supplierSerialNumber || instance.supplierSerialNumber;
     /*
       Supplier imei update scenarios:
-        - From undefined to defined -> check exists
-        - From defined to undefined
+        - From null to defined -> check exists
+        - From defined to null
         - From defined to defined (different value) -> check exists
         - From defined to defined (same value)
     */
-    const updatedSupplierImeiNumber = supplierImeiNumber
-      ? supplierImeiNumber
-      : supplierImeiNumber === null
-      ? undefined
-      : instance.supplierImeiNumber || undefined;
+    const updatedSupplierImeiNumber =
+      supplierImeiNumber === null
+        ? null
+        : supplierImeiNumber || instance.supplierImeiNumber;
 
     const orConditions: (
       | { supplierSerialNumber: string }
@@ -335,10 +333,11 @@ export async function update(
     }
 
     // Update instance
+    const updatedIsActive = isActive ?? instance.isActive;
+
     instance.supplierSerialNumber = updatedSupplierSerialNumber;
     instance.supplierImeiNumber = updatedSupplierImeiNumber;
     instance.conditionId = updatedConditionId;
-    const updatedIsActive = isActive ?? instance.isActive;
     instance.inactiveAt =
       instance.isActive && !updatedIsActive ? new Date() : instance.inactiveAt; // If isActive change from true to false then update inactiveAt
     instance.isActive = updatedIsActive;
@@ -355,74 +354,3 @@ export async function update(
     next(error);
   }
 }
-
-// --- HELPER FUNCTIONS ---
-
-// async function handleCheckExistingModels(
-//   productId: string | undefined,
-//   modelId: string | undefined,
-//   variationId: string | undefined,
-//   instanceId: string | undefined,
-//   next: NextFunction,
-//   session: mongoose.ClientSession | undefined
-// ): Promise<any> {
-//   const models: any = {};
-
-//   if (productId) {
-//     if (!Types.ObjectId.isValid(productId)) {
-//       return next(errorHandler(404, "Product not found."));
-//     }
-//     const product = await Product.findById(productId).session(session || null);
-//     if (!product || product.isDeleted) {
-//       return next(errorHandler(404, "Product not found."));
-//     }
-//     models.product = product;
-//   }
-
-//   if (modelId) {
-//     if (!Types.ObjectId.isValid(modelId)) {
-//       return next(errorHandler(404, "Model not found."));
-//     }
-//     const model = await ProductModel.findOne({
-//       isDeleted: false,
-//       _id: modelId,
-//       productId,
-//     }).session(session || null);
-//     if (!model) {
-//       return next(errorHandler(404, "Model not found."));
-//     }
-//     models.model = model;
-//   }
-
-//   if (variationId) {
-//     if (!Types.ObjectId.isValid(variationId)) {
-//       return next(errorHandler(404, "Variation not found."));
-//     }
-//     const variation = await ModelVariation.findOne({
-//       isDeleted: false,
-//       _id: variationId,
-//       productModelId: modelId,
-//     }).session(session || null);
-//     if (!variation) {
-//       return next(errorHandler(404, "Variation not found."));
-//     }
-//     models.variation = variation;
-//   }
-
-//   if (instanceId) {
-//     if (!Types.ObjectId.isValid(instanceId)) {
-//       return next(errorHandler(404, "Variation instance not found."));
-//     }
-//     const instance = await VariationInstance.findOne({
-//       isDeleted: false,
-//       _id: instanceId,
-//       modelVariationId: variationId,
-//     }).session(session || null);
-//     if (!instance) {
-//       return next(errorHandler(404, "Variation instance not found."));
-//     }
-//     models.instance = instance;
-//   }
-
-//   return models;
-// }

@@ -27,6 +27,16 @@ router.post(
 
 router.get("/:id", productController.get);
 
+/**
+  Query: modelStopSelling, variationStopSelling
+ */
+router.get(
+  "/:id/details",
+  inputSanitizer("product details"),
+  verifyProductInput("details"),
+  productController.getWithModelsAndVariations
+);
+
 router.get(
   "/",
   inputSanitizer("product search"),
@@ -55,13 +65,9 @@ router.post(
   modelController.create
 );
 
-router.get(
-  "/:productId/models",
-  verifyPermission("r_product_model"),
-  modelController.get
-);
-
 router.get("/:productId/models/:id", modelController.get);
+
+router.get("/:productId/models", modelController.getAll);
 
 router.patch(
   "/:productId/models/:id",
@@ -98,15 +104,13 @@ router.patch(
 );
 
 router.get(
-  "/:productId/models/:modelId/variations",
-  verifyPermission("r_model_variation"),
+  "/:productId/models/:modelId/variations/:id",
   variationController.get
 );
 
 router.get(
-  "/:productId/models/:modelId/variations/:id",
-  verifyPermission("r_model_variation"),
-  variationController.get
+  "/:productId/models/:modelId/variations",
+  variationController.getAll
 );
 
 router.delete(

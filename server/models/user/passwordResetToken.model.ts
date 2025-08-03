@@ -18,11 +18,15 @@ const passwordResetToken = new mongoose.Schema(
     },
     isUsed: {
       type: Boolean,
+      required: false,
       default: false,
     },
   },
   { timestamps: { createdAt: true } }
 );
 
-const PasswordResetToken = mongoose.model("PasswordResetToken", passwordResetToken);
+const PasswordResetToken = mongoose.model(
+  "PasswordResetToken",
+  passwordResetToken
+);
 export default PasswordResetToken;

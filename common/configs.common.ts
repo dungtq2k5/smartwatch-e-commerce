@@ -129,16 +129,120 @@ export const PRODUCT_MOCK_OPTIONS = {
     "Kirin",
   ] as const,
 
-  MODEL_WATER_RESISTANCE_OPTIONS: [
-    "IP67",
-    "IP68",
-    "5 ATM",
-    "10 ATM",
-    "Water Resistant",
-    null,
-  ] as const,
+  MODEL_WATER_RESISTANCE_OPTIONS: ["IP67", "IP68", "5 ATM", "10 ATM"] as const,
 
   MODEL_COMPATIBLE_BAND_LUG_WIDTH_MM_OPTIONS: [18, 20, 22, 24] as const,
+
+  MODEL_HEALTH_FEATURES_OPTIONS: [
+    "Heart Rate Monitoring",
+    "Sleep Tracking",
+    "Blood Oxygen Monitoring",
+    "Stress Monitoring",
+    "ECG",
+    "Body Temperature Monitoring",
+    "Hydration Tracking",
+    "Menstrual Cycle Tracking",
+    "Body Composition Analysis",
+    "Fitness Age",
+  ] as const,
+
+  MODEL_SPORTS_FEATURES_OPTIONS: [
+    "Running",
+    "Cycling",
+    "Swimming",
+    "Walking",
+    "Hiking",
+    "Yoga",
+    "Gym Workouts",
+    "HIIT",
+    "Pilates",
+    "Dance",
+  ] as const,
+
+  MODEL_SPECIAL_FEATURES_OPTIONS: [
+    "Voice Assistant",
+    "Music Playback",
+    "Contactless Payments",
+    "Customizable Watch Faces",
+    "Notifications",
+    "Find My Phone",
+    "Remote Camera Control",
+    "Weather Updates",
+    "Calendar Sync",
+    "Smart Home Control",
+  ] as const,
+
+  MODEL_SUPPORTED_APPS_FOR_NOTIFICATIONS_OPTIONS: [
+    "WhatsApp",
+    "Facebook",
+    "Instagram",
+    "Twitter",
+    "Telegram",
+    "Slack",
+    "Email",
+    "SMS",
+    "Google Calendar",
+    "Spotify",
+  ] as const,
+
+  MODEL_CAMERA_FEATURES_OPTIONS: [
+    "Auto Focus",
+    "Face Detection",
+    "HDR",
+    "Panorama",
+    "Night Mode",
+    "Burst Mode",
+    "Slow Motion",
+    "Time Lapse",
+    "Pro Mode",
+    "Voice Control",
+  ] as const,
+
+  MODEL_COMPATIBLE_PHONE_OS_OPTIONS: [
+    "Android",
+    "iOS",
+    "HarmonyOS",
+    "Windows Phone",
+    "KaiOS",
+  ] as const,
+
+  MODEL_APPS_CONNECT_OPTIONS: [
+    "Google Fit",
+    "Apple Health",
+    "Samsung Health",
+    "Fitbit",
+    "Garmin Connect",
+    "Huawei Health",
+    "Strava",
+    "MyFitnessPal",
+    "Runkeeper",
+    "MapMyRun",
+  ] as const,
+
+  MODEL_BATTERY_CHARGE_TYPE_OPTIONS: [
+    "Wireless Charging",
+    "USB-C",
+    "Magnetic Charging",
+    "Dock Charging",
+    "Solar Charging",
+    "Standard Charging",
+  ] as const,
+
+  MODEL_SCREEN_GLASS_MATERIAL_OPTIONS: [
+    "Gorilla Glass",
+    "Sapphire Crystal",
+    "Dragontrail Glass",
+    "Tempered Glass",
+    "Plastic",
+  ] as const,
+
+  MODEL_BEZEL_MATERIAL_OPTIONS: [
+    "stainless steel",
+    "aluminum",
+    "plastic",
+    "ceramic",
+    "titanium",
+  ] as const,
 
   VARIATION_BAND_MATERIAL_OPTIONS: [
     "leather",
@@ -165,3 +269,5 @@ export const PRODUCT_MOCK_OPTIONS = {
     "smart",
   ] as const,
 } as const;
+
+export const PRODUCT_TYPES = ["watch", "band"] as const;

@@ -174,7 +174,7 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
       if (address) return address;
     }
 
-    set({ isGetting: true });
+    set({ isGetting: true, getErr: undefined });
     try {
       const res = await retrieve(`${SELF_ADDRESSES_URL}/${addressId}`);
       if (!res.success) {

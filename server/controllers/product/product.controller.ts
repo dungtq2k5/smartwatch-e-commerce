@@ -6,13 +6,19 @@ import ProductBrand from "../../models/product/productBrand.model";
 import ProductCategory from "../../models/product/productCategory.model";
 import type {
   ProductCreate,
+  ProductDetailQuery,
+  ProductDetailResponse,
   ProductListResponse,
   ProductResponse,
   ProductSearchQuery,
   ProductUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
-import { formatProductResponse } from "../../utils/utils";
+import {
+  formatModelVariationResponse,
+  formatProductModelResponse,
+  formatProductResponse,
+} from "../../utils/utils";
 import { Types } from "mongoose";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 import ProductModel from "../../models/product/productModel.model";
@@ -25,6 +31,7 @@ export async function create(
   console.log("▶️ ", "Creating product...");
   const {
     name,
+    type,
     brandId,
     categoryId,
     description,
@@ -59,6 +66,7 @@ export async function create(
     const { userId } = req["auth"] as RequestAuth;
     const product = new Product({
       name,
+      type,
       brandId,
       categoryId,
       description,
@@ -69,6 +77,7 @@ export async function create(
     });
 
     await product.save();
+    await product.populate(["brand", "category"]);
 
     res.status(201).json({
       success: true,
@@ -90,7 +99,9 @@ export async function get(
   const { id } = req.params;
 
   try {
-    const product = await Product.findById(id);
+    const product = await Product.findById(id)
+      .populate(["brand", "category"])
+      .lean();
     if (!product || product.isDeleted) {
       return next(errorHandler(404, "Product not found."));
     }
@@ -103,6 +114,126 @@ export async function get(
     console.log("✅ ", "Product fetched successfully.");
   } catch (error) {
     next(error);
+  }
+}
+
+export async function getWithModelsAndVariations(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Fetching product's models and variations...");
+  const { id } = req.params;
+  const reqQuery = req.query as ProductDetailQuery;
+
+  const modelQueryMatch: any = { isDeleted: false };
+  const variationQueryMatch: any = { isDeleted: false };
+
+  if (reqQuery.modelStopSelling) {
+    modelQueryMatch.stopSelling = reqQuery.modelStopSelling === "true";
+  }
+  if (reqQuery.variationStopSelling) {
+    variationQueryMatch.stopSelling = reqQuery.variationStopSelling === "true";
+  }
+
+  try {
+    // Check product exists
+    if (!Types.ObjectId.isValid(id)) {
+      return next(
+        errorHandler(404, "Fetching product with models and variations....")
+      );
+    }
+
+    const productDetails = await Product.aggregate([
+      { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
+      {
+        $lookup: {
+          from: "productbrands",
+          localField: "brandId",
+          foreignField: "_id",
+          as: "brand",
+        },
+      },
+      { $unwind: "$brand" },
+      {
+        $lookup: {
+          from: "productcategories",
+          localField: "categoryId",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      { $unwind: "$category" },
+      {
+        $lookup: {
+          from: "productmodels",
+          localField: "_id",
+          foreignField: "productId",
+          as: "models",
+          pipeline: [
+            { $match: modelQueryMatch },
+            {
+              $lookup: {
+                from: "productos",
+                localField: "config.osId",
+                foreignField: "_id",
+                as: "config.os",
+              },
+            },
+            { $unwind: "$config.os" },
+            {
+              $lookup: {
+                from: "modelvariations",
+                localField: "_id",
+                foreignField: "productModelId",
+                as: "variations",
+                pipeline: [
+                  {
+                    $match: variationQueryMatch,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    if (productDetails.length === 0) {
+      return next(errorHandler(404, "Product not found."));
+    }
+
+    const productDetail = productDetails[0];
+
+    const formattedModels = productDetail.models.map((model: any) => {
+      const formattedVariations = model.variations.map((variation: any) =>
+        formatModelVariationResponse(variation)
+      );
+      return {
+        ...formatProductModelResponse(model),
+        variations: {
+          total: formattedVariations.length,
+          variations: formattedVariations,
+        },
+      };
+    });
+
+    const data: ProductDetailResponse = {
+      ...formatProductResponse(productDetail),
+      models: {
+        total: formattedModels.length,
+        models: formattedModels,
+      },
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "Product details fetched successfully.",
+      data,
+    } as SuccessResponse<ProductDetailResponse>);
+    console.log("✅ ", "Product details fetched successfully.");
+  } catch (error) {
+    return next(error);
   }
 }
 
@@ -126,6 +257,8 @@ export async function search(
       },
     ];
   }
+
+  if (reqQuery.type) query.type = reqQuery.type;
 
   if (reqQuery.brandId) {
     if (!Types.ObjectId.isValid(reqQuery.brandId)) {
@@ -164,35 +297,55 @@ export async function search(
     const aggregationResult = await Product.aggregate([
       { $match: { isDeleted: false, ...query } },
       {
+        $lookup: {
+          from: "productbrands",
+          localField: "brandId",
+          foreignField: "_id",
+          as: "brand",
+        },
+      },
+      { $unwind: "$brand" },
+      {
+        $lookup: {
+          from: "productcategories",
+          localField: "categoryId",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      { $unwind: "$category" },
+      {
         $facet: {
           metadata: [{ $count: "total" }],
           data: [
             { $sort: sortStage },
             { $skip: offset },
             { $limit: limit },
-            {
-              $project: {
-                id: "$_id", // Rename _id to id
-                _id: 0, // Exclude _id from output
-                name: 1,
-                brandId: 1,
-                categoryId: 1,
-                description: 1,
-                imageUrls: 1,
-                basePriceCents: 1,
-                createdBy: 1,
-                createdAt: 1,
-                updatedAt: 1,
-                stopSelling: 1,
-              },
-            },
+            // { Use format function instead
+            //   $project: {
+            //     id: "$_id", // Rename _id to id
+            //     _id: 0, // Exclude _id from output
+            //     name: 1,
+            //     brand: 1,
+            //     category: 1,
+            //     imageUrls: 1,
+            //     basePriceCents: 1,
+            //     description: 1,
+            //     createdBy: 1,
+            //     createdAt: 1,
+            //     updatedAt: 1,
+            //     stopSelling: 1,
+            //   },
+            // },
           ],
         },
       },
     ]);
 
-    const products = aggregationResult[0].data;
-    const total = aggregationResult[0].metadata[0]?.total || 0;
+    const products: ProductResponse[] = aggregationResult[0].data.map(
+      (product: any) => formatProductResponse(product)
+    );
+    const total: number = aggregationResult[0].metadata[0]?.total || 0;
 
     res.status(200).json({
       success: true,
@@ -280,7 +433,7 @@ export async function update(
 
     // Update imageUrls on Firebase Storage
     if (updateData.imageUrls) {
-      const imgUrlToRemove = product.imageUrls.filter(
+      const imgUrlToRemove = product.imageUrls!.filter(
         (url) => !updateData.imageUrls!.includes(url)
       );
       if (imgUrlToRemove.length > 0) {
@@ -292,6 +445,7 @@ export async function update(
     }
 
     product.name = updatedName;
+    product.type = updateData.type || product.type;
     product.brandId = updatedBrandId;
     product.categoryId = updatedCategoryId;
     product.description = updateData.description || product.description;
@@ -301,6 +455,7 @@ export async function update(
       updateData.basePriceCents ?? product.basePriceCents;
 
     await product.save();
+    await product.populate(["brand", "category"]);
 
     res.status(200).json({
       success: true,

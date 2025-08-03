@@ -1,8 +1,17 @@
 import express from "express";
 import { verifyPermission } from "../../utils/middlewares/auth.middleware";
-import { verifyEmptyBody }  from "../../utils/middlewares/general.middleware";
-import { inputSanitizer, verifyCategoryInput } from "../../utils/middlewares/product.middleware";
-import { create, get, remove, update } from "../../controllers/product/category.controller";
+import { verifyEmptyBody } from "../../utils/middlewares/general.middleware";
+import {
+  inputSanitizer,
+  verifyCategoryInput,
+} from "../../utils/middlewares/product.middleware";
+import {
+  create,
+  get,
+  getAll,
+  remove,
+  update,
+} from "../../controllers/product/category.controller";
 
 const router = express.Router();
 
@@ -15,10 +24,9 @@ router.post(
   create
 );
 
-router.get(
-  "/",
-  get
-);
+router.get("/:id", get);
+
+router.get("/", getAll);
 
 router.patch(
   "/:id",
@@ -29,10 +37,6 @@ router.patch(
   update
 );
 
-router.delete(
-  "/:id",
-  verifyPermission("d_product_cat"),
-  remove
-);
+router.delete("/:id", verifyPermission("d_product_cat"), remove);
 
 export default router;

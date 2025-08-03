@@ -47,6 +47,7 @@ const Header = memo(() => {
             src={user.avatarUrl ?? defaultAvatar}
             className="avatar--g avatar--sm--g"
             alt="account"
+            loading="lazy"
           />
         </Link>
       );

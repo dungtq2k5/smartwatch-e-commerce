@@ -34,13 +34,15 @@ const userAddressSchema = new mongoose.Schema(
     },
     countryCode: {
       type: String,
+      required: false,
       default: VN_COUNTRY_CODE,
     },
     phoneNumber: {
       type: String,
       required: true,
     },
-    fullAddress: { // For display purposes
+    fullAddress: {
+      // For display purposes
       type: String,
       required: true,
     },
@@ -49,6 +51,7 @@ const userAddressSchema = new mongoose.Schema(
         locationType: {
           type: String,
           enum: ["point"],
+          required: false,
           default: "point",
         },
         coordinates: {
@@ -61,6 +64,7 @@ const userAddressSchema = new mongoose.Schema(
     },
     isDefault: {
       type: Boolean,
+      required: false,
       default: false,
     },
   },

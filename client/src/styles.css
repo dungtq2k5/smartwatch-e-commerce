@@ -90,12 +90,6 @@ body {
   gap: 0.5em;
 }
 
-.product-img--g {
-  height: 12em;
-  width: 100%;
-  object-fit: contain;
-}
-
 .shadow--g {
   box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
 }
@@ -107,4 +101,77 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* --- Product Detail Page BEM Styles --- */
+.product-detail__image-selector {
+  gap: 0.5rem;
+}
+
+.product-detail__image-thumb {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  width: 56px;
+  height: 56px;
+  background: none;
+  transition: border 0.15s, outline 0.15s;
+  outline: none;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.product-detail__image-thumb--active,
+.product-detail__image-thumb:focus-visible {
+  border: 2px solid var(--primary-color);
+  outline: 2px solid var(--primary-color);
+  box-shadow: 0 0 0 2px #e3f0ff;
+}
+
+.product-detail__image-thumb-img {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.product-detail__main-img {
+  max-height: 400px;
+  object-fit: contain;
+}
+
+.product-detail__title {
+  font-size: 2rem;
+}
+
+.product-detail__size-btn {
+  /* Bootstrap handles most, just add transition */
+  transition: all 0.15s;
+}
+.product-detail__size-btn--active,
+.product-detail__size-btn.active {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+  font-weight: 600;
+}
+
+.product-detail__color-btn {
+  border-width: 2px;
+  font-weight: 400;
+  transition: all 0.15s;
+  background: transparent;
+  color: inherit;
+  border-style: solid;
+}
+.product-detail__color-btn--active,
+.product-detail__color-btn[aria-pressed="true"] {
+  color: #fff !important;
+  font-weight: 600;
+  outline: 2px solid var(--primary-color);
+  box-shadow: 0 0 0 2px #e3f0ff;
+}
+.product-detail__desc {
+  min-height: 48px;
 }

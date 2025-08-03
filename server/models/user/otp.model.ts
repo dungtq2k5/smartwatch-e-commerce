@@ -22,6 +22,7 @@ const optSchema = new mongoose.Schema(
     },
     isUsed: {
       type: Boolean,
+      required: false,
       default: false,
     },
   },

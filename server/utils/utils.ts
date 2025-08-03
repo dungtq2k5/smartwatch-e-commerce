@@ -1,4 +1,7 @@
-import { AVATAR_ALLOWED_TYPES, VERIFICATION_CODE_LENGTH } from "../../common/configs.common";
+import {
+  AVATAR_ALLOWED_TYPES,
+  VERIFICATION_CODE_LENGTH,
+} from "../../common/configs.common";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "./types";
 import { JWT_NAME, JWT_TTL } from "../configs/configs";
@@ -46,7 +49,8 @@ export async function isValidImgUrl(url: any): Promise<boolean> {
     if (!res.ok) return false;
 
     const contentType = res.headers.get("content-type");
-    if (contentType && AVATAR_ALLOWED_TYPES.includes(contentType as any)) return true;
+    if (contentType && AVATAR_ALLOWED_TYPES.includes(contentType as any))
+      return true;
 
     return false;
   } catch {
@@ -123,10 +127,10 @@ export function isValidIdArray(arr: any): boolean {
   return arr.every((id) => Types.ObjectId.isValid(id));
 }
 
-export function isArrayOfStrings(arr: any): boolean {
+export function isArrayOfNonEmptyStrings(arr: any): boolean {
   if (!Array.isArray(arr)) return false;
 
-  return arr.every((item) => typeof item === "string");
+  return arr.every((item) => typeof item === "string" && !!item.trim());
 }
 
 /*
@@ -191,40 +195,49 @@ export async function genInstanceSku(
   return `${brandCode}-${modelName}-${sizeMm}-${varNameCode}-${uniqueId}`;
 }
 
-export function compareAddress(
-  address1: any,
-  address2: any
-): boolean {
+export function compareAddress(address1: any, address2: any): boolean {
   return (
     address1.name === address2.name &&
     address1.street === address2.street &&
     address1.apartmentNumber === address2.apartmentNumber &&
-    address1.ward === address2.ward &&
-    address1.district === address2.district &&
-    address1.cityProvince === address2.cityProvince &&
-    address1.country === address2.country &&
+    address1.wardCode === address2.wardCode &&
+    address1.districtCode === address2.districtCode &&
+    address1.cityProvinceCode === address2.cityProvinceCode &&
+    address1.countryCode === address2.countryCode &&
+    address1.location.coordinates[0] === address2.location.coordinates[0] && // long
+    address1.location.coordinates[1] === address2.location.coordinates[1] && // lat
     address1.phoneNumber === address2.phoneNumber
   );
 }
 
+/*
+ * Check if a value is present (not undefined or null).
+ * @param val - The value to check.
+ * @returns {boolean} - True if the value is present, false otherwise.
+ */
+export function isPresent(val: any): boolean {
+  return val !== undefined && val !== null;
+}
+
 // --- FORMATTING RESPONSE FUNCTIONS ---
+
 export function formatUserResponse(user: any): UserResponse {
   return {
-    id: user._id.toString(),
+    id: user._id,
     fullName: user.fullName,
-    avatarUrl: user.avatarUrl ? user.avatarUrl : undefined,
-    email: user.email ? user.email : undefined,
+    avatarUrl: user.avatarUrl,
+    email: user.email,
     isEmailVerified: user.isEmailVerified,
-    phoneNumber: user.phoneNumber ? user.phoneNumber : undefined,
+    phoneNumber: user.phoneNumber,
     isPhoneNumberVerified: user.isPhoneNumberVerified,
-    birth: user.birth.toISOString(),
+    birth: user.birth,
     gender: user.gender,
-    stripeCustomerId: user.stripeCustomerId ? user.stripeCustomerId : undefined,
+    stripeCustomerId: user.stripeCustomerId,
     userBalanceCents: user.userBalanceCents,
     authProvider: user.authProvider,
-    lastLogin: user.lastLogin ? user.lastLogin.toISOString() : undefined,
-    createdAt: user.createdAt.toISOString(),
-    updatedAt: user.updatedAt.toISOString(),
+    lastLogin: user.lastLogin,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
   };
 }
 
@@ -237,23 +250,23 @@ export function formatAdminUserResponse(user: any): AdminUserResponse {
 
 export function formatRoleResponse(role: any): RoleResponse {
   return {
-    id: role._id.toString(),
+    id: role._id,
     name: role.name,
     userAssigned: role.userAssigned,
     permissions: role.permissions.map((p: any) => ({
-      id: p.id.toString(),
-      assignedAt: p.assignedAt.toISOString(),
-      assignedBy: p.assignedBy.toString(),
+      id: p.id,
+      assignedAt: p.assignedAt,
+      assignedBy: p.assignedBy,
     })),
-    createdBy: role.createdBy.toString(),
-    createdAt: role.createdAt.toISOString(),
-    updatedAt: role.updatedAt.toISOString(),
+    createdBy: role.createdBy,
+    createdAt: role.createdAt,
+    updatedAt: role.updatedAt,
   };
 }
 
 export function formatUserAddressResponse(address: any): UserAddressResponse {
   return {
-    id: address._id.toString(),
+    id: address._id,
     name: address.name,
     street: address.street,
     apartmentNumber: address.apartmentNumber,
@@ -265,8 +278,8 @@ export function formatUserAddressResponse(address: any): UserAddressResponse {
     phoneNumber: address.phoneNumber,
     fullAddress: address.fullAddress,
     isDefault: address.isDefault,
-    createdAt: address.createdAt.toISOString(),
-    updatedAt: address.updatedAt.toISOString(),
+    createdAt: address.createdAt,
+    updatedAt: address.updatedAt,
   };
 }
 
@@ -275,32 +288,33 @@ export function formatAdminUserAddressResponse(
 ): AdminUserAddressResponse {
   return {
     ...formatUserAddressResponse(address),
-    userId: address.userId.toString(),
+    userId: address.userId,
   };
 }
 
 export function formatUserCartResponse(cart: any): UserCartResponse {
   return {
-    variationId: cart.variationId.toString(),
+    variationId: cart.variationId,
     quantity: cart.quantity,
-    createdAt: cart.createdAt.toISOString(),
-    updatedAt: cart.updatedAt.toISOString(),
+    createdAt: cart.createdAt,
+    updatedAt: cart.updatedAt,
   };
 }
 
 export function formatProductResponse(product: any): ProductResponse {
   return {
-    id: product._id.toString(),
+    id: product._id,
     name: product.name,
-    brandId: product.brandId.toString(),
-    categoryId: product.categoryId.toString(),
+    type: product.type,
+    brand: formatProductBrandResponse(product.brand),
+    category: formatProductCategoryResponse(product.category),
     imageUrls: product.imageUrls,
-    description: product.description,
-    createdBy: product.createdBy.toString(),
-    createdAt: product.createdAt.toISOString(),
-    updatedAt: product.updatedAt.toISOString(),
-    stopSelling: product.stopSelling,
     basePriceCents: product.basePriceCents,
+    description: product.description,
+    createdBy: product.createdBy,
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
+    stopSelling: product.stopSelling,
   };
 }
 
@@ -315,12 +329,12 @@ export function formatProductCategoryResponse(
   category: any
 ): ProductCategoryResponse {
   return {
-    id: category._id.toString(),
+    id: category._id,
     name: category.name,
     description: category.description,
-    createdBy: category.createdBy.toString(),
-    createdAt: category.createdAt.toISOString(),
-    updatedAt: category.updatedAt.toISOString(),
+    createdBy: category.createdBy,
+    createdAt: category.createdAt,
+    updatedAt: category.updatedAt,
   };
 }
 
@@ -329,31 +343,30 @@ export function formatProductOsResponse(os: any): ProductOsResponse {
 }
 
 export function formatProductModelResponse(model: any): ProductModelResponse {
+  // Remove osId, os from config
+  const { osId, os, ...config } = model.config;
+
   return {
-    id: model._id.toString(),
-    productId: model.productId.toString(),
-    model: model.model,
+    id: model._id,
+    productId: model.productId,
     name: model.name,
-    watchSizeMm: model.watchSizeMm,
     priceCents: model.priceCents,
     stockPriceCents: model.stockPriceCents,
     imageUrls: model.imageUrls,
-    display: model.display,
-    resolution: model.resolution,
-    memory: model.memory,
-    chipset: model.chipset,
-    osId: model.osId.toString(),
-    connectivities: model.connectivities,
-    batteryLifeMah: model.batteryLifeMah,
-    waterResistance: model.waterResistance || null,
-    sensors: model.sensors,
+    feature: model.feature,
+    config: {
+      ...config,
+      os: formatProductOsResponse(os),
+    },
+    battery: model.battery,
+    screen: model.screen,
     caseMaterial: model.caseMaterial,
-    weightMg: model.weightMg,
+    watchWeightMg: model.watchWeightMg,
     compatibleBandLugWidthMm: model.compatibleBandLugWidthMm,
-    releaseDate: model.releaseDate.toISOString(),
-    createdBy: model.createdBy.toString(),
-    createdAt: model.createdAt.toISOString(),
-    updatedAt: model.updatedAt.toISOString(),
+    releaseDate: model.releaseDate,
+    createdBy: model.createdBy,
+    createdAt: model.createdAt,
+    updatedAt: model.updatedAt,
     stopSelling: model.stopSelling,
   };
 }
@@ -362,16 +375,17 @@ export function formatModelVariationResponse(
   variation: any
 ): ModelVariationResponse {
   return {
-    id: variation._id.toString(),
-    productModelId: variation.productModelId.toString(),
+    id: variation._id,
+    productModelId: variation.productModelId,
     name: variation.name,
-    colorHex: variation.colorHex,
+    color: variation.color,
     imageUrls: variation.imageUrls,
     additionalPriceCents: variation.additionalPriceCents,
     band: {
+      widthMm: variation.band.widthMm,
       lugWidthMm: variation.band.lugWidthMm,
       material: variation.band.material,
-      colorsHex: variation.band.colorsHex,
+      colors: variation.band.colors,
       claspType: variation.band.claspType,
       adjustableRange: variation.band.adjustableRange,
       style: variation.band.style,
@@ -381,9 +395,9 @@ export function formatModelVariationResponse(
       weightMg: variation.band.weightMg,
     },
     stockQuantity: variation.stockQuantity,
-    createdBy: variation.createdBy.toString(),
-    createdAt: variation.createdAt.toISOString(),
-    updatedAt: variation.updatedAt.toISOString(),
+    createdBy: variation.createdBy,
+    createdAt: variation.createdAt,
+    updatedAt: variation.updatedAt,
     stopSelling: variation.stopSelling,
   };
 }
@@ -392,55 +406,51 @@ export function formatVariationInstanceResponse(
   instance: any
 ): VariationInstanceResponse {
   return {
-    id: instance._id.toString(),
+    id: instance._id,
     sku: instance.sku,
-    modelVariationId: instance.modelVariationId.toString(),
+    modelVariationId: instance.modelVariationId,
     supplierSerialNumber: instance.supplierSerialNumber,
     supplierImeiNumber: instance.supplierImeiNumber,
-    conditionId: instance.conditionId.toString(),
+    conditionId: instance.conditionId,
     isActive: instance.isActive,
-    inactiveAt: instance.inactiveAt
-      ? instance.inactiveAt.toISOString()
-      : undefined,
-    createdAt: instance.createdAt.toISOString(),
-    updatedAt: instance.updatedAt.toISOString(),
+    inactiveAt: instance.inactiveAt,
+    createdAt: instance.createdAt,
+    updatedAt: instance.updatedAt,
   };
 }
 
 export function formatProviderResponse(provider: any): ProviderResponse {
   return {
-    id: provider._id.toString(),
+    id: provider._id,
     fullName: provider.fullName,
     email: provider.email,
     phoneNumber: provider.phoneNumber,
-    createdBy: provider.createdBy.toString(),
-    createdAt: provider.createdAt.toISOString(),
-    updatedAt: provider.updatedAt.toISOString(),
+    createdBy: provider.createdBy,
+    createdAt: provider.createdAt,
+    updatedAt: provider.updatedAt,
   };
 }
 
 export function formatOrderResponse(order: any): OrderResponse {
   return {
-    id: order._id.toString(),
-    userId: order.userId.toString(),
+    id: order._id,
+    userId: order.userId,
     items: order.items.map((item: any) => ({
-      variationId: item.variationId.toString(),
+      variationId: item.variationId,
       quantity: item.quantity,
       totalCents: item.totalCents,
       instanceIds: item.instanceIds.map((instance: any) => ({
-        id: instance.id.toString(),
+        id: instance.id,
         sku: instance.sku,
       })),
     })),
     totalCents: order.totalCents,
-    deliveryStateId: order.deliveryStateId.toString(),
-    estimateReceivedDate: order.estimateReceivedDate.toISOString(),
-    receivedDate: order.receivedDate
-      ? order.receivedDate.toISOString()
-      : undefined,
+    deliveryStateId: order.deliveryStateId,
+    estimateReceivedDate: order.estimateReceivedDate,
+    receivedDate: order.receivedDate,
     deliveryAddress: order.deliveryAddress,
-    createdAt: order.createdAt.toISOString(),
-    updatedAt: order.updatedAt.toISOString(),
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
   };
 }
 

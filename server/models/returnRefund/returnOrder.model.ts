@@ -24,8 +24,8 @@ const returnOrderItemSchema = new mongoose.Schema(
     },
     refundCents: {
       type: Number,
-      required: true,
       min: 0,
+      required: true,
     },
   },
   { _id: false }
@@ -44,8 +44,8 @@ const returnOrderSchema = new mongoose.Schema(
     },
     refundTotalCents: {
       type: Number,
-      required: true,
       min: 0,
+      required: true,
     },
     returnDate: {
       type: Date,
@@ -63,10 +63,13 @@ const returnOrderSchema = new mongoose.Schema(
     },
     imageUrls: {
       type: [String],
+      required: false,
       default: [],
     },
     buyerReason: {
       type: String,
+      required: false,
+      default: null,
     },
   },
   { timestamps: true }

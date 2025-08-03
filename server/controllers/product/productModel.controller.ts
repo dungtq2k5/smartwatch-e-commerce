@@ -15,7 +15,7 @@ import { RequestAuth } from "../../utils/types";
 import { formatProductModelResponse } from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 import ModelVariation from "../../models/product/modelVariation.model";
-import { mergeNested } from "../../../common/utils.common";
+import { cleanObj, shallowMerge } from "../../../common/utils.common";
 
 export async function create(
   req: Request,
@@ -30,29 +30,22 @@ export async function create(
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found"));
     }
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
       return next(errorHandler(404, "Product not found"));
     }
 
     const {
-      model,
       name,
-      watchSizeMm,
       priceCents,
       stockPriceCents,
       imageUrls,
-      display,
-      resolution,
-      memory,
-      osId,
-      chipset,
-      connectivities,
-      batteryLifeMah,
-      waterResistance,
-      sensors,
+      feature,
+      config,
+      battery,
+      screen,
       caseMaterial,
-      weightMg,
+      watchWeightMg,
       compatibleBandLugWidthMm,
       releaseDate,
       stopSelling,
@@ -64,7 +57,7 @@ export async function create(
     }
 
     // Check if os exists
-    const os = await ProductOs.findById(osId);
+    const os = await ProductOs.findById(config.osId).lean();
     if (!os || os.isDeleted) {
       return next(errorHandler(404, "Product OS not found"));
     }
@@ -73,7 +66,7 @@ export async function create(
     const existingModel = await ProductModel.findOne({
       isDeleted: false,
       productId,
-      $or: [{ model }, { watchSizeMm }],
+      name,
     }).lean();
     if (existingModel) {
       return next(
@@ -85,23 +78,16 @@ export async function create(
     const reqUserId = (req["auth"] as RequestAuth).userId;
     const newModel = new ProductModel({
       productId,
-      model,
       name,
-      watchSizeMm,
       priceCents,
       stockPriceCents,
       imageUrls,
-      display,
-      resolution,
-      memory,
-      osId,
-      chipset,
-      connectivities,
-      batteryLifeMah,
-      waterResistance: waterResistance || undefined,
-      sensors,
+      feature,
+      config,
+      battery,
+      screen,
       caseMaterial,
-      weightMg,
+      watchWeightMg,
       compatibleBandLugWidthMm,
       releaseDate,
       stopSelling,
@@ -109,6 +95,7 @@ export async function create(
     });
 
     await newModel.save();
+    await newModel.populate("config.os");
 
     res.status(201).json({
       success: true,
@@ -134,39 +121,61 @@ export async function get(
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found"));
     }
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
       return next(errorHandler(404, "Product not found"));
     }
 
-    // Fetch single model
-    if (modelId) {
-      if (!Types.ObjectId.isValid(modelId)) {
-        return next(errorHandler(404, "Product model not found"));
-      }
-      const model = await ProductModel.findOne({
-        isDeleted: false,
-        _id: modelId,
-        productId: productId,
-      }).lean();
-      if (!model) {
-        return next(errorHandler(404, "Product model not found"));
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "Product model retrieved successfully",
-        data: formatProductModelResponse(model),
-      } as SuccessResponse<ProductModelResponse>);
-      console.log("✅ ", "Product model retrieved successfully");
-      return;
+    if (!Types.ObjectId.isValid(modelId)) {
+      return next(errorHandler(404, "Product model not found"));
+    }
+    const model = await ProductModel.findOne({
+      isDeleted: false,
+      _id: modelId,
+      productId: productId,
+    })
+      .populate("config.os")
+      .lean();
+    if (!model) {
+      return next(errorHandler(404, "Product model not found"));
     }
 
+    res.status(200).json({
+      success: true,
+      message: "Product model retrieved successfully",
+      data: formatProductModelResponse(model),
+    } as SuccessResponse<ProductModelResponse>);
+    console.log("✅ ", "Product model retrieved successfully");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAll(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Getting all product models...");
+  const { productId } = req.params;
+
+  try {
+    // Check if product exists
+    if (!Types.ObjectId.isValid(productId)) {
+      return next(errorHandler(404, "Product not found"));
+    }
+    const product = await Product.findById(productId).lean();
+    if (!product || product.isDeleted) {
+      return next(errorHandler(404, "Product not found"));
+    }
+    console.log("Product found: ", product.name);
     // Fetch all models for product
     const models = await ProductModel.find({
       isDeleted: false,
-      productId: productId,
-    }).lean();
+      productId,
+    })
+      .populate("config.os")
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -181,7 +190,7 @@ export async function get(
         total: models.length,
       },
     } as SuccessResponse<ProductModelListResponse>);
-    console.log("✅ ", "Product model retrieved successfully");
+    console.log("✅ ", "Product models retrieved successfully");
   } catch (error) {
     next(error);
   }
@@ -200,7 +209,7 @@ export async function update(
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found"));
     }
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
       return next(errorHandler(404, "Product not found"));
     }
@@ -232,11 +241,11 @@ export async function update(
       return next(errorHandler(400, "Release date cannot be in the future"));
     }
 
-    // Check if OS exists and update
-    const updatedOsId = updateData.osId
-      ? new Types.ObjectId(updateData.osId)
-      : model.osId;
-    if (!updatedOsId.equals(model.osId)) {
+    // Check if OS exists
+    const updatedOsId = updateData.config?.osId
+      ? new Types.ObjectId(updateData.config.osId)
+      : model.config.osId;
+    if (!updatedOsId.equals(model.config.osId)) {
       if (!Types.ObjectId.isValid(updatedOsId)) {
         return next(errorHandler(404, "Product OS not found"));
       }
@@ -246,33 +255,59 @@ export async function update(
       }
     }
 
-    // Check if model with same name and size already exists and update
-    const updatedModel = updateData.model || model["model"];
-    const updatedSizeMm = updateData.watchSizeMm || model.watchSizeMm;
-
-    const orConditions: ({ model: string } | { watchSizeMm: number })[] = [];
-    if (updatedModel !== model["model"]) {
-      orConditions.push({ model: updatedModel });
-    }
-    if (updatedSizeMm !== model.watchSizeMm) {
-      orConditions.push({ watchSizeMm: updatedSizeMm });
-    }
-    if (orConditions.length > 0) {
+    // Check if name already exists
+    const updatedName = updateData.name || model.name;
+    if (updatedName !== model.name) {
       const existingModel = await ProductModel.findOne({
         isDeleted: false,
         productId,
-        $or: orConditions,
+        name: updatedName,
       }).lean();
       if (existingModel) {
         return next(
-          errorHandler(409, "Product model with model or size already exists")
+          errorHandler(409, "Product model with name already exists")
         );
       }
     }
 
+    // Check validation for screen
+    const screenObj = model.toObject().screen;
+    const updatedIsCircular =
+      updateData.screen?.isCircular ?? model.screen.isCircular;
+    const updatedDiameterMm =
+      updateData.screen?.diameterMm === null
+        ? null
+        : updateData.screen?.diameterMm || model.screen.diameterMm;
+    const updatedDimension =
+      updateData.screen?.dimension === null
+        ? null
+        : screenObj.dimension
+        ? shallowMerge(screenObj.dimension, updateData.screen?.dimension)
+        : updateData.screen?.dimension &&
+          updateData.screen.dimension.hMm &&
+          updateData.screen.dimension.wMm &&
+          updateData.screen.dimension.thicknessMm
+        ? (updateData.screen.dimension as {
+            wMm: number;
+            hMm: number;
+            thicknessMm: number;
+          })
+        : null;
+
+    if (updatedIsCircular && !updatedDiameterMm) {
+      return next(
+        errorHandler(400, "Diameter is required for circular screens")
+      );
+    }
+    if (!updatedIsCircular && !updatedDimension) {
+      return next(
+        errorHandler(400, "Dimension is required for non-circular screens")
+      );
+    }
+
     // Update imageUrls on Firebase Storage
     if (updateData.imageUrls) {
-      const imgUrlToRemove = model.imageUrls.filter(
+      const imgUrlToRemove = model.imageUrls!.filter(
         (url) => !updateData.imageUrls!.includes(url)
       );
       if (imgUrlToRemove.length > 0) {
@@ -283,35 +318,126 @@ export async function update(
       }
     }
 
-    (model as any).model = updatedModel;
     model.name = updateData.name || model.name;
-    model.watchSizeMm = updatedSizeMm;
     model.priceCents = updateData.priceCents ?? model.priceCents;
     model.stockPriceCents = updateData.stockPriceCents ?? model.stockPriceCents;
-    model.imageUrls = updateData.imageUrls || model.imageUrls;
-    model.display = mergeNested(model.toObject().display, updateData.display);
-    model.resolution = mergeNested(
-      model.toObject().resolution,
-      updateData.resolution
-    );
-    model.memory = mergeNested(model.toObject().memory, updateData.memory);
-    model.osId = updatedOsId;
-    model.chipset = updateData.chipset || model.chipset;
-    model.connectivities = updateData.connectivities || model.connectivities;
-    model.batteryLifeMah = updateData.batteryLifeMah || model.batteryLifeMah;
-    model.waterResistance =
-      updateData.waterResistance === null
-        ? undefined
-        : updateData.waterResistance || model.waterResistance;
-    model.sensors = updateData.sensors || model.sensors;
+    model.imageUrls =
+      updateData.imageUrls === null
+        ? []
+        : updateData.imageUrls || model.imageUrls;
+    if (updateData.feature) {
+      const featureObj = model.toObject().feature;
+
+      model.feature.speakerAndMicrophone =
+        updateData.feature.speakerAndMicrophone ??
+        featureObj.speakerAndMicrophone;
+      model.feature.waterResistance =
+        updateData.feature.waterResistance === null
+          ? null
+          : featureObj.waterResistance
+          ? shallowMerge(
+              featureObj.waterResistance,
+              updateData.feature.waterResistance
+            )
+          : updateData.feature.waterResistance &&
+            updateData.feature.waterResistance.rating
+          ? updateData.feature.waterResistance
+          : null;
+      model.feature.utilities =
+        updateData.feature.utilities === null
+          ? null
+          : featureObj.utilities
+          ? shallowMerge(featureObj.utilities, updateData.feature.utilities)
+          : !updateData.feature.utilities
+          ? null
+          : Object.keys(cleanObj(updateData.feature.utilities)).length // Handle empty obj {}
+          ? updateData.feature.utilities
+          : null;
+      model.feature.supportedAppsForNotifications =
+        updateData.feature.supportedAppsForNotifications === null
+          ? []
+          : updateData.feature.supportedAppsForNotifications ||
+            featureObj.supportedAppsForNotifications;
+    }
+    if (updateData.config) {
+      const configObj = model.toObject().config;
+
+      model.config.connectivities =
+        updateData.config.connectivities === null
+          ? []
+          : configObj.connectivities || updateData.config.connectivities;
+      model.config.camera =
+        updateData.config.camera === null
+          ? null
+          : configObj.camera
+          ? shallowMerge(configObj.camera, updateData.config.camera)
+          : updateData.config.camera && updateData.config.camera.resolutionMp
+          ? updateData.config.camera
+          : null;
+      model.config.chipset = updateData.config.chipset || configObj.chipset;
+      model.config.memory = shallowMerge(
+        configObj.memory,
+        updateData.config.memory
+      );
+      model.config.osId = updatedOsId;
+      model.config.compatiblePhoneOs =
+        updateData.config.compatiblePhoneOs === null
+          ? []
+          : updateData.config.compatiblePhoneOs || configObj.compatiblePhoneOs;
+      model.config.appsConnect =
+        updateData.config.appsConnect === null
+          ? []
+          : updateData.config.appsConnect || configObj.appsConnect;
+      model.config.sensors =
+        updateData.config.sensors === null
+          ? []
+          : updateData.config.sensors || configObj.sensors;
+    }
+    if (updateData.battery) {
+      const batteryObj = model.toObject().battery;
+
+      model.battery.capacityMah =
+        updateData.battery.capacityMah || batteryObj.capacityMah;
+      model.battery.timeOnline = shallowMerge(
+        model.battery.timeOnline,
+        updateData.battery.timeOnline
+      );
+      model.battery.timeFullChargeMin =
+        updateData.battery.timeFullChargeMin || batteryObj.timeFullChargeMin;
+      model.battery.chargingType =
+        updateData.battery.chargingType || batteryObj.chargingType;
+    }
+    if (updateData.screen) {
+      model.screen.display = shallowMerge(
+        model.screen.display,
+        updateData.screen.display
+      );
+      model.screen.brightness = shallowMerge(
+        model.screen.brightness,
+        updateData.screen.brightness
+      );
+      model.screen.resolution = shallowMerge(
+        model.screen.resolution,
+        updateData.screen.resolution
+      );
+      model.screen.glassMaterial =
+        updateData.screen.glassMaterial || model.screen.glassMaterial;
+      model.screen.bezelMaterial =
+        updateData.screen.bezelMaterial || model.screen.bezelMaterial;
+      model.screen.isCircular = updatedIsCircular;
+      model.screen.diameterMm = updatedIsCircular ? updatedDiameterMm : null;
+      model.screen.dimension = !updatedIsCircular ? updatedDimension : null;
+      model.screen.shape = updateData.screen.shape || model.screen.shape;
+    }
     model.caseMaterial = updateData.caseMaterial || model.caseMaterial;
-    model.weightMg = updateData.weightMg || model.weightMg;
+    model.watchWeightMg = updateData.watchWeightMg || model.watchWeightMg;
     model.compatibleBandLugWidthMm =
       updateData.compatibleBandLugWidthMm || model.compatibleBandLugWidthMm;
     model.releaseDate = updatedReleaseDate;
     model.stopSelling = updateData.stopSelling ?? model.stopSelling;
 
     await model.save();
+    await model.populate("config.os");
 
     res.status(200).json({
       success: true,
@@ -337,7 +463,7 @@ export async function remove(
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found"));
     }
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
       return next(errorHandler(404, "Product not found"));
     }

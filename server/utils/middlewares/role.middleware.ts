@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { removeOddSpaces } from "../../../common/utils.common";
 import { errorHandler } from "../errorHandler";
-import { isValidIdArray } from "../utils";
+import { isPresent, isValidIdArray } from "../utils";
 
 export function sanitizeRoleInput(
   req: Request,
@@ -15,20 +15,14 @@ export function sanitizeRoleInput(
     req.body.name = removeOddSpaces(name).toLowerCase();
   }
   if (permissionIds !== undefined && Array.isArray(permissionIds)) {
-    req.body.permissionIds = [...new Set(permissionIds)];
+    req.body.permissionIds = [...new Set(permissionIds)]; // For removing duplicates
   }
 
   next();
 }
 
-export function verifyRoleInput(
-  type: "create" | "update" | "delete"
-) {
-  return (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): void => {
+export function verifyRoleInput(type: "create" | "update") {
+  return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", `Verifying role input...`);
 
     let errors: string[] = [];
@@ -43,7 +37,7 @@ export function verifyRoleInput(
           } else if (typeof name !== "string") {
             errors.push("Role name must be a string.");
           }
-          if (permissionIds !== undefined && !isValidIdArray(permissionIds)) {
+          if (isPresent(permissionIds) && !isValidIdArray(permissionIds)) {
             errors.push("Permission IDs must be an array of valid IDs.");
           }
           break;
@@ -55,7 +49,7 @@ export function verifyRoleInput(
           if (name !== undefined && typeof name !== "string") {
             errors.push("Role name must be a string.");
           }
-          if (permissionIds !== undefined && !isValidIdArray(permissionIds)) {
+          if (isPresent(permissionIds) && !isValidIdArray(permissionIds)) {
             errors.push("Permission IDs must be an array of valid IDs.");
           }
           break;
@@ -70,5 +64,5 @@ export function verifyRoleInput(
     } catch (error) {
       next(error);
     }
-  }
+  };
 }

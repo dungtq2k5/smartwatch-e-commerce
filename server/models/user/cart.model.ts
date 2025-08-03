@@ -9,11 +9,12 @@ const cartSchema = new mongoose.Schema(
     },
     variationId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Variation",
+      ref: "ModelVariation",
       required: true,
     },
     quantity: {
       type: Number,
+      required: false,
       default: 1,
       min: 1,
     },

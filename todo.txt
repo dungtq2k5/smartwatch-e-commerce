@@ -50,3 +50,11 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
   - Features:
     - Dynamic default avatar for user profile ❌.
     - Resend verification code feature ❌.
+
+- 📜 Rules:
+  - FrontEnd:
+
+  - BackEnd:
+    - Requests: Optional fields can be undefined or null.
+    - Responses: Optional fields are always present (with value or null), never undefined.
+    - Models: Optional fields use default: null or default: [] (never missing in DB).

@@ -65,7 +65,7 @@ export default function Profile() {
 
   const originalBirthDate = useMemo(
     () =>
-      convertUtcToLocalISOString(user?.birth ?? new Date().toString()).slice(
+      convertUtcToLocalISOString(user?.birth || new Date().toString()).slice(
         0,
         10
       ),
@@ -73,15 +73,15 @@ export default function Profile() {
   );
 
   const [formData, setFormData] = useState<FormData>({
-    fullName: { val: user?.fullName ?? "Not provided" },
-    gender: user?.gender ?? "other",
+    fullName: { val: user?.fullName || "Not provided" },
+    gender: user?.gender || "other",
     birth: { val: originalBirthDate },
-    avatar: { file: user?.avatarUrl ?? defaultAvatar },
+    avatar: { file: user?.avatarUrl || defaultAvatar },
   });
 
   const changeAvatarRef = useRef<HTMLInputElement | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string>(
-    user?.avatarUrl ?? defaultAvatar
+    user?.avatarUrl || defaultAvatar
   );
 
   const [modalUpdateState, setModalUpdateState] = useState<ModalUpdateState>({
@@ -324,7 +324,7 @@ export default function Profile() {
                       id="email"
                       name="email"
                       className="form-control"
-                      value={user.email ?? "Not provided"}
+                      value={user.email || "Not provided"}
                       autoComplete="email"
                       disabled
                     />
@@ -377,7 +377,7 @@ export default function Profile() {
                       name="phoneNumber"
                       className="form-control"
                       autoComplete="tel"
-                      value={user.phoneNumber ?? "Not provided"}
+                      value={user.phoneNumber || "Not provided"}
                       disabled
                     />
                     <button
@@ -513,6 +513,7 @@ export default function Profile() {
                   src={avatarPreviewUrl}
                   alt="Avatar Preview"
                   className="avatar--g avatar--lg--g mb-3"
+                  loading="lazy"
                 />
 
                 <div hidden aria-hidden>

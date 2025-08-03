@@ -44,14 +44,14 @@ export default function Account() {
               <aside className="border rounded-3 shadow-sm p-4">
                 <div className="d-flex align-items-center mb-4">
                   <img
-                    src={user.avatarUrl ?? defaultAvatar}
+                    src={user.avatarUrl || defaultAvatar}
                     alt="User Avatar"
                     className="avatar--g avatar--md--g me-3"
                   />
                   <div>
                     <h2 className="h5 mb-0 text-truncate">{user.fullName}</h2>
                     <small className="text-muted text-truncate">
-                      {user.email}
+                      {user.email || user.phoneNumber}
                     </small>
                   </div>
                 </div>

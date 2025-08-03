@@ -91,7 +91,7 @@ export async function get(
     if (!Types.ObjectId.isValid(id)) {
       return next(errorHandler(404, "Role not found."));
     }
-    const role = await Role.findById(id);
+    const role = await Role.findById(id).lean();
     if (!role) {
       return next(errorHandler(404, "Role not found."));
     }
@@ -114,7 +114,7 @@ export async function getAll(
 ): Promise<void> {
   console.log("▶️ ", "Fetching all roles...");
   try {
-    const roles = await Role.find().sort({ name: 1 });
+    const roles = await Role.find().sort({ name: 1 }).lean();
 
     res.status(200).json({
       success: true,
@@ -151,8 +151,8 @@ export async function update(
     // Business logic
     const { name, permissionIds: updatedPermissionIds } =
       req.body as RoleUpdate;
-    const updatedName = name ? name : role.name;
 
+    const updatedName = name || role.name;
     if (updatedName !== role.name) {
       const existingRole = await Role.findOne({ name: updatedName }).lean();
       if (existingRole) {
@@ -163,8 +163,10 @@ export async function update(
       role.name = updatedName;
     }
 
-    if (updatedPermissionIds) {
-      const currentPermissionIds = role.permissions.map(
+    if (updatedPermissionIds === null) {
+      role.permissions?.splice(0, role.permissions.length); // Clear all permissions
+    } else if (updatedPermissionIds) {
+      const currentPermissionIds = role.permissions!.map(
         (p) => p.id.toString() as string
       );
 
@@ -185,7 +187,7 @@ export async function update(
         const reqUserId = new Types.ObjectId(
           (req["auth"] as RequestAuth).userId
         );
-        role.permissions.push(
+        role.permissions!.push(
           ...permissionIdsToAdd.map((id) => ({
             id: new Types.ObjectId(id),
             assignedBy: reqUserId,
@@ -199,7 +201,7 @@ export async function update(
       );
       if (permissionIdsToRemove.length > 0) {
         permissionIdsToRemove.forEach((removeId) => {
-          role.permissions.pull({ id: new Types.ObjectId(removeId) });
+          role.permissions!.pull({ id: new Types.ObjectId(removeId) });
         });
       }
     }

@@ -1,5 +1,10 @@
 import { PERMISSION_LIST } from "../server/configs/configs";
-import { USER_GENDER_OPTIONS, AUTH_PROVIDER_OPTIONS, PRODUCT_SEARCH_SORT_OPTIONS } from "./configs.common";
+import {
+  USER_GENDER_OPTIONS,
+  AUTH_PROVIDER_OPTIONS,
+  PRODUCT_SEARCH_SORT_OPTIONS,
+  PRODUCT_TYPES,
+} from "./configs.common";
 
 export type ErrorResponse = {
   readonly success: false;
@@ -17,22 +22,29 @@ export type Response = ErrorResponse | SuccessResponse;
 type BaseUserResponse = {
   id: string;
   fullName: string;
-  avatarUrl?: string;
+  avatarUrl: string | null;
   isEmailVerified: boolean;
   isPhoneNumberVerified: boolean;
   birth: string;
   gender: (typeof USER_GENDER_OPTIONS)[number];
-  stripeCustomerId?: string;
+  stripeCustomerId: string | null;
   userBalanceCents: number;
   authProvider: (typeof AUTH_PROVIDER_OPTIONS)[number];
-  lastLogin?: string;
+  lastLogin: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 export type UserResponse = BaseUserResponse &
   (
-    | EmailOrPhoneNumber
+    | {
+        email: string;
+        phoneNumber: null;
+      }
+    | {
+        email: null;
+        phoneNumber: string;
+      }
     | {
         email: string;
         phoneNumber: string;
@@ -44,41 +56,40 @@ export type CheckAuthResponse = {
   isAuth: boolean;
 };
 
-export type AdminUserResponse = BaseUserResponse & {
+export type AdminUserResponse = UserResponse & {
   isLocked: boolean;
 };
 
 export type AdminUserListResponse = {
   total: number;
-  users: AdminUserResponse[];
+  users: {
+    total: number;
+    users: AdminUserResponse[];
+  };
   offset: number;
   limit: number;
 };
 
-export type EmailOrPhoneNumber =
+export type EmailOrPhoneNumberCreate =
   | {
       email: string;
-      phoneNumber: undefined;
+      phoneNumber?: null;
     }
   | {
-      email: undefined;
+      email?: null;
       phoneNumber: string;
     };
 
 export type UserSignup = {
   fullName: string;
-  // email?: string;
-  // phoneNumber?: string;
   password: string;
   birth: string;
   gender: (typeof USER_GENDER_OPTIONS)[number];
-} & EmailOrPhoneNumber;
+} & EmailOrPhoneNumberCreate;
 
 export type UserLogin = {
-  // email?: string;
-  // phoneNumber?: string;
   password: string;
-} & EmailOrPhoneNumber;
+} & EmailOrPhoneNumberCreate;
 
 export type VerifyType = "email" | "phoneNumber";
 
@@ -92,28 +103,28 @@ export type UserAuthByGoogle = {
   accessToken: string; // To user sensitive data like birth, gender, etc.
 };
 
-export type UserForgotPassword = EmailOrPhoneNumber;
+export type UserForgotPassword = EmailOrPhoneNumberCreate;
 
-export type UserUpdateEmail = {
-  email?: string | null;
-  isEmailVerified?: boolean;
-};
+export type UserUpdateEmail = Partial<{
+  email: string | null;
+  isEmailVerified: boolean;
+}>;
 
-export type UserUpdatePhoneNumber = {
-  phoneNumber?: string | null;
-  isPhoneNumberVerified?: boolean;
-};
+export type UserUpdatePhoneNumber = Partial<{
+  phoneNumber: string | null;
+  isPhoneNumberVerified: boolean;
+}>;
 
-export type UserUpdate = {
-  fullName?: string;
-  avatarUrl?: string | null;
-  password?: string;
-  birth?: string;
-  gender?: (typeof USER_GENDER_OPTIONS)[number];
-  userBalanceCents?: number;
-  isLocked?: boolean;
-  roleIds?: string[];
-};
+export type UserUpdate = Partial<{
+  fullName: string;
+  avatarUrl: string | null;
+  password: string;
+  birth: string;
+  gender: (typeof USER_GENDER_OPTIONS)[number];
+  userBalanceCents: number;
+  isLocked: boolean;
+  roleIds: string[] | null;
+}>;
 
 export type UserUpdateSelfGeneralInfo = Omit<
   UserUpdate,
@@ -125,9 +136,10 @@ export type UserUpdateSelfPassword = {
   newPassword: string;
 };
 
-export type UserSetSelfPassword = { // For user who auth by Google
+// For user who auth by provider like Google, Facebook, etc.
+export type UserSetSelfPassword = {
   password: string;
-}
+};
 
 export type GeoJSONPoint = {
   readonly locationType: "point";
@@ -143,7 +155,7 @@ export type BaseUserAddress = {
   wardCode: string;
   districtCode: string;
   cityProvinceCode: string;
-  countryCode?: string;
+  countryCode: string;
   location: GeoJSONPoint;
   phoneNumber: string;
   fullAddress: string;
@@ -217,9 +229,9 @@ export type PermissionCode = (typeof PERMISSION_LIST)[number]["code"];
 export type UserCreate = {
   fullName: string;
   avatarUrl: string;
-  email?: string;
+  email?: string | null;
   isEmailVerified?: boolean;
-  phoneNumber?: string;
+  phoneNumber?: string | null;
   isPhoneNumberVerified?: boolean;
   password: string;
   birth: string;
@@ -227,11 +239,11 @@ export type UserCreate = {
   userBalanceCents?: number;
   isLocked?: boolean;
   roleIds?: string[];
-} & EmailOrPhoneNumber;
+};
 
 export type RoleCreate = {
   name: string;
-  permissionIds?: string[];
+  permissionIds?: string[] | null;
 };
 
 export type RoleResponse = {
@@ -255,15 +267,16 @@ export type RoleListResponse = {
 
 export type RoleUpdate = {
   name?: string;
-  permissionIds?: string[];
+  permissionIds?: string[] | null;
 };
 
 export type ProductCreate = {
   name: string;
+  type: (typeof PRODUCT_TYPES)[number];
   brandId: string;
   categoryId: string;
   description: string;
-  imageUrls?: string[];
+  imageUrls?: string[] | null;
   stopSelling?: boolean;
   basePriceCents: number;
 };
@@ -273,8 +286,9 @@ export type ProductUpdate = Partial<ProductCreate>;
 export type ProductResponse = {
   id: string;
   name: string;
-  brandId: string;
-  categoryId: string;
+  type: (typeof PRODUCT_TYPES)[number];
+  brand: ProductBrandResponse;
+  category: ProductCategoryResponse;
   description: string;
   imageUrls: string[];
   createdBy: string;
@@ -282,6 +296,36 @@ export type ProductResponse = {
   updatedAt: string;
   stopSelling: boolean;
   basePriceCents: number;
+};
+
+/**
+ProductDetailResponse = {
+  ...ProductResponse,
+  models: {
+    total: number,
+    models: [
+      {
+        ...ProductModelResponse,
+        variations: {
+          total: number;
+          variations: ModelVariationResponse[];
+        },
+      },
+      ...
+    ],
+  },
+};
+ */
+export type ProductDetailResponse = ProductResponse & {
+  models: {
+    total: number;
+    models: (ProductModelResponse & {
+      variations: {
+        total: number;
+        variations: ModelVariationResponse[];
+      };
+    })[];
+  };
 };
 
 export type ProductListResponse = {
@@ -296,21 +340,17 @@ export type ProductListResponse = {
 
 export type ProductBrandCreate = {
   name: string;
-  logoUrl?: string;
-  description?: string;
-};
-
-export type ProductBrandUpdate = {
-  name?: string;
   logoUrl?: string | null;
   description?: string | null;
 };
 
+export type ProductBrandUpdate = Partial<ProductBrandCreate>;
+
 export type ProductBrandResponse = {
   id: string;
   name: string;
-  logoUrl?: string;
-  description?: string;
+  logoUrl: string | null;
+  description: string | null;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -342,9 +382,9 @@ export type ProductOsCreate = ProductBrandCreate;
 export type ProductOsUpdate = ProductBrandUpdate;
 export type ProductOsResponse = ProductBrandResponse;
 export type ProductOsListResponse = {
-  osList: {
+  oses: {
     total: number;
-    osList: ProductOsResponse[];
+    oses: ProductOsResponse[];
   };
   offset: number;
   limit: number;
@@ -352,39 +392,96 @@ export type ProductOsListResponse = {
 };
 
 export type ProductModelCreate = {
-  model: string;
+  productId: string;
   name: string;
-  watchSizeMm: number;
   priceCents: number;
   stockPriceCents: number;
-  imageUrls?: string[];
-  display: {
-    sizeMm: number;
-    displayType: string;
+  imageUrls?: string[] | null;
+  feature: {
+    speakerAndMicrophone?: boolean | null;
+    waterResistance?: {
+      rating: string;
+      description?: string | null;
+    } | null;
+    utilities?: {
+      healths?: string[] | null;
+      sports?: string[] | null;
+      specials?: string[] | null;
+      others?: string[] | null;
+    } | null;
+    supportedAppsForNotifications?: string[] | null;
   };
-  resolution: {
-    hPx: number;
-    wPx: number;
+  config: {
+    connectivities?: string[] | null;
+    camera?: {
+      resolutionMp: number;
+      features?: string[] | null;
+    } | null;
+    chipset: string;
+    memory: {
+      ramBytes: number;
+      storageBytes: number;
+    };
+    osId: string;
+    compatiblePhoneOs?: string[] | null;
+    appsConnect?: string[] | null;
+    sensors?: string[] | null;
   };
-  memory: {
-    ramBytes: number;
-    romBytes: number;
+  battery: {
+    capacityMah: number;
+    timeOnline: {
+      aodOnMin: number;
+      aodOffMin: number;
+      typicalUsageMin?: number | null;
+      standByMin?: number | null;
+    };
+    timeFullChargeMin: number;
+    chargingType: string;
   };
-  osId: string;
-  chipset: string;
-  connectivities: string[];
-  batteryLifeMah: number;
-  waterResistance?: string | null;
-  sensors: string[];
+  screen: {
+    display: {
+      diagonalInch: number;
+      displayType: string;
+    };
+    brightness: {
+      minNits: number;
+      maxNits: number;
+    };
+    resolution: {
+      hPx: number;
+      wPx: number;
+    };
+    glassMaterial: string;
+    bezelMaterial: string;
+    shape: string;
+  } & ({
+    isCircular: true;
+    diameterMm: number;
+    dimension?: null;
+  } | {
+    isCircular: false;
+    diameterMm?: null;
+    dimension: {
+      wMm: number;
+      hMm: number;
+      thicknessMm: number;
+    };
+  });
   caseMaterial: string;
-  weightMg: number;
+  watchWeightMg: number;
   compatibleBandLugWidthMm: number;
-  releaseDate?: string;
+  releaseDate: string;
   stopSelling?: boolean;
 };
 
 export type ProductModelUpdate = DeepPartial<ProductModelCreate>;
-export type ProductModelResponse = DeepNoneOptional<ProductModelCreate> & {
+export type ProductModelResponse = DeepNoneOptional<
+  Omit<ProductModelCreate, "config"> & {
+    config: Omit<ProductModelCreate["config"], "osId"> & {
+      os: ProductOsResponse;
+    };
+  }
+> & {
   id: string;
   productId: string;
   createdBy: string;
@@ -403,13 +500,20 @@ export type ProductModelListResponse = {
 
 export type ModelVariationCreate = {
   name: string;
-  colorHex: string;
-  imageUrls?: string[];
-  additionalPriceCents?: number;
+  color: {
+    hex: string;
+    name: string;
+  };
+  imageUrls?: string[] | null;
+  additionalPriceCents?: number | null;
   band: {
+    widthMm: number;
     lugWidthMm: number;
     material: string;
-    colorsHex: string[];
+    colors: {
+      hex: string;
+      name: string;
+    }[];
     claspType: string;
     adjustableRange: {
       minMm: number;
@@ -423,9 +527,12 @@ export type ModelVariationCreate = {
   };
   stopSelling?: boolean;
 };
-export type ModelVariationResponse = DeepNoneOptional<ModelVariationCreate> & {
+export type ModelVariationResponse = DeepNoneOptional<
+  Omit<ModelVariationCreate, "additionalPriceCents">
+> & {
   id: string;
   productModelId: string;
+  additionalPriceCents: number;
   stockQuantity: number;
   createdBy: string;
   createdAt: string;
@@ -445,30 +552,23 @@ export type ModelVariationListResponse = {
 
 export type VariationInstanceCreate = {
   supplierSerialNumber: string;
-  supplierImeiNumber?: string;
-  conditionId?: string;
+  supplierImeiNumber?: string | null;
+  conditionId?: string | null;
   isActive?: boolean;
 };
-
 export type VariationInstanceResponse = {
   id: string;
   sku: string;
   modelVariationId: string;
   supplierSerialNumber: string;
-  supplierImeiNumber?: string;
+  supplierImeiNumber: string | null;
   conditionId: string;
   isActive: boolean;
-  inactiveAt?: string;
+  inactiveAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
-
-export type VariationInstanceUpdate = Omit<
-  Partial<VariationInstanceCreate>,
-  "supplierImeiNumber"
-> & {
-  supplierImeiNumber?: string | null;
-};
+export type VariationInstanceUpdate = Partial<VariationInstanceCreate>;
 
 export type ProviderCreate = {
   fullName: string;
@@ -511,7 +611,7 @@ export type OrderResponse = {
   totalCents: number;
   deliveryStateId: string;
   estimateReceivedDate: string;
-  receivedDate?: string;
+  receivedDate: string | null;
   deliveryAddress: Omit<
     BaseUserAddress,
     "id" | "userId" | "isDefault" | "createdAt" | "updatedAt"
@@ -520,11 +620,11 @@ export type OrderResponse = {
   updatedAt: string;
 };
 
-export type OrderUpdate = {
-  deliveryStateId?: string;
-  estimateReceivedDate?: string;
-  deliveryAddressId?: string;
-};
+export type OrderUpdate = Partial<{
+  deliveryStateId: string;
+  estimateReceivedDate: string;
+  deliveryAddressId: string;
+}>;
 
 export type UserValidatePassword = {
   password: string;
@@ -534,12 +634,18 @@ export type ProductSearchQuery = Partial<{
   limit: string;
   offset: string;
   searchTerm: string;
+  type: (typeof PRODUCT_TYPES)[number];
   brandId: string;
   categoryId: string;
   stopSelling: "true" | "false";
   priceCentsMin: string;
   priceCentsMax: string;
   sortBy: (typeof PRODUCT_SEARCH_SORT_OPTIONS)[number];
+}>;
+
+export type ProductDetailQuery = Partial<{
+  modelStopSelling: "true" | "false";
+  variationStopSelling: "true" | "false";
 }>;
 
 // --- HELPER TYPES ---
@@ -569,8 +675,8 @@ export type DeepPartial<T> = {
   [P in keyof T]?: IsArray<T[P]> extends true
     ? T[P]
     : IsObject<T[P]> extends true
-      ? DeepPartial<T[P]>
-      : T[P];
+    ? DeepPartial<T[P]>
+    : T[P];
 };
 
 export type DeepNoneOptional<T> = {

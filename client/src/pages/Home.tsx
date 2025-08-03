@@ -88,7 +88,10 @@ export default function Home() {
       setIsFetching((prev) => ({ ...prev, searchProducts: true }));
 
       try {
-        const searchProducts = await fetchProducts(query);
+        const searchProducts = await fetchProducts({
+          ...query,
+          stopSelling: "false", // Always query products that are not stopped selling
+        });
 
         setProducts((prev) => ({
           ...prev,
@@ -118,6 +121,7 @@ export default function Home() {
       try {
         const mostPopularProducts = await fetchProducts({
           limit: MAX_POPULAR_PRODUCTS_DISPLAY.toString(),
+          stopSelling: "false", // Always query products that are not stopped selling
         });
 
         setProducts((prev) => ({
@@ -150,6 +154,7 @@ export default function Home() {
         const productMaxPrice = await fetchProducts({
           limit: "1",
           sortBy: "basePriceCents_desc",
+          stopSelling: "false", // Always query products that are not stopped selling
         });
 
         if (productMaxPrice.products.total) {
@@ -270,9 +275,10 @@ export default function Home() {
                   className="text-decoration-none text-dark"
                 >
                   <img
-                    src={product.imageUrls[0] ?? defaultProductImg}
+                    src={product.imageUrls[0] || defaultProductImg}
                     className="img-fluid mb-3 product-img--g"
                     alt={product.name}
+                    loading="lazy"
                   />
                   <p className="h6 fw-bold">{product.name}</p>
                   <p className="small text-muted product-description--g">

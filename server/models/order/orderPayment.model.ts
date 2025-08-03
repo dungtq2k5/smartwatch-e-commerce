@@ -28,11 +28,15 @@ const OrderPaymentSchema = new mongoose.Schema(
     },
     transactionDate: {
       type: Date,
+      required: false,
       default: Date.now,
     },
     relatedTransactionId: {
       type: String,
       unique: true,
+      sparse: true, // Allows multiple null values
+      required: false,
+      default: null,
     },
   },
   { timestamps: true }

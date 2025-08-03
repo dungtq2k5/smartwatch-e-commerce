@@ -1,8 +1,17 @@
 import express from "express";
 import { verifyPermission } from "../../utils/middlewares/auth.middleware";
-import { verifyEmptyBody }  from "../../utils/middlewares/general.middleware";
-import { inputSanitizer, verifyOsInput } from "../../utils/middlewares/product.middleware";
-import { create, get, remove, update } from "../../controllers/product/os.controller";
+import { verifyEmptyBody } from "../../utils/middlewares/general.middleware";
+import {
+  inputSanitizer,
+  verifyOsInput,
+} from "../../utils/middlewares/product.middleware";
+import {
+  create,
+  get,
+  getAll,
+  remove,
+  update,
+} from "../../controllers/product/os.controller";
 
 const router = express.Router();
 
@@ -15,11 +24,9 @@ router.post(
   create
 );
 
-router.get(
-  "/",
-  verifyPermission("r_product_os"),
-  get
-);
+router.get("/:id", get);
+
+router.get("/", getAll);
 
 router.patch(
   "/:id",
@@ -30,10 +37,6 @@ router.patch(
   update
 );
 
-router.delete(
-  "/:id",
-  verifyPermission("d_product_os"),
-  remove
-);
+router.delete("/:id", verifyPermission("d_product_os"), remove);
 
 export default router;

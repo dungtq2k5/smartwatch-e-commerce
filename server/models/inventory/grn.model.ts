@@ -26,10 +26,12 @@ const grnSchema = new mongoose.Schema({
   },
   notes: {
     type: String,
-    default: "",
+    required: false,
+    default: null,
   },
   createdAt: {
     type: Date,
+    required: false,
     default: Date.now,
   },
   statusId: {
@@ -40,9 +42,13 @@ const grnSchema = new mongoose.Schema({
   reversedByGrnId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Grn",
+    required: false,
+    default: null,
   },
   reversedAt: {
     type: Date,
+    required: false,
+    default: null,
   },
 });
 

@@ -65,7 +65,7 @@ app.use("/api/roles", roleRoute);
 app.use("/api/products", productRoute);
 app.use("/api/products-brands", productBrandRoute);
 app.use("/api/products-categories", productCategoryRoute);
-app.use("/api/products-os", productOsRoute);
+app.use("/api/products-oses", productOsRoute);
 app.use("/api/providers", Provider);
 
 app.use((req, res, next) => {
@@ -80,8 +80,8 @@ const port = process.env.SERVER_PORT;
 app.listen(port, async () => {
   console.log("🔗", "Connecting to MongoDB...");
   await connectDB();
-  // await seedAllCollections(); // Init Mongo collections when first time running the server
+  // await seedAllCollections(); // Init Mongo collections when first time creating a new database
   await initAppCache(); // Init application cache
-  await mockAllData(); // DEV Mock data for testing
+  // await mockAllData(); // DEV Mock data for testing
   console.log("🚀", `Server is running on http://localhost:${port}`);
 });

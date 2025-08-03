@@ -39,7 +39,7 @@ export function verifyProviderInput(
 
           if (!fullName) {
             errors.push("Full name is required.");
-          } else if (typeof fullName !== "string" || !fullName) {
+          } else if (typeof fullName !== "string") {
             errors.push("Full name must be a non-empty string.");
           }
           if (!email) {
@@ -75,7 +75,7 @@ export function verifyProviderInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(404, errors));
+        return next(errorHandler(400, errors));
       }
       next();
     } catch (error) {

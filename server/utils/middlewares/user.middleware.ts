@@ -8,8 +8,9 @@ import {
   removeAllSpaces,
   isValidDateTimeString,
   isValidCoordinates,
+  isNoneArrObj,
 } from "../../../common/utils.common";
-import { isValidIdArray, isValidImgUrl } from "..//utils";
+import { isPresent, isValidIdArray, isValidImgUrl } from "..//utils";
 import {
   PASSWORD_HINT_MESSAGE,
   USER_GENDER_OPTIONS,
@@ -23,7 +24,7 @@ function sanitizeUserInput(
 ): void {
   console.log("▶️ ", "Sanitizing user input...");
   const { fullName, email, gender, type, code, value, roleIds } = req.body;
-  const { token } = req.params; // For reset password case
+  const { token } = req.params; // For reset password
 
   if (typeof fullName === "string") {
     req.body.fullName = removeOddSpaces(fullName);
@@ -47,7 +48,7 @@ function sanitizeUserInput(
     req.body.value = removeOddSpaces(value).toLocaleLowerCase();
   }
   if (roleIds !== undefined && Array.isArray(roleIds)) {
-    req.body.roleIds = [...new Set(roleIds)];
+    req.body.roleIds = [...new Set(roleIds)]; // Remove duplicates
   }
 
   next();
@@ -213,11 +214,7 @@ export function verifyUserInput(
               )}`
             );
           }
-          if (
-            avatarUrl !== undefined &&
-            avatarUrl !== null &&
-            !(await isValidImgUrl(avatarUrl))
-          ) {
+          if (isPresent(avatarUrl) && !(await isValidImgUrl(avatarUrl))) {
             errors.push("avatarUrl is invalid.");
           }
           if (
@@ -229,19 +226,24 @@ export function verifyUserInput(
           if (isLocked !== undefined && typeof isLocked !== "boolean") {
             errors.push("isLocked must be a boolean.");
           }
-          if (roleIds !== undefined && !isValidIdArray(roleIds)) {
+          if (isPresent(roleIds) && !isValidIdArray(roleIds)) {
             errors.push("roleIds must be an array of valid ids.");
           }
           break;
         }
         case "auth by google": {
           console.log("Validating authentication by Google input...");
-          const { idToken } = req.body;
+          const { idToken, accessToken } = req.body;
 
           if (!idToken) {
             errors.push("idToken is required.");
           } else if (typeof idToken !== "string") {
             errors.push("idToken must be a non-empty string.");
+          }
+          if (!accessToken) {
+            errors.push("accessToken is required.");
+          } else if (typeof accessToken !== "string") {
+            errors.push("accessToken must be a non-empty string.");
           }
           break;
         }
@@ -362,7 +364,7 @@ export function verifyUserInput(
           } else if (!isValidUserFullName(fullName)) {
             errors.push("fullName is invalid.");
           }
-          if (avatarUrl !== undefined && !(await isValidImgUrl(avatarUrl))) {
+          if (isPresent(avatarUrl) && !(await isValidImgUrl(avatarUrl))) {
             errors.push("avatarUrl is invalid.");
           }
           if (!email && !phoneNumber) {
@@ -406,15 +408,14 @@ export function verifyUserInput(
           }
           if (
             userBalanceCents !== undefined &&
-            typeof userBalanceCents !== "number" &&
-            userBalanceCents < 0
+            (typeof userBalanceCents !== "number" || userBalanceCents < 0)
           ) {
             errors.push("userBalanceCents must be a non-negative number.");
           }
           if (isLocked !== undefined && typeof isLocked !== "boolean") {
             errors.push("isLocked must be a boolean.");
           }
-          if (roleIds !== undefined && !isValidIdArray(roleIds)) {
+          if (isPresent(roleIds) && !isValidIdArray(roleIds)) {
             errors.push("roleIds must be an array of valid ids.");
           }
           break;
@@ -445,7 +446,6 @@ export function verifyUserInput(
           } else if (!isValidPassword(newPassword)) {
             errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
           }
-
         }
       }
 
@@ -503,7 +503,7 @@ export function verifyAddressInput(
           if (!location) {
             errors.push("location is required.");
           } else if (
-            typeof location !== "object" ||
+            !isNoneArrObj(location) ||
             location.longitude === undefined ||
             location.latitude === undefined
           ) {
@@ -575,7 +575,7 @@ export function verifyAddressInput(
           }
           if (location !== undefined) {
             if (
-              typeof location !== "object" ||
+              !isNoneArrObj(location) ||
               !location.longitude ||
               !location.latitude
             ) {
@@ -631,7 +631,10 @@ export function verifyCartInput(
           } else if (typeof variationId !== "string") {
             errors.push("variationId must be a string.");
           }
-          if (quantity !== undefined && quantity < 1) {
+          if (
+            quantity !== undefined &&
+            (typeof quantity !== "number" || quantity < 1)
+          ) {
             errors.push("quantity must be a positive number.");
           }
           break;
@@ -643,7 +646,7 @@ export function verifyCartInput(
           if (!quantity) {
             errors.push("quantity is required.");
           } else if (typeof quantity !== "number" || quantity < 0) {
-            errors.push("quantity must be a positive number.");
+            errors.push("quantity must be a non-negative number.");
           }
           break;
         }

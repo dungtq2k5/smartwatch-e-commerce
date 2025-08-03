@@ -36,8 +36,8 @@ export async function create(
     const { userId } = req["auth"] as RequestAuth;
     const brand = new ProductBrand({
       name,
-      logoUrl: logoUrl || undefined,
-      description: description || undefined,
+      logoUrl, // mongoose will save as null since the default value is null
+      description,
       createdBy: userId,
     });
 
@@ -63,25 +63,34 @@ export async function get(
   const { id } = req.params;
 
   try {
-    // Fetch single brand by ID
-    if (id) {
-      if (!Types.ObjectId.isValid(id)) {
-        return next(errorHandler(404, "Product brand not found."));
-      }
-      const brand = await ProductBrand.findById(id).lean();
-      if (!brand || brand.isDeleted) {
-        return next(errorHandler(404, "Product brand not found."));
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "Product brand fetched successfully.",
-        data: formatProductBrandResponse(brand),
-      } as SuccessResponse<ProductBrandResponse>);
-      console.log("✅ ", "Product brand fetched successfully.");
-      return;
+    if (!Types.ObjectId.isValid(id)) {
+      return next(errorHandler(404, "Product brand not found."));
     }
 
+    const brand = await ProductBrand.findById(id).lean();
+    if (!brand || brand.isDeleted) {
+      return next(errorHandler(404, "Product brand not found."));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Product brand fetched successfully.",
+      data: formatProductBrandResponse(brand),
+    } as SuccessResponse<ProductBrandResponse>);
+    console.log("✅ ", "Product brand fetched successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAll(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Fetching all product brands...");
+
+  try {
     const brands = await ProductBrand.find({ isDeleted: false }).lean();
 
     res.status(200).json({
@@ -125,13 +134,6 @@ export async function update(
     const updateData = req.body as ProductBrandUpdate;
 
     const updatedName = updateData.name || brand.name;
-    const updatedLogoUrl =
-      updateData.logoUrl === null
-        ? undefined
-        : updateData.logoUrl || (brand.logoUrl as string | undefined);
-    const updatedDescription =
-      updateData.description || (brand.description as string | undefined);
-
     if (updatedName !== brand.name) {
       const existingBrand = await ProductBrand.findOne({
         isDeleted: false,
@@ -142,13 +144,18 @@ export async function update(
       }
     }
 
+    const updatedLogoUrl =
+      updateData.logoUrl === null ? null : updateData.logoUrl || brand.logoUrl;
     if (updatedLogoUrl !== brand.logoUrl && brand.logoUrl) {
       await deleteFileFromFirebaseStorage(brand.logoUrl, "product-image");
     }
 
     brand.name = updatedName;
     brand.logoUrl = updatedLogoUrl;
-    brand.description = updatedDescription;
+    brand.description =
+      updateData.description === null
+        ? null
+        : updateData.description || brand.description;
 
     await brand.save();
 

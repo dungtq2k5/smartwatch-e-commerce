@@ -8,7 +8,8 @@ const inventoryMovementTypeSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    default: "",
+    required: false,
+    default: null,
   },
 });
 

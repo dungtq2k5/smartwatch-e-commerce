@@ -1,5 +1,3 @@
-import { useRef } from "react";
-
 export default function Loading({
   loadingMsg,
 }: Readonly<{ loadingMsg?: string }>) {

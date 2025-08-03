@@ -12,6 +12,8 @@ const productCategorySchema = new mongoose.Schema(
     },
     description: {
       type: String,
+      required: false,
+      default: null,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -20,14 +22,19 @@ const productCategorySchema = new mongoose.Schema(
     },
     isDeleted: {
       type: Boolean,
+      required: false,
       default: false,
     },
     deletedAt: {
       type: Date,
+      required: false,
+      default: null,
     },
     deletedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: false,
+      default: null,
     },
   },
   { timestamps: true }

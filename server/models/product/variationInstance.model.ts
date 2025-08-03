@@ -12,9 +12,14 @@ const variationInstanceSchema = new mongoose.Schema(
       ref: "ModelVariation",
       required: true,
     },
-    supplierSerialNumber: {
+    supplierSerialNumber: { // unique
       type: String,
       required: true,
+    },
+    supplierImeiNumber: { // unique
+      type: String,
+      required: false,
+      default: null,
     },
     conditionId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -23,15 +28,13 @@ const variationInstanceSchema = new mongoose.Schema(
     },
     isActive: {
       type: Boolean,
+      required: false,
       default: true,
     },
     inactiveAt: {
       type: Date,
-    },
-
-    // Additional fields for type color
-    supplierImeiNumber: {
-      type: String,
+      required: false,
+      default: null,
     },
   },
   { timestamps: true }
@@ -48,7 +51,7 @@ variationInstanceSchema.index(
   { modelVariationId: 1, supplierImeiNumber: 1 },
   {
     unique: true,
-    partialFilterExpression: { supplierImeiNumber: { $exists: true } },
+    partialFilterExpression: { supplierImeiNumber: { $ne: true } },
   }
 );
 

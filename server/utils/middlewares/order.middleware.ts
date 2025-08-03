@@ -91,11 +91,8 @@ export function verifyOrderInput(
         }
         case "update": {
           console.log("Validating order update input...");
-          const {
-            deliveryStateId,
-            estimateReceivedDate,
-            deliveryAddressId,
-          } = req.body;
+          const { deliveryStateId, estimateReceivedDate, deliveryAddressId } =
+            req.body;
 
           if (
             deliveryStateId !== undefined &&
@@ -107,7 +104,9 @@ export function verifyOrderInput(
             estimateReceivedDate !== undefined &&
             !isValidDateTimeString(estimateReceivedDate)
           ) {
-            errors.push("Estimate received date must be a valid date-time string.");
+            errors.push(
+              "Estimate received date must be a valid date-time string."
+            );
           }
           if (
             deliveryAddressId !== undefined &&

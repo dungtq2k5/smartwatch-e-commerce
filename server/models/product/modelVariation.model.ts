@@ -1,5 +1,85 @@
 import mongoose from "mongoose";
 
+const variationBandSchema = new mongoose.Schema(
+  {
+    widthMm: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    lugWidthMm: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    material: {
+      type: String,
+      required: true,
+    },
+    colors: {
+      // A band can have multiple colors
+      type: [
+        {
+          hex: {
+            type: String,
+            required: true,
+          },
+          name: {
+            type: String,
+            required: true,
+          },
+        },
+      ],
+      required: true,
+    },
+    claspType: {
+      type: String,
+      required: true,
+    },
+    adjustableRange: {
+      type: {
+        minMm: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        maxMm: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+      },
+      required: true,
+      _id: false,
+    },
+    style: {
+      type: String,
+      required: true,
+    },
+    quickRelease: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    waterResistance: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    hypoallergenic: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    weightMg: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
 const modelVariationSchema = new mongoose.Schema(
   {
     productModelId: {
@@ -11,81 +91,39 @@ const modelVariationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    colorHex: {
-      type: String,
-      required: true,
-    },
-    imageUrls: {
-      type: [String],
-      default: [],
-    },
-    additionalPriceCents: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    band: {
+    color: {
+      // unique with isDeleted: false
       type: {
-        lugWidthMm: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        material: {
+        hex: {
           type: String,
           required: true,
         },
-        colorsHex: {
-          type: [String],
-          required: true,
-        },
-        claspType: {
+        name: {
           type: String,
           required: true,
-        },
-        adjustableRange: {
-          type: {
-            minMm: {
-              type: Number,
-              required: true,
-              min: 0,
-            },
-            maxMm: {
-              type: Number,
-              required: true,
-              min: 0,
-            },
-          },
-          required: true,
-          _id: false,
-        },
-        style: {
-          type: String,
-          required: true,
-        },
-        quickRelease: {
-          type: Boolean,
-          default: false,
-        },
-        waterResistance: {
-          type: Boolean,
-          default: false,
-        },
-        hypoallergenic: {
-          type: Boolean,
-          default: false,
-        },
-        weightMg: {
-          type: Number,
-          required: true,
-          min: 0,
         },
       },
       required: true,
       _id: false,
     },
+    imageUrls: {
+      type: [String],
+      required: false,
+      default: [],
+    },
+    additionalPriceCents: {
+      type: Number,
+      required: false,
+      default: 0,
+      min: 0,
+    },
+    band: {
+      type: variationBandSchema,
+      required: true,
+    },
     stockQuantity: {
       type: Number,
+      required: false,
       default: 0,
       min: 0,
     },
@@ -96,25 +134,31 @@ const modelVariationSchema = new mongoose.Schema(
     },
     stopSelling: {
       type: Boolean,
+      required: false,
       default: false,
     },
     isDeleted: {
       type: Boolean,
+      required: false,
       default: false,
     },
     deletedAt: {
       type: Date,
+      required: false,
+      default: null,
     },
     deletedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: false,
+      default: null,
     },
   },
   { timestamps: true }
 );
 
 modelVariationSchema.index(
-  { productModelId: 1, name: 1 },
+  { productModelId: 1, "color.hex": 1 },
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
@@ -122,7 +166,7 @@ modelVariationSchema.index(
 );
 
 modelVariationSchema.index(
-  { productModelId: 1, colorHex: 1 },
+  { productModelId: 1, "color.name": 1 },
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
