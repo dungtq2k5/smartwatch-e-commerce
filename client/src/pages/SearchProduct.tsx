@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import type { ProductListResponse } from "../../../common/types.common";
-import ProductCard from "../components/ProductCard";
+import ProductCard from "../components/product/ProductCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { useCallback, useEffect, useRef, useState } from "react";

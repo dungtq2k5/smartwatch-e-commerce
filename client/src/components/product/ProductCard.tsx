@@ -1,7 +1,7 @@
 import { memo } from "react";
-import type { ProductResponse } from "../../../common/types.common";
-import defaultProductImg from "../assets/default-product.webp";
-import { centsToUSD } from "../../../common/utils.common";
+import type { ProductResponse } from "../../../../common/types.common";
+import defaultProductImg from "../../assets/default-product.webp";
+import { centsToUSD } from "../../../../common/utils.common";
 
 const ProductCard = memo(({
   product,

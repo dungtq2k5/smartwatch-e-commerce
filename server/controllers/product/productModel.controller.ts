@@ -15,7 +15,7 @@ import { RequestAuth } from "../../utils/types";
 import { formatProductModelResponse } from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 import ModelVariation from "../../models/product/modelVariation.model";
-import { cleanObj, shallowMerge } from "../../../common/utils.common";
+import { cleanObj, isEmptyObj, shallowMerge } from "../../../common/utils.common";
 
 export async function create(
   req: Request,
@@ -359,7 +359,7 @@ export async function update(
           : updateData.feature.supportedAppsForNotifications ||
             featureObj.supportedAppsForNotifications;
     }
-    if (updateData.config) {
+    if (updateData.config && !isEmptyObj(updateData.config)) {
       const configObj = model.toObject().config;
 
       model.config.connectivities =
@@ -393,7 +393,7 @@ export async function update(
           ? []
           : updateData.config.sensors || configObj.sensors;
     }
-    if (updateData.battery) {
+    if (updateData.battery && !isEmptyObj(updateData.battery)) {
       const batteryObj = model.toObject().battery;
 
       model.battery.capacityMah =
@@ -407,7 +407,7 @@ export async function update(
       model.battery.chargingType =
         updateData.battery.chargingType || batteryObj.chargingType;
     }
-    if (updateData.screen) {
+    if (updateData.screen && !isEmptyObj(updateData.screen)) {
       model.screen.display = shallowMerge(
         model.screen.display,
         updateData.screen.display

@@ -440,7 +440,7 @@ export type ProductModelCreate = {
   };
   screen: {
     display: {
-      diagonalInch: number;
+      diagonalSizeInch: number;
       displayType: string;
     };
     brightness: {

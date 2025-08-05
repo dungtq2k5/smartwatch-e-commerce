@@ -47,7 +47,6 @@ const AuthByGoogleBtn = memo(() => {
       onClick={handleGoogleAuth}
       disabled={isLoading}
     >
-      <FontAwesomeIcon icon={faGoogle} className="me-2" />
       {isLoading ? (
         <>
           <span
@@ -57,7 +56,10 @@ const AuthByGoogleBtn = memo(() => {
           <output>Authenticating...</output>
         </>
       ) : (
-        "Auth by Google"
+        <>
+          <FontAwesomeIcon icon={faGoogle} className="me-2" />
+          Authenticate with Google
+        </>
       )}
     </button>
   );

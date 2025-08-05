@@ -1,4 +1,8 @@
-import type { BaseUserAddress } from "../../../common/types.common";
+import type {
+  BaseUserAddress,
+  ModelVariationResponse,
+  ProductModelResponse,
+} from "../../../common/types.common";
 
 export type FormInput = {
   val: string;
@@ -30,3 +34,19 @@ export type AddressFormData = {
   location: [number, number]; // [longitude, latitude]
   isDefault: boolean;
 };
+
+type Picked = {
+  idx: number;
+};
+
+export type ModelPicked =
+  | (Picked & {
+      model: ProductModelResponse;
+    })
+  | undefined;
+
+export type VariationPicked =
+  | (Picked & {
+      variation: ModelVariationResponse;
+    })
+  | undefined;

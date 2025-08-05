@@ -5,10 +5,10 @@ import {
   isValidDateTimeString,
   isValidColorHex,
   isValidNumString,
-  isValidListOfColorsHex,
   removeAllSpaces,
   isValidListOfColorObj,
   isNoneArrObj,
+  isEmptyObj,
 } from "../../../common/utils.common";
 import {
   PRODUCT_NAME_MAX_LENGTH,
@@ -55,7 +55,7 @@ function sanitizeModelVariationInput(
   if (typeof name === "string") {
     req.body.name = removeOddSpaces(name);
   }
-  if (color && typeof color === "object") {
+  if (isNoneArrObj(color) && !isEmptyObj(color)) {
     if (typeof color.name === "string") {
       req.body.color.name = removeOddSpaces(color.name);
     }
@@ -130,14 +130,14 @@ function sanitizeProductModelInput(
   if (typeof caseMaterial === "string") {
     req.body.caseMaterial = removeOddSpaces(caseMaterial);
   }
-  if (feature && typeof feature === "object") {
+  if (isNoneArrObj(feature) && !isEmptyObj(feature)) {
     const {
       waterResistance, // rating, description
       utilities, // list of healths, sports, specials, others
       supportedAppsForNotifications,
     } = feature;
 
-    if (waterResistance && typeof waterResistance === "object") {
+    if (isNoneArrObj(waterResistance) && !isEmptyObj(waterResistance)) {
       if (typeof waterResistance.rating === "string") {
         req.body.feature.waterResistance.rating = removeOddSpaces(
           waterResistance.rating
@@ -149,7 +149,7 @@ function sanitizeProductModelInput(
         );
       }
     }
-    if (utilities && typeof utilities === "object") {
+    if (isNoneArrObj(utilities) && !isEmptyObj(utilities)) {
       if (isArrayOfNonEmptyStrings(utilities.healths)) {
         req.body.feature.utilities.healths = utilities.healths.map(
           (item: string) => removeOddSpaces(item)
@@ -178,7 +178,7 @@ function sanitizeProductModelInput(
         );
     }
   }
-  if (config && typeof config === "object") {
+  if (isNoneArrObj(config) && !isEmptyObj(config)) {
     const {
       connectivities,
       camera,
@@ -194,8 +194,8 @@ function sanitizeProductModelInput(
       );
     }
     if (
-      camera &&
-      typeof camera === "object" &&
+      isNoneArrObj(camera) &&
+      !isEmptyObj(camera) &&
       isArrayOfNonEmptyStrings(camera.features)
     ) {
       req.body.config.camera.features = camera.features.map((item: string) =>
@@ -221,18 +221,18 @@ function sanitizeProductModelInput(
       );
     }
   }
-  if (battery && typeof battery === "object") {
+  if (isNoneArrObj(battery) && !isEmptyObj(battery)) {
     const { chargingType } = battery;
     if (typeof chargingType === "string") {
       req.body.battery.chargingType = removeOddSpaces(chargingType);
     }
   }
-  if (screen && typeof screen === "object") {
+  if (isNoneArrObj(screen) && !isEmptyObj(screen)) {
     const { display, glassMaterial, bezelMaterial, shape } = screen;
 
     if (
-      display &&
-      typeof display === "object" &&
+      isNoneArrObj(display) &&
+      !isEmptyObj(display) &&
       typeof display.displayType === "string"
     ) {
       req.body.screen.display.displayType = removeOddSpaces(
@@ -454,8 +454,7 @@ export function verifyProductInput(
           ) {
             errors.push("search term must be a non-empty string.");
           }
-          if (type !== undefined &&
-            !PRODUCT_TYPES.includes(type as any)) {
+          if (type !== undefined && !PRODUCT_TYPES.includes(type as any)) {
             errors.push(
               `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`
             );
@@ -816,7 +815,7 @@ export function verifyProductModelInput(
             if (isPresent(utilities)) {
               if (!isNoneArrObj(utilities)) {
                 errors.push("utilities must be an object.");
-              } else if (Object.keys(utilities).length) {
+              } else if (!isEmptyObj(utilities)) {
                 const { healths, sports, specials, others } = utilities;
 
                 if (isPresent(healths) && !isArrayOfNonEmptyStrings(healths)) {
@@ -1120,45 +1119,40 @@ export function verifyProductModelInput(
                   "screen dimension must be null or not provided for circular screens."
                 );
               }
-            } else {
+            } else if (!dimension) {
               // isCircular is false
-              if (!dimension) {
+              errors.push(
+                "screen dimension is required for non-circular screens."
+              );
+            } else if (!isNoneArrObj(dimension)) {
+              errors.push("screen dimension must be an object.");
+            } else {
+              const { wMm, hMm, thicknessMm } = dimension;
+              if (wMm === undefined) {
                 errors.push(
-                  "screen dimension is required for non-circular screens."
+                  "screen width is required for non-circular screens."
                 );
-              } else if (!isNoneArrObj(dimension)) {
-                errors.push("screen dimension must be an object.");
-              } else {
-                const { wMm, hMm, thicknessMm } = dimension;
-                if (wMm === undefined) {
-                  errors.push(
-                    "screen width is required for non-circular screens."
-                  );
-                } else if (typeof wMm !== "number" || wMm <= 0) {
-                  errors.push("screen width must be a positive number.");
-                }
-                if (hMm === undefined) {
-                  errors.push(
-                    "screen height is required for non-circular screens."
-                  );
-                } else if (typeof hMm !== "number" || hMm <= 0) {
-                  errors.push("screen height must be a positive number.");
-                }
-                if (thicknessMm === undefined) {
-                  errors.push(
-                    "screen thickness is required for non-circular screens."
-                  );
-                } else if (
-                  typeof thicknessMm !== "number" ||
-                  thicknessMm <= 0
-                ) {
-                  errors.push("screen thickness must be a positive number.");
-                }
-                if (isPresent(diameterMm)) {
-                  errors.push(
-                    "screen diameter must be null or not provided for non-circular screens."
-                  );
-                }
+              } else if (typeof wMm !== "number" || wMm <= 0) {
+                errors.push("screen width must be a positive number.");
+              }
+              if (hMm === undefined) {
+                errors.push(
+                  "screen height is required for non-circular screens."
+                );
+              } else if (typeof hMm !== "number" || hMm <= 0) {
+                errors.push("screen height must be a positive number.");
+              }
+              if (thicknessMm === undefined) {
+                errors.push(
+                  "screen thickness is required for non-circular screens."
+                );
+              } else if (typeof thicknessMm !== "number" || thicknessMm <= 0) {
+                errors.push("screen thickness must be a positive number.");
+              }
+              if (isPresent(diameterMm)) {
+                errors.push(
+                  "screen diameter must be null or not provided for non-circular screens."
+                );
               }
             }
             if (!shape) {
@@ -1237,7 +1231,7 @@ export function verifyProductModelInput(
           if (feature !== undefined) {
             if (!isNoneArrObj(feature)) {
               errors.push("feature must be an object.");
-            } else {
+            } else if (!isEmptyObj(feature)) {
               const {
                 speakerAndMicrophone,
                 waterResistance,
@@ -1254,7 +1248,7 @@ export function verifyProductModelInput(
               if (isPresent(waterResistance)) {
                 if (!isNoneArrObj(waterResistance)) {
                   errors.push("waterResistance must be an object.");
-                } else if (Object.keys(waterResistance).length) {
+                } else if (!isEmptyObj(waterResistance)) {
                   // If empty obj nothing changes
                   const { rating, description } = waterResistance;
 
@@ -1279,7 +1273,7 @@ export function verifyProductModelInput(
               if (isPresent(utilities)) {
                 if (!isNoneArrObj(utilities)) {
                   errors.push("utilities must be an object.");
-                } else if (Object.keys(utilities).length) {
+                } else if (!isEmptyObj(utilities)) {
                   const { healths, sports, specials, others } = utilities;
 
                   if (
@@ -1323,7 +1317,7 @@ export function verifyProductModelInput(
           if (config !== undefined) {
             if (!isNoneArrObj(config)) {
               errors.push("config must be an object.");
-            } else {
+            } else if (!isEmptyObj(config)) {
               const {
                 connectivities,
                 camera,
@@ -1346,7 +1340,7 @@ export function verifyProductModelInput(
               if (isPresent(camera)) {
                 if (!isNoneArrObj(camera)) {
                   errors.push("camera must be an object.");
-                } else if (Object.keys(camera).length) {
+                } else if (!isEmptyObj(camera)) {
                   const { resolutionMp, features } = camera;
                   if (
                     resolutionMp !== undefined &&
@@ -1375,7 +1369,7 @@ export function verifyProductModelInput(
               if (memory !== undefined) {
                 if (!isNoneArrObj(memory)) {
                   errors.push("memory must be an object.");
-                } else {
+                } else if (!isEmptyObj(memory)) {
                   const { ramBytes, storageBytes } = memory;
                   if (
                     ramBytes !== undefined &&
@@ -1420,7 +1414,7 @@ export function verifyProductModelInput(
           if (battery !== undefined) {
             if (!isNoneArrObj(battery)) {
               errors.push("battery must be an object.");
-            } else {
+            } else if (!isEmptyObj(battery)) {
               const {
                 capacityMah,
                 timeOnline,
@@ -1436,7 +1430,7 @@ export function verifyProductModelInput(
               if (timeOnline !== undefined) {
                 if (!isNoneArrObj(timeOnline)) {
                   errors.push("battery time online must be an object.");
-                } else {
+                } else if (!isEmptyObj(timeOnline)) {
                   const { aodOnMin, aodOffMin, typicalUsageMin, standByMin } =
                     timeOnline;
                   if (
@@ -1495,7 +1489,7 @@ export function verifyProductModelInput(
           if (screen !== undefined) {
             if (!isNoneArrObj(screen)) {
               errors.push("screen must be an object.");
-            } else {
+            } else if (!isEmptyObj(screen)) {
               const {
                 display,
                 brightness,
@@ -1510,7 +1504,7 @@ export function verifyProductModelInput(
               if (display !== undefined) {
                 if (!isNoneArrObj(display)) {
                   errors.push("screen display must be an object.");
-                } else if (Object.keys(display).length) {
+                } else if (!isEmptyObj(display)) {
                   const { diagonalSizeInch, displayType } = display;
                   if (
                     diagonalSizeInch !== undefined &&
@@ -1534,7 +1528,7 @@ export function verifyProductModelInput(
               if (brightness !== undefined) {
                 if (!isNoneArrObj(brightness)) {
                   errors.push("screen brightness must be an object.");
-                } else if (Object.keys(brightness).length) {
+                } else if (!isEmptyObj(brightness)) {
                   const { minNits, maxNits } = brightness;
                   if (
                     minNits !== undefined &&
@@ -1557,7 +1551,7 @@ export function verifyProductModelInput(
               if (resolution !== undefined) {
                 if (!isNoneArrObj(resolution)) {
                   errors.push("screen resolution must be an object.");
-                } else if (Object.keys(resolution).length) {
+                } else if (!isEmptyObj(resolution)) {
                   const { hPx, wPx } = resolution;
                   if (
                     hPx !== undefined &&
@@ -1607,7 +1601,7 @@ export function verifyProductModelInput(
               if (dimension !== undefined) {
                 if (!isNoneArrObj(dimension)) {
                   errors.push("screen dimension must be an object.");
-                } else if (Object.keys(dimension).length) {
+                } else if (!isEmptyObj(dimension)) {
                   const { wMm, hMm, thicknessMm } = dimension;
                   if (
                     wMm !== undefined &&
@@ -1865,7 +1859,7 @@ export function verifyModelVariationInput(
           if (color !== undefined) {
             if (!isNoneArrObj(color)) {
               errors.push("color must be an object.");
-            } else {
+            } else if (!isEmptyObj(color)) {
               const { hex, name } = color;
               if (hex !== undefined && !isValidColorHex(hex)) {
                 errors.push("color hex must be a valid color hex.");
@@ -1888,7 +1882,7 @@ export function verifyModelVariationInput(
           if (band !== undefined) {
             if (!isNoneArrObj(band)) {
               errors.push("band must be an object.");
-            } else if (Object.keys(band).length) {
+            } else if (!isEmptyObj(band)) {
               const {
                 widthMm,
                 lugWidthMm,
@@ -1935,7 +1929,7 @@ export function verifyModelVariationInput(
               if (adjustableRange !== undefined) {
                 if (!isNoneArrObj(adjustableRange)) {
                   errors.push("band adjustable range must be an object.");
-                } else if (Object.keys(adjustableRange).length) {
+                } else if (!isEmptyObj(adjustableRange)) {
                   const { minMm, maxMm } = adjustableRange;
                   let isValidRange = true;
 

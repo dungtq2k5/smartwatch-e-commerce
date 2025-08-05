@@ -11,6 +11,7 @@ import type {
   UserUpdateContactInfo,
   UserUpdateSelfPassword,
   UserSetSelfPassword,
+  UserCartResponseList,
 } from "../../../common/types.common";
 import { formatError, post, patch, retrieve, remove } from "../utils/utils";
 import {
@@ -23,10 +24,10 @@ import {
   SIGNUP_URL,
   VERIFY_USER_URL,
   USER_UPDATE_SELF_CONTACT_INFO_URL,
-  USER_UPDATE_SELF_PASSWORD,
-  USER_SET_SELF_PASSWORD,
+  USER_UPDATE_SELF_PASSWORD_URL,
+  USER_SET_SELF_PASSWORD_URL,
   LOGOUT_URL,
-  USER_DELETE_ACCOUNT,
+  USER_DELETE_ACCOUNT_URL,
 } from "../configs";
 
 type AuthState = {
@@ -34,13 +35,16 @@ type AuthState = {
   isAuth: boolean; // If this is true, user data must be defined
   isLoading?: true;
   isCheckingAuth?: true;
-  isGetting?: true;
-  getErr?: string;
   isDeleting?: true;
+
+  carts?: UserCartResponseList;
+  isFetching?: true;
+  fetchErr?: string;
 
   startLoading: () => void;
   stopLoading: () => void;
 
+  // Validate and authenticate user
   checkAuth: () => Promise<void>;
 
   signup: (user: UserSignup) => Promise<void>;
@@ -50,10 +54,11 @@ type AuthState = {
   login: (data: UserLogin) => Promise<void>;
   logout: () => Promise<void>;
 
+  authByGoogle: (data: UserAuthByGoogle) => Promise<void>;
+
+  // Update user data
   forgotPassword: (data: UserForgotPassword) => Promise<void>;
   resetPassword: (password: string, token: string) => Promise<void>;
-
-  authByGoogle: (data: UserAuthByGoogle) => Promise<void>;
 
   updateSelfGeneralInfo: (data: UserUpdateSelfGeneralInfo) => Promise<void>;
 
@@ -71,9 +76,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuth: false,
   isLoading: undefined,
   isCheckingAuth: undefined,
-  isGetting: undefined,
-  getErr: undefined,
-  isDeleting: undefined,
+  isFetching: undefined,
 
   startLoading: () => set({ isLoading: true }),
   stopLoading: () => set({ isLoading: undefined }),
@@ -282,7 +285,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ isLoading: true });
     try {
-      const res = await patch(USER_UPDATE_SELF_PASSWORD, undefined, data);
+      const res = await patch(USER_UPDATE_SELF_PASSWORD_URL, undefined, data);
       if (!res.success) {
         throw new Error(res.message);
       }
@@ -304,7 +307,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ isLoading: true });
     try {
-      const res = await patch(USER_SET_SELF_PASSWORD, undefined, data);
+      const res = await patch(USER_SET_SELF_PASSWORD_URL, undefined, data);
       if (!res.success) {
         throw new Error(res.message);
       }
@@ -323,7 +326,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ isDeleting: true });
     try {
-      const res = await remove(USER_DELETE_ACCOUNT);
+      const res = await remove(USER_DELETE_ACCOUNT_URL);
       if (!res.success) {
         throw new Error(res.message);
       }

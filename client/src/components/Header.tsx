@@ -1,10 +1,12 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faCartShopping, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { memo, useCallback, useEffect, useState, type JSX } from "react";
 import { useAuthStore } from "../store/authStore";
 import defaultAvatar from "../assets/default-avatar.webp";
 import { removeOddSpaces } from "../../../common/utils.common";
+import { useUserCartStore } from "../store/cartStore";
+import toast from "react-hot-toast";
 
 const Header = memo(() => {
   // DEV temp for testing
@@ -13,6 +15,12 @@ const Header = memo(() => {
   // console.log("Header rendered", renderCount.current);
 
   const { user, isAuth } = useAuthStore();
+  const {
+    isFetching: isFetchingCart,
+    fetchErr: fetchCartErr,
+    fetchCarts,
+    carts,
+  } = useUserCartStore();
 
   const [searchTerm, setSearchTerm] = useState<string>("");
 
@@ -25,6 +33,17 @@ const Header = memo(() => {
     const urlSearchTerm = urlParams.get("searchTerm");
     if (urlSearchTerm) setSearchTerm(urlSearchTerm);
   }, [location.search]);
+
+  // Handle fetching user carts if they are auth
+  useEffect(() => {
+    if (!isAuth) return;
+
+    const handleFetchUserCart = async (): Promise<void> => {
+      await fetchCarts();
+      if (fetchCartErr) toast.error(fetchCartErr);
+    };
+    handleFetchUserCart();
+  }, [fetchCartErr, fetchCarts, isAuth]);
 
   const handleSearch = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
@@ -42,21 +61,34 @@ const Header = memo(() => {
   const renderBtns = (): JSX.Element => {
     if (user && isAuth) {
       return (
-        <Link to="/account" title="my account">
-          <img
-            src={user.avatarUrl ?? defaultAvatar}
-            className="avatar--g avatar--sm--g"
-            alt="account"
-            loading="lazy"
-          />
-        </Link>
+        <>
+          <Link to="/account" title="my account">
+            <img
+              src={user.avatarUrl ?? defaultAvatar}
+              className="avatar--g avatar--sm--g"
+              alt="account"
+              loading="lazy"
+            />
+          </Link>
+          {!isFetchingCart && !fetchCartErr && carts && (
+            <Link to="/cart" title="my cart" className="position-relative">
+              <FontAwesomeIcon
+                icon={faCartShopping}
+                className="fs-5 text-primary"
+              />
+              {carts.total > 0 && (
+                <span className="cart-badge--g">{carts.total}</span>
+              )}
+            </Link>
+          )}
+        </>
       );
     }
 
     if (!isAuth) {
       return (
         <>
-          <Link to="/login" className="btn btn-outline-primary me-2">
+          <Link to="/login" className="btn btn-outline-primary">
             Login
           </Link>
           <Link to="/signup" className="btn btn-primary">
@@ -113,7 +145,7 @@ const Header = memo(() => {
             </li>
           </ul>
           {/* Search bar */}
-          <form className="d-flex" onSubmit={handleSearch}>
+          <form className="d-flex me-4" onSubmit={handleSearch}>
             <label htmlFor="search" hidden aria-hidden="true">
               Search
             </label>
@@ -132,9 +164,7 @@ const Header = memo(() => {
             </button>
           </form>
           {/* User account or auth buttons */}
-          <div className="d-flex align-items-center ms-lg-3 mt-2 mt-lg-0">
-            {renderBtns()}
-          </div>
+          <div className="d-flex align-items-end gap-3">{renderBtns()}</div>
         </div>
       </div>
     </header>

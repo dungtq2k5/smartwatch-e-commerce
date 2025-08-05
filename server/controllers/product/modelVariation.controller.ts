@@ -14,7 +14,7 @@ import ModelVariation from "../../models/product/modelVariation.model";
 import { RequestAuth } from "../../utils/types";
 import { formatModelVariationResponse } from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
-import { shallowMerge } from "../../../common/utils.common";
+import { isEmptyObj, shallowMerge } from "../../../common/utils.common";
 
 export async function create(
   req: Request,
@@ -307,7 +307,7 @@ export async function update(
         : updateData.imageUrls || variation.imageUrls;
     variation.additionalPriceCents =
       updateData.additionalPriceCents ?? variation.additionalPriceCents;
-    if (updateData.band) {
+    if (updateData.band && !isEmptyObj(updateData.band)) {
       variation.band.widthMm =
         updateData.band.widthMm || variation.band.widthMm;
       variation.band.lugWidthMm =

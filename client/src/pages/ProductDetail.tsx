@@ -1,85 +1,97 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
-  ModelVariationResponse,
   ProductDetailResponse,
-  ProductModelResponse,
+  ProductListResponse,
+  UserCartCreate,
 } from "../../../common/types.common";
-import {
-  centsToUSD,
-  bytesToMB,
-  convertUtcToLocalISOString,
-} from "../../../common/utils.common";
+import { centsToUSD } from "../../../common/utils.common";
 import { useProductStore } from "../store/product/productStore";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { formatError } from "../utils/utils";
 import ApiError from "../components/ApiError";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBolt,
-  faCartPlus,
-  faCircle,
+  faBoxOpen,
+  faCartArrowDown,
 } from "@fortawesome/free-solid-svg-icons";
-import Loading from "../components/Loading";
+import ProductDetailSpecsModal from "../components/modal/ProductDetailSpecsModal";
+import ProductDetailSkeleton from "../components/skeleton/ProductDetailSkeleton";
+import type { ModelPicked, VariationPicked } from "../utils/types";
+import toast from "react-hot-toast";
+import { useUserCartStore } from "../store/cartStore";
+import ProductCardSkeleton from "../components/skeleton/ProductCardSkeleton";
+import ProductCard from "../components/product/ProductCard";
+import defaultProductImg from "../assets/default-product.webp";
+import HorizontalDivider from "../components/HorizontalDivider";
+import { MAX_PRODUCTS_SUGGEST_DISPLAY } from "../configs";
 
-// TODO skeleton for product detail page
-type ProductDetail = {
-  productDetail: ProductDetailResponse | undefined;
-  isFetching: boolean;
-  fetchErr?: string;
+type FetchingState = {
+  productDetail: boolean;
+  productsSuggest: boolean;
 };
 
-type Picked = {
-  idx: number;
+type ApiErrorState = {
+  productDetail?: string;
+  productsSuggest?: string;
 };
 
-type ModelPicked =
-  | (Picked & {
-      model: ProductModelResponse;
-    })
-  | undefined;
-
-type VariationPicked =
-  | (Picked & {
-      variation: ModelVariationResponse;
-    })
-  | undefined;
+type ProductsState = {
+  productDetail?: ProductDetailResponse;
+  productsSuggest?: ProductListResponse;
+};
 
 export default function ProductDetail() {
   const count = useRef(0);
   count.current += 1;
   console.log(`ProductDetail rendered ${count.current} times`);
 
-  const { fetchProductDetail } = useProductStore();
+  const { fetchProducts, fetchProductDetail } = useProductStore();
+  const { isLoading: isCreatingCart, createCart } = useUserCartStore();
   const params = useParams();
 
-  const [productDetail, setProductDetail] = useState<ProductDetail>({
-    productDetail: undefined,
-    isFetching: true,
-    fetchErr: undefined,
+  const [isFetching, setIsFetching] = useState<FetchingState>({
+    productDetail: true,
+    productsSuggest: true,
   });
+  const [apiError, setApiError] = useState<ApiErrorState>({});
+  const [products, setProducts] = useState<ProductsState>({});
   const [modelPicked, setModelPicked] = useState<ModelPicked>(undefined);
   const [variationPicked, setVariationPicked] =
     useState<VariationPicked>(undefined);
+
   const [mainImgIdx, setMainImgIdx] = useState<number>(0);
 
+  const [modalSpecsState, setModalSpecsState] = useState<boolean>(false);
+
+  // Fetch initial when first loaded or params.id changes: product detail, products suggest, reset states
   useEffect(() => {
     const handleFetchInitialData = async (): Promise<void> => {
-      setProductDetail((prev) => ({
+      setIsFetching((prev) => ({
         ...prev,
-        isFetching: true,
-        fetchErr: undefined,
+        productDetail: true,
+        productsSuggest: true,
+      }));
+      setApiError((prev) => ({
+        ...prev,
+        productDetail: undefined,
+        productsSuggest: undefined,
       }));
 
+      let productDetail: ProductDetailResponse | undefined;
+
+      // Fetch product detail
       try {
         if (!params.id) {
           throw new Error("Product ID is required");
         }
 
-        const productDetail = await fetchProductDetail(params.id, {
+        productDetail = await fetchProductDetail(params.id, {
           modelStopSelling: "false",
           variationStopSelling: "false",
         });
 
+        // Make sure product detail has models and variations
         productDetail.models.models = productDetail.models.models.filter(
           (model) => model.variations.total
         );
@@ -88,11 +100,10 @@ export default function ProductDetail() {
           throw new Error("No models available for this product");
         }
 
-        setProductDetail({
+        setProducts((prev) => ({
+          ...prev,
           productDetail,
-          isFetching: false,
-          fetchErr: undefined,
-        });
+        }));
 
         const modelPicked = productDetail.models.models[0];
         setModelPicked({
@@ -104,112 +115,188 @@ export default function ProductDetail() {
           variation: modelPicked.variations.variations[0],
         });
       } catch (error) {
-        setProductDetail((prev) => ({
+        setApiError((prev) => ({
           ...prev,
-          isFetching: false,
-          fetchErr: formatError(error),
+          productDetail: formatError(error),
+        }));
+      } finally {
+        setIsFetching((prev) => ({
+          ...prev,
+          productDetail: false,
+        }));
+      }
+
+      // Fetch products suggest based on brand
+      try {
+        if (productDetail) {
+          const productsSuggest = await fetchProducts({
+            brandId: productDetail.brand.id,
+            limit: MAX_PRODUCTS_SUGGEST_DISPLAY.toString(),
+            stopSelling: "false",
+          });
+
+          setProducts((prev) => ({
+            ...prev,
+            productsSuggest,
+          }));
+        }
+      } catch (error) {
+        setApiError((prev) => ({
+          ...prev,
+          productsSuggest: formatError(error),
+        }));
+      } finally {
+        setIsFetching((prev) => ({
+          ...prev,
+          productsSuggest: false,
         }));
       }
     };
+
+    // Reset data states
+    setModelPicked(undefined);
+    setVariationPicked(undefined);
+    setMainImgIdx(0);
+    setModalSpecsState(false);
 
     handleFetchInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
-  useEffect(() => {
-    setMainImgIdx(0);
-  }, [params.id]);
+  const handleAddToCart = useCallback(async () => {
+    if (!variationPicked) return;
+
+    const data: UserCartCreate = {
+      variationId: variationPicked.variation.id,
+      quantity: 1,
+    };
+
+    try {
+      await createCart(data);
+      toast.success("Product added to cart successfully!");
+    } catch (error) {
+      toast.error(formatError(error));
+    }
+  }, [createCart, variationPicked]);
 
   return (
     <main className="container--g py-4">
-      {productDetail.isFetching ? (
-        <Loading />
-      ) : productDetail.fetchErr ? (
-        <ApiError errMsg={productDetail.fetchErr} />
-      ) : !productDetail.productDetail || !modelPicked || !variationPicked ? (
+      {isFetching.productDetail ? (
+        <ProductDetailSkeleton />
+      ) : apiError.productDetail ? (
+        <ApiError errMsg={apiError.productDetail} />
+      ) : !products.productDetail || !modelPicked || !variationPicked ? (
         <ApiError errMsg="Product data is not available." />
       ) : (
         <>
           {/* Main product section */}
-          <div className="row g-4 align-items-start mb-4 product-detail">
+          <div className="row g-4">
             {/* Left: Images */}
             <div className="col-lg-6">
-              <div className="d-flex flex-row align-items-start">
+              <div className="row g-3">
                 {/* Vertical image selector */}
-                <div className="product-detail__image-selector d-flex flex-column align-items-center me-3">
-                  {productDetail.productDetail.imageUrls.map((url, i) => (
-                    <button
-                      key={i++}
-                      type="button"
-                      className={`product-detail__image-thumb btn p-0 mb-2${
-                        mainImgIdx === i
-                          ? " product-detail__image-thumb--active"
-                          : ""
-                      }`}
-                      tabIndex={0}
-                      aria-label={`Show image ${i + 1}`}
-                    >
-                      <img
-                        src={url}
-                        alt={`product-thumb-${i}`}
-                        className="product-detail__image-thumb-img"
-                      />
-                    </button>
-                  ))}
+                <div className="col-12 col-md-2 order-2 order-md-1">
+                  <div className="d-flex flex-row flex-md-column gap-2">
+                    {products.productDetail.imageUrls.map((url, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        tabIndex={0}
+                        className="border-0 bg-transparent p-0"
+                        aria-label={`Show image ${i + 1}`}
+                        onClick={() => setMainImgIdx(i)}
+                      >
+                        <img
+                          src={url}
+                          alt={`product-thumb-${i}`}
+                          className={`product-detail-thumb-img--g ${
+                            mainImgIdx === i ? "active" : ""
+                          }`}
+                          loading="lazy"
+                        />
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 {/* Main image */}
-                <div className="flex-grow-1 text-center">
+                <div className="col-12 col-md-10 order-1 order-md-2">
                   <img
-                    src={productDetail.productDetail.imageUrls[mainImgIdx]}
+                    src={
+                      products.productDetail.imageUrls[mainImgIdx] ||
+                      defaultProductImg
+                    }
                     alt="product"
-                    className="img-fluid rounded product-detail__main-img mb-2"
+                    className="product-detail-main-img--g shadow--g"
+                    loading="lazy"
                   />
                 </div>
               </div>
             </div>
             {/* Right: Info & Actions */}
             <div className="col-lg-6">
-              <div>
-                <h1 className="fs-1 fw-bold mb-0 product-detail__title">
-                  {productDetail.productDetail.name}
+              <div className="h-100 d-flex flex-column">
+                <h1 className="h1 fw-bold mb-0">
+                  {products.productDetail.name}
                 </h1>
-                <div className="mb-2 text-muted">
-                  {productDetail.productDetail.brand.name} &middot;{" "}
-                  {productDetail.productDetail.category.name}
+                <div className="product-detail-brand-category--g mb-2">
+                  <span className="fw-medium d-inline-flex align-items-center">
+                    {products.productDetail.brand.logoUrl && (
+                      <img
+                        src={products.productDetail.brand.logoUrl}
+                        alt={`${products.productDetail.brand.name} logo`}
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          marginRight: "8px",
+                        }}
+                        loading="lazy"
+                      />
+                    )}
+                    {products.productDetail.brand.name}
+                  </span>{" "}
+                  &middot; <span>{products.productDetail.category.name}</span>
                 </div>
-                <div className="h3 fw-bold text-primary mb-3">
+                <div className="product-detail-price--g mb-2">
                   {centsToUSD(
-                    productDetail.productDetail.basePriceCents +
+                    products.productDetail.basePriceCents +
                       modelPicked.model.priceCents +
                       variationPicked.variation.additionalPriceCents
-                  )} USD
+                  )}
+                </div>
+                <div className="text-muted mb-4">
+                  {products.productDetail.description}
                 </div>
                 {/* Model/Size Picker */}
                 <div className="mb-3">
-                  <div className="form-label fw-semibold mb-1">Watch Size</div>
-                  <div className="d-flex gap-2 flex-wrap">
-                    {productDetail.productDetail.models.models.map(
-                      (model, idx) => (
-                        <button
-                          key={model.id}
-                          className={`btn btn-outline-primary btn-sm product-detail__size-btn${
-                            modelPicked.idx === idx
-                              ? " product-detail__size-btn--active"
-                              : ""
-                          }`}
-                          type="button"
-                        >
-                          {model.watchSizeMm}mm
-                        </button>
-                      )
-                    )}
+                  <p className="fs-6 fw-semibold mb-3">Model/Variant</p>
+                  <div className="d-flex flex-wrap gap-2">
+                    {products.productDetail.models.models.map((model, idx) => (
+                      <button
+                        key={model.id}
+                        type="button"
+                        className={`product-detail-model-btn--g ${
+                          modelPicked.idx === idx ? "active" : ""
+                        }`}
+                        onClick={() => {
+                          if (modelPicked.idx !== idx) {
+                            setModelPicked({ idx, model });
+                            setVariationPicked({
+                              idx: 0,
+                              variation: model.variations.variations[0],
+                            });
+                          }
+                        }}
+                      >
+                        {model.name}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 {/* Color Picker */}
-                <div className="mb-3">
-                  <div className="form-label fw-semibold mb-1">Color</div>
-                  <div className="d-flex gap-2 flex-wrap">
-                    {productDetail.productDetail.models.models[
+                <div className="mb-4">
+                  <p className="fs-6 fw-semibold mb-3">Color</p>
+                  <div className="d-flex flex-wrap gap-2">
+                    {products.productDetail.models.models[
                       modelPicked.idx
                     ].variations.variations.map((variation, idx) => {
                       const isActive = variationPicked.idx === idx;
@@ -217,167 +304,126 @@ export default function ProductDetail() {
                         <button
                           key={variation.id}
                           type="button"
-                          className={`btn btn-sm product-detail__color-btn${
-                            isActive ? " product-detail__color-btn--active" : ""
+                          className={`product-detail-variation-btn--g d-flex align-items-center ${
+                            isActive ? "active" : ""
                           }`}
                           aria-pressed={isActive}
+                          onClick={() => {
+                            if (variationPicked.idx !== idx) {
+                              setVariationPicked({ idx, variation });
+                            }
+                          }}
                         >
-                          <FontAwesomeIcon icon={faCircle} className="me-1" />
-                          {variation.colorHex}
+                          <span
+                            className="product-detail-color-circle--g"
+                            style={{ backgroundColor: variation.color.hex }}
+                          ></span>
+                          {variation.color.name}
                         </button>
                       );
                     })}
                   </div>
                 </div>
+                {/* Product Specs Button */}
+                <div className="mb-4 text-end">
+                  <button
+                    type="button"
+                    className="btn btn-link p-0"
+                    onClick={() => setModalSpecsState(true)}
+                  >
+                    View Specifications
+                  </button>
+                </div>
                 {/* Purchase Actions */}
-                <div className="d-flex gap-2 mt-4">
-                  <button className="btn btn-primary flex-grow-1">
-                    <FontAwesomeIcon icon={faCartPlus} className="me-2" />
-                    Add to cart
-                  </button>
-                  <button className="btn btn-success flex-grow-1">
-                    <FontAwesomeIcon icon={faBolt} className="me-2" />
-                    Buy now
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* Description & Specs */}
-          <div className="row mb-4">
-            <div className="col-12">
-              {/* Description */}
-              <div className="product-detail__desc border-bottom mb-4 pb-3">
-                <h5 className="fw-bold mb-2">Description</h5>
-                <div className="mb-0 text-secondary" style={{ minHeight: 48 }}>
-                  {productDetail.productDetail.description}
-                </div>
-              </div>
-              {/* Specs */}
-              <div className="row">
-                {/* Product Specs */}
-                <div className="col-md-6 border-end">
-                  <h5 className="fw-bold mb-3">Product specifications</h5>
-                  <ul className="list-group list-group-flush">
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Model: {modelPicked.model.name}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Watch size: {modelPicked.model.watchSizeMm}mm
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Display: {modelPicked.model.display.displayType}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Resolution: {modelPicked.model.resolution.wPx} x{" "}
-                      {modelPicked.model.resolution.hPx}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Memory: {bytesToMB(modelPicked.model.memory.ramBytes)} x{" "}
-                      {bytesToMB(modelPicked.model.memory.romBytes)}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      OS:{" "}
-                      {modelPicked.model.os.logoUrl ? (
-                        <img
-                          src={modelPicked.model.os.logoUrl}
-                          alt={modelPicked.model.os.name}
-                          title={modelPicked.model.os.name}
-                          className="avatar--sm--g ms-2"
-                        />
+                {variationPicked.variation.stockQuantity > 0 ? (
+                  <div className="d-grid gap-3">
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary"
+                      onClick={handleAddToCart}
+                      disabled={isCreatingCart}
+                    >
+                      {isCreatingCart ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            aria-hidden="true"
+                          ></span>
+                          <output>Adding to Cart...</output>
+                        </>
                       ) : (
-                        modelPicked.model.os.name
+                        <>
+                          <FontAwesomeIcon
+                            icon={faCartArrowDown}
+                            className="me-2"
+                          />
+                          Add to Cart
+                        </>
                       )}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Chipset: {modelPicked.model.chipset}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Connectivities:{" "}
-                      {modelPicked.model.connectivities.join(", ")}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Battery capacity: {modelPicked.model.batteryLifeMah}mah
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Water resistance:{" "}
-                      {modelPicked.model.waterResistance || "no"}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Sensors: {modelPicked.model.sensors.join(", ")}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Case material: {modelPicked.model.caseMaterial}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Watch weight: {modelPicked.model.weightMg}mg
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Compatible band lug width:{" "}
-                      {modelPicked.model.compatibleBandLugWidthMm}mm
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Release at:{" "}
-                      {convertUtcToLocalISOString(
-                        modelPicked.model.releaseDate
-                      )}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Watch color: {variationPicked.variation.colorHex}
-                    </li>
-                  </ul>
-                </div>
-                {/* Band Specs */}
-                <div className="col-md-6">
-                  <h5 className="fw-bold mb-3">Band specifications</h5>
-                  <ul className="list-group list-group-flush">
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Lug width: {variationPicked.variation.band.lugWidthMm}mm
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Material: {variationPicked.variation.band.material}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Color(s):{" "}
-                      {variationPicked.variation.band.colorsHex.join(", ")}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Clasp type: {variationPicked.variation.band.claspType}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Adjustable range:{" "}
-                      {variationPicked.variation.band.adjustableRange.minMm}mm -{" "}
-                      {variationPicked.variation.band.adjustableRange.maxMm}mm
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Style: {variationPicked.variation.band.style}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Quick release mechanism:{" "}
-                      {variationPicked.variation.band.quickRelease
-                        ? "yes"
-                        : "no"}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Water resistance:{" "}
-                      {variationPicked.variation.band.waterResistance
-                        ? "yes"
-                        : "no"}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Hypoallergenic:{" "}
-                      {variationPicked.variation.band.hypoallergenic
-                        ? "yes"
-                        : "no"}
-                    </li>
-                    <li className="list-group-item border-0 ps-0 pe-0">
-                      Weight: {variationPicked.variation.band.weightMg}mg
-                    </li>
-                  </ul>
-                </div>
+                    </button>
+                    <button type="button" className="btn--premium--g">
+                      <FontAwesomeIcon icon={faBolt} className="me-2" />
+                      Buy now {/* TODO later... */}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="d-flex align-items-center gap-2 py-2 px-3 rounded border border-danger">
+                    <FontAwesomeIcon icon={faBoxOpen} className="text-danger" />
+                    <span className="fs-5 text-danger fw-semibold">
+                      Sorry, this color is out of stock!
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
+          <div className="my-5">
+            <HorizontalDivider />
+          </div>
+          {/* Products suggest */}
+          <div>
+            <h2 className="h4 fw-semibold mb-4">You may also like</h2>
+            {isFetching.productsSuggest ? (
+              <div className="row g-2">
+                {Array.from({ length: MAX_PRODUCTS_SUGGEST_DISPLAY }).map(
+                  (_, i) => (
+                    <div className="col-md-6 col-lg-3" key={i}>
+                      <ProductCardSkeleton />
+                    </div>
+                  )
+                )}
+              </div>
+            ) : apiError.productsSuggest ? (
+              <ApiError errMsg={apiError.productsSuggest} />
+            ) : !products.productsSuggest?.products.total ? (
+              <p className="mb-0 text-muted text-center">
+                No products suggest available.
+              </p>
+            ) : (
+              <div className="row g-2">
+                {products.productsSuggest.products.products
+                  .slice(0, 4)
+                  .map((product) => (
+                    <div className="col-md-6 col-lg-3" key={product.id}>
+                      <Link
+                        to={`/products/${product.id}`}
+                        className="text-decoration-none text-dark"
+                      >
+                        <ProductCard product={product} />
+                      </Link>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+          {/* Specs modal */}
+          <ProductDetailSpecsModal
+            productDetail={products.productDetail}
+            modelPicked={modelPicked}
+            variationPicked={variationPicked}
+            show={modalSpecsState}
+            onHide={() => setModalSpecsState(false)}
+          />
         </>
       )}
     </main>

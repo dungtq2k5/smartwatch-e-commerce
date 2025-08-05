@@ -235,6 +235,26 @@ export function bytesToMB(bytes: number): string {
   return mb.toFixed(2); // Return as a string with 2 decimal places
 }
 
+export function formatTime(min: number | null): string {
+  if (min === null || min < 0) return "N/A";
+  if (min < 60) return `${min} min`;
+
+  const hours = Math.floor(min / 60);
+  const minutes = min % 60;
+  return `${hours}h ${minutes}min`;
+}
+
+export function safeString(value: string | null | undefined): string {
+  return value || "N/A";
+}
+
+export function isEmptyObj(obj: any): boolean {
+  if (typeof obj !== "object" || obj === null) return true;
+
+  // Check if the object has no own properties
+  return Object.keys(obj).length === 0;
+}
+
 // --- VALIDATION UTILS ---
 export function isValidUserFullName(fullName: any): boolean {
   if (typeof fullName !== "string") return false;

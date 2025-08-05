@@ -7,7 +7,7 @@ export default function Loading({
   // console.log("Loading rendered", renderCount.current);
 
   return (
-    <div className="d-flex justify-content-center align-items-center h-100">
+    <div className="d-flex justify-content-center align-items-center h-100 w-100">
       <div className="spinner-border text-primary">
         <span className="visually-hidden">Loading...</span>
       </div>

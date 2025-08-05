@@ -14,9 +14,11 @@ const USER_URL = `${ROOT_URL}/users`;
 export const SELF_ADDRESSES_URL = `${USER_URL}/me/addresses`;
 export const USER_UPDATE_SELF_GENERAL_INFO_URL = `${USER_URL}/me`;
 export const USER_UPDATE_SELF_CONTACT_INFO_URL = `${USER_URL}/me/contact-info`;
-export const USER_UPDATE_SELF_PASSWORD = `${USER_URL}/me/password`;
-export const USER_SET_SELF_PASSWORD = `${USER_URL}/me/set-password`;
-export const USER_DELETE_ACCOUNT = `${USER_URL}/me`;
+export const USER_UPDATE_SELF_PASSWORD_URL = `${USER_URL}/me/password`;
+export const USER_SET_SELF_PASSWORD_URL = `${USER_URL}/me/set-password`;
+export const USER_DELETE_ACCOUNT_URL = `${USER_URL}/me`;
+
+export const SELF_CART_URL = `${USER_URL}/me/carts`;
 
 export const PRODUCT_URL = `${ROOT_URL}/products`;
 export const PRODUCT_SEARCH_URL = PRODUCT_URL;
@@ -32,3 +34,4 @@ export const AVATAR_HINT_MESSAGE = `
 
 export const MAX_PRODUCTS_PER_PAGE = 6;
 export const MAX_POPULAR_PRODUCTS_DISPLAY = 5;
+export const MAX_PRODUCTS_SUGGEST_DISPLAY = 4;
