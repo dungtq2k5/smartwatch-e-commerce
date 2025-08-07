@@ -1,5 +1,6 @@
 import { userAvatarBucket, productImgBucket } from "../configs/firebaseAdmin.config";
 
+// Function won't throw error
 export async function deleteFileFromFirebaseStorage(
   downloadUrl: string,
   bucketName: "user-avatar" | "product-image"
@@ -64,6 +65,7 @@ export async function deleteFileFromFirebaseStorage(
   }
 }
 
+// Function won't throw error
 export async function deleteManyFileFromFirebaseStorage(
   downloadUrls: string[],
   bucketName: "user-avatar" | "product-image"

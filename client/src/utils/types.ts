@@ -50,3 +50,8 @@ export type VariationPicked =
       variation: ModelVariationResponse;
     })
   | undefined;
+
+export type UserCartUpdate = {
+  variationId: string;
+  quantity: number;
+};

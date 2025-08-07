@@ -6,7 +6,7 @@ import type {
 } from "../../../common/types.common";
 import { centsToUSD } from "../../../common/utils.common";
 import { useProductStore } from "../store/product/productStore";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { formatError } from "../utils/utils";
 import ApiError from "../components/ApiError";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -42,6 +42,7 @@ type ProductsState = {
 };
 
 export default function ProductDetail() {
+  // DEV temp for testing
   const count = useRef(0);
   count.current += 1;
   console.log(`ProductDetail rendered ${count.current} times`);
@@ -49,6 +50,8 @@ export default function ProductDetail() {
   const { fetchProducts, fetchProductDetail } = useProductStore();
   const { isLoading: isCreatingCart, createCart } = useUserCartStore();
   const params = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [isFetching, setIsFetching] = useState<FetchingState>({
     productDetail: true,
@@ -67,6 +70,15 @@ export default function ProductDetail() {
   // Fetch initial when first loaded or params.id changes: product detail, products suggest, reset states
   useEffect(() => {
     const handleFetchInitialData = async (): Promise<void> => {
+      // If modelId and variationId are in URL, select them
+      const urlParams = new URLSearchParams(location.search);
+      const urlModelId = urlParams.get("modelId");
+      const urlVariationId = urlParams.get("variationId");
+      // Remove search params from URL if they exist to avoid confusion
+      if (urlModelId || urlVariationId) {
+        navigate(location.pathname, { replace: true });
+      }
+
       setIsFetching((prev) => ({
         ...prev,
         productDetail: true,
@@ -105,14 +117,37 @@ export default function ProductDetail() {
           productDetail,
         }));
 
-        const modelPicked = productDetail.models.models[0];
+        let modelIdx = 0;
+        let variationIdx = 0;
+        let modelPicked = productDetail.models.models[modelIdx];
+        let variationPicked = modelPicked.variations.variations[variationIdx];
+
+        if (urlModelId) {
+          const foundModel = productDetail.models.models.findIndex(
+            (model) => model.id === urlModelId
+          );
+          if (foundModel !== -1) {
+            modelIdx = foundModel;
+            modelPicked = productDetail.models.models[modelIdx];
+          }
+        }
+        if (urlVariationId) {
+          const foundVariation = modelPicked.variations.variations.findIndex(
+            (variation) => variation.id === urlVariationId
+          );
+          if (foundVariation !== -1) {
+            variationIdx = foundVariation;
+            variationPicked = modelPicked.variations.variations[variationIdx];
+          }
+        }
+
         setModelPicked({
-          idx: 0,
+          idx: modelIdx,
           model: modelPicked,
         });
         setVariationPicked({
-          idx: 0,
-          variation: modelPicked.variations.variations[0],
+          idx: variationIdx,
+          variation: variationPicked,
         });
       } catch (error) {
         setApiError((prev) => ({
@@ -197,7 +232,7 @@ export default function ProductDetail() {
                 {/* Vertical image selector */}
                 <div className="col-12 col-md-2 order-2 order-md-1">
                   <div className="d-flex flex-row flex-md-column gap-2">
-                    {products.productDetail.imageUrls.map((url, i) => (
+                    {variationPicked.variation.imageUrls.map((url, i) => (
                       <button
                         key={i}
                         type="button"
@@ -222,7 +257,7 @@ export default function ProductDetail() {
                 <div className="col-12 col-md-10 order-1 order-md-2">
                   <img
                     src={
-                      products.productDetail.imageUrls[mainImgIdx] ||
+                      variationPicked.variation.imageUrls[mainImgIdx] ||
                       defaultProductImg
                     }
                     alt="product"
@@ -361,7 +396,7 @@ export default function ProductDetail() {
                         </>
                       )}
                     </button>
-                    <button type="button" className="btn--premium--g">
+                    <button type="button" className="btn-premium--g">
                       <FontAwesomeIcon icon={faBolt} className="me-2" />
                       Buy now {/* TODO later... */}
                     </button>
@@ -377,12 +412,12 @@ export default function ProductDetail() {
               </div>
             </div>
           </div>
-          <div className="my-5">
-            <HorizontalDivider />
-          </div>
           {/* Products suggest */}
-          <div>
-            <h2 className="h4 fw-semibold mb-4">You may also like</h2>
+          <div className="mt-5">
+            <h2 className="h3 fw-semibold">You may also like</h2>
+            <div className="my-3">
+              <HorizontalDivider />
+            </div>
             {isFetching.productsSuggest ? (
               <div className="row g-2">
                 {Array.from({ length: MAX_PRODUCTS_SUGGEST_DISPLAY }).map(

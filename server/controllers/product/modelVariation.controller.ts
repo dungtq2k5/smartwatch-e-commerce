@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { errorHandler } from "../../utils/errorHandler";
 import Product from "../../models/product/product.model";
 import ProductModel from "../../models/product/productModel.model";
@@ -15,6 +15,7 @@ import { RequestAuth } from "../../utils/types";
 import { formatModelVariationResponse } from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 import { isEmptyObj, shallowMerge } from "../../../common/utils.common";
+import Cart from "../../models/user/cart.model";
 
 export async function create(
   req: Request,
@@ -354,13 +355,15 @@ export async function remove(
 ): Promise<void> {
   console.log("▶️ ", "Removing product model variation...");
   const { productId, modelId, id } = req.params;
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
       return next(errorHandler(404, "Product not found."));
     }
-    const product = await Product.findById(productId).lean();
+    const product = await Product.findById(productId).lean().session(session);
     if (!product || product.isDeleted) {
       return next(errorHandler(404, "Product not found."));
     }
@@ -373,7 +376,9 @@ export async function remove(
       isDeleted: false,
       _id: modelId,
       productId: product._id,
-    }).lean();
+    })
+      .lean()
+      .session(session);
     if (!model) {
       return next(errorHandler(404, "Product model not found."));
     }
@@ -386,13 +391,15 @@ export async function remove(
       isDeleted: false,
       _id: id,
       productModelId: modelId,
-    });
+    }).session(session);
     if (!variation) {
       return next(errorHandler(404, "Product model variation not found."));
     }
 
     const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
-    await executeDeletion(variation, reqUserId);
+    await executeDeletion(variation, reqUserId, session);
+
+    await session.commitTransaction();
 
     res.status(200).json({
       success: true,
@@ -400,22 +407,34 @@ export async function remove(
     } as SuccessResponse);
     console.log("✅ ", "Product model variation removed successfully.");
   } catch (error) {
+    await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
   }
 }
 
 // --- HELPER FUNCTIONS ---
+// Auto handle delete in cart
 async function executeDeletion(
   variationToDelete: any,
-  deletedBy: Types.ObjectId
+  deletedBy: Types.ObjectId,
+  session: mongoose.ClientSession
 ): Promise<void> {
   try {
+    // Delete all data in cart that has variationId
+    await Cart.deleteMany({ variationId: variationToDelete._id }, { session });
+    console.log(
+      "✅ ",
+      `Removed cart items for variation: ${variationToDelete._id}`
+    );
+
     if (variationToDelete.stockQuantity > 0) {
       // Soft delete
       variationToDelete.isDeleted = true;
       variationToDelete.deletedAt = new Date();
       variationToDelete.deletedBy = deletedBy;
-      await variationToDelete.save();
+      await variationToDelete.save({ session });
       return;
     }
 
@@ -424,8 +443,7 @@ async function executeDeletion(
       variationToDelete.imageUrls,
       "product-image"
     );
-
-    await variationToDelete.deleteOne();
+    await variationToDelete.deleteOne({ session });
   } catch (error) {
     throw new Error(error);
   }

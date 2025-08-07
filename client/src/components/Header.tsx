@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { faCartShopping, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { memo, useCallback, useEffect, useState, type JSX } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type JSX } from "react";
 import { useAuthStore } from "../store/authStore";
 import defaultAvatar from "../assets/default-avatar.webp";
 import { removeOddSpaces } from "../../../common/utils.common";
@@ -10,16 +10,16 @@ import toast from "react-hot-toast";
 
 const Header = memo(() => {
   // DEV temp for testing
-  // const renderCount = useRef(0);
-  // renderCount.current += 1;
-  // console.log("Header rendered", renderCount.current);
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  console.log("Header rendered", renderCount.current);
 
   const { user, isAuth } = useAuthStore();
   const {
     isFetching: isFetchingCart,
     fetchErr: fetchCartErr,
-    fetchCarts,
-    carts,
+    fetchCart,
+    cart,
   } = useUserCartStore();
 
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -34,16 +34,16 @@ const Header = memo(() => {
     if (urlSearchTerm) setSearchTerm(urlSearchTerm);
   }, [location.search]);
 
-  // Handle fetching user carts if they are auth
+  // Handle fetching user cart if they are auth
   useEffect(() => {
     if (!isAuth) return;
 
     const handleFetchUserCart = async (): Promise<void> => {
-      await fetchCarts();
+      await fetchCart();
       if (fetchCartErr) toast.error(fetchCartErr);
     };
     handleFetchUserCart();
-  }, [fetchCartErr, fetchCarts, isAuth]);
+  }, [fetchCartErr, fetchCart, isAuth]);
 
   const handleSearch = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
@@ -70,14 +70,14 @@ const Header = memo(() => {
               loading="lazy"
             />
           </Link>
-          {!isFetchingCart && !fetchCartErr && carts && (
+          {!isFetchingCart && !fetchCartErr && cart && (
             <Link to="/cart" title="my cart" className="position-relative">
               <FontAwesomeIcon
                 icon={faCartShopping}
                 className="fs-5 text-primary"
               />
-              {carts.total > 0 && (
-                <span className="cart-badge--g">{carts.total}</span>
+              {cart.total > 0 && (
+                <span className="cart-badge--g">{cart.total}</span>
               )}
             </Link>
           )}

@@ -228,10 +228,10 @@ export async function getWithModelsAndVariations(
 
     res.status(200).json({
       success: true,
-      message: "Product details fetched successfully.",
+      message: "Product detail fetched successfully.",
       data,
     } as SuccessResponse<ProductDetailResponse>);
-    console.log("✅ ", "Product details fetched successfully.");
+    console.log("✅ ", "Product detail fetched successfully.");
   } catch (error) {
     return next(error);
   }

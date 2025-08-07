@@ -201,17 +201,65 @@ export type BaseUserCart = {
   createdAt: string;
   updatedAt: string;
 };
-
-export type UserCartResponse = Omit<BaseUserCart, "userId">;
-
-export type UserCartResponseList = {
-  total: number;
-  carts: UserCartResponse[];
-};
-
 export type UserCartCreate = {
   variationId: string;
   quantity?: number;
+};
+/**
+ * Represents the detailed response for a user's cart item, excluding the user ID.
+ *
+ * @remarks
+ * This type extends {@link BaseUserCart} (excluding the `userId` property) and adds additional
+ * information such as the total price in cents, selling status, and detailed variation/model/product info.
+ *
+ * @property {number} totalCents - The total price in cents, calculated as `(additionalPriceCents + model.priceCents) * item.quantity`.
+ * @property {boolean} stopSelling - Indicates whether any of the product, model, or variation is no longer being sold.
+ * @property variation - Detailed information about the selected model variation.
+ * @property variation.id - The unique identifier of the model variation.
+ * @property variation.name - The name of the model variation.
+ * @property variation.color - The color of the model variation.
+ * @property variation.imageUrls - An array of image URLs for the model variation.
+ * @property variation.stockQuantity - The available stock quantity for the model variation.
+ * @property variation.productModel - Information about the product model.
+ * @property variation.productModel.id - The unique identifier of the product model.
+ * @property variation.productModel.name - The name of the product model.
+ * @property variation.productModel.priceCents - The price of the product model in cents.
+ * @property variation.productModel.product - Information about the parent product.
+ * @property variation.productModel.product.id - The unique identifier of the product.
+ * @property variation.productModel.product.name - The name of the product.
+ * @property variation.productModel.product.type - The type/category of the product.
+ * @property variation.productModel.product.brand - Information about the product's brand.
+ * @property variation.productModel.product.brand.id - The unique identifier of the brand.
+ * @property variation.productModel.product.brand.name - The name of the brand.
+ * @property variation.productModel.product.brand.logoUrl - The logo URL of the brand.
+ * @property variation.productModel.product.category - Information about the product's category.
+ * @property variation.productModel.product.category.id - The unique identifier of the category.
+ * @property variation.productModel.product.category.name - The name of the category.
+ */
+export type UserCartResponse = Omit<BaseUserCart, "userId" | "variationId"> & {
+  totalCents: number;
+  stopSelling: boolean;
+  variation: Pick<
+    ModelVariationResponse,
+    "id" | "name" | "color" | "imageUrls" | "additionalPriceCents" | "stockQuantity"
+  > & {
+    productModel: Pick<ProductModelResponse, "id" | "name" | "priceCents"> & {
+      product: Pick<ProductResponse, "id" | "name" | "type"> & {
+        brand: Pick<ProductBrandResponse, "id" | "name" | "logoUrl">;
+        category: Pick<ProductCategoryResponse, "id" | "name">;
+      };
+    };
+  };
+};
+/**
+ * Represents a response containing details about a user's cart.
+ *
+ * @property total - The total number of distinct items in the cart.
+ * @property cart - An array of detailed information for each item in the user's cart.
+ */
+export type UserCartResponseList = {
+  total: number;
+  items: UserCartResponse[];
 };
 
 export type CreateOtp = {
@@ -299,22 +347,17 @@ export type ProductResponse = {
 };
 
 /**
-ProductDetailResponse = {
-  ...ProductResponse,
-  models: {
-    total: number,
-    models: [
-      {
-        ...ProductModelResponse,
-        variations: {
-          total: number;
-          variations: ModelVariationResponse[];
-        },
-      },
-      ...
-    ],
-  },
-};
+ * Represents the detailed response for a product, extending the basic ProductResponse.
+ *
+ * @remarks
+ * This type includes additional information about the product's models and their variations.
+ *
+ * @property models - An object containing:
+ * - `total`: The total number of models available for the product.
+ * - `models`: An array of product models, each extending ProductModelResponse and including:
+ *   - `variations`: An object containing:
+ *     - `total`: The total number of variations for the model.
+ *     - `variations`: An array of ModelVariationResponse objects representing each variation.
  */
 export type ProductDetailResponse = ProductResponse & {
   models: {
@@ -454,19 +497,22 @@ export type ProductModelCreate = {
     glassMaterial: string;
     bezelMaterial: string;
     shape: string;
-  } & ({
-    isCircular: true;
-    diameterMm: number;
-    dimension?: null;
-  } | {
-    isCircular: false;
-    diameterMm?: null;
-    dimension: {
-      wMm: number;
-      hMm: number;
-      thicknessMm: number;
-    };
-  });
+  } & (
+    | {
+        isCircular: true;
+        diameterMm: number;
+        dimension?: null;
+      }
+    | {
+        isCircular: false;
+        diameterMm?: null;
+        dimension: {
+          wMm: number;
+          hMm: number;
+          thicknessMm: number;
+        };
+      }
+  );
   caseMaterial: string;
   watchWeightMg: number;
   compatibleBandLugWidthMm: number;
@@ -528,10 +574,11 @@ export type ModelVariationCreate = {
   stopSelling?: boolean;
 };
 export type ModelVariationResponse = DeepNoneOptional<
-  Omit<ModelVariationCreate, "additionalPriceCents">
+  Omit<ModelVariationCreate, "imageUrls" | "additionalPriceCents">
 > & {
   id: string;
   productModelId: string;
+  imageUrls: string[];
   additionalPriceCents: number;
   stockQuantity: number;
   createdBy: string;

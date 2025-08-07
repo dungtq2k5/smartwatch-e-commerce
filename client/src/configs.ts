@@ -35,3 +35,4 @@ export const AVATAR_HINT_MESSAGE = `
 export const MAX_PRODUCTS_PER_PAGE = 6;
 export const MAX_POPULAR_PRODUCTS_DISPLAY = 5;
 export const MAX_PRODUCTS_SUGGEST_DISPLAY = 4;
+export const MAX_CART_ITEM_QUANTITY_SELECT = 5;

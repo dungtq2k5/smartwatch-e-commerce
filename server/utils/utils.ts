@@ -293,11 +293,46 @@ export function formatAdminUserAddressResponse(
 }
 
 export function formatUserCartResponse(cart: any): UserCartResponse {
+  const variation = cart.variation; // Via virtual
+  const model = variation.productModelId; // Via populate
+  const product = model.productId; // Via populate
+
+  const totalCents = (model.priceCents + variation.additionalPriceCents) * cart.quantity;
+  const stopSelling = product.stopSelling || model.stopSelling || variation.stopSelling;
+
   return {
-    variationId: cart.variationId,
     quantity: cart.quantity,
+    totalCents,
+    stopSelling,
     createdAt: cart.createdAt,
     updatedAt: cart.updatedAt,
+    variation: {
+      id: variation._id,
+      name: variation.name,
+      color: variation.color,
+      imageUrls: variation.imageUrls,
+      additionalPriceCents: variation.additionalPriceCents,
+      stockQuantity: variation.stockQuantity,
+      productModel: {
+        id: model._id,
+        name: model.name,
+        priceCents: model.priceCents,
+        product: {
+          id: product._id,
+          name: product.name,
+          type: product.type,
+          brand: {
+            id: product.brandId._id,
+            name: product.brandId.name,
+            logoUrl: product.brandId.logoUrl,
+          },
+          category: {
+            id: product.categoryId._id,
+            name: product.categoryId.name,
+          },
+        },
+      },
+    },
   };
 }
 
@@ -381,19 +416,7 @@ export function formatModelVariationResponse(
     color: variation.color,
     imageUrls: variation.imageUrls,
     additionalPriceCents: variation.additionalPriceCents,
-    band: {
-      widthMm: variation.band.widthMm,
-      lugWidthMm: variation.band.lugWidthMm,
-      material: variation.band.material,
-      colors: variation.band.colors,
-      claspType: variation.band.claspType,
-      adjustableRange: variation.band.adjustableRange,
-      style: variation.band.style,
-      quickRelease: variation.band.quickRelease,
-      waterResistance: variation.band.waterResistance,
-      hypoallergenic: variation.band.hypoallergenic,
-      weightMg: variation.band.weightMg,
-    },
+    band: variation.band,
     stockQuantity: variation.stockQuantity,
     createdBy: variation.createdBy,
     createdAt: variation.createdAt,

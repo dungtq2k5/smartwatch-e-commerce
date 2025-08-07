@@ -20,6 +20,7 @@ import BankAndCard from "./components/account/BankAndCard.tsx";
 import Loading from "./components/Loading.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
 import SearchProduct from "./pages/SearchProduct.tsx";
+import Cart from "./pages/Cart.tsx";
 
 export default function App() {
   // DEV for testing
@@ -46,9 +47,6 @@ export default function App() {
         <Route path="/" element={<Home />}></Route>
         <Route path="/search" element={<SearchProduct />}></Route>
         <Route path="/products/:id" element={<ProductDetail />}></Route>
-        {/*
-          - product details page
-        */}
 
         <Route element={<NotAuthRoute />}>
           <Route path="/signup" element={<Signup />}></Route>
@@ -64,7 +62,6 @@ export default function App() {
         <Route element={<AuthRoute />}>
           {/*
             TODO
-            - user cart page
             - user orders page
           */}
           <Route path="/account" element={<Account />}>
@@ -73,6 +70,7 @@ export default function App() {
             <Route path="bank-card" element={<BankAndCard />}></Route>
             <Route path="address" element={<Address />}></Route>
           </Route>
+          <Route path="/cart" element={<Cart />}></Route>
         </Route>
 
         <Route path="*" element={<NotFound />}></Route>

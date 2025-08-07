@@ -10,7 +10,7 @@ const ProductCard = memo(({
     <div className="card h-100 shadow--g border-0">
       <img
         src={product.imageUrls[0] || defaultProductImg}
-        className="card-img-top product-img--g mt-2"
+        className="card-img-top product-img--g"
         alt={product.name}
         loading="lazy"
       />
