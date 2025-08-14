@@ -9,7 +9,6 @@ const deliveryStateSchema = new mongoose.Schema({
   level: {
     type: Number,
     required: true,
-    unique: true,
   }
 });
 

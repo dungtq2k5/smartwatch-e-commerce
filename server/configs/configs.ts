@@ -46,16 +46,10 @@ export const PERMISSION_LIST = [ // 60 permissions
   { name: "update user cart", code: "u_usr_cart" },
   { name: "delete user cart", code: "d_usr_cart" },
 
-  // Orders (include order items)
+  // Orders (include order items, payment)
   { name: "create order", code: "c_order" },
   { name: "read order", code: "r_order" },
   { name: "update order", code: "u_order" },
-
-  // Order payments
-  { name: "create order payment", code: "c_order_paym" },
-  { name: "read order payment", code: "r_order_paym" },
-  { name: "update order payment", code: "u_order_paym" },
-  { name: "delete order payment", code: "d_order_paym" },
 
   // Order returns
   { name: "create order return", code: "c_order_return" },

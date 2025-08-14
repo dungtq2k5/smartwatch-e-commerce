@@ -21,6 +21,7 @@ import Loading from "./components/Loading.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
 import SearchProduct from "./pages/SearchProduct.tsx";
 import Cart from "./pages/Cart.tsx";
+import Checkout from "./pages/Checkout.tsx";
 
 export default function App() {
   // DEV for testing
@@ -71,6 +72,7 @@ export default function App() {
             <Route path="address" element={<Address />}></Route>
           </Route>
           <Route path="/cart" element={<Cart />}></Route>
+          <Route path="/checkout" element={<Checkout />}></Route>
         </Route>
 
         <Route path="*" element={<NotFound />}></Route>

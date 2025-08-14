@@ -24,6 +24,7 @@ type UserAddressState = {
     addressId: string
   ) => Promise<void>;
   getAddress: (addressId: string) => Promise<UserAddressResponse | undefined>;
+  getDefaultAddress: () => Promise<UserAddressResponse | undefined>;
 };
 
 export const useUserAddressStore = create<UserAddressState>((set, get) => ({
@@ -36,22 +37,21 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
 
   async fetchAddresses(): Promise<void> {
     const { addresses } = get();
-    if (!addresses) {
-      set({ isFetching: true, fetchErr: undefined });
+    if (addresses) return;
 
-      try {
-        const res = await retrieve(SELF_ADDRESSES_URL);
-        if (!res.success) {
-          set({ fetchErr: res.message });
-          return;
-        }
-
-        set({ addresses: res.data as UserAddressResponseList });
-      } catch (error) {
-        set({ fetchErr: formatError(error) });
-      } finally {
-        set({ isFetching: undefined });
+    set({ isFetching: true, fetchErr: undefined });
+    try {
+      const res = await retrieve(SELF_ADDRESSES_URL);
+      if (!res.success) {
+        set({ fetchErr: res.message });
+        return;
       }
+
+      set({ addresses: res.data as UserAddressResponseList });
+    } catch (error) {
+      set({ fetchErr: formatError(error) });
+    } finally {
+      set({ isFetching: undefined });
     }
   },
 
@@ -188,5 +188,20 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
     } finally {
       set({ isGetting: undefined });
     }
-  }
+  },
+
+  async getDefaultAddress(): Promise<UserAddressResponse | undefined> {
+    const { addresses } = get();
+    if (addresses) {
+      return addresses.addresses.find((address) => address.isDefault);
+    }
+
+    await get().fetchAddresses();
+    const updatedAddresses = get().addresses;
+    if (updatedAddresses) {
+      return updatedAddresses.addresses.find((address) => address.isDefault);
+    }
+
+    return undefined;
+  },
 }));

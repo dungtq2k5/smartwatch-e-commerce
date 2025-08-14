@@ -1,11 +1,10 @@
-import type { ErrorThrowback } from "./types";
+export class HttpError extends Error {
+  public readonly statusCode: number;
 
-export function errorHandler(
-  statusCode: number,
-  message: string | string[]
-): ErrorThrowback {
-  return {
-    statusCode,
-    message,
-  };
+  constructor(statusCode: number, message: string | string[]) {
+    super(Array.isArray(message) ? message.join(", ") : message);
+    this.statusCode = statusCode;
+    Object.setPrototypeOf(this, new.target.prototype); // restore prototype chain
+    Error.captureStackTrace(this);
+  }
 }

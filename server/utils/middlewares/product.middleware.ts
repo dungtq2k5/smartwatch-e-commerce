@@ -16,7 +16,7 @@ import {
   PRODUCT_SEARCH_SORT_OPTIONS,
   PRODUCT_TYPES,
 } from "../../../common/configs.common";
-import { errorHandler } from "../errorHandler";
+import { HttpError } from "../errorHandler";
 import {
   isArrayOfNonEmptyStrings,
   isPresent,
@@ -532,7 +532,7 @@ export function verifyProductInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
 
       next();
@@ -594,7 +594,7 @@ export function verifyBrandInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
       next();
     } catch (error) {
@@ -645,7 +645,7 @@ export function verifyCategoryInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
       next();
     } catch (error) {
@@ -706,7 +706,7 @@ export function verifyOsInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
       next();
     } catch (error) {
@@ -1664,7 +1664,7 @@ export function verifyProductModelInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
       next();
     } catch (error) {
@@ -2004,7 +2004,7 @@ export function verifyModelVariationInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
       next();
     } catch (error) {
@@ -2100,7 +2100,7 @@ export function verifyVariationInstanceInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
       next();
     } catch (error) {

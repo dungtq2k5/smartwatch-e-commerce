@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { removeOddSpaces } from "../../../common/utils.common";
-import { errorHandler } from "../errorHandler";
+import { HttpError } from "../errorHandler";
 import { isPresent, isValidIdArray } from "../utils";
 
 export function sanitizeRoleInput(
@@ -57,7 +57,7 @@ export function verifyRoleInput(type: "create" | "update") {
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
 
       next();

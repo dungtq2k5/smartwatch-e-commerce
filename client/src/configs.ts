@@ -1,4 +1,4 @@
-const ROOT_URL = "/api";
+const ROOT_URL = "/api/v1";
 
 const AUTH_URL = `${ROOT_URL}/auth`;
 export const SIGNUP_URL = `${AUTH_URL}/signup`;

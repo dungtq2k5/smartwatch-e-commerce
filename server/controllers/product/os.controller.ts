@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { RequestAuth } from "../../utils/types";
-import { errorHandler } from "../../utils/errorHandler";
+import { HttpError } from "../../utils/errorHandler";
 import ProductOs from "../../models/product/productOs.model";
 import {
   ProductOsCreate,
@@ -29,7 +29,7 @@ export async function create(
       name,
     }).lean();
     if (existingOs) {
-      return next(errorHandler(409, "Product os already exists."));
+      throw new HttpError(409, "Product os already exists.");
     }
 
     // Create os
@@ -64,11 +64,11 @@ export async function get(
 
   try {
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product os not found."));
+      throw new HttpError(404, "Product os not found.");
     }
     const os = await ProductOs.findById(id).lean();
     if (!os || os.isDeleted) {
-      return next(errorHandler(404, "Product os not found."));
+      throw new HttpError(404, "Product os not found.");
     }
     res.status(200).json({
       success: true,
@@ -120,11 +120,11 @@ export async function update(
   try {
     // Check os exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product os not found."));
+      throw new HttpError(404, "Product os not found.");
     }
     const os = await ProductOs.findById(id);
     if (!os || os.isDeleted) {
-      return next(errorHandler(404, "Product os not found."));
+      throw new HttpError(404, "Product os not found.");
     }
 
     // Check if name is updated and exists
@@ -137,7 +137,7 @@ export async function update(
         name: updatedName,
       }).lean();
       if (existingOs) {
-        return next(errorHandler(409, "Product os already exists."));
+        throw new HttpError(409, "Product os already exists.");
       }
     }
 
@@ -163,7 +163,7 @@ export async function update(
     } as SuccessResponse<ProductOsResponse>);
     console.log("✅ ", "Product os updated successfully.");
   } catch (error) {
-    return next(error);
+    next(error);
   }
 }
 
@@ -178,11 +178,11 @@ export async function remove(
   try {
     // Check os exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product os not found."));
+      throw new HttpError(404, "Product os not found.");
     }
     const os = await ProductOs.findById(id);
     if (!os || os.isDeleted) {
-      return next(errorHandler(404, "Product os not found."));
+      throw new HttpError(404, "Product os not found.");
     }
 
     const userId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
@@ -194,7 +194,7 @@ export async function remove(
     } as SuccessResponse);
     console.log("✅ ", "Product os deleted successfully.");
   } catch (error) {
-    return next(error);
+    next(error);
   }
 }
 
@@ -208,9 +208,7 @@ async function hasConstraints(osId: Types.ObjectId): Promise<boolean> {
       Blocking constraints:
         - ProductModel (osId)
     */
-    const constraintChecks = [
-      ProductModel.exists({ "config.osId": osId })
-    ];
+    const constraintChecks = [ProductModel.exists({ "config.osId": osId })];
 
     const results = await Promise.all(constraintChecks);
     const hasConstraints = results.some((result) => result !== null);

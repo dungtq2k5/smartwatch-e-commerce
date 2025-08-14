@@ -10,7 +10,7 @@ import {
 import Role from "../models/role/role.model";
 import mongoose, { Types } from "mongoose";
 import { formatRoleResponse } from "../utils/utils";
-import { errorHandler } from "../utils/errorHandler";
+import { HttpError } from "../utils/errorHandler";
 import Permission from "../models/role/permission.model";
 import User from "../models/user/user.model";
 
@@ -28,9 +28,7 @@ export async function create(
     // Check role exists
     const existingRole = await Role.findOne({ name }).lean().session(session);
     if (existingRole) {
-      return next(
-        errorHandler(409, `Role with name '${name}' already exists.`)
-      );
+      throw new HttpError(409, `Role with name '${name}' already exists.`);
     }
 
     // Check permissions exist and create permission list
@@ -42,9 +40,7 @@ export async function create(
           _id: { $in: permissionIds },
         }).session(session);
         if (permissionCount !== permissionIds.length) {
-          return next(
-            errorHandler(400, "One or more permissions do not exist.")
-          );
+          throw new HttpError(400, "One or more permissions do not exist.");
         }
       }
 
@@ -89,11 +85,11 @@ export async function get(
   try {
     // Check exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Role not found."));
+      throw new HttpError(404, "Role not found.");
     }
     const role = await Role.findById(id).lean();
     if (!role) {
-      return next(errorHandler(404, "Role not found."));
+      throw new HttpError(404, "Role not found.");
     }
 
     res.status(200).json({
@@ -141,11 +137,11 @@ export async function update(
   try {
     // Check role exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Role not found."));
+      throw new HttpError(404, "Role not found.");
     }
     const role = await Role.findById(id);
     if (!role) {
-      return next(errorHandler(404, "Role not found."));
+      throw new HttpError(404, "Role not found.");
     }
 
     // Business logic
@@ -156,8 +152,9 @@ export async function update(
     if (updatedName !== role.name) {
       const existingRole = await Role.findOne({ name: updatedName }).lean();
       if (existingRole) {
-        return next(
-          errorHandler(409, `Role with name '${updatedName}' already exists.`)
+        throw new HttpError(
+          409,
+          `Role with name '${updatedName}' already exists.`
         );
       }
       role.name = updatedName;
@@ -179,9 +176,7 @@ export async function update(
           _id: { $in: permissionIdsToAdd },
         });
         if (permissionCount !== permissionIdsToAdd.length) {
-          return next(
-            errorHandler(400, "One or more permissions do not exist.")
-          );
+          throw new HttpError(400, "One or more permissions do not exist.");
         }
 
         const reqUserId = new Types.ObjectId(
@@ -232,11 +227,11 @@ export async function remove(
   try {
     // Check role exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Role not found."));
+      throw new HttpError(404, "Role not found.");
     }
     const role = await Role.findById(id).session(session);
     if (!role) {
-      return next(errorHandler(404, "Role not found."));
+      throw new HttpError(404, "Role not found.");
     }
 
     // Remove the role from all users who have it assigned

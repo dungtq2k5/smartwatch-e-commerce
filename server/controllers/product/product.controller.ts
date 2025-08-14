@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { RequestAuth } from "../../utils/types";
 import Product from "../../models/product/product.model";
-import { errorHandler } from "../../utils/errorHandler";
+import { HttpError } from "../../utils/errorHandler";
 import ProductBrand from "../../models/product/productBrand.model";
 import ProductCategory from "../../models/product/productCategory.model";
 import type {
@@ -47,19 +47,19 @@ export async function create(
       name,
     }).lean();
     if (existingProduct) {
-      return next(errorHandler(409, "Product with this name already exists."));
+      throw new HttpError(409, "Product with this name already exists.");
     }
 
     // Check brand exists
     const existingBrand = await ProductBrand.findById(brandId).lean();
     if (!existingBrand || existingBrand.isDeleted) {
-      return next(errorHandler(404, "Brand not found."));
+      throw new HttpError(404, "Brand not found.");
     }
 
     // Check category exists
     const existingCategory = await ProductCategory.findById(categoryId).lean();
     if (!existingCategory || existingCategory.isDeleted) {
-      return next(errorHandler(404, "Category not found."));
+      throw new HttpError(404, "Category not found.");
     }
 
     // Create product
@@ -103,7 +103,7 @@ export async function get(
       .populate(["brand", "category"])
       .lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     res.status(200).json({
@@ -139,8 +139,9 @@ export async function getWithModelsAndVariations(
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(
-        errorHandler(404, "Fetching product with models and variations....")
+      throw new HttpError(
+        404,
+        "Fetching product with models and variations...."
       );
     }
 
@@ -200,7 +201,7 @@ export async function getWithModelsAndVariations(
     ]);
 
     if (productDetails.length === 0) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     const productDetail = productDetails[0];
@@ -233,7 +234,7 @@ export async function getWithModelsAndVariations(
     } as SuccessResponse<ProductDetailResponse>);
     console.log("✅ ", "Product detail fetched successfully.");
   } catch (error) {
-    return next(error);
+    next(error);
   }
 }
 
@@ -262,14 +263,14 @@ export async function search(
 
   if (reqQuery.brandId) {
     if (!Types.ObjectId.isValid(reqQuery.brandId)) {
-      return next(errorHandler(400, "Invalid brand ID."));
+      throw new HttpError(400, "Invalid brand ID.");
     }
     query.brandId = new Types.ObjectId(reqQuery.brandId);
   }
 
   if (reqQuery.categoryId) {
     if (!Types.ObjectId.isValid(reqQuery.categoryId)) {
-      return next(errorHandler(400, "Invalid category ID."));
+      throw new HttpError(400, "Invalid category ID.");
     }
     query.categoryId = new Types.ObjectId(reqQuery.categoryId);
   }
@@ -362,7 +363,7 @@ export async function search(
     } as SuccessResponse<ProductListResponse>);
     console.log("✅ ", "Products searched successfully.");
   } catch (error) {
-    return next(error);
+    next(error);
   }
 }
 
@@ -377,11 +378,11 @@ export async function update(
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
     const product = await Product.findById(id);
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     // Business logic
@@ -395,9 +396,7 @@ export async function update(
         name: updatedName,
       }).lean();
       if (existingProduct) {
-        return next(
-          errorHandler(409, "Product with this name already exists.")
-        );
+        throw new HttpError(409, "Product with this name already exists.");
       }
     }
 
@@ -407,11 +406,11 @@ export async function update(
       : product.brandId;
     if (!updatedBrandId.equals(product.brandId)) {
       if (!Types.ObjectId.isValid(updatedBrandId)) {
-        return next(errorHandler(404, "Brand not found."));
+        throw new HttpError(404, "Brand not found.");
       }
       const existingBrand = await ProductBrand.findById(updatedBrandId).lean();
       if (!existingBrand || existingBrand.isDeleted) {
-        return next(errorHandler(404, "Brand not found."));
+        throw new HttpError(404, "Brand not found.");
       }
     }
 
@@ -421,13 +420,13 @@ export async function update(
       : product.categoryId;
     if (!updatedCategoryId.equals(product.categoryId)) {
       if (!Types.ObjectId.isValid(updatedCategoryId)) {
-        return next(errorHandler(404, "Category not found."));
+        throw new HttpError(404, "Category not found.");
       }
       const existingCategory = await ProductCategory.findById(
         updatedCategoryId
       ).lean();
       if (!existingCategory || existingCategory.isDeleted) {
-        return next(errorHandler(404, "Category not found."));
+        throw new HttpError(404, "Category not found.");
       }
     }
 
@@ -464,7 +463,7 @@ export async function update(
     } as SuccessResponse<ProductResponse>);
     console.log("✅ ", "Product updated successfully.");
   } catch (error) {
-    return next(error);
+    next(error);
   }
 }
 
@@ -479,11 +478,11 @@ export async function remove(
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
     const product = await Product.findById(id);
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
@@ -495,7 +494,7 @@ export async function remove(
     } as SuccessResponse);
     console.log("✅ ", "Product deleted successfully.");
   } catch (error) {
-    return next(error);
+    next(error);
   }
 }
 

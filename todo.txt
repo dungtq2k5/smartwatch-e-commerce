@@ -42,6 +42,8 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - Dev GRN API ✅.
     - Template for email sending ❌.
     - Better user friendly when sending email or SMS (with datetime for lock/unlock) ❌.
+    - What happen when user add last items to their cart -> checkout -> leave checkout -> return to their cart (product will be display as out of stock temporary) ❌.
+    - Email user when they've leaving their pending cart for to long before removing them ❌.
 
   - Database init:
     - Init roles & permissions ✅.

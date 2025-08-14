@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { errorHandler } from "../errorHandler";
+import { HttpError } from "../errorHandler";
 import { isValidDateTimeString } from "../../../common/utils.common";
+import { isPresent } from "../utils";
 
 export function sanitizeOrderInput(
   req: Request,
@@ -51,9 +52,9 @@ export function verifyOrderInput(
       switch (type) {
         case "create": {
           console.log("Validating order creation input...");
-          const { userAddressId, items } = req.body;
+          const { userAddressId, items, paymentMethodId } = req.body;
 
-          if (!userAddressId) {
+          if (!isPresent(userAddressId)) {
             errors.push("User address ID is required.");
           } else if (typeof userAddressId !== "string" || !userAddressId) {
             errors.push("User address ID must be a non-empty string.");
@@ -85,6 +86,11 @@ export function verifyOrderInput(
                 );
               }
             });
+          }
+          if (!isPresent(paymentMethodId)) {
+            errors.push("Payment method ID is required");
+          } else if (typeof paymentMethodId !== "string" || !paymentMethodId) {
+            errors.push("Payment method ID must be a non-empty string.");
           }
 
           break;
@@ -119,7 +125,34 @@ export function verifyOrderInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+export function verifyPaymentIntentInput(
+  type: "create"
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    console.log("▶️ ", "Validating payment intent input...");
+
+    let errors: string[] = [];
+    try {
+      if (type === "create") {
+        console.log("Validating payment intent creation input...");
+        const { saveCard } = req.body;
+
+        if (saveCard !== undefined && typeof saveCard !== "boolean") {
+          errors.push("Save card must be a boolean value.");
+        }
+      }
+
+      if (errors.length > 0) {
+        throw new HttpError(400, errors);
       }
       next();
     } catch (error) {

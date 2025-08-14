@@ -4,7 +4,7 @@ import {
   isValidPhoneNumber,
   removeOddSpaces,
 } from "../../../common/utils.common";
-import { errorHandler } from "../errorHandler";
+import { HttpError } from "../errorHandler";
 
 export function sanitizeProviderInput(
   req: Request,
@@ -75,7 +75,7 @@ export function verifyProviderInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
       next();
     } catch (error) {

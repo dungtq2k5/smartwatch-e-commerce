@@ -1,9 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import Provider from "../models/inventory/provider.model";
-import { errorHandler } from "../utils/errorHandler";
+import { HttpError } from "../utils/errorHandler";
 import { RequestAuth } from "../utils/types";
 import { formatProviderResponse } from "../utils/utils";
-import { ProviderCreate, ProviderResponse, ProviderUpdate, SuccessResponse } from "../../common/types.common";
+import {
+  ProviderCreate,
+  ProviderResponse,
+  ProviderUpdate,
+  SuccessResponse,
+} from "../../common/types.common";
 import { Types } from "mongoose";
 import Grn from "../models/inventory/grn.model";
 
@@ -28,8 +33,9 @@ export async function create(
           : existingProvider.email === email
           ? "email"
           : "phoneNumber";
-      return next(
-        errorHandler(409, `Provider with this ${existsField} already exists.`)
+      throw new HttpError(
+        409,
+        `Provider with this ${existsField} already exists.`
       );
     }
 
@@ -66,12 +72,12 @@ export async function get(
   try {
     // Check exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Provider not found."));
+      throw new HttpError(404, "Provider not found.");
     }
 
     const provider = await Provider.findById(id).lean();
     if (!provider || provider.isDeleted) {
-      return next(errorHandler(404, "Provider not found."));
+      throw new HttpError(404, "Provider not found.");
     }
 
     res.status(200).json({
@@ -97,11 +103,11 @@ export async function update(
   try {
     // Check exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Provider not found."));
+      throw new HttpError(404, "Provider not found.");
     }
     const provider = await Provider.findById(id);
     if (!provider || provider.isDeleted) {
-      return next(errorHandler(404, "Provider not found."));
+      throw new HttpError(404, "Provider not found.");
     }
 
     // Check for duplicates
@@ -135,8 +141,9 @@ export async function update(
             : existingProvider.email === updatedEmail
             ? "email"
             : "phoneNumber";
-        return next(
-          errorHandler(409, `Provider with this ${existsField} already exists.`)
+        throw new HttpError(
+          409,
+          `Provider with this ${existsField} already exists.`
         );
       }
     }
@@ -169,11 +176,11 @@ export async function remove(
   try {
     // Check exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Provider not found."));
+      throw new HttpError(404, "Provider not found.");
     }
     const provider = await Provider.findById(id);
     if (!provider || provider.isDeleted) {
-      return next(errorHandler(404, "Provider not found."));
+      throw new HttpError(404, "Provider not found.");
     }
 
     // Execute deletion
@@ -186,7 +193,7 @@ export async function remove(
     } as SuccessResponse);
     console.log("✅ ", "Provider deleted successfully.");
   } catch (error) {
-    return next(error);
+    next(error);
   }
 }
 
@@ -218,7 +225,7 @@ async function hasConstraints(providerId: string): Promise<boolean> {
     }
     return hasConstraints;
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }
 
@@ -239,6 +246,6 @@ async function executeDeletion(
 
     await providerToDelete.deleteOne();
   } catch (error) {
-    throw error;
+    throw new Error(error);
   }
 }

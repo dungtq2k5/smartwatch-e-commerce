@@ -5,6 +5,8 @@ import { SYSTEM_USER } from "./configs";
 import InstanceCondition from "../models/product/instanceCondition.model";
 import InventoryMovementType from "../models/inventory/inventoryMovementType.model";
 import DeliveryState from "../models/order/deliveryState.model";
+import paymentStatus from "../models/order/paymentStatus.model";
+import paymentMethod from "../models/order/paymentMethod.model";
 import type { KeyObjectId } from "../utils/types";
 
 type KeyObjectIdWithLevel = {
@@ -21,6 +23,8 @@ type AppCache = {
   instanceConditions?: KeyObjectId;
   inventoryMovementTypes?: KeyObjectId;
   deliveryStates?: KeyObjectIdWithLevel;
+  paymentStatuses?: KeyObjectId;
+  paymentMethods?: KeyObjectId;
 };
 
 export const appCache: AppCache = {};
@@ -74,7 +78,6 @@ async function inventoryMovementTypesCache(): Promise<void> {
 async function deliveryStatesCache(): Promise<void> {
   console.log("🗂️ ", "Initializing delivery states cache...");
   try {
-    // Assuming you have a DeliveryState model similar to the others
     const deliveryStates = await DeliveryState.find()
       .select("_id name level")
       .lean();
@@ -92,6 +95,42 @@ async function deliveryStatesCache(): Promise<void> {
     console.log("✅ ", "Delivery states cache initialized successfully.");
   } catch (error) {
     throw new Error(`Error initializing delivery states cache: ${error}`);
+  }
+}
+
+async function paymentStatusCache(): Promise<void> {
+  console.log("🗂️ ", "Initializing payment status cache...");
+  try {
+    const statuses = await paymentStatus.find().select("_id name").lean();
+    if (!statuses || statuses.length === 0) {
+      throw new Error("No payment statuses found in the database.");
+    }
+    appCache.paymentStatuses = statuses.reduce((acc, status) => {
+      acc[status.name] = status._id;
+      return acc;
+    }, {} as KeyObjectId);
+
+    console.log("✅ ", "Payment status cache initialized successfully.");
+  } catch (error) {
+    throw new Error(`Error initializing payment status cache: ${error}`);
+  }
+}
+
+async function paymentMethodCache(): Promise<void> {
+  console.log("🗂️ ", "Initializing payment method cache...");
+  try {
+    const methods = await paymentMethod.find().select("_id name").lean();
+    if (!methods || methods.length === 0) {
+      throw new Error("No payment methods found in the database.");
+    }
+    appCache.paymentMethods = methods.reduce((acc, method) => {
+      acc[method.name] = method._id;
+      return acc;
+    }, {} as KeyObjectId);
+
+    console.log("✅ ", "Payment method cache initialized successfully.");
+  } catch (error) {
+    throw new Error(`Error initializing payment method cache: ${error}`);
   }
 }
 
@@ -124,10 +163,10 @@ export async function initAppCache(): Promise<void> {
     appCache.systemUserId = systemUser._id;
 
     await instanceConditionsCache();
-
     await inventoryMovementTypesCache();
-
     await deliveryStatesCache();
+    await paymentStatusCache();
+    await paymentMethodCache();
 
     console.log("✅ ", "Application cache initialized successfully.");
   } catch (error) {

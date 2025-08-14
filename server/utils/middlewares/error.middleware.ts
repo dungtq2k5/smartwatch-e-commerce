@@ -12,7 +12,7 @@ export function errorHandler(
   let msg = err.message || "Internal Server Error";
 
   // Mongoose duplicate key error
-  if (err.code === 1000 && err.keyValue) {
+  if (err.code === 11000 && err.keyValue) {
     const dupField = Object.keys(err.keyValue)[0];
     const dupVal = err.keyValue[dupField];
     statusCode = 409;

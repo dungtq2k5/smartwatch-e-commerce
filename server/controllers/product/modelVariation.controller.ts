@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import mongoose, { Types } from "mongoose";
-import { errorHandler } from "../../utils/errorHandler";
+import { HttpError } from "../../utils/errorHandler";
 import Product from "../../models/product/product.model";
 import ProductModel from "../../models/product/productModel.model";
 import {
@@ -28,16 +28,16 @@ export async function create(
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
     const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found."));
+      throw new HttpError(404, "Product model not found.");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
@@ -45,7 +45,7 @@ export async function create(
       productId,
     }).lean();
     if (!model) {
-      return next(errorHandler(404, "Product model not found."));
+      throw new HttpError(404, "Product model not found.");
     }
 
     // Business logic
@@ -59,7 +59,7 @@ export async function create(
       $or: [{ "color.hex": color.hex }, { "color.name": color.name }],
     }).lean();
     if (existingVariation) {
-      return next(errorHandler(409, "Product model variation already exists."));
+      throw new HttpError(409, "Product model variation already exists.");
     }
 
     const reqUserId = (req["auth"] as RequestAuth).userId;
@@ -96,16 +96,16 @@ export async function get(
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
     const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found."));
+      throw new HttpError(404, "Product model not found.");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
@@ -113,11 +113,11 @@ export async function get(
       productId: productId,
     }).lean();
     if (!model) {
-      return next(errorHandler(404, "Product model not found."));
+      throw new HttpError(404, "Product model not found.");
     }
 
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product model variation not found."));
+      throw new HttpError(404, "Product model variation not found.");
     }
     const variation = await ModelVariation.findOne({
       isDeleted: false,
@@ -125,7 +125,7 @@ export async function get(
       productModelId: modelId,
     }).lean();
     if (!variation) {
-      return next(errorHandler(404, "Product model variation not found."));
+      throw new HttpError(404, "Product model variation not found.");
     }
 
     res.status(200).json({
@@ -150,16 +150,16 @@ export async function getAll(
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
     const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found."));
+      throw new HttpError(404, "Product model not found.");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
@@ -167,7 +167,7 @@ export async function getAll(
       productId: product._id,
     }).lean();
     if (!model) {
-      return next(errorHandler(404, "Product model not found."));
+      throw new HttpError(404, "Product model not found.");
     }
 
     // Fetch all variations for the model
@@ -206,16 +206,16 @@ export async function update(
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
     const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found."));
+      throw new HttpError(404, "Product model not found.");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
@@ -223,12 +223,12 @@ export async function update(
       productId: product._id,
     }).lean();
     if (!model) {
-      return next(errorHandler(404, "Product model not found."));
+      throw new HttpError(404, "Product model not found.");
     }
 
     // Check variation id exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product model variation not found."));
+      throw new HttpError(404, "Product model variation not found.");
     }
     const variation = await ModelVariation.findOne({
       isDeleted: false,
@@ -236,7 +236,7 @@ export async function update(
       productModelId: modelId,
     });
     if (!variation) {
-      return next(errorHandler(404, "Product model variation not found."));
+      throw new HttpError(404, "Product model variation not found.");
     }
 
     // Business logic
@@ -263,9 +263,7 @@ export async function update(
         $or: orConditions,
       }).lean();
       if (existingVariation) {
-        return next(
-          errorHandler(409, "Product model variation name already exists.")
-        );
+        throw new HttpError(409, "Product model variation name already exists.");
       }
     }
 
@@ -278,11 +276,9 @@ export async function update(
           )
         : variation.toObject().band.adjustableRange;
     if (updatedBandAdjustableRange.minMm > updatedBandAdjustableRange.maxMm) {
-      return next(
-        errorHandler(
-          400,
-          "Band adjustable range minimum cannot be greater than maximum."
-        )
+      throw new HttpError(
+        400,
+        "Band adjustable range minimum cannot be greater than maximum."
       );
     }
 
@@ -361,16 +357,16 @@ export async function remove(
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
     const product = await Product.findById(productId).lean().session(session);
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found."));
+      throw new HttpError(404, "Product model not found.");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
@@ -380,12 +376,12 @@ export async function remove(
       .lean()
       .session(session);
     if (!model) {
-      return next(errorHandler(404, "Product model not found."));
+      throw new HttpError(404, "Product model not found.");
     }
 
     // Check variation id exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product model variation not found."));
+      throw new HttpError(404, "Product model variation not found.");
     }
     const variation = await ModelVariation.findOne({
       isDeleted: false,
@@ -393,7 +389,7 @@ export async function remove(
       productModelId: modelId,
     }).session(session);
     if (!variation) {
-      return next(errorHandler(404, "Product model variation not found."));
+      throw new HttpError(404, "Product model variation not found.");
     }
 
     const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);

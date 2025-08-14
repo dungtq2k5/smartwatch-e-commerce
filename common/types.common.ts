@@ -641,8 +641,15 @@ export type OrderCreate = {
     variationId: string;
     quantity: number;
   }[];
+  paymentMethodId: string;
 };
-
+export type OrderUpdateBase = Partial<{
+  deliveryStateId: string;
+  deliveryAddressId: string;
+  estimateReceivedDate: string;
+}>;
+export type OrderUpdateSelf = Pick<OrderUpdateBase, "deliveryStateId" | "deliveryAddressId">;
+export type OrderUpdate = OrderUpdateBase;
 export type OrderResponse = {
   id: string;
   userId: string;
@@ -656,22 +663,32 @@ export type OrderResponse = {
     }[];
   }[];
   totalCents: number;
-  deliveryStateId: string;
+  deliveryStateId: string | null; // Order isn't paid yet (newly created)
+  orderDate: string | null; // Order isn't paid yet (newly created)
   estimateReceivedDate: string;
   receivedDate: string | null;
   deliveryAddress: Omit<
     BaseUserAddress,
     "id" | "userId" | "isDefault" | "createdAt" | "updatedAt"
-  >;
+  > | null; // Order isn't paid yet (newly created)
+  payment: {
+    amountCents: number;
+    methodId: string;
+    currency: string;
+    transactionDate: string;
+    createdAt: string;
+    relatedTransactionId: string | null; // If this order is paid by a transaction
+  } | null; // Order isn't paid yet (newly created), or paymentMethod is COD
+  paymentMethodId: string;
   createdAt: string;
   updatedAt: string;
 };
-
-export type OrderUpdate = Partial<{
-  deliveryStateId: string;
-  estimateReceivedDate: string;
-  deliveryAddressId: string;
-}>;
+export type CreateOrderPaymentIntent = {
+  saveCard?: boolean; // If true, save card for future payments
+};
+export type CreateOrderPaymentIntentResponse = {
+  clientSecret: string | null;
+};
 
 export type UserValidatePassword = {
   password: string;

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { RequestAuth } from "../../utils/types";
-import { errorHandler } from "../../utils/errorHandler";
+import { HttpError } from "../../utils/errorHandler";
 import ProductCategory from "../../models/product/productCategory.model";
 import {
   ProductCategoryCreate,
@@ -28,7 +28,7 @@ export async function create(
       name,
     }).lean();
     if (existingCategory) {
-      return next(errorHandler(409, "Product category already exists."));
+      throw new HttpError(409, "Product category already exists.");
     }
 
     // Create category
@@ -62,11 +62,11 @@ export async function get(
 
   try {
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product category not found."));
+      throw new HttpError(404, "Product category not found.");
     }
     const category = await ProductCategory.findById(id).lean();
     if (!category || category.isDeleted) {
-      return next(errorHandler(404, "Product category not found."));
+      throw new HttpError(404, "Product category not found.");
     }
 
     res.status(200).json({
@@ -120,11 +120,11 @@ export async function update(
   try {
     // Check category exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product category not found."));
+      throw new HttpError(404, "Product category not found.");
     }
     const category = await ProductCategory.findById(id);
     if (!category || category.isDeleted) {
-      return next(errorHandler(404, "Product category not found."));
+      throw new HttpError(404, "Product category not found.");
     }
 
     // Check if name is updated and exists
@@ -137,7 +137,7 @@ export async function update(
         name: updatedName,
       }).lean();
       if (existingCategory) {
-        return next(errorHandler(409, "Product category already exists."));
+        throw new HttpError(409, "Product category already exists.");
       }
     }
 
@@ -156,7 +156,7 @@ export async function update(
     } as SuccessResponse<ProductCategoryResponse>);
     console.log("✅ ", "Product category updated successfully.");
   } catch (error) {
-    return next(error);
+    next(error);
   }
 }
 
@@ -171,11 +171,11 @@ export async function remove(
   try {
     // Check category exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product category not found."));
+      throw new HttpError(404, "Product category not found.");
     }
     const category = await ProductCategory.findById(id);
     if (!category || category.isDeleted) {
-      return next(errorHandler(404, "Product category not found."));
+      throw new HttpError(404, "Product category not found.");
     }
 
     const userId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
@@ -187,7 +187,7 @@ export async function remove(
     } as SuccessResponse);
     console.log("✅ ", "Product category deleted successfully.");
   } catch (error) {
-    return next(error);
+    next(error);
   }
 }
 

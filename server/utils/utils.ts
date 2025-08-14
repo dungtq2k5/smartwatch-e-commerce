@@ -297,8 +297,10 @@ export function formatUserCartResponse(cart: any): UserCartResponse {
   const model = variation.productModelId; // Via populate
   const product = model.productId; // Via populate
 
-  const totalCents = (model.priceCents + variation.additionalPriceCents) * cart.quantity;
-  const stopSelling = product.stopSelling || model.stopSelling || variation.stopSelling;
+  const totalCents =
+    (model.priceCents + variation.additionalPriceCents) * cart.quantity;
+  const stopSelling =
+    product.stopSelling || model.stopSelling || variation.stopSelling;
 
   return {
     quantity: cart.quantity,
@@ -458,20 +460,15 @@ export function formatOrderResponse(order: any): OrderResponse {
   return {
     id: order._id,
     userId: order.userId,
-    items: order.items.map((item: any) => ({
-      variationId: item.variationId,
-      quantity: item.quantity,
-      totalCents: item.totalCents,
-      instanceIds: item.instanceIds.map((instance: any) => ({
-        id: instance.id,
-        sku: instance.sku,
-      })),
-    })),
+    items: order.items,
     totalCents: order.totalCents,
     deliveryStateId: order.deliveryStateId,
+    orderDate: order.orderDate,
     estimateReceivedDate: order.estimateReceivedDate,
     receivedDate: order.receivedDate,
     deliveryAddress: order.deliveryAddress,
+    payment: order.payment,
+    paymentMethodId: order.paymentMethodId,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
   };
@@ -533,4 +530,62 @@ export function getDeliveryStateLevel(stateId: Types.ObjectId): number {
   }
 
   throw new Error(`Delivery state with ID '${stateId}' not found in cache.`);
+}
+
+export function getPaymentStatusId(statusName: string): Types.ObjectId {
+  const { paymentStatuses } = appCache;
+  if (!paymentStatuses) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const statusId = paymentStatuses[statusName.toLowerCase()];
+  if (!statusId) {
+    throw new Error(`Payment status '${statusName}' not found in cache.`);
+  }
+
+  return statusId;
+}
+
+export function getPaymentStatusName(statusId: Types.ObjectId): string {
+  const { paymentStatuses } = appCache;
+  if (!paymentStatuses) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const statusName in paymentStatuses) {
+    if (paymentStatuses[statusName].equals(statusId)) {
+      return statusName;
+    }
+  }
+
+  throw new Error(`Payment status with ID '${statusId}' not found in cache.`);
+}
+
+export function getPaymentMethodId(methodName: string): Types.ObjectId {
+  const { paymentMethods } = appCache;
+  if (!paymentMethods) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const methodId = paymentMethods[methodName.toLowerCase()];
+  if (!methodId) {
+    throw new Error(`Payment method '${methodName}' not found in cache.`);
+  }
+
+  return methodId;
+}
+
+export function getPaymentMethodName(methodId: Types.ObjectId): string {
+  const { paymentMethods } = appCache;
+  if (!paymentMethods) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const methodName in paymentMethods) {
+    if (paymentMethods[methodName].equals(methodId)) {
+      return methodName;
+    }
+  }
+
+  throw new Error(`Payment method with ID '${methodId}' not found in cache.`);
 }

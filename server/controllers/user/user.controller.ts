@@ -19,7 +19,7 @@ import type {
   UserUpdateSelfGeneralInfo,
   UserUpdateSelfPassword,
 } from "../../../common/types.common";
-import { errorHandler } from "../../utils/errorHandler";
+import { HttpError } from "../../utils/errorHandler";
 import bcrypt from "bcryptjs";
 import { HASH_SALT, JWT_NAME } from "../../configs/configs";
 import {
@@ -40,7 +40,7 @@ import mongoose, { Types } from "mongoose";
 import { deleteFileFromFirebaseStorage } from "../../utils/firebase";
 import Otp from "../../models/user/otp.model";
 import PasswordResetToken from "../../models/user/passwordResetToken.model";
-import { USER_GENDER_OPTIONS, VERIFICATION_CODE_TTL } from "../../../common/configs.common";
+import { VERIFICATION_CODE_TTL } from "../../../common/configs.common";
 import { RequestAuth } from "../../utils/types";
 import Role from "../../models/role/role.model";
 import Order from "../../models/order/order.model";
@@ -56,6 +56,7 @@ import ProductCategory from "../../models/product/productCategory.model";
 import ProductOs from "../../models/product/productOs.model";
 import ProductModel from "../../models/product/productModel.model";
 import ModelVariation from "../../models/product/modelVariation.model";
+import stripe from "../../configs/stripe.config";
 
 // --- ADMIN FUNCTIONS ---
 export async function create(
@@ -81,20 +82,19 @@ export async function create(
 
     // Business logic
     if (new Date(birth) > new Date()) {
-      return next(errorHandler(400, "Birth date cannot be in the future."));
+      throw new HttpError(400, "Birth date cannot be in the future.");
     }
 
     if (!email && isEmailVerified) {
-      return next(
-        errorHandler(400, "Email cannot be empty when isEmailVerified is true.")
+      throw new HttpError(
+        400,
+        "Email cannot be empty when isEmailVerified is true."
       );
     }
     if (!phoneNumber && isPhoneNumberVerified) {
-      return next(
-        errorHandler(
-          400,
-          "Phone number cannot be empty when isPhoneNumberVerified is true."
-        )
+      throw new HttpError(
+        400,
+        "Phone number cannot be empty when isPhoneNumberVerified is true."
       );
     }
 
@@ -107,7 +107,7 @@ export async function create(
       $or: orConditions,
     }).session(session);
     if (userExists) {
-      return next(errorHandler(409, "Email or phone number already exists."));
+      throw new HttpError(409, "Email or phone number already exists.");
     }
 
     // Check and update Role collection
@@ -117,7 +117,7 @@ export async function create(
         _id: { $in: roleIds },
       }).session(session);
       if (roleCount !== roleIds.length) {
-        return next(errorHandler(400, "One or more roles do not exist."));
+        throw new HttpError(400, "One or more roles do not exist.");
       }
 
       await Role.updateMany(
@@ -156,7 +156,7 @@ export async function create(
     } as SuccessResponse<AdminUserResponse>);
     console.log("✅", "User created successfully.");
   } catch (error) {
-    if (session.inTransaction()) await session.abortTransaction();
+    await session.abortTransaction();
     next(error);
   } finally {
     session.endSession();
@@ -172,7 +172,7 @@ export async function get(
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
-      errorHandler(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action.")
     );
   }
 
@@ -181,11 +181,11 @@ export async function get(
   try {
     // Check user exists
     if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
     const user = await User.findById(userId).lean();
     if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     res.status(200).json({
@@ -208,7 +208,7 @@ export async function search(
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
-      errorHandler(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action.")
     );
   }
 
@@ -306,7 +306,7 @@ export async function updateGeneralInfo(
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
-      errorHandler(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action.")
     );
   }
 
@@ -317,11 +317,11 @@ export async function updateGeneralInfo(
   try {
     // Check user exists
     if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
     const user = await User.findById(userId).session(session);
     if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     // Business logic
@@ -331,7 +331,7 @@ export async function updateGeneralInfo(
       ? new Date(updateData.birth)
       : user.birth;
     if (updatedBirth !== user.birth && updatedBirth > new Date()) {
-      return next(errorHandler(400, "Birth date cannot be in the future."));
+      throw new HttpError(400, "Birth date cannot be in the future.");
     }
 
     const updatedAvatarUrl =
@@ -376,7 +376,7 @@ export async function updateGeneralInfo(
           _id: { $in: rolesToAdd },
         }).session(session);
         if (roleCount !== rolesToAdd.length) {
-          return next(errorHandler(400, "One or more roles do not exist."));
+          throw new HttpError(400, "One or more roles do not exist.");
         }
 
         await Role.updateMany(
@@ -459,7 +459,7 @@ export async function updateEmail(
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
-      errorHandler(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action.")
     );
   }
 
@@ -470,16 +470,16 @@ export async function updateEmail(
   try {
     // Check user exists
     if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
     const user = await User.findById(userId).session(session);
     if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     // Business logic
     const { email, isEmailVerified } = req.body as UserUpdateEmail;
-    const updatedEmail = email === null ? null : email || user.email;
+    const updatedEmail = email || user.email;
     const updatedIsEmailVerified =
       isEmailVerified ?? (user.isEmailVerified as boolean);
 
@@ -491,12 +491,13 @@ export async function updateEmail(
       .lean()
       .session(session);
     if (existingUser) {
-      return next(errorHandler(409, "Email already exists."));
+      throw new HttpError(409, "Email already exists.");
     }
 
     if (!updatedEmail && updatedIsEmailVerified) {
-      return next(
-        errorHandler(400, "Email cannot be empty when isEmailVerified is true.")
+      throw new HttpError(
+        400,
+        "Email cannot be empty when isEmailVerified is true."
       );
     }
 
@@ -505,6 +506,24 @@ export async function updateEmail(
     const oldIsEmailVerified = user.isEmailVerified; // For notification
     user.email = updatedEmail;
     user.isEmailVerified = updatedIsEmailVerified;
+
+    // Update stripeCustomerId if email changed and isEmailVerified is true
+    if (
+      user.stripeCustomerId &&
+      oldEmail !== updatedEmail &&
+      updatedEmail &&
+      updatedIsEmailVerified
+    ) {
+      try {
+        await stripe.customers.update(user.stripeCustomerId, {
+          email: updatedEmail,
+        });
+        console.log("✅ ", "Stripe customer email updated successfully.");
+      } catch (error) {
+        console.error("❌ ", "Error updating Stripe customer email:", error);
+      }
+    }
+
     await user.save({ session });
 
     // Send changes notification
@@ -524,9 +543,9 @@ export async function updateEmail(
         user.fullName,
         updatedIsEmailVerified
       );
-      /**
-     Verification changed from:
-      - Has email: true -> false, false -> true
+      /*
+        Verification changed from:
+          - Has email: true -> false, false -> true
       */
     } else if (oldIsEmailVerified !== updatedIsEmailVerified) {
       // Email not changed but verification changed
@@ -562,9 +581,10 @@ export async function updatePhoneNumber(
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
-      errorHandler(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action.")
     );
   }
+
   const userId = req.params.id;
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -572,11 +592,11 @@ export async function updatePhoneNumber(
   try {
     // Check user exists
     if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
     const user = await User.findById(userId).session(session);
     if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     // Business logic
@@ -596,15 +616,13 @@ export async function updatePhoneNumber(
       .lean()
       .session(session);
     if (existingUser) {
-      return next(errorHandler(409, "Phone number already exists."));
+      throw new HttpError(409, "Phone number already exists.");
     }
 
     if (!updatedPhoneNumber && updatedIsPhoneNumberVerified) {
-      return next(
-        errorHandler(
-          400,
-          "Phone number cannot be empty when isPhoneNumberVerified is true."
-        )
+      throw new HttpError(
+        400,
+        "Phone number cannot be empty when isPhoneNumberVerified is true."
       );
     }
 
@@ -613,6 +631,24 @@ export async function updatePhoneNumber(
     const oldIsPhoneNumberVerified = user.isPhoneNumberVerified; // For notification
     user.phoneNumber = updatedPhoneNumber;
     user.isPhoneNumberVerified = updatedIsPhoneNumberVerified;
+
+    // Update stripeCustomerId if phone number changed and isPhoneNumberVerified is true
+    if (
+      user.stripeCustomerId &&
+      oldPhoneNumber !== updatedPhoneNumber &&
+      updatedPhoneNumber &&
+      updatedIsPhoneNumberVerified
+    ) {
+      try {
+        await stripe.customers.update(user.stripeCustomerId, {
+          phone: updatedPhoneNumber,
+        });
+        console.log("✅ ", "Stripe customer phone updated successfully.");
+      } catch (error) {
+        console.error("❌ ", "Error updating Stripe customer phone:", error);
+      }
+    }
+
     await user.save({ session });
 
     // Send changes notification, priority send by email if has
@@ -686,14 +722,14 @@ export async function remove(
   const { userId: reqUserId, isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
     return next(
-      errorHandler(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action.")
     );
   }
 
   const userId = req.params.id;
   if (reqUserId === userId) {
     return next(
-      errorHandler(400, "You cannot delete your own account as an admin.")
+      new HttpError(400, "You cannot delete your own account as an admin.")
     );
   }
 
@@ -703,11 +739,11 @@ export async function remove(
   try {
     // Check user exists
     if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
     const user = await User.findById(userId).session(session);
     if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     await executeDeletion(user, new Types.ObjectId(reqUserId), session);
@@ -739,7 +775,7 @@ export async function updateSelfContactInfo(
   // Check only buyer perform this action
   if (!isBuyerOnly) {
     return next(
-      errorHandler(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action.")
     );
   }
 
@@ -760,32 +796,29 @@ export async function updateSelfContactInfo(
       .lean()
       .session(session);
     if (existingUser) {
-      return next(
-        errorHandler(
-          409,
-          `${type} already exists in another account. If you sure this is your ${type},
+      throw new HttpError(
+        409,
+        `${type} already exists in another account. If you sure this is your ${type},
           we think you has registered an account with this ${type} before.
           If you want to update your ${type} for the current account,
           we recommend you to login with this ${type} first and change or delete the existing account.`
-        )
       );
     }
 
     // Handle no change case
     if (type === "email" && value === user.email && user.isEmailVerified) {
-      return next(
-        errorHandler(400, "New email cannot be the same as current email.")
+      throw new HttpError(
+        400,
+        "New email cannot be the same as current email."
       );
     } else if (
       type === "phoneNumber" &&
       value === user.phoneNumber &&
       user.isPhoneNumberVerified
     ) {
-      return next(
-        errorHandler(
-          400,
-          "New phone number cannot be the same as current phone number."
-        )
+      throw new HttpError(
+        400,
+        "New phone number cannot be the same as current phone number."
       );
     }
 
@@ -793,9 +826,7 @@ export async function updateSelfContactInfo(
     user[type === "email" ? "isEmailVerified" : "isPhoneNumberVerified"] =
       false;
     if (!user.isEmailVerified && !user.isPhoneNumberVerified) {
-      return next(
-        errorHandler(400, "Please verify at least one contact info.")
-      );
+      throw new HttpError(400, "Please verify at least one contact info.");
     }
     await user.save({ session });
 
@@ -846,7 +877,7 @@ export async function deleteSelf(
   const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
   if (!isBuyerOnly) {
     return next(
-      errorHandler(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action.")
     );
   }
 
@@ -857,7 +888,7 @@ export async function deleteSelf(
   try {
     const user = await User.findById(userId).session(session);
     if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     await executeDeletion(user, reqUser._id, session);
@@ -916,13 +947,15 @@ export async function updateSelfGeneralInfo(
 
   try {
     // Business logic
-    const updatedBirth = birth ? new Date(birth) : user.birth as Date;
+    const updatedBirth = birth ? new Date(birth) : (user.birth as Date);
     if (updatedBirth !== user.birth && updatedBirth > new Date()) {
-      return next(errorHandler(400, "Birth date cannot be in the future."));
+      throw new HttpError(400, "Birth date cannot be in the future.");
     }
 
     const updatedAvatarUrl =
-      avatarUrl === null ? null : avatarUrl || user.avatarUrl as string | null;
+      avatarUrl === null
+        ? null
+        : avatarUrl || (user.avatarUrl as string | null);
     if (user.avatarUrl !== updatedAvatarUrl && user.avatarUrl) {
       await deleteFileFromFirebaseStorage(user.avatarUrl, "user-avatar");
     }
@@ -957,25 +990,21 @@ export async function updateSelfPassword(
   try {
     // Only for user who auth by local
     if (user.authProvider !== "local") {
-      return next(
-        errorHandler(
-          403,
-          "This action is not available for accounts created with provider(Google)."
-        )
+      throw new HttpError(
+        403,
+        "This action is not available for accounts created with provider(Google)."
       );
     }
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
-      return next(errorHandler(401, "Current password is incorrect."));
+      throw new HttpError(401, "Current password is incorrect.");
     }
 
     if (currentPassword === newPassword) {
-      return next(
-        errorHandler(
-          400,
-          "New password cannot be the same as current password."
-        )
+      throw new HttpError(
+        400,
+        "New password cannot be the same as current password."
       );
     }
 
@@ -1006,8 +1035,9 @@ export async function setSelfPassword(
   try {
     // Only for user who auth by provider
     if (user.authProvider === "local") {
-      return next(
-        errorHandler(403, "Password has already been set for this account.")
+      throw new HttpError(
+        403,
+        "Password has already been set for this account."
       );
     }
 
@@ -1116,6 +1146,43 @@ async function executeDeletion(
       { $inc: { userAssigned: -1 } },
       { session }
     );
+
+    // Anonymizing stripCustomerId if has
+    if (userToDelete.stripeCustomerId) {
+      try {
+        // Bank out personal information to fulfill privacy obligations
+        const customerData: {
+          name: string;
+          email?: string;
+          phone?: string;
+          address: null;
+          shipping: null;
+          metadata: {
+            appAccountDeleted: "true";
+            appAccountDeletedAt: string;
+          };
+        } = {
+          name: `Deleted User ${userToDelete._id}`,
+          phone: undefined,
+          address: null,
+          shipping: null,
+          metadata: {
+            appAccountDeleted: "true",
+            appAccountDeletedAt: new Date().toISOString(),
+          },
+        };
+        if (userToDelete.email && userToDelete.isEmailVerified) {
+          customerData["email"] = `deleted-${userToDelete._id}@example.com`; // Unique, non-functional email
+        }
+        await stripe.customers.update(
+          userToDelete.stripeCustomerId,
+          customerData
+        );
+        console.log("✅ ", "Stripe customer data anonymized successfully.");
+      } catch (error) {
+        console.error("❌ ", "Error anonymizing Stripe customer data:", error);
+      }
+    }
 
     // Check for constraints to decide deletion strategy
     if (await hasConstraints(userToDelete._id)) {

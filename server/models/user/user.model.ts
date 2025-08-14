@@ -80,6 +80,8 @@ const userSchema = new mongoose.Schema(
     },
     stripeCustomerId: {
       type: String,
+      unique: true,
+      sparse: true,
       required: false,
       default: null,
     },

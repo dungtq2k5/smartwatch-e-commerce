@@ -7,28 +7,39 @@ const userPaymentMethodSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    paymentMethodId: {
+    stripePaymentMethodId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "PaymentMethod",
       required: true,
+      unique: true,
     },
-    cardBrand: {
+    type: {
       type: String,
+      enum: ["card"],
       required: true,
     },
-    lastFourDigits: {
-      type: String,
+    card: {
+      type: {
+        brand: {
+          type: String, // e.g., 'visa', 'mastercard'
+          required: true,
+        },
+        last4: {
+          type: String, // e.g., '4242'
+          required: true,
+        },
+        expMonth: {
+          type: Number,
+          required: true,
+          min: 1,
+          max: 12,
+        },
+        expYear: {
+          type: Number,
+          required: true,
+        },
+      },
       required: true,
-    },
-    expMonth: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 12,
-    },
-    expYear: {
-      type: Number,
-      required: true,
+      _id: false,
     },
     isDefault: {
       type: Boolean,

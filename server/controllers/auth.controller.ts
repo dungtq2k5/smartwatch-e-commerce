@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import User from "../models/user/user.model";
-import { errorHandler } from "../utils/errorHandler";
+import { HttpError } from "../utils/errorHandler";
 import bcrypt from "bcryptjs";
 import { HASH_SALT, JWT_NAME } from "../configs/configs";
 import {
@@ -28,6 +28,7 @@ import {
 } from "../utils/twilio";
 import {
   CheckAuthResponse,
+  EmailOrPhoneNumberCreate,
   SuccessResponse,
   UserAuthByGoogle,
   UserForgotPassword,
@@ -45,6 +46,7 @@ import admin from "firebase-admin";
 import Role from "../models/role/role.model";
 import { appCache } from "../configs/cache";
 import { RequestAuth } from "../utils/types";
+import stripe from "../configs/stripe.config";
 
 export async function signup(
   req: Request,
@@ -54,6 +56,7 @@ export async function signup(
   console.log("▶️", "Processing signup request...");
   const { fullName, email, birth, gender, phoneNumber, password } =
     req.body as UserSignup;
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -70,17 +73,15 @@ export async function signup(
       .session(session);
 
     if (existingUser) {
-      return next(
-        errorHandler(
-          409,
-          "User already exists with this email or phone number, please login instead."
-        )
+      throw new HttpError(
+        409,
+        "User already exists with this email or phone number, please login instead."
       );
     }
 
     // Business logic
     if (new Date(birth) > new Date()) {
-      return next(errorHandler(400, "Birth date cannot be in the future."));
+      throw new HttpError(400, "Birth date cannot be in the future.");
     }
 
     // Assign default buyer role
@@ -137,7 +138,7 @@ export async function signup(
     } as SuccessResponse<UserResponse>);
     console.log("✅", "Signup process completed successfully.");
   } catch (error) {
-    if (session.inTransaction()) await session.abortTransaction();
+    await session.abortTransaction();
     next(error);
   } finally {
     session.endSession();
@@ -162,31 +163,30 @@ export async function login(
       $or: orConditions,
     });
     if (!user) {
-      return next(errorHandler(404, "User not found, please sign up first."));
+      throw new HttpError(404, "User not found, please sign up first.");
     }
 
     // Check user is locked
     if (user.isLocked) {
-      return next(errorHandler(403, "User account is locked."));
+      throw new HttpError(403, "User account is locked.");
     }
 
     // Check user is verified or not
     if (email && !user.isEmailVerified) {
-      return next(
-        errorHandler(403, "Email not verified. Please verify your email first.")
+      throw new HttpError(
+        403,
+        "Email not verified. Please verify your email first."
       );
     } else if (phoneNumber && !user.isPhoneNumberVerified) {
-      return next(
-        errorHandler(
-          403,
-          "Phone number not verified. Please verify your phone number first."
-        )
+      throw new HttpError(
+        403,
+        "Phone number not verified. Please verify your phone number first."
       );
     }
 
     // Check password or user is locked
     if (!bcrypt.compareSync(password, user.password) || user.isLocked) {
-      return next(errorHandler(401, "Invalid credentials."));
+      throw new HttpError(401, "Invalid credentials.");
     }
 
     // Update last login time
@@ -236,22 +236,23 @@ export async function verifyUser(
 ) {
   console.log("▶️", "Processing user verification request...");
   const userId = (req["auth"] as RequestAuth).userId;
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     // Check user exists
     if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
     const user = await User.findById(userId).session(session);
     if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     // Check user is locked
     if (user.isLocked) {
-      return next(errorHandler(403, "User account is locked."));
+      throw new HttpError(403, "User account is locked.");
     }
 
     // Check valid OTP
@@ -262,9 +263,11 @@ export async function verifyUser(
       type,
       isUsed: false,
       expiresAt: { $gt: new Date() },
-    }).lean().session(session);
+    })
+      .lean()
+      .session(session);
     if (!otp) {
-      return next(errorHandler(400, "Invalid or expired verification code."));
+      throw new HttpError(400, "Invalid or expired verification code.");
     }
 
     // Invalidate ALL pending OTPs for this user and type for security
@@ -276,6 +279,22 @@ export async function verifyUser(
 
     // Update user verification status
     user[type === "email" ? "isEmailVerified" : "isPhoneNumberVerified"] = true;
+
+    // Update stripeCustomerId if has
+    if (user.stripeCustomerId) {
+      const customerData = {};
+      if (type === "email") {
+        customerData["email"] = user.email as string;
+      } else {
+        customerData["phone"] = user.phoneNumber as string;
+      }
+      try {
+        await stripe.customers.update(user.stripeCustomerId, customerData);
+        console.log("✅ ", "Stripe customer updated successfully.");
+      } catch (error) {
+        console.error("❌ ", "Error updating Stripe customer:", error);
+      }
+    }
 
     // Send welcome email if email is verified with first login
     if (user.lastLogin === undefined) {
@@ -299,7 +318,7 @@ export async function verifyUser(
     } as SuccessResponse<UserResponse>);
     console.log("✅", "User verification process completed successfully.");
   } catch (error) {
-    if (session.inTransaction()) await session.abortTransaction();
+    await session.abortTransaction();
     next(error);
   } finally {
     session.endSession();
@@ -313,6 +332,7 @@ export async function authByGoogle(
 ): Promise<void> {
   console.log("▶️", "Processing Google authentication request...");
   const { idToken, accessToken } = req.body as UserAuthByGoogle;
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -324,9 +344,7 @@ export async function authByGoogle(
     const { name: fullName, email, picture: avatarUrl } = decodedToken;
 
     if (!email) {
-      return next(
-        errorHandler(400, "Email not available from Google account.")
-      );
+      throw new HttpError(400, "Email not available from Google account.");
     }
 
     // Check user exists
@@ -434,7 +452,7 @@ export async function authByGoogle(
     // User exists -> proceed with login
     // Check user is locked
     if (user.isLocked) {
-      return next(errorHandler(403, "User account is locked."));
+      throw new HttpError(403, "User account is locked.");
     }
 
     // Login user
@@ -453,7 +471,7 @@ export async function authByGoogle(
     } as SuccessResponse<UserResponse>);
     console.log("✅", "Google login process completed successfully.");
   } catch (error) {
-    if (session.inTransaction()) await session.abortTransaction();
+    await session.abortTransaction();
     next(error);
   } finally {
     session.endSession();
@@ -478,18 +496,18 @@ export async function forgotPassword(
       $or: orConditions,
     }).lean();
     if (!user) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     // Check user is locked
     if (user.isLocked) {
-      return next(errorHandler(403, "User account is locked."));
+      throw new HttpError(403, "User account is locked.");
     }
 
     if (email && !user.isEmailVerified) {
-      return next(errorHandler(403, "Email not verified."));
+      throw new HttpError(403, "Email not verified.");
     } else if (phoneNumber && !user.isPhoneNumberVerified) {
-      return next(errorHandler(403, "Phone number not verified."));
+      throw new HttpError(403, "Phone number not verified.");
     }
 
     // Generate reset token
@@ -536,11 +554,11 @@ export async function resetPassword(
       token: resetToken,
       expiresAt: { $gt: new Date() },
       isUsed: false,
-    }).lean().session(session);
+    })
+      .lean()
+      .session(session);
     if (!passwordResetToken) {
-      return next(
-        errorHandler(400, "Invalid or expired password reset token.")
-      );
+      throw new HttpError(400, "Invalid or expired password reset token.");
     }
 
     // Check user exists
@@ -548,12 +566,12 @@ export async function resetPassword(
       session
     );
     if (!user || user.isDeleted) {
-      return next(errorHandler(400, "User not found."));
+      throw new HttpError(400, "User not found.");
     }
 
     // Check user is locked
     if (user.isLocked) {
-      return next(errorHandler(403, "User account is locked."));
+      throw new HttpError(403, "User account is locked.");
     }
 
     // Update user password
@@ -583,7 +601,7 @@ export async function resetPassword(
     } as SuccessResponse);
     console.log("✅", "Reset password process completed successfully.");
   } catch (error) {
-    if (session.inTransaction()) await session.abortTransaction();
+    await session.abortTransaction();
     next(error);
   } finally {
     session.endSession();
@@ -600,15 +618,15 @@ export async function checkAuth(
 
   try {
     if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     const user = await User.findById(userId).lean();
     if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
     if (user.isLocked) {
-      return next(errorHandler(403, "User account is locked."));
+      throw new HttpError(403, "User account is locked.");
     }
 
     const isAuth = user.isEmailVerified || user.isPhoneNumberVerified;
@@ -640,18 +658,18 @@ export async function validatePassword(
 
   try {
     if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     const user = await User.findById(userId).lean();
     if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     // Check password
     const isPasswordValid = bcrypt.compareSync(password, user.password);
     if (!isPasswordValid) {
-      return next(errorHandler(401, "Invalid password."));
+      throw new HttpError(401, "Invalid password.");
     }
 
     res.status(200).json({

@@ -7,7 +7,7 @@ import {
   SuccessResponse,
 } from "../../../common/types.common";
 import { Types } from "mongoose";
-import { errorHandler } from "../../utils/errorHandler";
+import { HttpError } from "../../utils/errorHandler";
 import Product from "../../models/product/product.model";
 import ProductModel from "../../models/product/productModel.model";
 import ProductOs from "../../models/product/productOs.model";
@@ -28,11 +28,11 @@ export async function create(
   try {
     // Check if product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found"));
+      throw new HttpError(404, "Product not found");
     }
     const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found"));
+      throw new HttpError(404, "Product not found");
     }
 
     const {
@@ -53,13 +53,13 @@ export async function create(
 
     // Check if releaseDate is valid
     if (releaseDate && new Date(releaseDate) > new Date()) {
-      return next(errorHandler(400, "Release date cannot be in the future"));
+      throw new HttpError(400, "Release date cannot be in the future");
     }
 
     // Check if os exists
     const os = await ProductOs.findById(config.osId).lean();
     if (!os || os.isDeleted) {
-      return next(errorHandler(404, "Product OS not found"));
+      throw new HttpError(404, "Product OS not found");
     }
 
     // Check if model already exists
@@ -69,9 +69,7 @@ export async function create(
       name,
     }).lean();
     if (existingModel) {
-      return next(
-        errorHandler(409, "Product model with model or size already exists")
-      );
+      throw new HttpError(409, "Product model with model or size already exists");
     }
 
     // Create new model
@@ -119,15 +117,15 @@ export async function get(
   try {
     // Check if product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found"));
+      throw new HttpError(404, "Product not found");
     }
     const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found"));
+      throw new HttpError(404, "Product not found");
     }
 
     if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found"));
+      throw new HttpError(404, "Product model not found");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
@@ -137,7 +135,7 @@ export async function get(
       .populate("config.os")
       .lean();
     if (!model) {
-      return next(errorHandler(404, "Product model not found"));
+      throw new HttpError(404, "Product model not found");
     }
 
     res.status(200).json({
@@ -162,11 +160,11 @@ export async function getAll(
   try {
     // Check if product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found"));
+      throw new HttpError(404, "Product not found");
     }
     const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found"));
+      throw new HttpError(404, "Product not found");
     }
     console.log("Product found: ", product.name);
     // Fetch all models for product
@@ -207,16 +205,16 @@ export async function update(
   try {
     // Check if product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found"));
+      throw new HttpError(404, "Product not found");
     }
     const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found"));
+      throw new HttpError(404, "Product not found");
     }
 
     // Check if model exists
     if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found"));
+      throw new HttpError(404, "Product model not found");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
@@ -224,7 +222,7 @@ export async function update(
       productId,
     });
     if (!model) {
-      return next(errorHandler(404, "Product model not found"));
+      throw new HttpError(404, "Product model not found");
     }
 
     // Business logic
@@ -238,7 +236,7 @@ export async function update(
       updatedReleaseDate !== model.releaseDate &&
       updatedReleaseDate > new Date()
     ) {
-      return next(errorHandler(400, "Release date cannot be in the future"));
+      throw new HttpError(400, "Release date cannot be in the future");
     }
 
     // Check if OS exists
@@ -247,11 +245,11 @@ export async function update(
       : model.config.osId;
     if (!updatedOsId.equals(model.config.osId)) {
       if (!Types.ObjectId.isValid(updatedOsId)) {
-        return next(errorHandler(404, "Product OS not found"));
+        throw new HttpError(404, "Product OS not found");
       }
       const os = await ProductOs.findById(updatedOsId);
       if (!os || os.isDeleted) {
-        return next(errorHandler(404, "Product OS not found"));
+        throw new HttpError(404, "Product OS not found");
       }
     }
 
@@ -264,9 +262,7 @@ export async function update(
         name: updatedName,
       }).lean();
       if (existingModel) {
-        return next(
-          errorHandler(409, "Product model with name already exists")
-        );
+        throw new HttpError(409, "Product model with name already exists");
       }
     }
 
@@ -295,14 +291,10 @@ export async function update(
         : null;
 
     if (updatedIsCircular && !updatedDiameterMm) {
-      return next(
-        errorHandler(400, "Diameter is required for circular screens")
-      );
+      throw new HttpError(400, "Diameter is required for circular screens");
     }
     if (!updatedIsCircular && !updatedDimension) {
-      return next(
-        errorHandler(400, "Dimension is required for non-circular screens")
-      );
+      throw new HttpError(400, "Dimension is required for non-circular screens");
     }
 
     // Update imageUrls on Firebase Storage
@@ -461,16 +453,16 @@ export async function remove(
   try {
     // Check if product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found"));
+      throw new HttpError(404, "Product not found");
     }
     const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found"));
+      throw new HttpError(404, "Product not found");
     }
 
     // Check if model exists
     if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Product model not found"));
+      throw new HttpError(404, "Product model not found");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
@@ -478,7 +470,7 @@ export async function remove(
       productId: productId,
     });
     if (!model) {
-      return next(errorHandler(404, "Product model not found"));
+      throw new HttpError(404, "Product model not found");
     }
 
     const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);

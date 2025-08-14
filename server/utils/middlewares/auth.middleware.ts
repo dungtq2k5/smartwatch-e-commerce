@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { getJWTPayload } from "../utils";
 import { JWT_NAME } from "../../configs/configs";
-import { errorHandler } from "../errorHandler";
+import { HttpError } from "../errorHandler";
 import { PermissionCode } from "../../../common/types.common";
 import User from "../../models/user/user.model";
 import { Types } from "mongoose";
@@ -16,7 +16,7 @@ export function verifyReauthentication(
   const payload = getJWTPayload(req.cookies[JWT_NAME]);
   if (payload) {
     if (payload.isVerified) {
-      return next(errorHandler(409, "You are already authenticated."));
+      throw new HttpError(409, "You are already authenticated.");
     } else {
       req["auth"] = { userId: payload.userId }; // Attach userId for further use
     }
@@ -32,7 +32,7 @@ export function verifyJWTHasUserId(
 ): void {
   const payload = getJWTPayload(req.cookies[JWT_NAME]);
   if (!payload || !payload.userId) {
-    return next(errorHandler(401, "You are not authenticated."));
+    throw new HttpError(401, "You are not authenticated.");
   }
 
   req["auth"] = { userId: payload.userId }; // Attach userId for further use
@@ -47,7 +47,7 @@ export function verifyAuthentication(
 ): void {
   const payload = getJWTPayload(req.cookies[JWT_NAME]);
   if (!payload || !payload.isVerified) {
-    return next(errorHandler(401, "You are not authenticated."));
+    throw new HttpError(401, "You are not authenticated.");
   }
 
   req["auth"] = { userId: payload.userId }; // Attach userId for further use
@@ -66,17 +66,17 @@ export function verifyPermission(permissionCode: PermissionCode) {
     res: Response,
     next: NextFunction
   ): Promise<void> => {
-    // Check JWT
-    const payload = getJWTPayload(req.cookies[JWT_NAME]);
-    if (!payload || !payload.isVerified) {
-      return next(errorHandler(401, "You are not authenticated."));
-    }
-
     try {
+      // Check JWT
+      const payload = getJWTPayload(req.cookies[JWT_NAME]);
+      if (!payload || !payload.isVerified) {
+        throw new HttpError(401, "You are not authenticated.");
+      }
+
       // Check user is valid
       const userId = payload.userId;
       if (!Types.ObjectId.isValid(userId)) {
-        return next(errorHandler(404, "Request user not found."));
+        throw new HttpError(404, "Request user not found.");
       }
 
       // Fetch user with roles and permissions
@@ -102,38 +102,38 @@ export function verifyPermission(permissionCode: PermissionCode) {
       });
 
       if (!user || user.isDeleted) {
-        return next(errorHandler(404, "Request user not found."));
+        throw new HttpError(404, "Request user not found.");
       }
       if (user.isLocked) {
-        return next(errorHandler(403, "Request account is locked."));
+        throw new HttpError(403, "Request account is locked.");
       }
 
       // Verify if user has the required permission
       const hasPermission = user.roles.some((role) =>
         role.id.permissions.some((p) => p.id.code === permissionCode)
       );
-
-      if (hasPermission) {
-        const roleNames = user.roles.map((role) => role.id.name);
-        const isBuyerOnly = roleNames.length === 1 && roleNames[0] === "buyer";
-
-        // Depopulate to make user object look like when use findById()
-        user.depopulate("roles.id");
-
-        // Attach user and auth info to the request for subsequent handlers
-        req["user"] = user;
-        req["auth"] = {
-          userId,
-          isBuyerOnly,
-        };
-        return next();
+      if (!hasPermission) {
+        throw new HttpError(
+          403,
+          "You do not have permission to perform this action."
+        );
       }
 
-      next(
-        errorHandler(403, "You do not have permission to perform this action.")
-      );
+      const roleNames = user.roles.map((role) => role.id.name);
+      const isBuyerOnly = roleNames.length === 1 && roleNames[0] === "buyer";
+
+      // Depopulate to make user object look like when use findById()
+      user.depopulate("roles.id");
+
+      // Attach user and auth info to the request for subsequent handlers
+      req["user"] = user;
+      req["auth"] = {
+        userId,
+        isBuyerOnly,
+      };
+      next();
     } catch (error) {
-      return next(error);
+      next(error);
     }
   };
 }

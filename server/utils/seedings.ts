@@ -123,6 +123,10 @@ export async function seedInventoryMovementTypes(
         description: "Stock audit adjustments.",
       },
       {
+        name: "pending order",
+        description: "User just placed an order but not yet paid.",
+      },
+      {
         name: "other",
         description: "Any other type of inventory movement.",
       },
@@ -151,9 +155,9 @@ export async function seedDeliveryStates(
       { name: "shipped", level: 4 },
       { name: "out for delivery", level: 5 },
       { name: "delivered", level: 6 },
-      { name: "received", level: 7 },
-      { name: "cancelled", level: 8 },
-      { name: "returned", level: 9 },
+      { name: "received", level: 7 }, // Max level meaning order is completed
+      { name: "cancelled", level: 7 },
+      { name: "returned", level: 7 },
     ];
     await DeliveryState.insertMany(deliveryStates, { session });
     console.log("✅ ", "DeliveryStates seeded successfully!");
@@ -173,12 +177,9 @@ export async function seedPaymentMethods(
       return;
     }
     const paymentMethods = [
-      { name: "cash" },
-      { name: "credit card" },
-      { name: "debit card" },
-      { name: "bank transfer" },
-      { name: "mobile payment" },
-      { name: "user balance" },
+      { name: "cash", description: "Cash on Delivery (COD)" },
+      { name: "stripe", description: "Online payment via Stripe" },
+      { name: "user balance", description: "Payment using user's account balance" },
     ];
     await PaymentMethod.insertMany(paymentMethods, { session });
     console.log("✅ ", "PaymentMethods seeded successfully!");

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { RequestAuth } from "../../utils/types";
-import { errorHandler } from "../../utils/errorHandler";
+import { HttpError } from "../../utils/errorHandler";
 import ProductBrand from "../../models/product/productBrand.model";
 import {
   ProductBrandCreate,
@@ -29,7 +29,7 @@ export async function create(
       name,
     }).lean();
     if (existingBrand) {
-      return next(errorHandler(409, "Product brand already exists."));
+      throw new HttpError(409, "Product brand already exists.");
     }
 
     // Create brand
@@ -64,12 +64,12 @@ export async function get(
 
   try {
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product brand not found."));
+      throw new HttpError(404, "Product brand not found.");
     }
 
     const brand = await ProductBrand.findById(id).lean();
     if (!brand || brand.isDeleted) {
-      return next(errorHandler(404, "Product brand not found."));
+      throw new HttpError(404, "Product brand not found.");
     }
 
     res.status(200).json({
@@ -123,11 +123,11 @@ export async function update(
   try {
     // Check brand exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product brand not found."));
+      throw new HttpError(404, "Product brand not found.");
     }
     const brand = await ProductBrand.findById(id);
     if (!brand || brand.isDeleted) {
-      return next(errorHandler(404, "Product brand not found."));
+      throw new HttpError(404, "Product brand not found.");
     }
 
     // Check if name is updated and exists
@@ -140,7 +140,7 @@ export async function update(
         name: updatedName,
       }).lean();
       if (existingBrand) {
-        return next(errorHandler(409, "Product brand already exists."));
+        throw new HttpError(409, "Product brand already exists.");
       }
     }
 
@@ -166,7 +166,7 @@ export async function update(
     } as SuccessResponse<ProductBrandResponse>);
     console.log("✅ ", "Product brand updated successfully.");
   } catch (error) {
-    return next(error);
+    next(error);
   }
 }
 
@@ -181,11 +181,11 @@ export async function remove(
   try {
     // Check brand exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Product brand not found."));
+      throw new HttpError(404, "Product brand not found.");
     }
     const brand = await ProductBrand.findById(id);
     if (!brand || brand.isDeleted) {
-      return next(errorHandler(404, "Product brand not found."));
+      throw new HttpError(404, "Product brand not found.");
     }
 
     const userId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
@@ -197,7 +197,7 @@ export async function remove(
     } as SuccessResponse);
     console.log("✅ ", "Product brand deleted successfully.");
   } catch (error) {
-    return next(error);
+    next(error);
   }
 }
 

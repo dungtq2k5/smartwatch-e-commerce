@@ -15,7 +15,7 @@ import {
   PASSWORD_HINT_MESSAGE,
   USER_GENDER_OPTIONS,
 } from "../../../common/configs.common";
-import { errorHandler } from "../errorHandler";
+import { HttpError } from "../errorHandler";
 
 function sanitizeUserInput(
   req: Request,
@@ -450,7 +450,7 @@ export function verifyUserInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
       next();
     } catch (error) {
@@ -604,7 +604,7 @@ export function verifyAddressInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
       next();
     } catch (error) {
@@ -653,7 +653,7 @@ export function verifyCartInput(
       }
 
       if (errors.length > 0) {
-        return next(errorHandler(400, errors));
+        throw new HttpError(400, errors);
       }
       next();
     } catch (error) {

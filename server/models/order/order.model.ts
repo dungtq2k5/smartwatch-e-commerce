@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { VN_COUNTRY_CODE } from "../../../common/configs.common";
+import { getPaymentStatusId } from "../../utils/utils";
 
 /**
 items: [
@@ -55,6 +56,38 @@ const orderItemSchema = new mongoose.Schema(
     instanceIds: {
       type: [variationInstanceSchema],
       required: true,
+    },
+  },
+  { _id: false }
+);
+
+const orderPaymentSchema = new mongoose.Schema(
+  {
+    amountCents: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    currency: {
+      type: String,
+      required: true,
+    },
+    transactionDate: {
+      type: Date,
+      required: true,
+    },
+    relatedTransactionId: {
+      // unique
+      type: String,
+      unique: true,
+      sparse: true, // Allows multiple null values
+      required: false,
+      default: null,
+    },
+    createdAt: {
+      type: Date,
+      required: false,
+      default: Date.now,
     },
   },
   { _id: false }
@@ -136,8 +169,22 @@ const orderSchema = new mongoose.Schema(
       min: 0,
     },
     deliveryStateId: {
+      // Can be null when order is created (when user click checkout button) but not for COD
       type: mongoose.Schema.Types.ObjectId,
       ref: "DeliveryState",
+      required: false,
+      default: null,
+    },
+    orderDate: {
+      // orderDate is the date when the order is paid for non-COD orders
+      // and the date when the order is created for COD orders
+      type: Date,
+      required: false,
+      default: null,
+    },
+    paymentStatusId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PaymentStatus",
       required: true,
     },
     estimateReceivedDate: {
@@ -151,6 +198,18 @@ const orderSchema = new mongoose.Schema(
     },
     deliveryAddress: {
       type: deliveryAddressSchema,
+      required: true,
+    },
+    payment: {
+      // Payment can be null when order is created or COD
+      type: orderPaymentSchema,
+      required: false,
+      default: null,
+    },
+    paymentMethodId: {
+      // If method is COD the payment field will be null
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PaymentMethod",
       required: true,
     },
   },

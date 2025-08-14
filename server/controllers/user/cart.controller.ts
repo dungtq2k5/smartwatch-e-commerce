@@ -6,7 +6,7 @@ import {
   UserCartResponse,
   UserCartResponseList,
 } from "../../../common/types.common";
-import { errorHandler } from "../../utils/errorHandler";
+import { HttpError } from "../../utils/errorHandler";
 import mongoose, { Types } from "mongoose";
 import { RequestAuth } from "../../utils/types";
 import Cart from "../../models/user/cart.model";
@@ -95,39 +95,36 @@ export async function createSelf(
   try {
     // Check variation, model, product exists
     if (!Types.ObjectId.isValid(variationId)) {
-      return next(errorHandler(404, "Variation not found."));
+      throw new HttpError(404, "Variation not found.");
     }
 
     const populatedVariation = await ModelVariation.findById(variationId)
       .populate({
         path: "productModelId",
+        select: "stopSelling isDeleted",
         populate: {
           path: "productId",
+          select: "stopSelling isDeleted",
         },
       })
       .lean()
       .session(session);
 
+    if (!populatedVariation || populatedVariation.isDeleted) {
+      throw new HttpError(404, "Variation not found.");
+    }
+
     const variation = populatedVariation as any;
     const model = variation.productModelId;
     const product = model.productId;
 
-    if (
-      !variation ||
-      variation.isDeleted ||
-      model.isDeleted ||
-      product.isDeleted
-    ) {
-      return next(
-        errorHandler(404, "Product variation, model, or product not found.")
-      );
+    if (model.isDeleted || product.isDeleted) {
+      throw new HttpError(404, "Product model, or product not found.");
     }
 
     // Check is still selling
     if (product.stopSelling || model.stopSelling || variation.stopSelling) {
-      return next(
-        errorHandler(400, "This product is not available for purchase.")
-      );
+      throw new HttpError(400, "This product is not available for purchase.");
     }
 
     // Business logic
@@ -142,11 +139,9 @@ export async function createSelf(
       ? existingCart.quantity! + (quantity || 1)
       : quantity || 1;
     if (totalQuantity > variation.stockQuantity) {
-      return next(
-        errorHandler(
-          400,
-          `Not enough stock for this variation. Only ${variation.stockQuantity} left.`
-        )
+      throw new HttpError(
+        400,
+        `Not enough stock for this variation. Only ${variation.stockQuantity} left.`
       );
     }
 
@@ -201,7 +196,7 @@ export async function createSelf(
       !cart.variation.productModelId ||
       !cart.variation.productModelId.productId
     ) {
-      return next(errorHandler(500, "Failed to populate cart details."));
+      throw new HttpError(500, "Failed to populate cart details.");
     }
 
     res.status(201).json({
@@ -229,24 +224,26 @@ export async function updateSelf(
   try {
     // Check variation exists
     if (!Types.ObjectId.isValid(variationId)) {
-      return next(errorHandler(404, "Variation not found."));
+      throw new HttpError(404, "Variation not found.");
     }
     const populatedVariation = await ModelVariation.findById(variationId)
       .populate({
         path: "productModelId",
+        select: "stopSelling isDeleted",
         populate: {
           path: "productId",
+          select: "stopSelling isDeleted",
         },
       })
       .lean();
 
+    if (!populatedVariation || populatedVariation.isDeleted) {
+      throw new HttpError(404, "Variation not found.");
+    }
+
     const variation = populatedVariation as any;
     const model = variation.productModelId;
     const product = model.productId;
-
-    if (!variation || variation.isDeleted) {
-      return next(errorHandler(404, "Variation not found."));
-    }
 
     // Check cart exists
     const { userId } = req["auth"] as RequestAuth;
@@ -255,7 +252,7 @@ export async function updateSelf(
       variationId,
     });
     if (!cart) {
-      return next(errorHandler(404, "Cart item not found."));
+      throw new HttpError(404, "Cart item not found.");
     }
 
     // Business logic
@@ -273,24 +270,20 @@ export async function updateSelf(
 
     // Check if product is still available
     if (model.isDeleted || product.isDeleted) {
-      return next(errorHandler(404, "Product model or product not found."));
+      throw new HttpError(404, "Product model or product not found.");
     }
     if (product.stopSelling || model.stopSelling || variation.stopSelling) {
-      return next(
-        errorHandler(
-          400,
-          "This product is not available for purchase anymore."
-        )
+      throw new HttpError(
+        400,
+        "This product is not available for purchase anymore."
       );
     }
 
     // Check stock quantity
     if (quantity > variation.stockQuantity!) {
-      return next(
-        errorHandler(
-          400,
-          `Not enough stock for this variation. Only ${variation.stockQuantity} left.`
-        )
+      throw new HttpError(
+        400,
+        `Not enough stock for this variation. Only ${variation.stockQuantity} left.`
       );
     }
 
@@ -331,7 +324,7 @@ export async function updateSelf(
       !cartPopulated.variation.productModelId ||
       !cartPopulated.variation.productModelId.productId
     ) {
-      return next(errorHandler(500, "Failed to populate cart details."));
+      throw new HttpError(500, "Failed to populate cart details.");
     }
 
     res.status(200).json({
@@ -356,11 +349,11 @@ export async function removeSelf(
   try {
     // Check variation exists
     if (!Types.ObjectId.isValid(variationId)) {
-      return next(errorHandler(404, "Variation not found."));
+      throw new HttpError(404, "Variation not found.");
     }
     const variation = await ModelVariation.findById(variationId).lean();
     if (!variation || variation.isDeleted) {
-      return next(errorHandler(404, "Variation not found."));
+      throw new HttpError(404, "Variation not found.");
     }
 
     // Check cart exists
@@ -370,7 +363,7 @@ export async function removeSelf(
       variationId,
     });
     if (!cart) {
-      return next(errorHandler(404, "Cart item not found."));
+      throw new HttpError(404, "Cart item not found.");
     }
 
     // Business logic

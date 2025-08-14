@@ -6,6 +6,11 @@ const paymentMethodSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  description: {
+    type: String,
+    required: false,
+    default: null,
+  },
 });
 
 const PaymentMethod = mongoose.model("PaymentMethod", paymentMethodSchema);

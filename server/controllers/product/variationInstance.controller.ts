@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import mongoose, { Types } from "mongoose";
-import { errorHandler } from "../../utils/errorHandler";
+import { HttpError } from "../../utils/errorHandler";
 import Product from "../../models/product/product.model";
 import ProductModel from "../../models/product/productModel.model";
 import ModelVariation from "../../models/product/modelVariation.model";
@@ -34,16 +34,16 @@ export async function create(
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
     const product = await Product.findById(productId).lean().session(session);
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Model not found."));
+      throw new HttpError(404, "Model not found.");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
@@ -53,12 +53,12 @@ export async function create(
       .lean()
       .session(session);
     if (!model) {
-      return next(errorHandler(404, "Model not found."));
+      throw new HttpError(404, "Model not found.");
     }
 
     // Check variation exists
     if (!Types.ObjectId.isValid(variationId)) {
-      return next(errorHandler(404, "Variation not found."));
+      throw new HttpError(404, "Variation not found.");
     }
     const variation = await ModelVariation.findOne({
       isDeleted: false,
@@ -66,7 +66,7 @@ export async function create(
       productModelId: modelId,
     }).session(session);
     if (!variation) {
-      return next(errorHandler(404, "Variation not found."));
+      throw new HttpError(404, "Variation not found.");
     }
 
     // Business logic
@@ -86,18 +86,18 @@ export async function create(
       .lean()
       .session(session);
     if (existingInstance) {
-      return next(errorHandler(409, "Variation instance already exists."));
+      throw new HttpError(409, "Variation instance already exists.");
     }
 
     // Check condition exists
     if (conditionId) {
       if (!Types.ObjectId.isValid(conditionId)) {
-        return next(errorHandler(404, "Condition not found."));
+        throw new HttpError(404, "Condition not found.");
       }
 
       const conditionIdList = Object.values(appCache.instanceConditions || {});
       if (!conditionIdList.includes(new Types.ObjectId(conditionId))) {
-        return next(errorHandler(404, "Condition not found."));
+        throw new HttpError(404, "Condition not found.");
       }
     }
 
@@ -159,16 +159,16 @@ export async function get(
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
     const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Model not found."));
+      throw new HttpError(404, "Model not found.");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
@@ -176,12 +176,12 @@ export async function get(
       productId,
     }).lean();
     if (!model) {
-      return next(errorHandler(404, "Model not found."));
+      throw new HttpError(404, "Model not found.");
     }
 
     // Check variation exists
     if (!Types.ObjectId.isValid(variationId)) {
-      return next(errorHandler(404, "Variation not found."));
+      throw new HttpError(404, "Variation not found.");
     }
     const variation = await ModelVariation.findOne({
       isDeleted: false,
@@ -189,12 +189,12 @@ export async function get(
       productModelId: modelId,
     }).lean();
     if (!variation) {
-      return next(errorHandler(404, "Variation not found."));
+      throw new HttpError(404, "Variation not found.");
     }
 
     // Check instance exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Variation instance not found."));
+      throw new HttpError(404, "Variation instance not found.");
     }
     const instance = await VariationInstance.findOne({
       isDeleted: false,
@@ -202,7 +202,7 @@ export async function get(
       modelVariationId: variationId,
     }).lean();
     if (!instance) {
-      return next(errorHandler(404, "Variation instance not found."));
+      throw new HttpError(404, "Variation instance not found.");
     }
 
     res.status(200).json({
@@ -227,16 +227,16 @@ export async function update(
   try {
     // Check product exists
     if (!Types.ObjectId.isValid(productId)) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
     const product = await Product.findById(productId).lean();
     if (!product || product.isDeleted) {
-      return next(errorHandler(404, "Product not found."));
+      throw new HttpError(404, "Product not found.");
     }
 
     // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
-      return next(errorHandler(404, "Model not found."));
+      throw new HttpError(404, "Model not found.");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
@@ -244,12 +244,12 @@ export async function update(
       productId,
     }).lean();
     if (!model) {
-      return next(errorHandler(404, "Model not found."));
+      throw new HttpError(404, "Model not found.");
     }
 
     // Check variation exists
     if (!Types.ObjectId.isValid(variationId)) {
-      return next(errorHandler(404, "Variation not found."));
+      throw new HttpError(404, "Variation not found.");
     }
     const variation = await ModelVariation.findOne({
       isDeleted: false,
@@ -257,12 +257,12 @@ export async function update(
       productModelId: modelId,
     }).lean();
     if (!variation) {
-      return next(errorHandler(404, "Variation not found."));
+      throw new HttpError(404, "Variation not found.");
     }
 
     // Check instance exists
     if (!Types.ObjectId.isValid(id)) {
-      return next(errorHandler(404, "Variation instance not found."));
+      throw new HttpError(404, "Variation instance not found.");
     }
     const instance = await VariationInstance.findOne({
       isDeleted: false,
@@ -270,7 +270,7 @@ export async function update(
       modelVariationId: variationId,
     });
     if (!instance) {
-      return next(errorHandler(404, "Variation instance not found."));
+      throw new HttpError(404, "Variation instance not found.");
     }
 
     // Business logic
@@ -278,19 +278,20 @@ export async function update(
       req.body as VariationInstanceUpdate;
 
     // Check conditionId exists
-    const updatedConditionId = conditionId === null
-      ? getConditionId("new")
-      : conditionId
+    const updatedConditionId =
+      conditionId === null
+        ? getConditionId("new")
+        : conditionId
         ? new Types.ObjectId(conditionId)
         : instance.conditionId;
     if (!updatedConditionId.equals(instance.conditionId)) {
       if (!Types.ObjectId.isValid(updatedConditionId)) {
-        return next(errorHandler(404, "Condition not found."));
+        throw new HttpError(404, "Condition not found.");
       }
 
       const conditionIdList = Object.values(appCache.instanceConditions || {});
       if (!conditionIdList.includes(updatedConditionId)) {
-        return next(errorHandler(404, "Condition not found."));
+        throw new HttpError(404, "Condition not found.");
       }
     }
 
@@ -328,7 +329,7 @@ export async function update(
         $or: orConditions,
       }).lean();
       if (existingInstance) {
-        return next(errorHandler(409, "Variation instance already exists."));
+        throw new HttpError(409, "Variation instance already exists.");
       }
     }
 

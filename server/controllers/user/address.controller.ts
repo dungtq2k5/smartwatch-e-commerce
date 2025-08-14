@@ -12,7 +12,7 @@ import {
   UserAddressResponseList,
   UserAddressUpdate,
 } from "../../../common/types.common";
-import { errorHandler } from "../../utils/errorHandler";
+import { HttpError } from "../../utils/errorHandler";
 import mongoose, { Types } from "mongoose";
 import { RequestAuth } from "../../utils/types";
 import UserAddress from "../../models/user/userAddress.model";
@@ -27,9 +27,10 @@ export async function getAll(
   console.log("▶️ ", "Processing get user addresses request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
-    return next(
-      errorHandler(403, "You do not have permission to perform this action.")
-    );
+    return next(new HttpError(
+      403,
+      "You do not have permission to perform this action."
+    ));
   }
 
   const userId = req.params.id;
@@ -37,11 +38,11 @@ export async function getAll(
   try {
     // Check user exists
     if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
     const user = await User.findById(userId).lean();
     if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     const addresses = await UserAddress.find({ userId })
@@ -74,9 +75,10 @@ export async function create(
   console.log("▶️ ", "Processing create user address request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
-    return next(
-      errorHandler(403, "You do not have permission to perform this action.")
-    );
+    return next(new HttpError(
+      403,
+      "You do not have permission to perform this action."
+    ));
   }
 
   const userId = req.params.id;
@@ -86,11 +88,11 @@ export async function create(
   try {
     // Check user exists
     if (!Types.ObjectId.isValid(userId)) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
     const user = await User.findById(userId).lean().session(session);
     if (!user || user.isDeleted) {
-      return next(errorHandler(404, "User not found."));
+      throw new HttpError(404, "User not found.");
     }
 
     const {
@@ -113,7 +115,7 @@ export async function create(
         cityProvinceCode,
       })
     ) {
-      return next(errorHandler(400, "Invalid address data."));
+      throw new HttpError(400, "Invalid address data.");
     }
 
     if (isDefault) {
@@ -128,9 +130,7 @@ export async function create(
         userId,
       }).session(session);
       if (addressCount === 0) {
-        return next(
-          errorHandler(400, "You must set the first address as default.")
-        );
+        throw new HttpError(400, "You must set the first address as default.");
       }
     }
 
@@ -212,9 +212,10 @@ export async function update(
   const targetUserId = userIdFromParams || reqUserId;
 
   if (isBuyerOnly && targetUserId !== reqUserId) {
-    return next(
-      errorHandler(403, "You do not have permission to perform this action.")
-    );
+    return next(new HttpError(
+      403,
+      "You do not have permission to perform this action."
+    ));
   }
 
   const session = await mongoose.startSession();
@@ -223,14 +224,14 @@ export async function update(
   try {
     // Check address exists
     if (!Types.ObjectId.isValid(addressId)) {
-      return next(errorHandler(404, "Address not found."));
+      throw new HttpError(404, "Address not found.");
     }
     const address = await UserAddress.findOne({
       _id: addressId,
       userId: targetUserId,
     }).session(session);
     if (!address) {
-      return next(errorHandler(404, "Address not found."));
+      throw new HttpError(404, "Address not found.");
     }
 
     // Business logic
@@ -268,7 +269,7 @@ export async function update(
           cityProvinceCode: updatedCityProvinceCode,
         })
       ) {
-        return next(errorHandler(400, "Invalid address data."));
+        throw new HttpError(400, "Invalid address data.");
       }
 
       address.fullAddress = formatAddress({
@@ -289,9 +290,7 @@ export async function update(
      */
     if (updatedIsDefault !== address.isDefault) {
       if (updatedIsDefault === false && address.isDefault === true) {
-        return next(
-          errorHandler(409, "Can't update default address to false.")
-        );
+        throw new HttpError(409, "Can't update default address to false.");
       } else {
         await UserAddress.updateMany(
           { userId: targetUserId, isDefault: true },
@@ -344,28 +343,29 @@ export async function remove(
 
   const targetUserId = userIdFromParams || reqUserId;
 
-  if (isBuyerOnly && targetUserId !== reqUserId) {
-    return next(
-      errorHandler(403, "You do not have permission to perform this action.")
-    );
-  }
-
   try {
+    if (isBuyerOnly && targetUserId !== reqUserId) {
+      throw new HttpError(
+        403,
+        "You do not have permission to perform this action."
+      );
+    }
+
     // Check address exists
     if (!Types.ObjectId.isValid(addressId)) {
-      return next(errorHandler(404, "Address not found."));
+      throw new HttpError(404, "Address not found.");
     }
     const address = await UserAddress.findOne({
       _id: addressId,
       userId: targetUserId,
     });
     if (!address) {
-      return next(errorHandler(404, "Address not found."));
+      throw new HttpError(404, "Address not found.");
     }
 
     // Business logic
     if (address.isDefault) {
-      return next(errorHandler(400, "You cannot delete the default address."));
+      throw new HttpError(400, "You cannot delete the default address.");
     }
 
     await address.deleteOne();
@@ -410,7 +410,7 @@ export async function createSelf(
         cityProvinceCode,
       })
     ) {
-      return next(errorHandler(400, "Invalid address data."));
+      throw new HttpError(400, "Invalid address data.");
     }
 
     if (isDefault) {
@@ -467,14 +467,14 @@ export async function getSelf(
   try {
     // Check address exists
     if (!Types.ObjectId.isValid(addressId)) {
-      return next(errorHandler(404, "Address not found."));
+      throw new HttpError(404, "Address not found.");
     }
     const address = await UserAddress.findOne({
       _id: addressId,
       userId,
     }).lean();
     if (!address) {
-      return next(errorHandler(404, "Address not found."));
+      throw new HttpError(404, "Address not found.");
     }
 
     res.status(200).json({

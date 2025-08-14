@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "cross-env GOOGLE_APPLICATION_CREDENTIALS='./server/serviceAccountKey.json' NODE_ENV=development tsx watch server/index.ts"
+    "dev": "concurrently \"cross-env GOOGLE_APPLICATION_CREDENTIALS='./server/serviceAccountKey.json' NODE_ENV=development tsx watch server/index.ts\" \"stripe listen --forward-to http://localhost:3000/api/v1/webhooks/stripe\""
   },
   "keywords": [],
   "author": "",
@@ -24,6 +24,7 @@
     "mailtrap": "^4.1.0",
     "mongoose": "^8.15.2",
     "nodemailer": "^6.10.1",
+    "stripe": "^18.4.0",
     "twilio": "^5.7.1"
   },
   "devDependencies": {
@@ -33,6 +34,7 @@
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/nodemailer": "^6.4.17",
+    "concurrently": "^9.2.0",
     "cross-env": "^7.0.3",
     "tsx": "^4.20.3"
   }
