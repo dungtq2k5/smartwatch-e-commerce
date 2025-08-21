@@ -225,7 +225,8 @@ async function hasConstraints(providerId: string): Promise<boolean> {
     }
     return hasConstraints;
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error checking provider constraints:", error);
+    throw error;
   }
 }
 
@@ -246,6 +247,7 @@ async function executeDeletion(
 
     await providerToDelete.deleteOne();
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error deleting provider:", error);
+    throw error;
   }
 }

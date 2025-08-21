@@ -22,9 +22,13 @@ export const SELF_CART_URL = `${USER_URL}/me/carts`;
 
 export const PRODUCT_URL = `${ROOT_URL}/products`;
 export const PRODUCT_SEARCH_URL = PRODUCT_URL;
-export const PRODUCT_CATEGORIES_URL = `${PRODUCT_URL}-categories`;
-export const PRODUCT_BRANDS_URL = `${PRODUCT_URL}-brands`;
-export const PRODUCT_OS_URL = `${PRODUCT_URL}-oses`;
+export const PRODUCT_CATEGORIES_URL = `${PRODUCT_URL}/categories`;
+export const PRODUCT_BRANDS_URL = `${PRODUCT_URL}/brands`;
+export const PRODUCT_OS_URL = `${PRODUCT_URL}/os`;
+
+export const ORDER_URL = `${ROOT_URL}/orders`;
+
+export const PAYMENT_METHODS_URL = `${ROOT_URL}/payment-methods`;
 
 export const AVATAR_HINT_MESSAGE = `
   File size: maximum 5MB.

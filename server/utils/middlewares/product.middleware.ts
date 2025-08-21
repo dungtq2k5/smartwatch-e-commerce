@@ -91,7 +91,7 @@ function sanitizeModelVariationInput(
   next();
 }
 
-function sanitizeSearchProduct(
+function sanitizeSearchProductInput(
   req: Request,
   res: Response,
   next: NextFunction
@@ -300,7 +300,7 @@ export function inputSanitizer(
     case "variation":
       return sanitizeModelVariationInput;
     case "product search":
-      return sanitizeSearchProduct;
+      return sanitizeSearchProductInput;
     case "product details":
       return sanitizeProductDetailQuery;
   }

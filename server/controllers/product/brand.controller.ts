@@ -229,7 +229,8 @@ async function hasConstraints(brandId: Types.ObjectId): Promise<boolean> {
     }
     return hasConstraints;
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error checking brand constraints:", error);
+    throw error;
   }
 }
 
@@ -255,6 +256,7 @@ async function executeDeletion(
     }
     await brandToDelete.deleteOne();
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error deleting product brand:", error);
+    throw error;
   }
 }

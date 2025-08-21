@@ -32,10 +32,12 @@ const UpdateAddressModal = memo(
     isOnlyOneAddress,
     addressId, // Only show when addressId is provided
     onHide,
+    onSuccess,
   }: Readonly<{
     isOnlyOneAddress: boolean;
     addressId?: string;
     onHide: () => void;
+    onSuccess?: (updatedAddressId: string) => void;
   }>) => {
     // DEV temp for testing
     const renderCount = useRef(0);
@@ -340,7 +342,8 @@ const UpdateAddressModal = memo(
           }
 
           try {
-            await updateAddress(addressData, address.id);
+            const updatedAddress = await updateAddress(addressData, address.id);
+            onSuccess?.(updatedAddress.id);
             onHide();
             toast.success("Address updated successfully!");
           } catch (error) {
@@ -348,7 +351,7 @@ const UpdateAddressModal = memo(
           }
         }
       },
-      [address, formData, updateAddress, onHide]
+      [address, formData, updateAddress, onHide, onSuccess]
     );
 
     return (
@@ -387,7 +390,7 @@ const UpdateAddressModal = memo(
                     <label htmlFor="name">Full name</label>
                     {formData.name.err && (
                       <div className="text-danger small mt-1">
-                        <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                        <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                         {formData.name.err}
                       </div>
                     )}
@@ -410,7 +413,7 @@ const UpdateAddressModal = memo(
                     <label htmlFor="phoneNumber">Phone number</label>
                     {formData.phoneNumber.err && (
                       <div className="text-danger small mt-1">
-                        <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                        <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                         {formData.phoneNumber.err}
                       </div>
                     )}
@@ -496,7 +499,7 @@ const UpdateAddressModal = memo(
                     <label htmlFor="street">Street</label>
                     {formData.street.err && (
                       <div className="text-danger small mt-1">
-                        <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                        <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                         {formData.street.err}
                       </div>
                     )}
@@ -518,7 +521,7 @@ const UpdateAddressModal = memo(
                     <label htmlFor="apartmentNumber">Apartment/Building</label>
                     {formData.apartmentNumber.err && (
                       <div className="text-danger small mt-1">
-                        <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                        <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                         {formData.apartmentNumber.err}
                       </div>
                     )}

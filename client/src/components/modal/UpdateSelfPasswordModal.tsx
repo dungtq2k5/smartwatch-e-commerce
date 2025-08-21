@@ -165,7 +165,7 @@ const UpdateSelfPasswordModal = memo(
               <label htmlFor="currentPassword">Current Password</label>
               {formData.currentPassword.err && (
                 <div className="text-danger small mt-1">
-                  <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                  <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                   {formData.currentPassword.err}
                 </div>
               )}
@@ -187,7 +187,7 @@ const UpdateSelfPasswordModal = memo(
               <label htmlFor="newPassword">New Password</label>
               {formData.newPassword.err && (
                 <div className="text-danger small mt-1">
-                  <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                  <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                   {formData.newPassword.err}
                 </div>
               )}
@@ -211,7 +211,7 @@ const UpdateSelfPasswordModal = memo(
               <label htmlFor="confirmNewPassword">Confirm New Password</label>
               {formData.confirmNewPassword.err && (
                 <div className="text-danger small mt-1">
-                  <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                  <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                   {formData.confirmNewPassword.err}
                 </div>
               )}

@@ -11,7 +11,7 @@ import type {
   UserUpdateContactInfo,
   UserUpdateSelfPassword,
   UserSetSelfPassword,
-  UserCartResponseList,
+  UserCartListResponse,
 } from "../../../common/types.common";
 import { formatError, post, patch, retrieve, remove } from "../utils/utils";
 import {
@@ -37,7 +37,7 @@ type AuthState = {
   isCheckingAuth?: true;
   isDeleting?: true;
 
-  carts?: UserCartResponseList;
+  carts?: UserCartListResponse;
   isFetching?: true;
   fetchErr?: string;
 
@@ -69,6 +69,8 @@ type AuthState = {
   setSelfPassword: (data: UserSetSelfPassword) => Promise<void>;
 
   deleteAccount: () => Promise<void>;
+
+  resetUserBalance: () => void;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -338,4 +340,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isDeleting: undefined });
     }
   },
+
+  resetUserBalance(): void {
+    const { user } = get();
+    if (!user) return;
+
+    set({ user: { ...user, userBalanceCents: 0 } });
+  }
 }));

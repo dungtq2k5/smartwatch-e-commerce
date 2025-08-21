@@ -71,11 +71,11 @@ export default function Account() {
                 </div>
                 <button
                   type="button"
-                  className="btn btn-link text-danger"
+                  className="btn btn-link text-danger px-3"
                   onClick={handleLogout}
                   disabled={isDeleting}
                 >
-                  <FontAwesomeIcon icon={faRightFromBracket} />{" "}
+                  <FontAwesomeIcon icon={faRightFromBracket} className="me-2" />
                   {isDeleting ? "Leaving..." : "Logout"}
                 </button>
               </aside>

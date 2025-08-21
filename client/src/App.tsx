@@ -22,6 +22,7 @@ import ProductDetail from "./pages/ProductDetail.tsx";
 import SearchProduct from "./pages/SearchProduct.tsx";
 import Cart from "./pages/Cart.tsx";
 import Checkout from "./pages/Checkout.tsx";
+import OrderStatus from "./pages/OrderStatus.tsx";
 
 export default function App() {
   // DEV for testing
@@ -63,7 +64,9 @@ export default function App() {
         <Route element={<AuthRoute />}>
           {/*
             TODO
-            - user orders page
+            - user orders(checkout) page.
+            - user balance page: display balance, transaction history, transfer to bank card.
+            - user bank card page: add, remove, update bank card.
           */}
           <Route path="/account" element={<Account />}>
             <Route index element={<Profile />}></Route>
@@ -71,8 +74,10 @@ export default function App() {
             <Route path="bank-card" element={<BankAndCard />}></Route>
             <Route path="address" element={<Address />}></Route>
           </Route>
+
           <Route path="/cart" element={<Cart />}></Route>
           <Route path="/checkout" element={<Checkout />}></Route>
+          <Route path="/order-status" element={<OrderStatus />}></Route>
         </Route>
 
         <Route path="*" element={<NotFound />}></Route>

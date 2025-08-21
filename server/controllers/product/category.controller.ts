@@ -219,6 +219,7 @@ async function hasConstraints(categoryId: Types.ObjectId): Promise<boolean> {
     }
     return hasConstraints;
   } catch (error) {
+    console.error("❌ ", "Error checking category constraints:", error);
     throw new Error(error);
   }
 }
@@ -239,6 +240,7 @@ async function executeDeletion(
 
     await categoryToDelete.deleteOne();
   } catch (error) {
+    console.error("❌ ", "Error deleting product category:", error);
     throw new Error(error);
   }
 }

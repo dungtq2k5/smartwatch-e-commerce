@@ -9,7 +9,7 @@ import {
   SuccessResponse,
   UserAddressCreate,
   UserAddressResponse,
-  UserAddressResponseList,
+  UserAddressListResponse,
   UserAddressUpdate,
 } from "../../../common/types.common";
 import { HttpError } from "../../utils/errorHandler";
@@ -27,10 +27,9 @@ export async function getAll(
   console.log("▶️ ", "Processing get user addresses request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
-    return next(new HttpError(
-      403,
-      "You do not have permission to perform this action."
-    ));
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
   }
 
   const userId = req.params.id;
@@ -60,7 +59,7 @@ export async function getAll(
           formatUserAddressResponse(address)
         ),
       },
-    } as SuccessResponse<UserAddressResponseList>);
+    } as SuccessResponse<UserAddressListResponse>);
     console.log("✅", "User addresses retrieved successfully.");
   } catch (error) {
     next(error);
@@ -75,10 +74,9 @@ export async function create(
   console.log("▶️ ", "Processing create user address request...");
   const { isBuyerOnly } = req["auth"] as RequestAuth;
   if (isBuyerOnly) {
-    return next(new HttpError(
-      403,
-      "You do not have permission to perform this action."
-    ));
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
   }
 
   const userId = req.params.id;
@@ -193,7 +191,7 @@ export async function getSelfAll(
           formatUserAddressResponse(address)
         ),
       },
-    } as SuccessResponse<UserAddressResponseList>);
+    } as SuccessResponse<UserAddressListResponse>);
     console.log("✅", "User addresses retrieved successfully.");
   } catch (error) {
     next(error);
@@ -212,10 +210,9 @@ export async function update(
   const targetUserId = userIdFromParams || reqUserId;
 
   if (isBuyerOnly && targetUserId !== reqUserId) {
-    return next(new HttpError(
-      403,
-      "You do not have permission to perform this action."
-    ));
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
   }
 
   const session = await mongoose.startSession();
@@ -483,6 +480,31 @@ export async function getSelf(
       data: formatUserAddressResponse(address),
     } as SuccessResponse<UserAddressResponse>);
     console.log("✅", "User address retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getSelfDefault(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing get user default address request...");
+  const { userId } = req["auth"] as RequestAuth;
+
+  try {
+    const address = await UserAddress.findOne({
+      userId,
+      isDefault: true,
+    }).lean();
+
+    res.status(200).json({
+      success: true,
+      message: "User default address retrieved successfully",
+      data: address ? formatUserAddressResponse(address) : undefined,
+    } as SuccessResponse<UserAddressResponse | undefined>);
+    console.log("✅", "User default address retrieved successfully.");
   } catch (error) {
     next(error);
   }

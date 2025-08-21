@@ -226,7 +226,8 @@ async function hasConstraints(osId: Types.ObjectId): Promise<boolean> {
     }
     return hasConstraints;
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error checking os constraints:", error);
+    throw error;
   }
 }
 
@@ -249,6 +250,7 @@ async function executeDeletion(
     }
     await osToDelete.deleteOne();
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error deleting product os:", error);
+    throw error;
   }
 }

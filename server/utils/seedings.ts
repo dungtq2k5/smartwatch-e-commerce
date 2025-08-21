@@ -123,10 +123,6 @@ export async function seedInventoryMovementTypes(
         description: "Stock audit adjustments.",
       },
       {
-        name: "pending order",
-        description: "User just placed an order but not yet paid.",
-      },
-      {
         name: "other",
         description: "Any other type of inventory movement.",
       },
@@ -149,7 +145,7 @@ export async function seedDeliveryStates(
       return;
     }
     const deliveryStates = [
-      { name: "order places", level: 1 },
+      { name: "order placed", level: 1 },
       { name: "order confirmed", level: 2 },
       { name: "processing", level: 3 },
       { name: "shipped", level: 4 },
@@ -179,7 +175,6 @@ export async function seedPaymentMethods(
     const paymentMethods = [
       { name: "cash", description: "Cash on Delivery (COD)" },
       { name: "stripe", description: "Online payment via Stripe" },
-      { name: "user balance", description: "Payment using user's account balance" },
     ];
     await PaymentMethod.insertMany(paymentMethods, { session });
     console.log("✅ ", "PaymentMethods seeded successfully!");

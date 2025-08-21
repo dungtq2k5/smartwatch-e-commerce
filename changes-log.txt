@@ -1,3 +1,11 @@
-- BackEnd:
+BackEnd:
+- Auto-remove items from cart when order is created
+- Fix error handling in controller helper functions
+- Refactor order data return using virtuals and populate
+- Replace totalCents with paymentSummary in order schema
+- Fix minor bugs
 
-- FrontEnd:
+FrontEnd:
+- Implement checkout page
+- Fix minor bugs
+- Resolve inconsistent issues

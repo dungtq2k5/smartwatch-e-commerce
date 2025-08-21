@@ -3,16 +3,18 @@ import { verifyPermission } from "../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../utils/middlewares/general.middleware";
 import {
   sanitizeOrderInput,
+  sanitizeSearchOrderInput,
   verifyOrderInput,
-  verifyPaymentIntentInput,
 } from "../utils/middlewares/order.middleware";
 import {
-  create,
-  get,
+  createSelf,
+  getSelf,
   update,
   updateSelf,
+  searchSelf,
 } from "../controllers/order/order.controller";
 import * as paymentController from "../controllers/order/payment.controller";
+import { verifyProductInput } from "../utils/middlewares/product.middleware";
 
 const router = express.Router();
 
@@ -22,10 +24,18 @@ router.post(
   verifyEmptyBody,
   sanitizeOrderInput,
   verifyOrderInput("create"),
-  create
+  createSelf
 );
 
-router.get("/:id", verifyPermission("r_order"), get);
+router.get(
+  "/",
+  verifyPermission("r_order"),
+  sanitizeSearchOrderInput,
+  verifyProductInput("search"),
+  searchSelf,
+);
+
+router.get("/:id", verifyPermission("r_order"), getSelf);
 
 router.patch(
   "/self/:id",
@@ -44,10 +54,9 @@ router.patch(
 
 // -- routes for order payment
 router.post(
-  "/:id/create-payment-intent",
+  "/:id/create-checkout-session",
   verifyPermission("c_order"),
-  verifyPaymentIntentInput("create"),
-  paymentController.createPaymentIntent
+  paymentController.createCheckoutSession
 );
 
 export default router;

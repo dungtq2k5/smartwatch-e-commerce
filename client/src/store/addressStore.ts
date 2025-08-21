@@ -2,14 +2,14 @@ import { create } from "zustand";
 import type {
   UserAddressCreate,
   UserAddressResponse,
-  UserAddressResponseList,
+  UserAddressListResponse,
   UserAddressUpdate,
 } from "../../../common/types.common";
 import { formatError, retrieve, patch, remove, post } from "../utils/utils";
 import { SELF_ADDRESSES_URL } from "../configs";
 
 type UserAddressState = {
-  addresses?: UserAddressResponseList;
+  addresses?: UserAddressListResponse;
   isFetching?: true;
   fetchErr?: string;
   isLoading?: true; // For delete, create, update operations
@@ -18,11 +18,11 @@ type UserAddressState = {
 
   fetchAddresses: () => Promise<void>;
   deleteAddress: (addressId: string) => Promise<void>;
-  createAddress: (addressData: UserAddressCreate) => Promise<void>;
+  createAddress: (addressData: UserAddressCreate) => Promise<UserAddressResponse>;
   updateAddress: (
     addressData: UserAddressUpdate,
     addressId: string
-  ) => Promise<void>;
+  ) => Promise<UserAddressResponse>;
   getAddress: (addressId: string) => Promise<UserAddressResponse | undefined>;
   getDefaultAddress: () => Promise<UserAddressResponse | undefined>;
 };
@@ -47,7 +47,7 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
         return;
       }
 
-      set({ addresses: res.data as UserAddressResponseList });
+      set({ addresses: res.data as UserAddressListResponse });
     } catch (error) {
       set({ fetchErr: formatError(error) });
     } finally {
@@ -82,18 +82,18 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
     }
   },
 
-  async createAddress(addressData: UserAddressCreate): Promise<void> {
+  async createAddress(addressData: UserAddressCreate): Promise<UserAddressResponse> {
     set({ isLoading: true });
 
     try {
       const res = await post(SELF_ADDRESSES_URL, addressData);
       if (!res.success) throw new Error(res.message);
 
+      const newAddress = res.data as UserAddressResponse;
       // Refresh addresses by adding the new address and handle isDefault
       set((state) => {
         if (!state.addresses) return {}; // Should not happen
 
-        const newAddress = res.data as UserAddressResponse;
         let existingAddresses = state.addresses.addresses;
 
         // If new address is default, make sure no other address is non-default
@@ -115,6 +115,8 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
           },
         };
       });
+
+      return newAddress;
     } catch (error) {
       throw new Error(formatError(error));
     } finally {
@@ -125,18 +127,19 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
   async updateAddress(
     addressData: UserAddressUpdate,
     addressId: string
-  ): Promise<void> {
+  ): Promise<UserAddressResponse> {
     set({ isLoading: true });
 
     try {
       const res = await patch(SELF_ADDRESSES_URL, addressId, addressData);
       if (!res.success) throw new Error(res.message);
 
+      const updatedAddress = res.data as UserAddressResponse;
+
       set((state) => {
         const { addresses } = state;
         if (!addresses) return {}; // Should not happen
 
-        const updatedAddress = res.data as UserAddressResponse;
         let updatedAddresses = addresses.addresses;
 
         // If the update was set to default, also update other addresses which were default
@@ -160,6 +163,8 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
           },
         };
       });
+
+      return updatedAddress;
     } catch (error) {
       throw new Error(formatError(error));
     } finally {
@@ -196,12 +201,19 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
       return addresses.addresses.find((address) => address.isDefault);
     }
 
-    await get().fetchAddresses();
-    const updatedAddresses = get().addresses;
-    if (updatedAddresses) {
-      return updatedAddresses.addresses.find((address) => address.isDefault);
-    }
+    set({ isGetting: true, getErr: undefined });
+    try {
+      const res = await retrieve(`${SELF_ADDRESSES_URL}/default`);
+      if (!res.success) {
+        set({ getErr: res.message });
+        return;
+      }
 
-    return undefined;
+      return res.data as UserAddressResponse | undefined; // Undefined when user doesn't have any addresses
+    } catch (error) {
+      set({ getErr: formatError(error) });
+    } finally {
+      set({ isGetting: undefined });
+    }
   },
 }));

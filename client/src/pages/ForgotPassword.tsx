@@ -112,7 +112,7 @@ export default function ForgotPassword() {
             <label htmlFor="emailOrPhone">Email or phone number</label>
             {emailOrPhone.err && (
               <div className="text-danger small mt-1">
-                <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                 {emailOrPhone.err}
               </div>
             )}

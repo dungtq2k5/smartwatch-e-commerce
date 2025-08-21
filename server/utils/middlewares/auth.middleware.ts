@@ -17,9 +17,9 @@ export function verifyReauthentication(
   if (payload) {
     if (payload.isVerified) {
       throw new HttpError(409, "You are already authenticated.");
-    } else {
-      req["auth"] = { userId: payload.userId }; // Attach userId for further use
     }
+
+    req["auth"] = { userId: payload.userId }; // Attach userId for further use
   }
 
   next();

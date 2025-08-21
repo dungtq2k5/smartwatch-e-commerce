@@ -128,6 +128,12 @@ router.get(
 );
 
 router.get(
+  "/me/addresses/default",
+  verifyPermission("r_usr_addr"),
+  addressController.getSelfDefault
+);
+
+router.get(
   "/me/addresses/:id",
   verifyPermission("r_usr_addr"),
   addressController.getSelf

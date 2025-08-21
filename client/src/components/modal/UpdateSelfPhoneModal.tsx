@@ -114,7 +114,7 @@ const UpdateSelfPhoneModal = memo(
                 <label htmlFor="phoneNumber">New Phone Number</label>
                 {phoneNumber.err && (
                   <div className="text-danger small mt-1">
-                    <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                    <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                     {phoneNumber.err}
                   </div>
                 )}

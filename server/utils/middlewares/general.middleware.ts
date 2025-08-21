@@ -7,7 +7,7 @@ export function verifyEmptyBody(
   res: Response,
   next: NextFunction
 ): void {
-  if (!isEmptyObj(req.body)) {
+  if (isEmptyObj(req.body)) {
     throw new HttpError(400, "No content was sent!");
   }
 

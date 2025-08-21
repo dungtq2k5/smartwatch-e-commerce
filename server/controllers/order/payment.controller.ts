@@ -1,37 +1,52 @@
 import { Request, Response, NextFunction } from "express";
 import { RequestAuth } from "../../utils/types";
 import {
-  CreateOrderPaymentIntent,
-  CreateOrderPaymentIntentResponse,
+  PaymentMethodListResponse,
   SuccessResponse,
+  CheckoutSessionResponse,
 } from "../../../common/types.common";
 import Order from "../../models/order/order.model";
 import { HttpError } from "../../utils/errorHandler";
 import {
+  formatPaymentMethodResponse,
   getPaymentMethodName,
   getPaymentStatusId,
   getPaymentStatusName,
 } from "../../utils/utils";
 import stripe from "../../configs/stripe.config";
 import Stripe from "stripe";
-import mongoose from "mongoose";
-import { executeOrderDeletion } from "./order.controller";
+import mongoose, { Types } from "mongoose";
+import { executeCartDeletion, executeOrderDeletion } from "./order.controller";
 import User from "../../models/user/user.model";
+import PaymentMethod from "../../models/order/paymentMethod.model";
 import UserPaymentMethod from "../../models/user/userPaymentMethod.model";
+import { isNoneArrObj } from "../../../common/utils.common";
 
-export async function createPaymentIntent(
+export async function createCheckoutSession(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️ ", "Creating payment intent...");
-  const userId = (req["auth"] as RequestAuth).userId;
+  console.log("▶️ ", "Creating checkout session...");
   const { id: orderId } = req.params;
-  const { saveCard } = req.body as CreateOrderPaymentIntent;
+  const userId = (req["auth"] as RequestAuth).userId;
 
   try {
     // Check orderId exists
-    const order = await Order.findById(orderId).lean();
+    if (!Types.ObjectId.isValid(orderId)) {
+      throw new HttpError(404, "Order not found.");
+    }
+    const order = await Order.findById(orderId)
+      .populate({
+        path: "items.variationId",
+        populate: {
+          path: "productModelId",
+          populate: {
+            path: "productId",
+          },
+        },
+      })
+      .lean();
     if (!order) {
       throw new HttpError(404, "Order not found.");
     }
@@ -48,22 +63,24 @@ export async function createPaymentIntent(
     if (getPaymentStatusName(order.paymentStatusId) !== "pending") {
       throw new HttpError(400, "Order is not in a valid state for payment.");
     }
-
     // Check order is not COD
     if (getPaymentMethodName(order.paymentMethodId) === "cash") {
-      throw new HttpError(400, "Cannot create payment intent for COD orders.");
+      throw new HttpError(
+        400,
+        "Cannot create checkout session for COD orders."
+      );
     }
 
-    /*
-      Business logic:
-        - If user first non-COD payment -> create stripeCustomerId for user if not exists.
-        - Create payment intent.
-    */
-
-    // Check user exists
+    // Check user exists and valid
     const user = await User.findById(userId);
     if (!user || user.isDeleted) {
       throw new HttpError(404, "User not found.");
+    }
+    if (user.isLocked) {
+      throw new HttpError(
+        403,
+        "Your account is locked. Please contact support."
+      );
     }
 
     // Create stripeCustomerId if not exists
@@ -74,7 +91,7 @@ export async function createPaymentIntent(
         email?: string;
         phone?: string;
       } = { name: user.fullName };
-      
+
       if (user.email) {
         customerData["email"] = user.email;
       }
@@ -88,22 +105,61 @@ export async function createPaymentIntent(
       await user.save();
     }
 
-    // Create payment intent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: order.totalCents,
-      currency: "usd",
-      customer: stripeCustomerId, // Associate the payment with the customer
-      setup_future_usage: saveCard ? "on_session" : undefined, // This tells Stripe to prepare to save the card if confirmed later
-      metadata: { orderId: order._id.toString() }, // Store the orderId so we know which order to update when the payment succeeds
+    // Setup line items for checkout session
+    const line_items = order.items.map((item) => {
+      const variation = item.variationId as any; // Via populate
+      const productModel = variation.productModelId as any; // Via populate
+      const product = productModel.productId as any; // Via populate
+
+      return {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `${product.name} - ${productModel.name}`,
+            images: variation.imageUrls.length
+              ? variation.imageUrls
+              : productModel.imageUrls.length
+              ? productModel.imageUrls
+              : product.imageUrls.length
+              ? product.imageUrls
+              : undefined,
+          },
+          unit_amount: item.totalCents! / item.quantity!,
+        },
+        quantity: item.quantity!,
+      };
     });
+
+    const sessionPayload: Stripe.Checkout.SessionCreateParams = {
+      payment_method_types: ["card"],
+      line_items,
+      mode: "payment",
+      customer: stripeCustomerId,
+      payment_intent_data: { setup_future_usage: "on_session" },
+      success_url: `${process.env.CLIENT_URL}/order-status?redirect_status=succeeded&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URL}/order-status?redirect_status=failed`,
+      metadata: {
+        orderId: order._id.toString(),
+      },
+    };
+
+    if (order.paymentSummary.appliedBalanceCents) {
+      const coupon = await stripe.coupons.create({
+        name: "Balance Applied",
+        amount_off: order.paymentSummary.appliedBalanceCents as number,
+        currency: "usd",
+        duration: "once",
+      });
+      sessionPayload.discounts = [{ coupon: coupon.id }];
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionPayload);
 
     res.status(200).json({
       success: true,
-      message: "Payment intent created successfully.",
-      data: {
-        clientSecret: paymentIntent.client_secret,
-      },
-    } as SuccessResponse<CreateOrderPaymentIntentResponse>);
+      message: "Stripe checkout session created successfully.",
+      data: { url: session.url },
+    } as SuccessResponse<CheckoutSessionResponse>);
   } catch (error) {
     next(error);
   }
@@ -138,11 +194,12 @@ export async function handleStripeWebhook(
 
   try {
     switch (event.type) {
-      case "payment_intent.succeeded": {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const orderId = paymentIntent.metadata.orderId;
+      case "checkout.session.completed": {
+        const checkoutSession = event.data.object as Stripe.Checkout.Session;
+        const orderId = checkoutSession.metadata?.orderId;
+        const paymentIntentId = checkoutSession.payment_intent as string;
 
-        // Check order exists
+        // Check if orderId is valid
         const order = await Order.findById(orderId).session(session);
         if (!order) {
           // If order is not found, we must return 200 to Stripe to stop retries for this non-existence order
@@ -155,65 +212,95 @@ export async function handleStripeWebhook(
           return;
         }
 
-        // Save payment method if requested
-        if (
-          paymentIntent.setup_future_usage === "on_session" &&
-          paymentIntent.payment_method
-        ) {
-          const paymentMethod = await stripe.paymentMethods.retrieve(
-            paymentIntent.payment_method as string
-          );
+        // Check if a payment method should me saved
+        if (checkoutSession.customer) {
+          try {
+            // Retrieve the PaymentIntent and expand the payment method
+            const paymentIntent = await stripe.paymentIntents.retrieve(
+              paymentIntentId,
+              { expand: ["payment_method"] }
+            );
 
-          // Attach payment method to customer
-          await stripe.paymentMethods.attach(paymentMethod.id, {
-            customer: paymentIntent.customer as string,
-          });
+            // Ensure payment_method is an obj
+            if (isNoneArrObj(paymentIntent.payment_method)) {
+              const paymentMethod =
+                paymentIntent.payment_method as Stripe.PaymentMethod;
 
-          // Set it as the default payment method for the customer
-          await stripe.customers.update(paymentIntent.customer as string, {
-            invoice_settings: {
-              default_payment_method: paymentMethod.id,
-            },
-          });
-
-          await UserPaymentMethod.create(
-            [
-              {
+              // Avoid saving duplicate payment methods
+              const existingPaymentMethod = await UserPaymentMethod.findOne({
                 userId: order.userId,
                 stripePaymentMethodId: paymentMethod.id,
-                type: "card",
-                card: {
-                  brand: paymentMethod.card?.brand,
-                  last4: paymentMethod.card?.last4,
-                  expMonth: paymentMethod.card?.exp_month,
-                  expYear: paymentMethod.card?.exp_year,
-                },
-                isDefault: true,
-              },
-            ],
-            { session }
-          );
+              })
+                .lean()
+                .session(session);
+
+              if (!existingPaymentMethod && paymentMethod.card) {
+                // Check if user has any other default payment method
+                const defaultPaymentMethod = await UserPaymentMethod.findOne({
+                  userId: order.userId,
+                  isDefault: true,
+                })
+                  .lean()
+                  .session(session);
+
+                await UserPaymentMethod.create(
+                  [
+                    {
+                      userId: order.userId,
+                      stripePaymentMethodId: paymentMethod.id,
+                      type: paymentMethod.type,
+                      card: {
+                        brand: paymentMethod.card.brand,
+                        last4: paymentMethod.card.last4,
+                        expMonth: paymentMethod.card.exp_month,
+                        expYear: paymentMethod.card.exp_year,
+                      },
+                      isDefault: !defaultPaymentMethod, // Set as default if no other default exists
+                    },
+                  ],
+                  { session }
+                );
+                console.log("✅ ", "User payment method saved successfully.");
+              }
+            }
+          } catch (error) {
+            // Log the error but don't block the main transaction
+            console.error("❌ ", "Error saving payment method:", error);
+          }
         }
+
+        // Remove items from cart
+        await executeCartDeletion(
+          order.userId,
+          order.items.map(({ variationId, quantity }) => ({
+            variationId,
+            quantity: quantity!,
+          })),
+          session
+        );
 
         // Update order
         order.orderDate = new Date();
         order.paymentStatusId = getPaymentStatusId("paid");
         order.payment = {
-          amountCents: paymentIntent.amount,
-          currency: paymentIntent.currency,
-          transactionDate: new Date(paymentIntent.created * 1000), // Convert to JS Date
-          relatedTransactionId: paymentIntent.id,
+          amountCents: checkoutSession.amount_total as number,
+          currency: checkoutSession.currency as string,
+          transactionDate: new Date(checkoutSession.created * 1000), // Convert to JS Date
+          relatedTransactionId: paymentIntentId,
         };
 
         await order.save({ session });
-
+        console.log(
+          "✅ ",
+          "Order updated successfully after checkout session."
+        );
         break;
       }
-      case "payment_intent.payment_failed": {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const orderId = paymentIntent.metadata.orderId;
+      case "checkout.session.expired": {
+        const checkoutSession = event.data.object as Stripe.Checkout.Session;
+        const orderId = checkoutSession.metadata?.orderId;
 
-        // Check order exists
+        // Check if orderId is valid
         const order = await Order.findById(orderId).session(session);
         if (!order) {
           // If order is not found, we must return 200 to Stripe to stop retries for this non-existence order
@@ -226,13 +313,15 @@ export async function handleStripeWebhook(
           return;
         }
 
-        // Update order payment status
-        order.paymentStatusId = getPaymentStatusId("failed");
-        await order.save({ session });
-
+        // Update order and its items
         await executeOrderDeletion(order, session, {
           deleteOrderItself: false,
         });
+        order.paymentStatusId = getPaymentStatusId("failed");
+        console.log(
+          "✅ ",
+          "Order updated successfully after checkout session expired."
+        );
         break;
       }
       default:
@@ -244,8 +333,32 @@ export async function handleStripeWebhook(
     console.log("✅ ", "Stripe webhook event handled successfully.");
   } catch (error) {
     await session.abortTransaction();
+    console.error("❌ ", "Error handling Stripe webhook event:", error);
     next(error);
   } finally {
     session.endSession();
+  }
+}
+
+export async function getAll(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Fetching all payment methods...");
+
+  try {
+    const paymentMethods = await PaymentMethod.find().lean();
+
+    res.status(200).json({
+      success: true,
+      message: "Payment methods fetched successfully.",
+      data: {
+        total: paymentMethods.length,
+        methods: paymentMethods.map(formatPaymentMethodResponse),
+      },
+    } as SuccessResponse<PaymentMethodListResponse>);
+  } catch (error) {
+    next(error);
   }
 }

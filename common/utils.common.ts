@@ -103,6 +103,14 @@ export function capFirstLetter(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+export function capEveryFirstLetter(str: string): string {
+  if (!str) return str;
+  return str
+    .split(" ")
+    .map((word) => capFirstLetter(word))
+    .join(" ");
+}
+
 export function centsToUSD(cents: number, locale: string = "en-US"): string {
   const dollars = cents / 100;
   return new Intl.NumberFormat(locale, {

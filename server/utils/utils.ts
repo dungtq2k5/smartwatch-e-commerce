@@ -21,6 +21,8 @@ import {
   VariationInstanceResponse,
   ProviderResponse,
   OrderResponse,
+  PaymentMethodResponse,
+  UserSelfPaymentMethodResponse,
 } from "../../common/types.common";
 import { Types } from "mongoose";
 import ModelVariation from "../models/product/modelVariation.model";
@@ -460,8 +462,35 @@ export function formatOrderResponse(order: any): OrderResponse {
   return {
     id: order._id,
     userId: order.userId,
-    items: order.items,
-    totalCents: order.totalCents,
+    items: order.items.map((item: any) => {
+      const variation = item.variation; // Via virtual
+      const model = variation.productModel; // Via virtual and populate
+      const product = model.product; // Via virtual and populate
+
+      return {
+        variation: {
+          id: variation._id,
+          name: variation.name,
+          color: variation.color,
+          imageUrls: variation.imageUrls,
+          additionalPriceCents: variation.additionalPriceCents,
+          stockQuantity: variation.stockQuantity,
+          productModel: {
+            id: model._id,
+            name: model.name,
+            priceCents: model.priceCents,
+            product: {
+              id: product._id,
+              name: product.name,
+            },
+          },
+        },
+        quantity: item.quantity,
+        totalCents: item.totalCents,
+        instanceIds: item.instanceIds,
+      };
+    }),
+    paymentSummary: order.paymentSummary,
     deliveryStateId: order.deliveryStateId,
     orderDate: order.orderDate,
     estimateReceivedDate: order.estimateReceivedDate,
@@ -471,6 +500,26 @@ export function formatOrderResponse(order: any): OrderResponse {
     paymentMethodId: order.paymentMethodId,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
+  };
+}
+
+export function formatPaymentMethodResponse(method: any): PaymentMethodResponse {
+  return {
+    id: method._id,
+    name: method.name,
+    description: method.description,
+  };
+}
+
+export function formatUserSelfPaymentMethodResponse(method: any): UserSelfPaymentMethodResponse {
+  return {
+    id: method._id,
+    stripePaymentMethodId: method.stripePaymentMethodId,
+    type: method.type,
+    card: method.card,
+    isDefault: method.isDefault,
+    createdAt: method.createdAt,
+    updatedAt: method.updatedAt,
   };
 }
 
@@ -588,4 +637,13 @@ export function getPaymentMethodName(methodId: Types.ObjectId): string {
   }
 
   throw new Error(`Payment method with ID '${methodId}' not found in cache.`);
+}
+
+export function getSysUserId(): Types.ObjectId {
+  const { systemUserId } = appCache;
+  if (!systemUserId) {
+    throw new Error("System user ID not found in application cache.");
+  }
+
+  return systemUserId;
 }

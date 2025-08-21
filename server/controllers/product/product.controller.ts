@@ -263,14 +263,14 @@ export async function search(
 
   if (reqQuery.brandId) {
     if (!Types.ObjectId.isValid(reqQuery.brandId)) {
-      throw new HttpError(400, "Invalid brand ID.");
+      return next(new HttpError(400, "Invalid brand ID."));
     }
     query.brandId = new Types.ObjectId(reqQuery.brandId);
   }
 
   if (reqQuery.categoryId) {
     if (!Types.ObjectId.isValid(reqQuery.categoryId)) {
-      throw new HttpError(400, "Invalid category ID.");
+      return next(new HttpError(400, "Invalid category ID."));
     }
     query.categoryId = new Types.ObjectId(reqQuery.categoryId);
   }
@@ -352,13 +352,13 @@ export async function search(
       success: true,
       message: "Products searched successfully.",
       data: {
+        total,
         products: {
           total: products.length,
           products,
         },
         offset,
         limit,
-        total,
       },
     } as SuccessResponse<ProductListResponse>);
     console.log("✅ ", "Products searched successfully.");
@@ -526,7 +526,8 @@ async function hasConstraints(productId: Types.ObjectId): Promise<boolean> {
     }
     return hasConstraints;
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error checking product constraints:", error);
+    throw error;
   }
 }
 
@@ -552,6 +553,7 @@ async function executeDeletion(
 
     await productToDelete.deleteOne();
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error deleting product:", error);
+    throw error;
   }
 }

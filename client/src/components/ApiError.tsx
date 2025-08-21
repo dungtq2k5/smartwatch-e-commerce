@@ -1,4 +1,4 @@
-import { faFaceFrown } from "@fortawesome/free-solid-svg-icons";
+import { faFaceSadCry } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useRef } from "react";
 
@@ -11,7 +11,7 @@ export default function ApiError({ errMsg }: Readonly<{ errMsg?: string }>) {
   return (
     <div className="text-center">
       <FontAwesomeIcon
-        icon={faFaceFrown}
+        icon={faFaceSadCry}
         size="2x"
         className="text-danger mb-3"
       />

@@ -28,7 +28,6 @@ import {
 } from "../utils/twilio";
 import {
   CheckAuthResponse,
-  EmailOrPhoneNumberCreate,
   SuccessResponse,
   UserAuthByGoogle,
   UserForgotPassword,
@@ -701,6 +700,7 @@ async function assignDefaultBuyerRole(
 
     return { roleId: buyerRoleId, assignedBy: systemUserId };
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error assigning default buyer role:", error);
+    throw error;
   }
 }

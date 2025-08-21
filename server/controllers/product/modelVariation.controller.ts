@@ -441,6 +441,7 @@ async function executeDeletion(
     );
     await variationToDelete.deleteOne({ session });
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error deleting product model variation:", error);
+    throw error;
   }
 }

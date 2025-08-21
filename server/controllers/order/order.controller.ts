@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import {
   OrderCreate,
+  OrderListResponse,
   OrderResponse,
+  OrderSearchQuery,
   OrderUpdate,
   OrderUpdateSelf,
   SuccessResponse,
@@ -22,24 +24,28 @@ import {
   getPaymentMethodName,
   getPaymentStatusId,
   getPaymentStatusName,
+  getSysUserId,
 } from "../../utils/utils";
 import Order from "../../models/order/order.model";
 import { ESTIMATE_RECEIVED_DATE } from "../../../common/configs.common";
-import { appCache } from "../../configs/cache";
 import DeliveryState from "../../models/order/deliveryState.model";
 import PaymentMethod from "../../models/order/paymentMethod.model";
+import Cart from "../../models/user/cart.model";
+import User from "../../models/user/user.model";
 
-// TODO handle when pay by COD, user balance...
+// TODO if user doesn't have stripeCustomerId but refund -> refund to their userBalanceCents.
+// TODO remember update inventory too when refund.
 
 // --- BOTH BUYER AND ADMIN FUNCTIONS ---
-export async function create(
+export async function createSelf(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating order...");
   const userId = (req["auth"] as RequestAuth).userId;
-  const { userAddressId, items, paymentMethodId } = req.body as OrderCreate;
+  const { userAddressId, items, paymentMethodId, applyUserBalance } =
+    req.body as OrderCreate;
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -78,42 +84,42 @@ export async function create(
         3. Update each variation stock.
         4. Update each instance state.
         5. Create InventoryMovement for each instance.
-        6. Remove items from cart if has.
+        6. Remove all items from cart if has + COD order.
         7. Create order.
     */
 
-    // Check if there is an existing order with the same userId and paymentStatusId is "pending"
-    const paymentStatusPendingStateId = getPaymentStatusId("pending");
-    const existingPendingOrder = await Order.findOne({
-      userId,
-      paymentStatusId: paymentStatusPendingStateId,
-    }).session(session);
-    if (existingPendingOrder) {
-      // Remove the existing pending order
-      await executeOrderDeletion(existingPendingOrder, session);
+    // Check if there is an existing non-COD order with the same userId and paymentStatusId is "pending"
+    const pendingPaymentStatusId = getPaymentStatusId("pending");
+    const isCOD = paymentMethod.name === "cash";
+
+    if (!isCOD) {
+      const existingPendingOrder = await Order.findOne({
+        userId,
+        paymentStatusId: pendingPaymentStatusId,
+      }).session(session);
+      if (existingPendingOrder) {
+        // Remove the existing pending order
+        await executeOrderDeletion(existingPendingOrder, session);
+      }
     }
 
     // Check items exist and available and init data for order creation
+    const systemUserId = getSysUserId();
     const orderItemsInsert: {
       variationId: Types.ObjectId | string;
       quantity: number;
       totalCents: number;
       instanceIds: { id: Types.ObjectId | string; sku: string }[];
     }[] = [];
-
     const inventoryMovementsInsert: {
       variationInstanceId: Types.ObjectId | string;
       sku: string;
       movementTypeId: Types.ObjectId | string;
       createdBy: Types.ObjectId | string;
       quantity: -1;
-      notes: "User placed an order(checkout) but not yet paid.";
+      notes: "User placed an order(checkout).";
     }[] = [];
-    const movementTypeId = getMovementTypeId("pending order");
-    const createdBy = appCache.systemUserId;
-    if (!createdBy) {
-      throw new HttpError(500, "System user not found in cache.");
-    }
+    const saleOutMovementTypeId = getMovementTypeId("sales out");
 
     for (const { variationId, quantity } of items) {
       if (!Types.ObjectId.isValid(variationId)) {
@@ -191,39 +197,64 @@ export async function create(
         inventoryMovementsInsert.push({
           variationInstanceId: instance._id,
           sku: instance.sku,
-          movementTypeId, // sales out
-          createdBy, // system user
+          movementTypeId: saleOutMovementTypeId,
+          createdBy: systemUserId,
           quantity: -1,
-          notes: "User placed an order(checkout) but not yet paid.",
+          notes: "User placed an order(checkout).",
         });
       }
       await InventoryMovement.insertMany(inventoryMovementsInsert, { session });
     }
 
+    // Calculating total cents
+    const user = req["user"]; // Form middleware
+    const subtotalCents = orderItemsInsert.reduce(
+      (sum, item) => sum + item.totalCents,
+      0
+    );
+    let appliedBalanceCents = 0;
+    let finalAmountCents = subtotalCents;
+
+    if (applyUserBalance && user.userBalanceCents > 0) {
+      const balanceToApply = Math.min(user.userBalanceCents, subtotalCents);
+      appliedBalanceCents = balanceToApply;
+      finalAmountCents -= balanceToApply;
+
+      // Update user's balance
+      await User.findByIdAndUpdate(
+        userId,
+        { $inc: { userBalanceCents: -balanceToApply } },
+        { session }
+      );
+    }
+
     /*
       Create order:
-        - paymentMethodId is COD: paymentStatus - pending, deliveryState - order placed, orderDate - now.
-        - paymentMethodId is non-COD: paymentStatus - pending, deliveryState - null.
+        - paymentMethodId is COD: paymentStatus - pending, deliveryState - order placed, orderDate - now, delete user's cart
+        - paymentMethodId is non-COD: paymentStatus - pending, deliveryState - null, delete user's cart will be handled in the webhook after successful payment.
     */
     const order = new Order({
       userId,
       items: orderItemsInsert,
-      totalCents: orderItemsInsert.reduce(
-        (sum, item) => sum + item.totalCents,
-        0
-      ),
-      paymentStatusId: paymentStatusPendingStateId,
+      paymentSummary: {
+        subtotalCents,
+        appliedBalanceCents,
+        finalAmountCents,
+      },
+      paymentStatusId: pendingPaymentStatusId,
       estimateReceivedDate: new Date(Date.now() + ESTIMATE_RECEIVED_DATE),
       deliveryAddress: address,
       paymentMethodId,
     });
 
-    if (paymentMethod.name === "cash") {
+    if (isCOD) {
       order.deliveryStateId = getDeliveryStateId("order placed");
       order.orderDate = new Date();
+      await executeCartDeletion(userId, items, session);
     }
 
     await order.save({ session });
+    await order.populate(populationPath);
 
     await session.commitTransaction();
 
@@ -241,7 +272,7 @@ export async function create(
   }
 }
 
-export async function get(
+export async function getSelf(
   req: Request,
   res: Response,
   next: NextFunction
@@ -254,7 +285,7 @@ export async function get(
     if (!Types.ObjectId.isValid(id)) {
       throw new HttpError(404, "Order not found.");
     }
-    const order = await Order.findById(id).lean();
+    const order = await Order.findById(id);
     if (!order) {
       throw new HttpError(404, "Order not found.");
     }
@@ -262,8 +293,13 @@ export async function get(
     // Check permission
     const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
     if (order.userId.toString() !== userId && isBuyerOnly) {
-      throw new HttpError(403, "You do not have permission to view this order.");
+      throw new HttpError(
+        403,
+        "You do not have permission to view this order."
+      );
     }
+
+    await order.populate(populationPath);
 
     res.status(200).json({
       success: true,
@@ -271,6 +307,139 @@ export async function get(
       data: formatOrderResponse(order),
     } as SuccessResponse<OrderResponse>);
     console.log("✅ ", "Order retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function searchSelf(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Searching self orders...");
+  const { userId } = req["auth"] as RequestAuth;
+  const reqQuery = req.query as OrderSearchQuery;
+
+  const limit = reqQuery.limit ? parseInt(reqQuery.limit) : 9;
+  const offset = reqQuery.offset ? parseInt(reqQuery.offset) : 0;
+  const baseMatch: any = { userId: new Types.ObjectId(userId) };
+
+  if (reqQuery.deliveryStateId) {
+    if (!Types.ObjectId.isValid(reqQuery.deliveryStateId)) {
+      throw new HttpError(400, "Invalid delivery state ID.");
+    }
+    baseMatch.deliveryStateId = new Types.ObjectId(reqQuery.deliveryStateId);
+  }
+
+  if (reqQuery.paymentStatusId) {
+    if (!Types.ObjectId.isValid(reqQuery.paymentStatusId)) {
+      throw new HttpError(400, "Invalid payment status ID.");
+    }
+    baseMatch.paymentStatusId = new Types.ObjectId(reqQuery.paymentStatusId);
+  }
+
+  try {
+    let finalQuery: any = baseMatch;
+    let total: number;
+
+    if (reqQuery.searchTerm) {
+      // product/model/variation name, or order ID
+      const searchTerm = reqQuery.searchTerm;
+      const searchOrConditions: any[] = [
+        { "productDetails.name": { $regex: searchTerm, $options: "i" } },
+        { "modelDetails.name": { $regex: searchTerm, $options: "i" } },
+        { "variationDetails.name": { $regex: searchTerm, $options: "i" } },
+      ];
+
+      // If the searchTerm is a valid ObjectId, also search by order ID first
+      if (Types.ObjectId.isValid(searchTerm)) {
+        searchOrConditions.push({ _id: new Types.ObjectId(searchTerm) });
+      }
+
+      const matchingOrders = await Order.aggregate([
+        // 1. Initial filter for the user and other query params
+        { $match: baseMatch },
+        // 2. Unwind the items array to process each item individually
+        { $unwind: "$items" },
+        // 3. Lookup variation details
+        {
+          $lookup: {
+            from: "modelvariations",
+            localField: "items.variationId",
+            foreignField: "_id",
+            as: "variationDetails",
+          },
+        },
+        { $unwind: "$variationDetails" },
+        // 4. Lookup model details
+        {
+          $lookup: {
+            from: "productmodels",
+            localField: "variationDetails.productModelId",
+            foreignField: "_id",
+            as: "modelDetails",
+          },
+        },
+        { $unwind: "$modelDetails" },
+        // 5. Lookup product details
+        {
+          $lookup: {
+            from: "products",
+            localField: "modelDetails.productId",
+            foreignField: "_id",
+            as: "productDetails",
+          },
+        },
+        { $unwind: "$productDetails" },
+        { $match: { $or: searchOrConditions } },
+        { $group: { _id: "$_id" } },
+      ]);
+
+      const orderIds = matchingOrders.map((order) => order._id);
+
+      // If no orders match -> return early
+      if (orderIds.length === 0) {
+        res.status(200).json({
+          success: true,
+          message: "No orders found.",
+          data: {
+            total: 0,
+            orders: { total: 0, orders: [] },
+            offset,
+            limit,
+          },
+        } as SuccessResponse<OrderListResponse>);
+        return;
+      }
+
+      finalQuery = { _id: { $in: orderIds } };
+      total = orderIds.length;
+    } else {
+      // If no search term, the total is a simple count
+      total = await Order.countDocuments(baseMatch);
+    }
+
+    // Fetch the orders using the final query and populate them
+    const orders = await Order.find(finalQuery)
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit)
+      .populate(populationPath); // Via virtual
+
+    res.status(200).json({
+      success: true,
+      message: "Orders retrieved successfully.",
+      data: {
+        total,
+        orders: {
+          total: orders.length,
+          orders: orders.map(formatOrderResponse),
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<OrderListResponse>);
   } catch (error) {
     next(error);
   }
@@ -319,7 +488,7 @@ export async function updateSelf(
             + "returned": // TODO further refund logic.
         - For non-COD orders:
           - deliveryState changed to:
-            + "cancelled": executeOrderDeletion(order, session, { deleteOrderItself: false });, paymentStatusId will be updated to "cancelled", // TODO handle refund for non-COD orders.
+            + "cancelled": executeOrderDeletion(order, session, { deleteOrderItself: false });, paymentStatusId will be updated to "cancelled", // TODO handle refund.
             + "returned": // TODO further refund logic.
     */
 
@@ -439,6 +608,8 @@ export async function updateSelf(
     }
 
     await order.save({ session });
+    await order.populate(populationPath);
+
     await session.commitTransaction();
 
     res.status(200).json({
@@ -503,7 +674,7 @@ export async function update(
         - For non-COD orders:
           - deliveryState changed to:
             + "delivered": receivedDate will be set to now.
-            + "cancelled": executeOrderDeletion(order, session, { deleteOrderItself: false });, paymentStatusId will be updated to "cancelled", // TODO handle refund for non-COD orders.
+            + "cancelled": executeOrderDeletion(order, session, { deleteOrderItself: false });, paymentStatusId will be updated to "cancelled", // TODO handle refund.
             + "returned": // TODO further refund logic.
     */
 
@@ -648,6 +819,8 @@ export async function update(
     }
 
     await order.save({ session });
+    await order.populate(populationPath);
+
     await session.commitTransaction();
 
     res.status(200).json({
@@ -702,7 +875,7 @@ export async function executeOrderDeletion(
     }));
 
     // 2. Get the movement type ID for "pending order"
-    const pendingOrderMovementTypeId = getMovementTypeId("pending order");
+    const saleOutMovementTypeId = getMovementTypeId("sales out");
 
     // 3. Execute all updates and deletions in parallel within the transaction
     await Promise.all([
@@ -720,7 +893,7 @@ export async function executeOrderDeletion(
       InventoryMovement.deleteMany(
         {
           variationInstanceId: { $in: allInstanceIds },
-          movementTypeId: pendingOrderMovementTypeId,
+          movementTypeId: saleOutMovementTypeId,
           movementDate: { $gte: orderToDelete.createdAt },
         },
         { session }
@@ -737,6 +910,74 @@ export async function executeOrderDeletion(
       `Order ${orderToDelete._id} and its related data have been successfully deleted.`
     );
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error deleting order:", error);
+    throw error;
   }
 }
+
+export async function executeCartDeletion(
+  userId: Types.ObjectId | string,
+  orderItems: { variationId: Types.ObjectId | string; quantity: number }[],
+  session: mongoose.ClientSession
+): Promise<void> {
+  console.log("▶️ ", `Deleting cart for user ${userId}...`);
+
+  try {
+    const carts = await Cart.find({
+      userId,
+      variationId: { $in: orderItems.map((item) => item.variationId) },
+    }).session(session);
+
+    if (carts.length > 0) {
+      const bulkOps = orderItems
+        .map((orderItem) => {
+          const cartItem = carts.find((ci) =>
+            ci.variationId.equals(orderItem.variationId)
+          );
+
+          if (!cartItem) return [];
+
+          if (orderItem.quantity >= cartItem.quantity!) {
+            return [{ deleteOne: { filter: { _id: cartItem._id } } }];
+          }
+
+          return [
+            {
+              updateOne: {
+                filter: { _id: cartItem._id },
+                update: { $inc: { quantity: -orderItem.quantity } },
+              },
+            },
+          ];
+        })
+        .flat();
+
+      if (bulkOps.length > 0) {
+        await Cart.bulkWrite(bulkOps, { session });
+      }
+    }
+
+    console.log(
+      `✅ `,
+      `Cart for user ${userId} has been successfully deleted.`
+    );
+  } catch (error) {
+    console.error("❌ ", "Error deleting cart:", error);
+    throw error;
+  }
+}
+
+// Define the population path to be reused
+const populationPath = {
+  path: "items.variation",
+  populate: {
+    path: "productModel",
+    populate: {
+      path: "product",
+      select: "_id name",
+    },
+    select: "_id name priceCents product productId",
+  },
+  select:
+    "_id name color imageUrls additionalPriceCents stockQuantity productModel productModelId",
+};

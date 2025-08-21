@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { HttpError } from "../errorHandler";
-import { isValidDateTimeString } from "../../../common/utils.common";
+import {
+  isValidDateTimeString,
+  isValidNumString,
+  removeOddSpaces,
+} from "../../../common/utils.common";
 import { isPresent } from "../utils";
 
 export function sanitizeOrderInput(
@@ -41,8 +45,21 @@ export function sanitizeOrderInput(
   next();
 }
 
+export function sanitizeSearchOrderInput(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing search order input...");
+  const { searchTerm } = req.query;
+
+  if (typeof searchTerm === "string") {
+    req.query.searchTerm = removeOddSpaces(searchTerm);
+  }
+}
+
 export function verifyOrderInput(
-  type: "create" | "update"
+  type: "create" | "update" | "search"
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating order input...");
@@ -52,7 +69,7 @@ export function verifyOrderInput(
       switch (type) {
         case "create": {
           console.log("Validating order creation input...");
-          const { userAddressId, items, paymentMethodId } = req.body;
+          const { userAddressId, items, paymentMethodId, applyUserBalance } = req.body;
 
           if (!isPresent(userAddressId)) {
             errors.push("User address ID is required.");
@@ -92,6 +109,9 @@ export function verifyOrderInput(
           } else if (typeof paymentMethodId !== "string" || !paymentMethodId) {
             errors.push("Payment method ID must be a non-empty string.");
           }
+          if (applyUserBalance !== undefined && typeof applyUserBalance !== "boolean") {
+            errors.push("Apply user balance must be a boolean value.");
+          }
 
           break;
         }
@@ -122,6 +142,43 @@ export function verifyOrderInput(
           }
           break;
         }
+        case "search": {
+          console.log("Validating order search input...");
+          const {
+            limit,
+            offset,
+            searchTerm,
+            deliveryStateId,
+            paymentStatusId,
+          } = req.query;
+
+          if (limit !== undefined && !isValidNumString(limit)) {
+            errors.push("Limit must be a valid number string.");
+          }
+          if (offset !== undefined && !isValidNumString(offset)) {
+            errors.push("Offset must be a valid number string.");
+          }
+          if (
+            searchTerm !== undefined &&
+            (typeof searchTerm !== "string" || !searchTerm)
+          ) {
+            errors.push("Search term must be a non-empty string.");
+          }
+          if (
+            deliveryStateId !== undefined &&
+            (typeof deliveryStateId !== "string" || !deliveryStateId)
+          ) {
+            errors.push("Delivery state ID must be a non-empty string.");
+          }
+          if (
+            paymentStatusId !== undefined &&
+            (typeof paymentStatusId !== "string" || !paymentStatusId)
+          ) {
+            errors.push("Payment status ID must be a non-empty string.");
+          }
+
+          break;
+        }
       }
 
       if (errors.length > 0) {
@@ -144,6 +201,7 @@ export function verifyPaymentIntentInput(
     try {
       if (type === "create") {
         console.log("Validating payment intent creation input...");
+        req.body = req.body ?? {}; // Since there is only one field
         const { saveCard } = req.body;
 
         if (saveCard !== undefined && typeof saveCard !== "boolean") {

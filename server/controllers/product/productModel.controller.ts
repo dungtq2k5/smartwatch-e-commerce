@@ -166,7 +166,7 @@ export async function getAll(
     if (!product || product.isDeleted) {
       throw new HttpError(404, "Product not found");
     }
-    console.log("Product found: ", product.name);
+
     // Fetch all models for product
     const models = await ProductModel.find({
       isDeleted: false,
@@ -516,7 +516,8 @@ async function hasConstraints(modelId: Types.ObjectId): Promise<boolean> {
     }
     return hasConstraints;
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error checking model constraints:", error);
+    throw error;
   }
 }
 
@@ -542,6 +543,7 @@ async function executeDeletion(
 
     await modelToDelete.deleteOne();
   } catch (error) {
-    throw new Error(error);
+    console.error("❌ ", "Error deleting product model:", error);
+    throw error;
   }
 }

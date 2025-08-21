@@ -154,8 +154,19 @@ const modelVariationSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
+
+modelVariationSchema.virtual("productModel", {
+  ref: "ProductModel",
+  localField: "productModelId",
+  foreignField: "_id",
+  justOne: true,
+});
 
 modelVariationSchema.index(
   { productModelId: 1, "color.hex": 1 },

@@ -4,6 +4,7 @@ import {
   AUTH_PROVIDER_OPTIONS,
   PRODUCT_SEARCH_SORT_OPTIONS,
   PRODUCT_TYPES,
+  VN_COUNTRY_CODE,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -155,7 +156,7 @@ export type BaseUserAddress = {
   wardCode: string;
   districtCode: string;
   cityProvinceCode: string;
-  countryCode: string;
+  readonly countryCode: typeof VN_COUNTRY_CODE;
   location: GeoJSONPoint;
   phoneNumber: string;
   fullAddress: string;
@@ -166,7 +167,7 @@ export type BaseUserAddress = {
 
 export type UserAddressResponse = Omit<BaseUserAddress, "userId">;
 
-export type UserAddressResponseList = {
+export type UserAddressListResponse = {
   total: number;
   addresses: UserAddressResponse[];
 };
@@ -241,7 +242,12 @@ export type UserCartResponse = Omit<BaseUserCart, "userId" | "variationId"> & {
   stopSelling: boolean;
   variation: Pick<
     ModelVariationResponse,
-    "id" | "name" | "color" | "imageUrls" | "additionalPriceCents" | "stockQuantity"
+    | "id"
+    | "name"
+    | "color"
+    | "imageUrls"
+    | "additionalPriceCents"
+    | "stockQuantity"
   > & {
     productModel: Pick<ProductModelResponse, "id" | "name" | "priceCents"> & {
       product: Pick<ProductResponse, "id" | "name" | "type"> & {
@@ -257,7 +263,7 @@ export type UserCartResponse = Omit<BaseUserCart, "userId" | "variationId"> & {
  * @property total - The total number of distinct items in the cart.
  * @property cart - An array of detailed information for each item in the user's cart.
  */
-export type UserCartResponseList = {
+export type UserCartListResponse = {
   total: number;
   items: UserCartResponse[];
 };
@@ -642,19 +648,35 @@ export type OrderCreate = {
     quantity: number;
   }[];
   paymentMethodId: string;
+  applyUserBalance?: boolean; // If true, use user's balance to discount the order
 };
 export type OrderUpdateBase = Partial<{
   deliveryStateId: string;
   deliveryAddressId: string;
   estimateReceivedDate: string;
 }>;
-export type OrderUpdateSelf = Pick<OrderUpdateBase, "deliveryStateId" | "deliveryAddressId">;
+export type OrderUpdateSelf = Pick<
+  OrderUpdateBase,
+  "deliveryStateId" | "deliveryAddressId"
+>;
 export type OrderUpdate = OrderUpdateBase;
 export type OrderResponse = {
   id: string;
   userId: string;
   items: {
-    variationId: string;
+    variation: Pick<
+      ModelVariationResponse,
+      | "id"
+      | "name"
+      | "color"
+      | "imageUrls"
+      | "additionalPriceCents"
+      | "stockQuantity"
+    > & {
+      productModel: Pick<ProductModelResponse, "id" | "name" | "priceCents"> & {
+        product: Pick<ProductResponse, "id" | "name">;
+      };
+    };
     quantity: number;
     totalCents: number;
     instanceIds: {
@@ -662,7 +684,11 @@ export type OrderResponse = {
       sku: string;
     }[];
   }[];
-  totalCents: number;
+  paymentSummary: {
+    subtotalCents: number;
+    appliedBalanceCents: number;
+    finalAmountCents: number;
+  };
   deliveryStateId: string | null; // Order isn't paid yet (newly created)
   orderDate: string | null; // Order isn't paid yet (newly created)
   estimateReceivedDate: string;
@@ -683,11 +709,21 @@ export type OrderResponse = {
   createdAt: string;
   updatedAt: string;
 };
-export type CreateOrderPaymentIntent = {
-  saveCard?: boolean; // If true, save card for future payments
-};
-export type CreateOrderPaymentIntentResponse = {
-  clientSecret: string | null;
+export type OrderSearchQuery = Partial<{
+  limit: string;
+  offset: string;
+  searchTerm: string; // Product/model/variation name, or order ID
+  deliveryStateId: string;
+  paymentStatusId: string;
+}>;
+export type OrderListResponse = {
+  total: number;
+  orders: {
+    total: number;
+    orders: OrderResponse[];
+  };
+  offset: number;
+  limit: number;
 };
 
 export type UserValidatePassword = {
@@ -711,6 +747,35 @@ export type ProductDetailQuery = Partial<{
   modelStopSelling: "true" | "false";
   variationStopSelling: "true" | "false";
 }>;
+
+export type PaymentMethodResponse = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+export type PaymentMethodListResponse = {
+  total: number;
+  methods: PaymentMethodResponse[];
+};
+
+export type UserSelfPaymentMethodResponse = {
+  id: string;
+  stripePaymentMethodId: string;
+  type: string;
+  card: {
+    brand: string;
+    last4: string;
+    expMonth: number;
+    expYear: number;
+  },
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CheckoutSessionResponse = {
+  url: string | null;
+};
 
 // --- HELPER TYPES ---
 export type NoneOptional<T> = {

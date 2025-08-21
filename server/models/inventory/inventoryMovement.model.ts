@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { getMovementTypeId } from "../../utils/utils";
 
 const inventoryMovementSchema = new mongoose.Schema(
   {

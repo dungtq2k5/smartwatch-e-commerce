@@ -39,7 +39,7 @@ const orderItemSchema = new mongoose.Schema(
   {
     variationId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "variation",
+      ref: "ModelVariation",
       required: true,
     },
     quantity: {
@@ -58,8 +58,19 @@ const orderItemSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { _id: false }
+  {
+    _id: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
+
+orderItemSchema.virtual("variation", {
+  ref: "ModelVariation",
+  localField: "variationId",
+  foreignField: "_id",
+  justOne: true,
+});
 
 const orderPaymentSchema = new mongoose.Schema(
   {
@@ -152,6 +163,28 @@ const deliveryAddressSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const orderPaymentSummarySchema = new mongoose.Schema(
+  {
+    subtotalCents: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    appliedBalanceCents: {
+      type: Number,
+      required: false,
+      default: 0,
+      min: 0,
+    },
+    finalAmountCents: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     userId: {
@@ -163,10 +196,9 @@ const orderSchema = new mongoose.Schema(
       type: [orderItemSchema],
       required: true,
     },
-    totalCents: {
-      type: Number,
+    paymentSummary: {
+      type: orderPaymentSummarySchema,
       required: true,
-      min: 0,
     },
     deliveryStateId: {
       // Can be null when order is created (when user click checkout button) but not for COD

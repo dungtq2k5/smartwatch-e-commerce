@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { centsToUSD } from "../../../common/utils.common";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUserCartStore } from "../store/cartStore";
 import ApiError from "../components/ApiError";
 import HorizontalDivider from "../components/HorizontalDivider";
@@ -18,19 +18,23 @@ export default function Cart() {
   renderCount.current += 1;
   console.log("Cart render count:", renderCount.current);
 
+  const navigate = useNavigate();
+
   const {
     cart,
     isFetching,
     fetchErr,
-    fetchCart,
     modifyingItemId,
+    totalCents,
+    isAllItemAvailable,
+    fetchCart,
     updateCartItem,
     removeCartItem,
   } = useUserCartStore();
 
   // Fetch initial when first loaded: cart
   useEffect(() => {
-    if (!cart) fetchCart();
+    fetchCart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -65,23 +69,6 @@ export default function Cart() {
     },
     [removeCartItem]
   );
-
-  const calcTotalCents = useMemo((): number => {
-    if (!cart) return 0;
-    return cart.items.reduce((total, item) => {
-      if (item.variation.stockQuantity > 0 && !item.stopSelling) {
-        return total + item.totalCents;
-      }
-      return total;
-    }, 0);
-  }, [cart]);
-
-  const isAllItemsAvailable = useMemo((): boolean => {
-    if (!cart) return true;
-    return cart.items.every(
-      (item) => !item.stopSelling && item.variation.stockQuantity > 0
-    );
-  }, [cart]);
 
   return (
     <main className="container--g">
@@ -128,13 +115,11 @@ export default function Cart() {
                   <h2 className="h4 card-title mb-3">Order Summary</h2>
                   <div className="d-flex justify-content-between mb-2">
                     <span>Subtotal</span>
-                    <span>{centsToUSD(calcTotalCents)}</span>
+                    <span>{centsToUSD(totalCents)}</span>
                   </div>
                   <div className="d-flex justify-content-between mb-3">
                     <span className="fw-bold">Estimated Total</span>
-                    <span className="fw-bold">
-                      {centsToUSD(calcTotalCents)}
-                    </span>
+                    <span className="fw-bold">{centsToUSD(totalCents)}</span>
                   </div>
                   <p className="small text-muted mb-3">
                     Shipping and tax calculated in checkout.
@@ -142,10 +127,11 @@ export default function Cart() {
                   <div className="d-grid gap-2">
                     <button
                       type="button"
-                      className="btn-premium--g p-1"
-                      disabled={!isAllItemsAvailable || !!modifyingItemId}
+                      className="btn-premium--g"
+                      onClick={() => navigate("/checkout")}
+                      disabled={!isAllItemAvailable || !!modifyingItemId}
                     >
-                      Check Out {/* TODO later... */}
+                      Check Out
                     </button>
                     <HorizontalDivider text="or" />
                     <Link to="/" className="btn btn-link p-0">

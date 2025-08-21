@@ -150,7 +150,7 @@ const SetSelfPasswordModal = memo(
               <label htmlFor="password">New Password</label>
               {formData.password.err && (
                 <div className="text-danger small mt-1">
-                  <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                  <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                   {formData.password.err}
                 </div>
               )}
@@ -177,7 +177,7 @@ const SetSelfPasswordModal = memo(
               </div>
               {formData.confirmPassword.err && (
                 <div className="text-danger small mt-1">
-                  <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                  <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                   {formData.confirmPassword.err}
                 </div>
               )}

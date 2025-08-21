@@ -21,6 +21,7 @@ import { useJsApiLoader } from "@react-google-maps/api";
 import debounce from "lodash.debounce";
 import AddressMapInput from "../AddressMapInput";
 import { formatError } from "../../utils/utils";
+import { VN_COUNTRY_CODE } from "../../../../common/configs.common";
 
 const defaultCityProvinceCode = provinces.data[0].code;
 const defaultDistrictCode = getDistrictsByProvinceCode(defaultCityProvinceCode)
@@ -33,10 +34,12 @@ const CreateAddressModal = memo(
     isFirstAddress,
     show,
     onHide,
+    onSuccess,
   }: Readonly<{
     isFirstAddress: boolean;
     show: boolean;
     onHide: () => void;
+    onSuccess?: (newAddressId: string) => void;
   }>) => {
     // DEV temp for testing
     const renderCount = useRef(0);
@@ -280,6 +283,7 @@ const CreateAddressModal = memo(
             cityProvinceCode: formData.cityProvinceCode,
             districtCode: formData.districtCode,
             wardCode: formData.wardCode,
+            countryCode: VN_COUNTRY_CODE,
             location: {
               longitude: formData.location[0],
               latitude: formData.location[1],
@@ -288,7 +292,8 @@ const CreateAddressModal = memo(
           };
 
           try {
-            await createAddress(addressData);
+            const newAddress = await createAddress(addressData);
+            onSuccess?.(newAddress.id);
             handleClose();
             toast.success("Address created successfully!");
           } catch (error) {
@@ -296,7 +301,7 @@ const CreateAddressModal = memo(
           }
         }
       },
-      [createAddress, formData, handleClose]
+      [createAddress, formData, handleClose, onSuccess]
     );
 
     return (
@@ -324,7 +329,7 @@ const CreateAddressModal = memo(
                   <label htmlFor="name">Full name</label>
                   {formData.name.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                       {formData.name.err}
                     </div>
                   )}
@@ -347,7 +352,7 @@ const CreateAddressModal = memo(
                   <label htmlFor="phoneNumber">Phone number</label>
                   {formData.phoneNumber.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                       {formData.phoneNumber.err}
                     </div>
                   )}
@@ -433,7 +438,7 @@ const CreateAddressModal = memo(
                   <label htmlFor="street">Street</label>
                   {formData.street.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                       {formData.street.err}
                     </div>
                   )}
@@ -455,7 +460,7 @@ const CreateAddressModal = memo(
                   <label htmlFor="apartmentNumber">Apartment/Building</label>
                   {formData.apartmentNumber.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                       {formData.apartmentNumber.err}
                     </div>
                   )}

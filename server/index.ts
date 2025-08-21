@@ -13,10 +13,11 @@ import productOsRoute from "./routes/product/os.route";
 import orderRoutes from "./routes/order.route";
 import webhookRoutes from "./routes/webhook.route";
 import providerRoutes from "./routes/provider.route";
+import paymentMethodRoutes from "./routes/payment.route";
 import { errorHandler as errorHandlerMiddleware } from "./utils/middlewares/error.middleware";
 import connectDB from "./db/connectDB";
 import { initAppCache } from "./configs/cache";
-import { AppError } from "./utils/errorHandler";
+import { HttpError } from "./utils/errorHandler";
 import { mockAllData } from "./utils/mock";
 
 dotenv.config();
@@ -41,6 +42,7 @@ const requiredEnvVars = [
   "EMAIL_SENDER",
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET",
+  "CLIENT_URL",
 ];
 for (const varName of requiredEnvVars) {
   if (!process.env[varName]) {
@@ -53,29 +55,34 @@ const app = express();
 app.use(
   cors({
     origin: [process.env.CLIENT_URL!],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PATCH", "DELETE"],
     credentials: true, // Allow cookies to be sent with requests
     optionsSuccessStatus: 200, // For legacy browser support
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     exposedHeaders: ["Set-Cookie"],
   })
 );
+
+// IMPORTANT: Stripe webhook route must come BEFORE express.json()
+// to receive the raw request body for signature verification.
+app.use("/api/v1/webhooks", webhookRoutes);
+
 app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/users", userRoute);
 app.use("/api/v1/roles", roleRoute);
+app.use("/api/v1/products/brands", productBrandRoute);
+app.use("/api/v1/products/categories", productCategoryRoute);
+app.use("/api/v1/products/os", productOsRoute);
 app.use("/api/v1/products", productRoute);
-app.use("/api/v1/brands", productBrandRoute);
-app.use("/api/v1/categories", productCategoryRoute);
-app.use("/api/v1/os", productOsRoute);
 app.use("/api/v1/orders", orderRoutes);
-app.use("/api/v1/webhooks", webhookRoutes);
 app.use("/api/v1/providers", providerRoutes);
+app.use("/api/v1/payment-methods", paymentMethodRoutes);
 
 app.use((req, res, next) => {
-  next(new AppError(404, `Not Found: ${req.originalUrl}`));
+  next(new HttpError(404, `Request not found: ${req.originalUrl}`));
 });
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) =>
@@ -86,8 +93,8 @@ const port = process.env.SERVER_PORT;
 app.listen(port, async () => {
   console.log("🔗", "Connecting to MongoDB...");
   await connectDB();
-  await seedAllCollections(); // Init Mongo collections when first time creating a new database
+  // await seedAllCollections(); // Init Mongo collections when first time creating a new database
   await initAppCache(); // Init application cache
-  await mockAllData(); // DEV Mock data for testing
+  // await mockAllData(); // DEV Mock data for testing
   console.log("🚀", `Server is running on http://localhost:${port}`);
 });

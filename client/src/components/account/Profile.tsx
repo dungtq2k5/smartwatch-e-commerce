@@ -300,7 +300,7 @@ export default function Profile() {
                   />
                   {formData.fullName.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                       {formData.fullName.err}
                     </div>
                   )}
@@ -501,7 +501,7 @@ export default function Profile() {
                   />
                   {formData.birth.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
                       {formData.birth.err}
                     </div>
                   )}

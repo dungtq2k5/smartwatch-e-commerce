@@ -8,7 +8,7 @@ const userPaymentMethodSchema = new mongoose.Schema(
       required: true,
     },
     stripePaymentMethodId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       required: true,
       unique: true,
     },

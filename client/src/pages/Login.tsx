@@ -130,7 +130,7 @@ export default function Login() {
           <label htmlFor="emailOrPhone">Email or phone number</label>
           {formData.emailOrPhone.err && (
             <div className="text-danger small mt-1">
-              <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+              <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
               {formData.emailOrPhone.err}
             </div>
           )}
@@ -150,7 +150,7 @@ export default function Login() {
           <label htmlFor="password">Password</label>
           {formData.password.err && (
             <div className="text-danger small mt-1">
-              <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+              <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
               {formData.password.err}
             </div>
           )}
