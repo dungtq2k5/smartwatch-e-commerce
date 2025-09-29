@@ -5,7 +5,8 @@ import type { VerifyType, UserVerify } from "../../../common/types.common";
 import toast from "react-hot-toast";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { formatError } from "../utils/utils";
+import { formatError } from "../../../common/utils.common";
+import { WAITING_EMOJI } from "../configs";
 
 const VerifyForm = memo(
   ({
@@ -20,9 +21,11 @@ const VerifyForm = memo(
     renderCount.current += 1;
     console.log("VerifyForm render count:", renderCount.current);
 
-    const { isLoading, verify } = useAuthStore();
+    const { verify } = useAuthStore();
 
     const verifyTypeName = type === "email" ? "email" : "phone number";
+
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     const [code, setCode] = useState<string[]>(
       Array(VERIFICATION_CODE_LENGTH).fill("")
@@ -34,6 +37,8 @@ const VerifyForm = memo(
 
     const handleChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>, idx: number): void => {
+        if (isSubmitting) return;
+
         const newCode = [...code];
         const val = e.target.value;
 
@@ -57,22 +62,30 @@ const VerifyForm = memo(
 
         setCode(newCode);
       },
-      [code]
+      [code, isSubmitting]
     );
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent<HTMLInputElement>, idx: number) => {
+        if (isSubmitting) return;
+
         if (e.key === "Backspace" && idx > 0 && !code[idx]) {
           // If user press Backspace and current input is empty, focus previous input
           inputRefs.current[idx - 1].focus();
         }
       },
-      [code]
+      [code, isSubmitting]
     );
 
     const handleSubmit = useCallback(
       async (e: React.FormEvent<HTMLFormElement> | Event): Promise<void> => {
         e.preventDefault();
+        if (isSubmitting) {
+          toast("Verification in progress. Please wait.", {
+            icon: WAITING_EMOJI,
+          });
+          return;
+        }
 
         const validateForm = (): boolean => {
           return code.every((digit) => /^\d$/.test(digit));
@@ -84,6 +97,7 @@ const VerifyForm = memo(
             code: code.join(""),
           };
 
+          setIsSubmitting(true);
           try {
             await verify(data);
             toast.success(
@@ -92,12 +106,14 @@ const VerifyForm = memo(
             onSuccess();
           } catch (error) {
             toast.error(formatError(error));
+          } finally {
+            setIsSubmitting(false);
           }
         }
 
         setInputErr("Please fill all digits with numbers");
       },
-      [code, onSuccess, type, verify, verifyTypeName]
+      [code, isSubmitting, onSuccess, type, verify, verifyTypeName]
     );
 
     // Auto submit when all digits are filled
@@ -155,9 +171,9 @@ const VerifyForm = memo(
         <button
           className="w-100 btn btn-primary"
           type="submit"
-          disabled={isLoading}
+          disabled={isSubmitting}
         >
-          {isLoading ? (
+          {isSubmitting ? (
             <>
               <span
                 className="spinner-border spinner-border-sm me-2"

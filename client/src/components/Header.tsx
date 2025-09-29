@@ -1,10 +1,17 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { faCartShopping, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { memo, useCallback, useEffect, useRef, useState, type JSX } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type JSX,
+} from "react";
 import { useAuthStore } from "../store/authStore";
 import defaultAvatar from "../assets/default-avatar.webp";
-import { removeOddSpaces } from "../../../common/utils.common";
+import { formatError, removeOddSpaces } from "../../../common/utils.common";
 import { useUserCartStore } from "../store/cartStore";
 import toast from "react-hot-toast";
 
@@ -14,62 +21,71 @@ const Header = memo(() => {
   renderCount.current += 1;
   console.log("Header rendered", renderCount.current);
 
-  const { user, isAuth } = useAuthStore();
-  const {
-    isFetching: isFetchingCart,
-    fetchErr: fetchCartErr,
-    fetchCart,
-    cart,
-  } = useUserCartStore();
-
-  const [searchTerm, setSearchTerm] = useState<string>("");
-
   const location = useLocation();
   const navigate = useNavigate();
 
+  const { user, isAuth } = useAuthStore();
+  const { fetchCart, cart } = useUserCartStore();
+
+  const [isFetchingCart, setIsFetchingCart] = useState<boolean>(false);
+  const [fetchCartErr, setFetchCartErr] = useState<string | null>(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
+
   // Handle searchTerm change by updating the URL
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const urlSearchTerm = urlParams.get("searchTerm");
-    if (urlSearchTerm) setSearchTerm(urlSearchTerm);
-  }, [location.search]);
+    if (location.pathname === "/search") {
+      const urlSearchTerm = searchParams.get("searchTerm");
+      if (urlSearchTerm) setSearchTerm(urlSearchTerm);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.search]);
 
   // Handle fetching user cart if they are auth
   useEffect(() => {
     if (!isAuth) return;
 
     const handleFetchUserCart = async (): Promise<void> => {
-      await fetchCart();
-      if (fetchCartErr) toast.error(fetchCartErr);
+      setIsFetchingCart(true);
+      setFetchCartErr(null);
+
+      try {
+        await fetchCart();
+      } catch (error) {
+        setFetchCartErr(formatError(error));
+        toast.error(formatError(error));
+      } finally {
+        setIsFetchingCart(false);
+      }
     };
+
     handleFetchUserCart();
-  }, [fetchCartErr, fetchCart, isAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuth]);
 
   const handleSearch = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
 
-      const urlParams = new URLSearchParams(location.search);
-      urlParams.set("searchTerm", removeOddSpaces(searchTerm));
+      const optimizedSearchTerm = removeOddSpaces(searchTerm);
+      if (!optimizedSearchTerm) return;
 
-      const searchQuery = urlParams.toString();
-      navigate(`/search?${searchQuery}`);
+      setSearchParams((prev) => {
+        prev.set("searchTerm", optimizedSearchTerm);
+        return prev;
+      });
+
+      navigate(`/search?${searchParams.toString()}`);
     },
-    [location.search, navigate, searchTerm]
+    [navigate, searchParams, searchTerm, setSearchParams]
   );
 
   const renderBtns = (): JSX.Element => {
     if (user && isAuth) {
       return (
         <>
-          <Link to="/account" title="my account">
-            <img
-              src={user.avatarUrl ?? defaultAvatar}
-              className="avatar--g avatar--sm--g"
-              alt="account"
-              loading="lazy"
-            />
-          </Link>
           {!isFetchingCart && !fetchCartErr && cart && (
             <Link to="/cart" title="my cart" className="position-relative">
               <FontAwesomeIcon
@@ -81,6 +97,14 @@ const Header = memo(() => {
               )}
             </Link>
           )}
+          <Link to="/account" title="my account">
+            <img
+              src={user.avatarUrl ?? defaultAvatar}
+              className="avatar--g avatar--sm--g"
+              alt="account"
+              loading="lazy"
+            />
+          </Link>
         </>
       );
     }

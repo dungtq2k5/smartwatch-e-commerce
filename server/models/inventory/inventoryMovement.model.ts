@@ -1,9 +1,21 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-const inventoryMovementSchema = new mongoose.Schema(
+export interface IInventoryMovement extends Document<Types.ObjectId> {
+  variationInstanceId: Types.ObjectId;
+  sku: string;
+  inventoryMovementTypeId: Types.ObjectId;
+  grnId: Types.ObjectId | null;
+  createdBy: Types.ObjectId;
+  movementDate: Date;
+  quantity: 1 | -1; // 1 for addition, -1 for removal
+  notes: string | null;
+  createdAt: Date;
+}
+
+const inventoryMovementSchema: Schema<IInventoryMovement> = new Schema(
   {
     variationInstanceId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "VariationInstance",
       required: true,
     },
@@ -11,19 +23,19 @@ const inventoryMovementSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    movementTypeId: {
-      type: mongoose.Schema.Types.ObjectId,
+    inventoryMovementTypeId: {
+      type: Schema.Types.ObjectId,
       ref: "InventoryMovementType",
       required: true,
     },
     grnId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "Grn",
       required: false,
       default: null,
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -46,8 +58,9 @@ const inventoryMovementSchema = new mongoose.Schema(
   { timestamps: { createdAt: true } }
 );
 
-const InventoryMovement = mongoose.model(
-  "InventoryMovement",
-  inventoryMovementSchema
-);
+const InventoryMovement: Model<IInventoryMovement> =
+  mongoose.model<IInventoryMovement>(
+    "InventoryMovement",
+    inventoryMovementSchema
+  );
 export default InventoryMovement;

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { RequestAuth } from "../../utils/types";
 import { HttpError } from "../../utils/errorHandler";
-import ProductBrand from "../../models/product/productBrand.model";
+import ProductBrand, { IProductBrand } from "../../models/product/productBrand.model";
 import {
   ProductBrandCreate,
   ProductBrandListResponse,
@@ -202,7 +202,7 @@ export async function remove(
 }
 
 // --- HELPER FUNCTIONS ---
-async function hasConstraints(brandId: Types.ObjectId): Promise<boolean> {
+async function hasConstraints(brandId: Types.ObjectId | string): Promise<boolean> {
   console.log("▶️ ", "Checking brand constraints...");
 
   try {
@@ -235,16 +235,20 @@ async function hasConstraints(brandId: Types.ObjectId): Promise<boolean> {
 }
 
 async function executeDeletion(
-  brandToDelete: any,
+  brandToDelete: IProductBrand,
   deletedBy: Types.ObjectId
 ): Promise<void> {
   try {
     if (await hasConstraints(brandToDelete._id)) {
       // Soft delete
-      brandToDelete.isDeleted = true;
-      brandToDelete.deletedAt = new Date();
-      brandToDelete.deletedBy = deletedBy;
-      await brandToDelete.save();
+      await ProductBrand.findByIdAndUpdate(
+        brandToDelete._id,
+        {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy,
+        },
+      );
       return;
     }
 
@@ -254,7 +258,8 @@ async function executeDeletion(
         "product-image"
       );
     }
-    await brandToDelete.deleteOne();
+
+    await ProductBrand.findByIdAndDelete(brandToDelete._id);
   } catch (error) {
     console.error("❌ ", "Error deleting product brand:", error);
     throw error;

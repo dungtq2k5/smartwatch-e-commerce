@@ -1,6 +1,18 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-const variationInstanceSchema = new mongoose.Schema(
+export interface IVariationInstance extends Document<Types.ObjectId> {
+  sku: string;
+  modelVariationId: Types.ObjectId;
+  supplierSerialNumber: string;
+  supplierImeiNumber: string | null;
+  conditionId: Types.ObjectId;
+  isActive: boolean;
+  inactiveAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const variationInstanceSchema: Schema<IVariationInstance> = new Schema(
   {
     sku: {
       type: String,
@@ -8,21 +20,23 @@ const variationInstanceSchema = new mongoose.Schema(
       unique: true,
     },
     modelVariationId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "ModelVariation",
       required: true,
     },
-    supplierSerialNumber: { // unique
+    supplierSerialNumber: {
+      // unique
       type: String,
       required: true,
     },
-    supplierImeiNumber: { // unique
+    supplierImeiNumber: {
+      // unique
       type: String,
       required: false,
       default: null,
     },
     conditionId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "InstanceCondition",
       required: true,
     },
@@ -55,8 +69,9 @@ variationInstanceSchema.index(
   }
 );
 
-const VariationInstance = mongoose.model(
-  "VariationInstance",
-  variationInstanceSchema
-);
+const VariationInstance: Model<IVariationInstance> =
+  mongoose.model<IVariationInstance>(
+    "VariationInstance",
+    variationInstanceSchema
+  );
 export default VariationInstance;

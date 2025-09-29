@@ -7,6 +7,7 @@ import type { FormInput } from "../utils/types";
 import { useCallback, useRef, useState } from "react";
 import {
   capFirstLetter,
+  formatError,
   isValidBirthDate,
   isValidEmail,
   isValidPassword,
@@ -18,9 +19,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuthStore } from "../store/authStore";
 import type { UserSignup } from "../../../common/types.common";
 import toast from "react-hot-toast";
-import { formatError } from "../utils/utils";
 import AuthByGoogleBtn from "../components/AuthByGoogleBtn";
 import HorizontalDivider from "../components/HorizontalDivider";
+import { WAITING_EMOJI } from "../configs";
 
 type FormData = {
   fullName: FormInput;
@@ -37,6 +38,9 @@ export default function Signup() {
   renderCount.current += 1;
   console.log("Signup render count:", renderCount.current);
 
+  const navigate = useNavigate();
+  const { signup } = useAuthStore();
+
   const [formData, setFormData] = useState<FormData>({
     fullName: { val: "" },
     emailOrPhone: { val: "" },
@@ -45,11 +49,13 @@ export default function Signup() {
     birth: { val: "" },
     gender: "other",
   });
-  const { signup, isLoading } = useAuthStore();
-  const navigate = useNavigate();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+      if (isSubmitting) return;
+
       const { name, value: val } = e.target;
 
       if (name === "gender") {
@@ -94,12 +100,18 @@ export default function Signup() {
         },
       }));
     },
-    [formData.confirmPassword.val, formData.password.val]
+    [formData.confirmPassword.val, formData.password.val, isSubmitting]
   );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
+      if (isSubmitting) {
+        toast("Submission is in progress. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
 
       const validateForm = (): boolean => {
         let allValid = true;
@@ -163,15 +175,18 @@ export default function Signup() {
           gender: formData.gender,
         } as unknown as UserSignup;
 
+        setIsSubmitting(true);
         try {
           await signup(user);
-          navigate("/verify");
+          navigate("/verify", { replace: true });
         } catch (error) {
           toast.error(formatError(error));
+        } finally {
+          setIsSubmitting(false);
         }
       }
     },
-    [formData, navigate, signup]
+    [formData, isSubmitting, navigate, signup]
   );
 
   return (
@@ -306,9 +321,9 @@ export default function Signup() {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={isLoading}
+            disabled={isSubmitting}
           >
-            {isLoading ? (
+            {isSubmitting ? (
               <>
                 <span
                   className="spinner-border spinner-border-sm me-2"

@@ -1,9 +1,19 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-const optSchema = new mongoose.Schema(
+export interface IOtp extends Document<Types.ObjectId> {
+  userId: Types.ObjectId;
+  type: "email" | "phoneNumber";
+  code: string;
+  expiresAt: Date;
+  isUsed: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const optSchema: Schema<IOtp> = new Schema(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -29,5 +39,5 @@ const optSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const Otp = mongoose.model("Otp", optSchema);
+const Otp: Model<IOtp> = mongoose.model<IOtp>("Otp", optSchema);
 export default Otp;

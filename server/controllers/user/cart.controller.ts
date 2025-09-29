@@ -4,13 +4,15 @@ import {
   SuccessResponse,
   UserCartCreate,
   UserCartResponse,
-  UserCartResponseList,
+  UserCartListResponse,
+  UserCartBulkCreate,
 } from "../../../common/types.common";
 import { HttpError } from "../../utils/errorHandler";
 import mongoose, { Types } from "mongoose";
 import { RequestAuth } from "../../utils/types";
 import Cart from "../../models/user/cart.model";
 import ModelVariation from "../../models/product/modelVariation.model";
+import { MAX_ITEMS_FOR_CREATE_BULK_CART } from "../../configs/configs";
 
 // --- BOTH ADMIN AND BUYER FUNCTIONS ---
 // Only fetch data needed for the UI, can be adjusted in the future
@@ -75,7 +77,7 @@ export async function getSelfAll(
         total: formattedCarts.length,
         items: formattedCarts,
       },
-    } as SuccessResponse<UserCartResponseList>);
+    } as SuccessResponse<UserCartListResponse>);
     console.log("✅", "User cart details retrieved successfully.");
   } catch (error) {
     next(error);
@@ -89,6 +91,7 @@ export async function createSelf(
 ): Promise<void> {
   console.log("▶️ ", "Processing create user cart request...");
   const { variationId, quantity } = req.body as UserCartCreate;
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -127,16 +130,18 @@ export async function createSelf(
       throw new HttpError(400, "This product is not available for purchase.");
     }
 
-    // Business logic
-    // Cart exists -> update quantity
-    // Cart does not exist -> create new cart
+    /*
+      Business logic:
+        - Cart exists -> update quantity
+        - Cart does not exist -> create new cart
+    */
     const { userId } = req["auth"] as RequestAuth;
     const existingCart = await Cart.findOne({
       userId,
       variationId,
     }).session(session);
     const totalQuantity = existingCart
-      ? existingCart.quantity! + (quantity || 1)
+      ? existingCart.quantity + (quantity || 1)
       : quantity || 1;
     if (totalQuantity > variation.stockQuantity) {
       throw new HttpError(
@@ -213,6 +218,146 @@ export async function createSelf(
   }
 }
 
+export async function createBulkSelf(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing bulk create user cart request...");
+  const { items } = req.body as UserCartBulkCreate;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (items.length > MAX_ITEMS_FOR_CREATE_BULK_CART) {
+      throw new HttpError(
+        400,
+        `Cannot add more than ${MAX_ITEMS_FOR_CREATE_BULK_CART} items at once.`
+      );
+    }
+
+    // --- 1. Aggregate and Validate Input ---
+    const variationIds = items.map((i) => {
+      const variationId = i.variationId;
+
+      if (!Types.ObjectId.isValid(variationId)) {
+        throw new HttpError(404, `Variation not found: ${variationId}`);
+      }
+
+      return variationId;
+    });
+
+    // --- 2. Fetch Required Data in Bulk ---
+    const { userId } = req["auth"] as RequestAuth;
+    const variations = await ModelVariation.find({
+      _id: { $in: variationIds },
+      isDeleted: false,
+      stopSelling: false,
+    })
+      .populate({
+        path: "productModelId",
+        select: "stopSelling isDeleted",
+        populate: {
+          path: "productId",
+          select: "stopSelling isDeleted",
+        },
+      })
+      .session(session)
+      .lean();
+    const existingCarts = await Cart.find({
+      userId,
+      variationId: { $in: variationIds },
+    })
+      .session(session)
+      .lean();
+
+    const variationsMap = new Map(variations.map((v) => [v._id.toString(), v]));
+    const existingCartsMap = new Map(
+      existingCarts.map((c) => [c.variationId.toString(), c])
+    );
+
+    // --- 3. Prepare Bulk Operations ---
+    const bulkOps: any[] = [];
+
+    for (const { variationId, quantity } of items) {
+      const variation = variationsMap.get(variationId);
+
+      // Check if product exists and is sellable
+      if (!variation) {
+        throw new HttpError(
+          404,
+          `Variation with ID ${variationId} not found, has been deleted, or is no longer for sale.`
+        );
+      }
+      const model = variation.productModelId as any;
+      const product = model.productId as any;
+      if (
+        model.isDeleted ||
+        product.isDeleted ||
+        model.stopSelling ||
+        product.stopSelling
+      ) {
+        throw new HttpError(
+          404,
+          `The product for variation ${variationId} is no longer available.`
+        );
+      }
+
+      const existingCart = existingCartsMap.get(variationId);
+      const currQuant = existingCart?.quantity || 0;
+      const newTotalQuant = currQuant + (quantity || 1);
+
+      // Check stock
+      if (newTotalQuant > variation.stockQuantity) {
+        throw new HttpError(
+          400,
+          `Not enough stock for variation ${variation.name}. Only ${variation.stockQuantity} left.`
+        );
+      }
+
+      if (existingCart) {
+        // Update existing cart
+        bulkOps.push({
+          updateOne: {
+            filter: { _id: existingCart._id },
+            update: { $set: { quantity: newTotalQuant } },
+          },
+        });
+      } else {
+        // Insert new cart
+        bulkOps.push({
+          insertOne: {
+            document: {
+              userId,
+              variationId,
+              quantity: newTotalQuant,
+            },
+          },
+        });
+      }
+    }
+
+    // --- 4. Execute Bulk Write ---
+    if (bulkOps.length > 0) {
+      await Cart.bulkWrite(bulkOps, { session });
+    }
+
+    await session.commitTransaction();
+
+    res.status(201).json({
+      success: true,
+      message: "Cart updated successfully.",
+    } as SuccessResponse);
+    console.log("✅", "Bulk cart creation successful.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
 export async function updateSelf(
   req: Request,
   res: Response,
@@ -280,7 +425,7 @@ export async function updateSelf(
     }
 
     // Check stock quantity
-    if (quantity > variation.stockQuantity!) {
+    if (quantity > variation.stockQuantity) {
       throw new HttpError(
         400,
         `Not enough stock for this variation. Only ${variation.stockQuantity} left.`

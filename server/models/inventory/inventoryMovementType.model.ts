@@ -1,20 +1,42 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-const inventoryMovementTypeSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  description: {
-    type: String,
-    required: false,
-    default: null,
-  },
-});
+export interface IInventoryMovementType extends Document<Types.ObjectId> {
+  lookupId: string;
+  name: string;
+  description: string;
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-const InventoryMovementType = mongoose.model(
-  "InventoryMovementType",
-  inventoryMovementTypeSchema
+const inventoryMovementTypeSchema: Schema<IInventoryMovementType> = new Schema(
+  {
+    lookupId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    description: {
+      type: String,
+      required: true,
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+  },
+  { timestamps: true }
 );
+
+const InventoryMovementType: Model<IInventoryMovementType> =
+  mongoose.model<IInventoryMovementType>(
+    "InventoryMovementType",
+    inventoryMovementTypeSchema
+  );
 export default InventoryMovementType;

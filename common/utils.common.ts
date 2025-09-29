@@ -1,16 +1,15 @@
 import type { UserAddressFormat } from "../client/src/utils/types.ts";
 import {
-  AVATAR_ALLOWED_TYPES,
-  AVATAR_MAX_SIZE,
-  AVATAR_MIN_HEIGHT,
-  AVATAR_MIN_WIDTH,
+  BUYER_RETURN_REASON_MAX_LENGTH,
+  BUYER_RETURN_REASON_MIN_LENGTH,
+  PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PRODUCT_NAME_MAX_LENGTH,
   PRODUCT_NAME_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "./configs.common.ts";
-import type { DeepPartial } from "./types.common.ts";
+import type { DeepPartial, UserAddressCompare } from "./types.common.ts";
 import { districts, wards, provinces } from "./vnAddresses.ts";
 
 export function removeOddSpaces(val: string): string {
@@ -71,21 +70,18 @@ export function convertVnPhoneNumberToE164(phoneNumber: string): string {
   return `+84${phoneNumber.slice(1)}`; // Remove leading 0 and add +84
 }
 
-export function convertUtcToLocalISOString(utcIsoString: string): string {
-  if (!utcIsoString.endsWith("Z")) return utcIsoString;
-
+// Return string format: YYYY-MM-DD at local timezone
+export function getLocalDateString(utcIsoString: string): string {
+  // Create a Date object from the UTC ISO string.
   const date = new Date(utcIsoString);
 
-  if (isNaN(date.getTime())) return utcIsoString;
-
+  // Use the local-based methods to get the year, month, and day.
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
 
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  // Return the date in YYYY-MM-DD format.
+  return `${year}-${month}-${day}`;
 }
 
 export function readFileAsDataUrl(file: File) {
@@ -263,6 +259,34 @@ export function isEmptyObj(obj: any): boolean {
   return Object.keys(obj).length === 0;
 }
 
+export function formatError(
+  err: unknown,
+  exceptionMsg: string = "An unknown error occurred"
+): string {
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+
+  return String(err) || exceptionMsg;
+}
+
+export function compareUserAddress(
+  address1: UserAddressCompare,
+  address2: UserAddressCompare
+): boolean {
+  return (
+    address1.name === address2.name &&
+    address1.street === address2.street &&
+    address1.apartmentNumber === address2.apartmentNumber &&
+    address1.wardCode === address2.wardCode &&
+    address1.districtCode === address2.districtCode &&
+    address1.cityProvinceCode === address2.cityProvinceCode &&
+    address1.countryCode === address2.countryCode &&
+    address1.location.coordinates[0] === address2.location.coordinates[0] && // long
+    address1.location.coordinates[1] === address2.location.coordinates[1] && // lat
+    address1.phoneNumber === address2.phoneNumber
+  );
+}
+
 // --- VALIDATION UTILS ---
 export function isValidUserFullName(fullName: any): boolean {
   if (typeof fullName !== "string") return false;
@@ -297,9 +321,10 @@ export function isValidPassword(password: any): boolean {
 
   if (containsEmoji(password)) return false;
 
-  // Password contains at least a letter + a number + length >= minLength -> valid
+  // Password contains at least a letter + a number + length >= minLength and <= maxLength -> valid
   return (
     password.length >= PASSWORD_MIN_LENGTH &&
+    password.length <= PASSWORD_MAX_LENGTH &&
     /[a-zA-Z]/.test(password) &&
     /\d/.test(password)
   );
@@ -338,7 +363,7 @@ export function isValidProductName(productName: any): boolean {
 }
 
 export function isStringArray(arr: any): boolean {
-  if (!Array.isArray(arr)) return false;
+  if (!Array.isArray(arr) || arr.length === 0) return false;
 
   // Check if every element in the array is a string
   return arr.every((item) => typeof item === "string");
@@ -366,6 +391,15 @@ export function isValidListOfColorsHex(colors: any): boolean {
   if (!Array.isArray(colors)) return false;
 
   return colors.every((color) => isValidColorHex(color));
+}
+
+export function isValidBuyerReturnReason(reason: any): boolean {
+  if (typeof reason !== "string") return false;
+
+  return (
+    reason.length > BUYER_RETURN_REASON_MIN_LENGTH &&
+    reason.length < BUYER_RETURN_REASON_MAX_LENGTH
+  );
 }
 
 // List of colors with name and hex
@@ -416,43 +450,6 @@ export function isValidBirthDate(birthDate: any): boolean {
   // Check if the date is in the past
   const today = new Date();
   return birthDate < today;
-}
-
-export async function isValidAvatar(file: File): Promise<string[]> {
-  const errors: string[] = [];
-
-  if (!AVATAR_ALLOWED_TYPES.includes(file.type as any)) {
-    errors.push(
-      `Invalid file type. Allowed types: ${AVATAR_ALLOWED_TYPES.join(", ")}`
-    );
-  }
-
-  if (file.size > AVATAR_MAX_SIZE) {
-    errors.push(
-      `File size exceeds the maximum limit of ${
-        AVATAR_MAX_SIZE / 1024 / 1024
-      }MB`
-    );
-  }
-
-  try {
-    const img = new Image();
-    img.src = (await readFileAsDataUrl(file)) as string;
-    await new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = reject;
-    });
-
-    if (img.width < AVATAR_MIN_WIDTH || img.height < AVATAR_MIN_HEIGHT) {
-      errors.push(
-        `Image dimensions must be at least ${AVATAR_MIN_WIDTH}x${AVATAR_MIN_HEIGHT} pixels`
-      );
-    }
-  } catch {
-    errors.push("Uploaded file is not a valid image");
-  }
-
-  return errors;
 }
 
 export function isValidNumString(numString: any): boolean {

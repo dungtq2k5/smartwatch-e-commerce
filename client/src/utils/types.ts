@@ -1,7 +1,9 @@
 import type {
   BaseUserAddress,
   ModelVariationResponse,
+  OrderReturnSearchQuery,
   ProductModelResponse,
+  UserCartResponse,
 } from "../../../common/types.common";
 
 export type FormInput = {
@@ -55,3 +57,24 @@ export type UserCartUpdate = {
   variationId: string;
   quantity: number;
 };
+
+export type BuyNowItem = {
+  variation: UserCartResponse["variation"];
+  totalCents: number; // variation.additionalPriceCents + model.priceCents
+  quantity: number;
+};
+
+export type PurchaseTab =
+  | "all"
+  | "to-pay"
+  | "to-ship"
+  | "to-receive"
+  | "completed"
+  | "cancelled"
+  | "return-refund";
+
+export type OrderReturnSearchQueryCli = Omit<OrderReturnSearchQuery, "userId"> &
+  (
+    | { userId?: string; orderId?: never }
+    | { userId?: never; orderId?: string }
+  );

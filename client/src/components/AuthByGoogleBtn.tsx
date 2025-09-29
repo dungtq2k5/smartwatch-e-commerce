@@ -1,12 +1,12 @@
-import { memo, useRef } from "react";
+import { memo, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import toast from "react-hot-toast";
-import { formatError } from "../utils/utils";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../utils/firebase.config";
 import { useAuthStore } from "../store/authStore";
 import { useNavigate } from "react-router-dom";
+import { formatError } from "../../../common/utils.common";
 
 const AuthByGoogleBtn = memo(() => {
   // DEV for testing
@@ -14,10 +14,16 @@ const AuthByGoogleBtn = memo(() => {
   renderCount.current += 1;
   console.log("AuthByGoogleBtn rendered", renderCount.current);
 
-  const { isLoading, authByGoogle } = useAuthStore();
   const navigate = useNavigate();
 
+  const { authByGoogle } = useAuthStore();
+
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
   const handleGoogleAuth = async (): Promise<void> => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -34,9 +40,11 @@ const AuthByGoogleBtn = memo(() => {
       }
 
       await authByGoogle({ idToken, accessToken });
-      navigate("/");
+      navigate("/", { replace: true });
     } catch (error) {
       toast.error(formatError(error));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -45,9 +53,9 @@ const AuthByGoogleBtn = memo(() => {
       type="button"
       className="btn btn-danger"
       onClick={handleGoogleAuth}
-      disabled={isLoading}
+      disabled={isSubmitting}
     >
-      {isLoading ? (
+      {isSubmitting ? (
         <>
           <span
             className="spinner-border spinner-border-sm me-2"

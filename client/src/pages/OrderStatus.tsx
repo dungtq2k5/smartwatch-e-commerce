@@ -10,13 +10,14 @@ import { useEffect } from "react";
 
 export default function OrderStatus() {
   const query = new URLSearchParams(window.location.search);
-  const status = query.get("redirect_status");
+  const paymentMethod = query.get("method") as "stripe" | "cod" | null;
+  const status = query.get("redirect_status") as "succeeded" | "failed" | null;
 
-  const { clearCart } = useUserCartStore();
+  const { clearCartCache } = useUserCartStore();
 
   useEffect(() => {
-    if (status === "succeeded") clearCart();
-  }, [clearCart, status]);
+    if (status === "succeeded") clearCartCache();
+  }, [clearCartCache, status]);
 
   return (
     <main className="container--g text-center">
@@ -25,27 +26,51 @@ export default function OrderStatus() {
         <ApiError errMsg="Couldn't get redirect_status." />
       ) : (
         <>
-          {status === "succeeded" ? (
-            <p className="text-success">
-              <FontAwesomeIcon icon={faFaceSmileBeam} className="me-2" />
-              Success! Your payment has been processed. We've received your
-              order.
-            </p>
-          ) : status === "failed" ? (
-            <p className="text-danger">
-              <FontAwesomeIcon icon={faFaceSadCry} className="me-2" />
-              Payment failed. Please try again from the{" "}
-              <Link to="/checkout">checkout page</Link> or contact support.
-            </p>
+          {paymentMethod === "stripe" ? (
+            status === "succeeded" ? (
+              <p className="text-success">
+                <FontAwesomeIcon icon={faFaceSmileBeam} className="me-2" />
+                Success! Your payment has been processed. We've received your
+                order.
+              </p>
+            ) : status === "failed" ? (
+              <p className="text-danger">
+                <FontAwesomeIcon icon={faFaceSadCry} className="me-2" />
+                Payment failed. Please try again from the{" "}
+                <Link to="/checkout">checkout page</Link> or contact support.
+              </p>
+            ) : (
+              <p>
+                Your payment status is currently processing. Please check your
+                orders page for the final status shortly.
+              </p>
+            )
+          ) : paymentMethod === "cod" ? (
+            status === "succeeded" ? (
+              <p className="text-success">
+                <FontAwesomeIcon icon={faFaceSmileBeam} className="me-2" />
+                Success! Your order has been placed. Please prepare the payment
+                upon delivery.
+              </p>
+            ) : (
+              <p className="text-danger">
+                <FontAwesomeIcon icon={faFaceSadCry} className="me-2" />
+                There was an issue placing your order. Please try again from the{" "}
+                <Link to="/checkout">checkout page</Link> or contact support.
+              </p>
+            )
           ) : (
-            <p>
-              Your payment status is currently processing. Please check your
-              orders page for the final status shortly.
-            </p>
+            <ApiError errMsg="Couldn't get payment method." />
           )}
-          <Link to="/account/orders" className="btn btn-primary">
-            View My Orders
-          </Link>
+
+          <div className="d-flex gap-2">
+            <Link to="/" className="btn btn-primary">
+              Home
+            </Link>
+            <Link to="/account/purchase" className="btn btn-primary">
+              My Purchases
+            </Link>
+          </div>
         </>
       )}
     </main>

@@ -1,13 +1,28 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import {
   PROTECTED_ROLE_NAMES,
   MODIFIABLE_PROTECTED_ROLES_FIELDS,
 } from "../../../common/configs.common";
 
-const rolePermission = new mongoose.Schema(
+export interface IRolePermission {
+  id: Types.ObjectId;
+  assignedAt: Date;
+  assignedBy: Types.ObjectId;
+}
+
+export interface IRole extends Document<Types.ObjectId> {
+  name: string;
+  userAssigned: number;
+  permissions: IRolePermission[];
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const rolePermission: Schema<IRolePermission> = new Schema(
   {
     id: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "Permission",
       required: true,
     },
@@ -17,7 +32,7 @@ const rolePermission = new mongoose.Schema(
       default: Date.now,
     },
     assignedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -25,7 +40,7 @@ const rolePermission = new mongoose.Schema(
   { _id: false }
 );
 
-const roleSchema = new mongoose.Schema(
+const roleSchema: Schema<IRole> = new Schema(
   {
     name: {
       type: String,
@@ -45,7 +60,7 @@ const roleSchema = new mongoose.Schema(
       default: [],
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -140,5 +155,5 @@ roleSchema.pre("deleteOne", preventProtectedRoleMod("deletes"));
 roleSchema.pre("deleteMany", preventProtectedRoleMod("deletes"));
 roleSchema.pre("findOneAndDelete", preventProtectedRoleMod("deletes"));
 
-const Role = mongoose.model("Role", roleSchema);
+const Role: Model<IRole> = mongoose.model<IRole>("Role", roleSchema);
 export default Role;

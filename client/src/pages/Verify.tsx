@@ -21,7 +21,7 @@ export default function Verify() {
         <VerifyForm
           type={user.email ? "email" : "phoneNumber"}
           onSuccess={() => {
-            navigate("/");
+            navigate("/", { replace: true });
           }}
         />
       )}

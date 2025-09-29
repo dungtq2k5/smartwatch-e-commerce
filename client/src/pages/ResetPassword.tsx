@@ -2,12 +2,12 @@ import { useCallback, useRef, useState } from "react";
 import { PASSWORD_HINT_MESSAGE } from "../../../common/configs.common";
 import type { FormInput } from "../utils/types";
 import { useNavigate, useParams } from "react-router-dom";
-import { isValidPassword } from "../../../common/utils.common";
+import { formatError, isValidPassword } from "../../../common/utils.common";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store/authStore";
-import { formatError } from "../utils/utils";
+import { WAITING_EMOJI } from "../configs";
 
 type FormData = {
   password: FormInput;
@@ -21,7 +21,9 @@ export default function ResetPassword() {
   console.log("ResetPassword render count:", renderCount.current);
 
   const { token } = useParams();
-  const { resetPassword, isLoading } = useAuthStore();
+  const { resetPassword } = useAuthStore();
+
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<FormData>({
     password: { val: "" },
@@ -32,6 +34,8 @@ export default function ResetPassword() {
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>): void => {
+      if (isSubmitting) return;
+
       const { name, value: val } = e.target;
 
       let err = "";
@@ -51,12 +55,18 @@ export default function ResetPassword() {
         },
       }));
     },
-    [formData.password.val]
+    [formData.password.val, isSubmitting]
   );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
+      if (isSubmitting) {
+        toast("Submission is in progress. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
 
       const validateForm = (): boolean => {
         let allValid = true;
@@ -90,16 +100,19 @@ export default function ResetPassword() {
           return;
         }
 
+        setIsSubmitting(true);
         try {
           await resetPassword(formData.password.val, token);
-          navigate("/login");
+          navigate("/login", { replace: true });
           toast.success("Password reset successfully. You can now log in.");
         } catch (error) {
           toast.error(formatError(error));
+        } finally {
+          setIsSubmitting(false);
         }
       }
     },
-    [formData, resetPassword, token, navigate]
+    [isSubmitting, formData, token, resetPassword, navigate]
   );
 
   return (
@@ -158,9 +171,9 @@ export default function ResetPassword() {
         <button
           className="w-100 btn btn-primary mt-3 mb-3"
           type="submit"
-          disabled={isLoading}
+          disabled={isSubmitting}
         >
-          {isLoading ? (
+          {isSubmitting ? (
             <>
               <span
                 className="spinner-border spinner-border-sm me-2"

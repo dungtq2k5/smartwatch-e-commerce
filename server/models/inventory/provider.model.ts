@@ -1,6 +1,18 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-const providerSchema = new mongoose.Schema(
+export interface IProvider extends Document<Types.ObjectId> {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  createdBy: Types.ObjectId;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+  deletedBy: Types.ObjectId | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const providerSchema: Schema<IProvider> = new Schema(
   {
     fullName: {
       type: String,
@@ -27,7 +39,7 @@ const providerSchema = new mongoose.Schema(
       },
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -42,7 +54,7 @@ const providerSchema = new mongoose.Schema(
       default: null,
     },
     deletedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: false,
       default: null,
@@ -51,5 +63,8 @@ const providerSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const Provider = mongoose.model("Provider", providerSchema);
+const Provider: Model<IProvider> = mongoose.model<IProvider>(
+  "Provider",
+  providerSchema
+);
 export default Provider;

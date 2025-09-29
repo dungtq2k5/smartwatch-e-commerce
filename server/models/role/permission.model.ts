@@ -1,6 +1,11 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-const PermissionSchema = new mongoose.Schema({
+export interface IPermission extends Document<Types.ObjectId> {
+  name: string;
+  code: string;
+}
+
+const PermissionSchema: Schema<IPermission> = new Schema({
   name: {
     type: String,
     unique: true,
@@ -13,5 +18,8 @@ const PermissionSchema = new mongoose.Schema({
   },
 });
 
-const Permission = mongoose.model("Permission", PermissionSchema);
+const Permission: Model<IPermission> = mongoose.model<IPermission>(
+  "Permission",
+  PermissionSchema
+);
 export default Permission;

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
-import { centsToUSD } from "../../../common/utils.common";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { centsToUSD, formatError } from "../../../common/utils.common";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from "react-router-dom";
@@ -9,8 +9,14 @@ import HorizontalDivider from "../components/HorizontalDivider";
 import CartSkeleton from "../components/skeleton/CartSkeleton";
 import type { UserCartUpdate } from "../utils/types";
 import toast from "react-hot-toast";
-import { formatError } from "../utils/utils";
 import CartItemCard from "../components/CartItemCard";
+import { WAITING_EMOJI } from "../configs";
+
+type Process = {
+  isProcessing: boolean;
+  isFetching: boolean;
+  modifyingItemId: string | null;
+};
 
 export default function Cart() {
   // DEV temp for testing
@@ -22,9 +28,6 @@ export default function Cart() {
 
   const {
     cart,
-    isFetching,
-    fetchErr,
-    modifyingItemId,
     totalCents,
     isAllItemAvailable,
     fetchCart,
@@ -32,9 +35,31 @@ export default function Cart() {
     removeCartItem,
   } = useUserCartStore();
 
+  const [process, setProcess] = useState<Process>({
+    isProcessing: true,
+    isFetching: true,
+    modifyingItemId: null,
+  });
+  const [apiError, setApiError] = useState<string | null>(null);
+
   // Fetch initial when first loaded: cart
   useEffect(() => {
-    fetchCart();
+    const handleFetchCart = async (): Promise<void> => {
+      setProcess((prev) => ({ ...prev, isProcessing: true, isFetching: true }));
+      try {
+        await fetchCart();
+      } catch (error) {
+        setApiError(formatError(error));
+      } finally {
+        setProcess((prev) => ({
+          ...prev,
+          isProcessing: false,
+          isFetching: false,
+        }));
+      }
+    };
+
+    handleFetchCart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -43,39 +68,71 @@ export default function Cart() {
       e: React.ChangeEvent<HTMLSelectElement>,
       variationId: string
     ): Promise<void> => {
+      if (process.modifyingItemId === variationId) {
+        toast("Update is in progress. Please wait.", { icon: WAITING_EMOJI });
+        return;
+      }
+
       const data: UserCartUpdate = {
         variationId,
         quantity: parseInt(e.target.value, 10),
       };
 
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: true,
+        modifyingItemId: variationId,
+      }));
       try {
         await updateCartItem(data);
         toast.success("Cart item updated successfully!");
       } catch (error) {
         toast.error(formatError(error));
+      } finally {
+        setProcess((prev) => ({
+          ...prev,
+          isProcessing: false,
+          modifyingItemId: null,
+        }));
       }
     },
-    [updateCartItem]
+    [process.modifyingItemId, updateCartItem]
   );
 
   const handleRemoveItem = useCallback(
     async (variationId: string): Promise<void> => {
+      if (process.modifyingItemId === variationId) {
+        toast("Remove is in progress. Please wait.", { icon: WAITING_EMOJI });
+        return;
+      }
+
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: true,
+        modifyingItemId: variationId,
+      }));
       try {
         await removeCartItem(variationId);
         toast.success("Cart item removed successfully!");
       } catch (error) {
         toast.error(formatError(error));
+      } finally {
+        setProcess((prev) => ({
+          ...prev,
+          isProcessing: false,
+          modifyingItemId: null,
+        }));
       }
     },
-    [removeCartItem]
+    [process.modifyingItemId, removeCartItem]
   );
 
   return (
     <main className="container--g">
-      {isFetching ? (
+      {process.isFetching ? (
         <CartSkeleton />
-      ) : fetchErr ? (
-        <ApiError errMsg={fetchErr} />
+      ) : apiError ? (
+        <ApiError errMsg={apiError} />
       ) : !cart ? (
         <ApiError errMsg="No cart found. Please try again later." />
       ) : !cart.total ? (
@@ -97,7 +154,7 @@ export default function Cart() {
                   <CartItemCard
                     key={item.variation.id}
                     item={item}
-                    isLoading={modifyingItemId === item.variation.id}
+                    isLoading={process.modifyingItemId === item.variation.id}
                     onUpdate={handleUpdateItem}
                     onRemove={handleRemoveItem}
                   />
@@ -129,7 +186,7 @@ export default function Cart() {
                       type="button"
                       className="btn-premium--g"
                       onClick={() => navigate("/checkout")}
-                      disabled={!isAllItemAvailable || !!modifyingItemId}
+                      disabled={!isAllItemAvailable || process.isProcessing}
                     >
                       Check Out
                     </button>

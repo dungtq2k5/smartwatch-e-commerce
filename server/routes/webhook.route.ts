@@ -1,5 +1,5 @@
 import express from "express";
-import * as paymentController from "../controllers/order/payment.controller";
+import { handleStripeWebhook } from "../controllers/order/stripe.controller";
 
 const router = express.Router();
 
@@ -7,7 +7,7 @@ const router = express.Router();
 router.post(
   "/stripe",
   express.raw({ type: "application/json" }),
-  paymentController.handleStripeWebhook
+  handleStripeWebhook
 );
 
 export default router;

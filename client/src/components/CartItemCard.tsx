@@ -106,28 +106,35 @@ const CartItemCard = memo(
                   {isLoading ? (
                     <SmallSpinner />
                   ) : (
-                    <select
-                      className="form-select form-select-sm w-auto"
-                      id={`quantity-${item.variation.id}`}
-                      name={`quantity-${item.variation.id}`}
-                      value={item.quantity}
-                      onChange={(e) => onUpdate(e, item.variation.id)}
-                      disabled={item.variation.stockQuantity === 1}
-                    >
-                      {Array.from(
-                        {
-                          length: Math.min(
-                            item.variation.stockQuantity,
-                            MAX_CART_ITEM_QUANTITY_SELECT
-                          ),
-                        },
-                        (_, i) => (
-                          <option key={i + 1} value={i + 1}>
-                            {i + 1}
-                          </option>
-                        )
+                    <>
+                      <select
+                        className="form-select form-select-sm w-auto"
+                        id={`quantity-${item.variation.id}`}
+                        name={`quantity-${item.variation.id}`}
+                        value={item.quantity}
+                        onChange={(e) => onUpdate(e, item.variation.id)}
+                        disabled={item.variation.stockQuantity === 1}
+                      >
+                        {Array.from(
+                          {
+                            length: Math.min(
+                              item.variation.stockQuantity,
+                              MAX_CART_ITEM_QUANTITY_SELECT
+                            ),
+                          },
+                          (_, i) => (
+                            <option key={i + 1} value={i + 1}>
+                              {i + 1}
+                            </option>
+                          )
+                        )}
+                      </select>
+                      {item.variation.stockQuantity === 1 && (
+                        <p className="mb-0 ms-2 text-danger small">
+                          (only one item left)
+                        </p>
                       )}
-                    </select>
+                    </>
                   )}
                 </div>
               )}

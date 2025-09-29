@@ -1,14 +1,22 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-const cartSchema = new mongoose.Schema(
+export interface ICart extends Document<Types.ObjectId> {
+  userId: Types.ObjectId;
+  variationId: Types.ObjectId;
+  quantity: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const cartSchema: Schema<ICart> = new Schema(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
     variationId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "ModelVariation",
       required: true,
     },
@@ -38,5 +46,5 @@ cartSchema.virtual("variation", {
 cartSchema.index({ userId: 1, variationId: 1 }, { unique: true });
 cartSchema.index({ userId: 1, createdAt: -1 });
 
-const Cart = mongoose.model("Cart", cartSchema);
+const Cart: Model<ICart> = mongoose.model<ICart>("Cart", cartSchema);
 export default Cart;

@@ -2,13 +2,16 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../../store/authStore";
 import type { FormInput } from "../../utils/types";
 import { Button, Modal } from "react-bootstrap";
-import { isValidVnPhoneNumber } from "../../../../common/utils.common";
-import { formatError } from "../../utils/utils";
+import {
+  formatError,
+  isValidVnPhoneNumber,
+} from "../../../../common/utils.common";
 import toast from "react-hot-toast";
 import type { UserUpdateContactInfo } from "../../../../common/types.common";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import VerifyForm from "../VerifyForm";
+import { WAITING_EMOJI } from "../../configs";
 
 const UpdateSelfPhoneModal = memo(
   ({
@@ -23,7 +26,9 @@ const UpdateSelfPhoneModal = memo(
     renderCount.current += 1;
     console.log("UpdateSelfPhoneModal render count:", renderCount.current);
 
-    const { isLoading, updateSelfContactInfo } = useAuthStore();
+    const { updateSelfContactInfo } = useAuthStore();
+
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [phoneNumber, setPhoneNumber] = useState<FormInput>({ val: "" });
     const [isUpdated, setIsUpdated] = useState<boolean>(false);
 
@@ -38,6 +43,8 @@ const UpdateSelfPhoneModal = memo(
 
     const handlePhoneNumberChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isSubmitting) return;
+
         const { value: val } = e.target;
 
         setPhoneNumber({
@@ -49,12 +56,18 @@ const UpdateSelfPhoneModal = memo(
             : undefined,
         });
       },
-      []
+      [isSubmitting]
     );
 
     const handleSubmit = useCallback(
       async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (isSubmitting) {
+          toast("Submission is in progress. Please wait.", {
+            icon: WAITING_EMOJI,
+          });
+          return;
+        }
 
         const validatePhone = (): boolean => {
           if (!phoneNumber.val) {
@@ -80,15 +93,18 @@ const UpdateSelfPhoneModal = memo(
             value: phoneNumber.val,
           };
 
+          setIsSubmitting(true);
           try {
             await updateSelfContactInfo(data);
             setIsUpdated(true);
           } catch (error) {
             toast.error(formatError(error));
+          } finally {
+            setIsSubmitting(false);
           }
         }
       },
-      [phoneNumber, updateSelfContactInfo]
+      [isSubmitting, phoneNumber.val, updateSelfContactInfo]
     );
 
     return (
@@ -114,12 +130,16 @@ const UpdateSelfPhoneModal = memo(
                 <label htmlFor="phoneNumber">New Phone Number</label>
                 {phoneNumber.err && (
                   <div className="text-danger small mt-1">
-                    <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                    <FontAwesomeIcon
+                      icon={faTriangleExclamation}
+                      className="me-2"
+                    />
                     {phoneNumber.err}
                   </div>
                 )}
                 <div id="phoneNumberHelp" className="form-text mt-1">
-                  We will send a verification code to this phone number at next step.
+                  We will send a verification code to this phone number at next
+                  step.
                 </div>
               </div>
             </Modal.Body>
@@ -129,12 +149,12 @@ const UpdateSelfPhoneModal = memo(
                 type="button"
                 variant="secondary"
                 onClick={onHide}
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" variant="primary" disabled={isSubmitting}>
+                {isSubmitting ? (
                   <>
                     <span
                       className="spinner-border spinner-border-sm me-2"

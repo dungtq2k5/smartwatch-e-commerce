@@ -1,6 +1,18 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-const productOsSchema = new mongoose.Schema(
+export interface IProductOs extends Document<Types.ObjectId> {
+  name: string;
+  logoUrl: string | null;
+  description: string | null;
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+  deletedBy: Types.ObjectId | null;
+}
+
+const productOsSchema: Schema<IProductOs> = new Schema(
   {
     name: {
       type: String,
@@ -21,7 +33,7 @@ const productOsSchema = new mongoose.Schema(
       default: null,
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -36,7 +48,7 @@ const productOsSchema = new mongoose.Schema(
       default: null,
     },
     deletedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: false,
       default: null,
@@ -45,5 +57,8 @@ const productOsSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const ProductOs = mongoose.model("ProductOs", productOsSchema);
+const ProductOs: Model<IProductOs> = mongoose.model<IProductOs>(
+  "ProductOs",
+  productOsSchema
+);
 export default ProductOs;

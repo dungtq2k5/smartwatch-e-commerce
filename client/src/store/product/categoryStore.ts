@@ -1,79 +1,31 @@
 import { create } from "zustand";
-import type {
-  ProductCategoryListResponse,
-  ProductCategoryResponse,
-} from "../../../../common/types.common";
-import { formatError, retrieve } from "../../utils/utils";
+import type { ProductCategoryListResponse } from "../../../../common/types.common";
+import { retrieve } from "../../utils/utils";
 import { PRODUCT_CATEGORIES_URL } from "../../configs";
+import { formatError } from "../../../../common/utils.common";
 
 type ProductCategoryState = {
-  categories?: ProductCategoryListResponse;
-  isFetching?: true;
-  fetchErr?: string;
-  isGetting?: true;
-  getErr?: string;
+  categories: ProductCategoryListResponse | null;
 
-  fetchCategories: () => Promise<void>;
-
-  getCategory: (
-    categoryId: string
-  ) => Promise<ProductCategoryResponse | undefined>;
+  fetchCategories: () => Promise<ProductCategoryListResponse>;
 };
 
-export const useProductCategoryStore = create<ProductCategoryState>(
-  (set, get) => ({
-    categories: undefined,
-    isFetching: undefined,
-    fetchErr: undefined,
-    isGetting: undefined,
-    getErr: undefined,
+export const useProductCategoryStore = create<ProductCategoryState>((set, get) => ({
+  categories: null,
 
-    async fetchCategories(): Promise<void> {
-      const { categories } = get();
-      if (!categories) {
-        set({ isFetching: true, fetchErr: undefined });
+  async fetchCategories(): Promise<ProductCategoryListResponse> {
+    const { categories } = get();
+    if (categories) return categories;
 
-        try {
-          const res = await retrieve(PRODUCT_CATEGORIES_URL);
-          if (!res.success) {
-            set({ fetchErr: res.message });
-            return;
-          }
+    try {
+      const res = await retrieve(PRODUCT_CATEGORIES_URL);
+      if (!res.success) throw new Error(res.message);
 
-          set({ categories: res.data as ProductCategoryListResponse });
-        } catch (error) {
-          set({ fetchErr: formatError(error) });
-        } finally {
-          set({ isFetching: undefined });
-        }
-      }
-    },
-
-    async getCategory(
-      categoryId: string
-    ): Promise<ProductCategoryResponse | undefined> {
-      const { categories } = get();
-      if (categories) {
-        const category = categories.categories.categories.find(
-          (c) => c.id === categoryId
-        );
-        if (category) return category;
-      }
-
-      set({ isGetting: true, getErr: undefined });
-      try {
-        const res = await retrieve(`${PRODUCT_CATEGORIES_URL}/${categoryId}`);
-        if (!res.success) {
-          set({ getErr: res.message });
-          return;
-        }
-
-        return res.data as ProductCategoryResponse;
-      } catch (error) {
-        set({ getErr: formatError(error) });
-      } finally {
-        set({ isGetting: undefined });
-      }
-    },
-  })
-);
+      const categories = res.data as ProductCategoryListResponse;
+      set({ categories });
+      return categories;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+}));

@@ -11,8 +11,8 @@ import {
   PRODUCT_IMAGE_BEST_HEIGHT,
   PRODUCT_IMAGE_BEST_WIDTH,
   PRODUCT_TYPES,
+  ESTIMATE_PICKUP_TIME_GAP,
 } from "../../common/configs.common";
-import { appCache } from "../configs/cache";
 import { HASH_SALT } from "../configs/configs";
 import { provinces } from "../../common/vnAddresses";
 import {
@@ -22,30 +22,54 @@ import {
   isValidVnPhoneNumber,
   randNum,
 } from "../../common/utils.common";
-import User from "../models/user/user.model";
+import User, { IUser } from "../models/user/user.model";
 import UserAddress from "../models/user/userAddress.model";
-import ProductBrand from "../models/product/productBrand.model";
-import ProductCategory from "../models/product/productCategory.model";
-import ProductOs from "../models/product/productOs.model";
-import Product from "../models/product/product.model";
-import ProductModel from "../models/product/productModel.model";
-import ModelVariation from "../models/product/modelVariation.model";
-import VariationInstance from "../models/product/variationInstance.model";
+import ProductBrand, {
+  IProductBrand,
+} from "../models/product/productBrand.model";
+import ProductCategory, {
+  IProductCategory,
+} from "../models/product/productCategory.model";
+import ProductOs, { IProductOs } from "../models/product/productOs.model";
+import Product, { IProduct } from "../models/product/product.model";
+import ProductModel, {
+  IProductModel,
+} from "../models/product/productModel.model";
+import ModelVariation, {
+  IModelVariation,
+} from "../models/product/modelVariation.model";
+import VariationInstance, {
+  IVariationInstance,
+} from "../models/product/variationInstance.model";
 import InventoryMovement from "../models/inventory/inventoryMovement.model";
-import type { KeyObjectId } from "./types";
+import OrderReturn, {
+  IOrderReturn,
+} from "../models/returnRefund/orderReturn.model";
+import ReturnReason from "../models/returnRefund/returnReason.model";
+import {
+  getAdminRoleId,
+  getBuyerRoleId,
+  getDeliveryStateId,
+  getInstanceConditionId,
+  getMovementTypeId,
+  getOrderStateId,
+  getOrderStateLookupId,
+  getPaymentMethodId,
+  getPaymentStateId,
+  getPickupStateId,
+  getRefundStateId,
+  getReturnStateId,
+  getSysUserId,
+} from "./utils";
+import Order, { IOrder } from "../models/order/order.model";
 
 // --- USERS ---
 
 // Clean up existing non-protected users, first 2 users are admins
 async function mockUsers(
   session: mongoose.mongo.ClientSession,
-  appCache: {
-    systemUserId: mongoose.Types.ObjectId;
-    buyerRoleId: mongoose.Types.ObjectId;
-    adminRoleId: mongoose.Types.ObjectId;
-  },
   count: number = 10
-): Promise<any> {
+): Promise<any[]> {
   console.log("⏳ ", `Mocking ${count} users...`);
 
   try {
@@ -68,6 +92,9 @@ async function mockUsers(
 
     // Generate mock users
     const usersToCreate: any = [];
+    const adminRoleId = getAdminRoleId();
+    const buyerRoleId = getBuyerRoleId();
+    const sysUserId = getSysUserId();
     for (let i = 0; i < count; i++) {
       const user = {
         fullName: faker.person.fullName(),
@@ -80,8 +107,8 @@ async function mockUsers(
         authProvider: faker.helpers.arrayElement(AUTH_PROVIDER_OPTIONS),
         roles: [
           {
-            id: i < 2 ? appCache.adminRoleId : appCache.buyerRoleId, // First 2 are admins
-            assignedBy: appCache.systemUserId,
+            id: i < 2 ? adminRoleId : buyerRoleId, // First 2 are admins
+            assignedBy: sysUserId,
           },
         ],
       };
@@ -100,15 +127,16 @@ async function mockUsers(
 // Clean up existing addresses and mock new ones, first address is default
 async function mockUserAddresses(
   session: mongoose.mongo.ClientSession,
-  users: any[],
+  users: IUser[],
   rand: {
     min: number;
     max: number;
   } = {
     min: 1,
     max: 4,
-  }
-): Promise<any> {
+  },
+  deleteExisting: boolean = true
+): Promise<any[]> {
   console.log("⏳ ", `Mocking user addresses...`);
 
   if (users.length === 0) {
@@ -117,20 +145,22 @@ async function mockUserAddresses(
 
   try {
     // Clear existing addresses
-    const protectedEmails = [
-      ...IMMUTABILITY_USER_EMAILS,
-      ...PROTECTED_USER_EMAILS,
-    ];
-    const protectedUsers = await User.find({
-      email: { $in: protectedEmails },
-    })
-      .select("_id")
-      .lean();
-    const protectedUserIds = protectedUsers.map((user) => user._id);
+    if (deleteExisting) {
+      const protectedEmails = [
+        ...IMMUTABILITY_USER_EMAILS,
+        ...PROTECTED_USER_EMAILS,
+      ];
+      const protectedUsers = await User.find({
+        email: { $in: protectedEmails },
+      })
+        .select("_id")
+        .lean();
+      const protectedUserIds = protectedUsers.map((user) => user._id);
 
-    await UserAddress.deleteMany({
-      userId: { $nin: protectedUserIds },
-    }).session(session);
+      await UserAddress.deleteMany({
+        userId: { $nin: protectedUserIds },
+      }).session(session);
+    }
 
     // Mock addresses for each user
     const addressesToCreate: any = [];
@@ -212,9 +242,6 @@ async function mockUserAddresses(
 // --- PRODUCTS ---
 async function mockProductBrands(
   session: mongoose.mongo.ClientSession,
-  appCache: {
-    systemUserId: mongoose.Types.ObjectId;
-  },
   count: number = 5
 ): Promise<any> {
   console.log("⏳ ", "Mocking product brands...");
@@ -223,21 +250,15 @@ async function mockProductBrands(
     // Clear existing brands
     await ProductBrand.deleteMany().session(session);
 
-    // Check cache
-    if (!appCache.systemUserId) {
-      throw new Error(
-        "System user ID not found in cache. Please initialize the cache first."
-      );
-    }
-
     // Generate mock brands
     const brandsToCreate: any = [];
+    const sysUserId = getSysUserId();
     for (let i = 0; i < count; i++) {
       const brand = {
         name: `${faker.company.name()} ${faker.string.alphanumeric(5)}`, // unique
         logoUrl: faker.image.avatar(),
         description: faker.lorem.sentence(),
-        createdBy: appCache.systemUserId,
+        createdBy: sysUserId,
       };
 
       brandsToCreate.push(brand);
@@ -255,9 +276,6 @@ async function mockProductBrands(
 
 async function mockProductCategories(
   session: mongoose.mongo.ClientSession,
-  appCache: {
-    systemUserId: mongoose.Types.ObjectId;
-  },
   count: number = 5
 ): Promise<any> {
   console.log("⏳ ", "Mocking product categories...");
@@ -268,11 +286,12 @@ async function mockProductCategories(
 
     // Generate mock categories
     const categoriesToCreate: any = [];
+    const sysUserId = getSysUserId();
     for (let i = 0; i < count; i++) {
       const category = {
         name: `${faker.commerce.department()} ${faker.string.alphanumeric(5)}`, // unique
         description: faker.lorem.sentence(),
-        createdBy: appCache.systemUserId,
+        createdBy: sysUserId,
       };
 
       categoriesToCreate.push(category);
@@ -290,9 +309,6 @@ async function mockProductCategories(
 
 async function mockProductOs(
   session: mongoose.mongo.ClientSession,
-  appCache: {
-    systemUserId: mongoose.Types.ObjectId;
-  },
   count: number = 5
 ): Promise<any> {
   console.log("⏳ ", "Mocking product operating systems...");
@@ -303,6 +319,7 @@ async function mockProductOs(
 
     // Mock operating systems
     const osToCreate: any = [];
+    const sysUserId = getSysUserId();
     for (let i = 0; i < count; i++) {
       const os = {
         name: `${faker.commerce.productAdjective()} ${faker.string.alphanumeric(
@@ -310,7 +327,7 @@ async function mockProductOs(
         )}`, // unique
         logoUrl: faker.image.avatar(),
         description: faker.lorem.sentence(),
-        createdBy: appCache.systemUserId,
+        createdBy: sysUserId,
       };
 
       osToCreate.push(os);
@@ -326,11 +343,8 @@ async function mockProductOs(
 
 async function mockProduct(
   session: mongoose.mongo.ClientSession,
-  appCache: {
-    systemUserId: mongoose.Types.ObjectId;
-  },
-  brands: any[],
-  categories: any[],
+  brands: IProductBrand[],
+  categories: IProductCategory[],
   count: number = 10
 ): Promise<any> {
   console.log("⏳ ", "Mocking products...");
@@ -352,6 +366,7 @@ async function mockProduct(
       height: PRODUCT_IMAGE_BEST_HEIGHT,
       category: "watch",
     };
+    const sysUserId = getSysUserId();
 
     for (let i = 0; i < count; i++) {
       const product = {
@@ -362,7 +377,7 @@ async function mockProduct(
         description: faker.lorem.paragraph(),
         imageUrls: genRandImgUrls(randNum(1, 5), imgSpecs),
         basePriceCents: faker.number.int({ min: 100_00, max: 1000_00 }),
-        createdBy: appCache.systemUserId,
+        createdBy: sysUserId,
       };
 
       productsToCreate.push(product);
@@ -380,11 +395,8 @@ async function mockProduct(
 
 async function mockProductModels(
   session: mongoose.mongo.ClientSession,
-  appCache: {
-    systemUserId: mongoose.Types.ObjectId;
-  },
-  products: any[],
-  osId: any[],
+  products: IProduct[],
+  osId: IProductOs[],
   rand: {
     min: number;
     max: number;
@@ -410,6 +422,7 @@ async function mockProductModels(
       height: PRODUCT_IMAGE_BEST_HEIGHT,
       category: "watch",
     };
+    const sysUserId = getSysUserId();
 
     for (const product of products) {
       const count = randNum(rand.min, rand.max);
@@ -427,7 +440,7 @@ async function mockProductModels(
               ),
               description: faker.helpers.arrayElement([
                 null,
-                faker.lorem.sentence()
+                faker.lorem.sentence(),
               ]),
             },
           ]),
@@ -571,7 +584,7 @@ async function mockProductModels(
             PRODUCT_MOCK_OPTIONS.MODEL_COMPATIBLE_BAND_LUG_WIDTH_MM_OPTIONS
           ),
           releaseDate: faker.date.past(),
-          createdBy: appCache.systemUserId,
+          createdBy: sysUserId,
         };
 
         modelsToCreate.push(model);
@@ -590,10 +603,7 @@ async function mockProductModels(
 
 async function mockModelVariations(
   session: mongoose.mongo.ClientSession,
-  appCache: {
-    systemUserId: mongoose.Types.ObjectId;
-  },
-  productModels: any[],
+  productModels: IProductModel[],
   rand: {
     min: number;
     max: number;
@@ -619,6 +629,7 @@ async function mockModelVariations(
       height: PRODUCT_IMAGE_BEST_HEIGHT,
       category: "watch",
     };
+    const sysUserId = getSysUserId();
 
     for (const model of productModels) {
       const count = randNum(rand.min, rand.max);
@@ -676,8 +687,8 @@ async function mockModelVariations(
           imageUrls: genRandImgUrls(randNum(1, 5), imgSpecs),
           additionalPriceCents: faker.number.int({ min: 0, max: 100_00 }),
           band,
-          stockQuantity: faker.number.int({ min: 0, max: 50 }),
-          createdBy: appCache.systemUserId,
+          stockQuantity: faker.number.int({ min: 1, max: 20 }),
+          createdBy: sysUserId,
         };
 
         variationsToCreate.push(variation);
@@ -697,10 +708,7 @@ async function mockModelVariations(
 
 async function mockVariationInstances(
   session: mongoose.mongo.ClientSession,
-  appCache: {
-    instanceConditions: KeyObjectId;
-  },
-  modelVariations: any[]
+  modelVariations: IModelVariation[]
 ): Promise<any> {
   console.log("⏳ ", "Mocking product model variation instances...");
 
@@ -714,17 +722,18 @@ async function mockVariationInstances(
 
     // Generate mock variation instances
     const instancesToCreate: any = [];
+    const newInstanceConditionId = getInstanceConditionId("1"); // new
     for (const variation of modelVariations) {
-      const isImeiUndefined =
-        variation.type === "band" ? false : faker.datatype.boolean();
-
       for (let i = 0; i < variation.stockQuantity; i++) {
         const instance = {
           sku: faker.string.uuid(), // unique
           modelVariationId: variation._id,
           supplierSerialNumber: faker.string.uuid(), // unique
-          supplierImeiNumber: isImeiUndefined ? null : faker.string.uuid(), // unique
-          conditionId: appCache.instanceConditions["new"],
+          supplierImeiNumber: faker.helpers.arrayElement([
+            null,
+            faker.string.uuid(),
+          ]), // unique
+          conditionId: newInstanceConditionId,
         };
 
         instancesToCreate.push(instance);
@@ -746,11 +755,7 @@ async function mockVariationInstances(
 
 async function mockInventoryMovements(
   session: mongoose.mongo.ClientSession,
-  appCache: {
-    systemUserId: mongoose.Types.ObjectId;
-    inventoryMovementTypes: KeyObjectId;
-  },
-  variationInstances: any[]
+  variationInstances: IVariationInstance[]
 ): Promise<any> {
   console.log("⏳ ", "Mocking inventory movements...");
 
@@ -766,12 +771,14 @@ async function mockInventoryMovements(
 
     // Generate mock inventory movements
     const movementsToCreate: any = [];
+    const stockAdjustInventoryMovementTypeId = getMovementTypeId("4");
+    const sysUserId = getSysUserId();
     for (const instance of variationInstances) {
       const movement = {
         variationInstanceId: instance._id,
         sku: instance.sku,
-        movementTypeId: appCache.inventoryMovementTypes["stock adjustment"],
-        createdBy: appCache.systemUserId,
+        inventoryMovementTypeId: stockAdjustInventoryMovementTypeId,
+        createdBy: sysUserId,
         quantity: 1,
         notes: "created for mock data",
       };
@@ -787,74 +794,621 @@ async function mockInventoryMovements(
   }
 }
 
-// Order is matter
+// --- ORDERS ---
+// Mock buyer profile and two addresses
+async function mockBuyerMe(
+  session: mongoose.mongo.ClientSession,
+  user: {
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+    password: string;
+    birth: Date;
+    gender: (typeof USER_GENDER_OPTIONS)[number];
+  }
+): Promise<IUser> {
+  console.log("⏳ ", "Mocking buyer...");
+
+  try {
+    // Make the function idempotent by cleaning up existing buyer
+    // await User.deleteOne({ email: user.email }).session(session);
+
+    const existingUser = await User.findOne({ email: user.email })
+      .session(session)
+      .lean();
+    if (existingUser) {
+      console.log("✅ Buyer already exists, skipping creation.");
+      console.log(existingUser._id);
+      return existingUser;
+    }
+
+    const userToCreate = {
+      ...user,
+      isEmailVerified: true,
+      isPhoneNumberVerified: true,
+      password: bcrypt.hashSync(user.password, HASH_SALT),
+      roles: [
+        {
+          id: getBuyerRoleId(),
+          assignedBy: getSysUserId(),
+        },
+      ],
+    };
+
+    const createdUsers = await User.create([userToCreate], { session });
+    await mockUserAddresses(session, createdUsers, { min: 2, max: 2 }, false);
+    console.log("✅ Mocked buyer successfully.");
+    return createdUsers[0];
+  } catch (error) {
+    throw new Error(`Error mocking buyer: ${error}`);
+  }
+}
+
+async function mockCompleteOrder(
+  session: mongoose.mongo.ClientSession,
+  userId: mongoose.Types.ObjectId
+): Promise<IOrder> {
+  console.log("⏳ ", "Mocking complete order...");
+
+  try {
+    // Cleaning up existing orders for the user to make idempotent
+    await Order.deleteMany({ userId }).session(session);
+
+    // Ensure user has at least one address
+    const userAddress = await UserAddress.findOne({ userId })
+      .session(session)
+      .lean();
+    if (!userAddress) {
+      throw new Error("User must have at least one address.");
+    }
+
+    // Prepare data
+    const paymentMethodId = getPaymentMethodId("1"); // COD
+    const now = new Date();
+    const sysUserId = getSysUserId();
+
+    const completePaymentStates = [
+      {
+        id: getPaymentStateId("1"), // pending
+        notes: "Order created, payment pending.",
+        createdBy: sysUserId,
+        createdAt: now,
+      },
+      {
+        id: getPaymentStateId("2"), // paid
+        notes: "Payment received via COD.",
+        createdBy: sysUserId,
+        createdAt: new Date(now.getTime() + 1 * 60 * 1000), // +1 minute
+      },
+    ];
+    const completeDeliveryStates = [
+      {
+        id: getDeliveryStateId("1"), // pending
+        notes: "Order created, delivery pending.",
+        createdBy: sysUserId,
+        createdAt: now,
+      },
+      {
+        id: getDeliveryStateId("2"), // processing
+        notes: "Order is being processed.",
+        createdBy: sysUserId,
+        createdAt: new Date(now.getTime() + 2 * 60 * 1000), // +2 minutes
+      },
+      {
+        id: getDeliveryStateId("3"), // shipped
+        notes: "Order has been shipped.",
+        createdBy: sysUserId,
+        createdAt: new Date(now.getTime() + 3 * 60 * 1000), // +3 minutes
+      },
+      {
+        id: getDeliveryStateId("4"), // in transit
+        notes: "Order is in transit.",
+        createdBy: sysUserId,
+        createdAt: new Date(now.getTime() + 4 * 60 * 1000), // +4 minutes
+      },
+      {
+        id: getDeliveryStateId("5"), // out for delivery
+        notes: "Order is out for delivery.",
+        createdBy: sysUserId,
+        createdAt: new Date(now.getTime() + 5 * 60 * 1000), // +5 minutes
+      },
+      {
+        id: getDeliveryStateId("6"), // delivered
+        notes: "Order has been delivered.",
+        createdBy: sysUserId,
+        createdAt: new Date(now.getTime() + 6 * 60 * 1000), // +6 minutes
+      },
+    ];
+    const completeOrderStates = [
+      {
+        id: getOrderStateId("1"), // pending
+        notes: "Order created, pending confirmation.",
+        createdBy: sysUserId,
+        createdAt: now,
+      },
+      {
+        id: getOrderStateId("2"), // confirmed
+        notes: "Order confirmed.",
+        createdBy: sysUserId,
+        createdAt: new Date(now.getTime() + 1 * 60 * 1000), // +1 minute
+      },
+      {
+        id: getOrderStateId("3"), // placed
+        notes: "Order has been placed.",
+        createdBy: sysUserId,
+        createdAt: new Date(now.getTime() + 2 * 60 * 1000), // +2 minutes
+      },
+      {
+        id: getOrderStateId("4"), // delivering
+        notes: "Order is out for delivery.",
+        createdBy: sysUserId,
+        createdAt: new Date(now.getTime() + 3 * 60 * 1000), // +3 minutes
+      },
+      {
+        id: getOrderStateId("5"), // delivered
+        notes: "Order has been delivered.",
+        createdBy: sysUserId,
+        createdAt: new Date(now.getTime() + 4 * 60 * 1000), // +4 minutes
+      },
+      {
+        id: getOrderStateId("6"), // completed
+        notes: "Order has been completed.",
+        createdBy: sysUserId,
+        createdAt: new Date(now.getTime() + 5 * 60 * 1000), // +5 minutes
+      },
+    ];
+
+    // Find two random variations with at least 2 stockQuantity
+    const variations = await ModelVariation.aggregate([
+      { $match: { stockQuantity: { $gte: 2 } } },
+      { $sample: { size: 2 } },
+    ]).session(session);
+    if (variations.length < 2) {
+      throw new Error(
+        "Not enough variations with stockQuantity >= 2 to create a complete order."
+      );
+    }
+    // For each variation, find 1 instance for first variation, 2 for second.
+    const instances1 = await VariationInstance.aggregate([
+      { $match: { modelVariationId: variations[0]._id, isActive: true } },
+      { $sample: { size: 1 } },
+    ]).session(session);
+    const instances2 = await VariationInstance.aggregate([
+      { $match: { modelVariationId: variations[1]._id, isActive: true } },
+      { $sample: { size: 2 } },
+    ]).session(session);
+
+    if (instances1.length < 1 || instances2.length < 2) {
+      throw new Error("Not enough instances to create a complete order.");
+    }
+
+    // Prepare all database write operations
+    const allInstanceIdsToUpdate = [
+      instances1[0]._id,
+      ...instances2.map((inst) => inst._id),
+    ];
+
+    const variationStockUpdates = [
+      {
+        updateOne: {
+          filter: { _id: variations[0]._id },
+          update: { $inc: { stockQuantity: -1 } },
+        },
+      },
+      {
+        updateOne: {
+          filter: { _id: variations[1]._id },
+          update: { $inc: { stockQuantity: -2 } },
+        },
+      },
+    ];
+
+    const inventoryMovementsToCreate = [
+      {
+        variationInstanceId: instances1[0]._id,
+        sku: instances1[0].sku,
+        inventoryMovementTypeId: getMovementTypeId("3"), // sales out
+        createdBy: sysUserId,
+        quantity: 1, // Corrected from -1 to 1
+        notes: "Sold in mock complete order",
+      },
+      ...instances2.map((inst) => ({
+        variationInstanceId: inst._id,
+        sku: inst.sku,
+        inventoryMovementTypeId: getMovementTypeId("3"), // sales out
+        createdBy: sysUserId,
+        quantity: 1, // Corrected from -1 to 1
+        notes: "Sold in mock complete order",
+      })),
+    ];
+
+    // Create order
+    const items = [
+      {
+        variationId: variations[0]._id,
+        quantity: 1,
+        totalCents: randNum(100_00, 200_00),
+        instances: [
+          {
+            id: instances1[0]._id,
+            sku: instances1[0].sku,
+            state: "ordered",
+          },
+        ],
+      },
+      {
+        variationId: variations[1]._id,
+        quantity: 2,
+        totalCents: randNum(200_00, 400_00),
+        instances: instances2.map((inst) => ({
+          id: inst._id,
+          sku: inst.sku,
+          state: "ordered",
+        })),
+      },
+    ];
+
+    const finalAmountCents = randNum(300_00, 600_00);
+    const completeOrder = {
+      userId,
+      items,
+      deliveryAddress: userAddress,
+      paymentSummary: {
+        subtotalCents: finalAmountCents - 30_00,
+        appliedBalanceCents: 30_00,
+        finalAmountCents,
+      },
+      paymentMethodId,
+      paymentStates: completePaymentStates,
+      deliveryStates: completeDeliveryStates,
+      states: completeOrderStates,
+      orderDate: now,
+      estimateReceivedDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // +7 days
+      receivedDate: new Date(now.getTime() + 6 * 60 * 1000), // +6 minutes
+      fulfilledBy: sysUserId,
+      fulfillAt: now,
+    };
+
+    // Execute all write operations in parallel
+    const [, , , createdOrders] = await Promise.all([
+      ModelVariation.bulkWrite(variationStockUpdates, { session }),
+      VariationInstance.updateMany(
+        { _id: { $in: allInstanceIdsToUpdate } },
+        { $set: { isActive: false } },
+        { session }
+      ),
+      InventoryMovement.insertMany(inventoryMovementsToCreate, { session }),
+      Order.create([completeOrder], { session }),
+    ]);
+
+    console.log("✅ Mocked complete order successfully.");
+    return createdOrders[0];
+  } catch (error) {
+    throw new Error(`Error mocking complete order: ${error}`);
+  }
+}
+
+export async function mockPendingOrder(
+  session: mongoose.mongo.ClientSession,
+  userId: mongoose.Types.ObjectId
+): Promise<IOrder> {
+  console.log("⏳ ", "Mocking pending order...");
+
+  try {
+    // Cleaning up existing orders for the user to make idempotent
+    // await Order.deleteMany({ userId }).session(session);
+
+    // Ensure user has at least one address
+    const userAddress = await UserAddress.findOne({ userId })
+      .session(session)
+      .lean();
+    if (!userAddress) {
+      throw new Error("User must have at least one address.");
+    }
+
+    // Prepare data
+    const paymentMethodId = getPaymentMethodId("1"); // COD
+    const now = new Date();
+    const sysUserId = getSysUserId();
+    const pendingPaymentStates = [
+      {
+        id: getPaymentStateId("1"), // pending
+        notes: "Order created, payment pending.",
+        createdBy: sysUserId,
+        createdAt: now,
+      },
+    ];
+    const pendingDeliveryStates = [
+      {
+        id: getDeliveryStateId("1"), // pending
+        notes: "Order created, delivery pending.",
+        createdBy: sysUserId,
+        createdAt: now,
+      },
+    ];
+    const pendingOrderStates = [
+      {
+        id: getOrderStateId("1"), // pending
+        notes: "Order created, pending confirmation.",
+        createdBy: sysUserId,
+        createdAt: now,
+      },
+    ];
+
+    // Find two random variations with at least 1 stockQuantity
+    const variations = await ModelVariation.aggregate([
+      { $match: { stockQuantity: { $gte: 1 } } },
+      { $sample: { size: 2 } },
+    ]).session(session);
+    if (variations.length < 2) {
+      throw new Error(
+        "Not enough variations with stockQuantity >= 1 to create a pending order."
+      );
+    }
+    // For each variation, find 1 instance.
+    const instances1 = await VariationInstance.aggregate([
+      { $match: { modelVariationId: variations[0]._id, isActive: true } },
+      { $sample: { size: 1 } },
+    ]).session(session);
+    const instances2 = await VariationInstance.aggregate([
+      { $match: { modelVariationId: variations[1]._id, isActive: true } },
+      { $sample: { size: 1 } },
+    ]).session(session);
+    if (instances1.length < 1 || instances2.length < 1) {
+      throw new Error("Not enough instances to create a pending order.");
+    }
+    // Prepare all database write operations
+    const allInstanceIdsToUpdate = [instances1[0]._id, instances2[0]._id];
+    const variationStockUpdates = [
+      {
+        updateOne: {
+          filter: { _id: variations[0]._id },
+          update: { $inc: { stockQuantity: -1 } },
+        },
+      },
+      {
+        updateOne: {
+          filter: { _id: variations[1]._id },
+          update: { $inc: { stockQuantity: -1 } },
+        },
+      },
+    ];
+    const inventoryMovementsToCreate = [
+      {
+        variationInstanceId: instances1[0]._id,
+        sku: instances1[0].sku,
+        inventoryMovementTypeId: getMovementTypeId("3"), // sales out
+        createdBy: sysUserId,
+        quantity: 1, // Corrected from -1 to 1
+        notes: "Sold in mock pending order",
+      },
+      {
+        variationInstanceId: instances2[0]._id,
+        sku: instances2[0].sku,
+        inventoryMovementTypeId: getMovementTypeId("3"), // sales out
+        createdBy: sysUserId,
+        quantity: 1, // Corrected from -1 to 1
+        notes: "Sold in mock pending order",
+      },
+    ];
+    // Create order
+    const items = [
+      {
+        variationId: variations[0]._id,
+        quantity: 1,
+        totalCents: randNum(100_00, 200_00),
+        instances: [
+          {
+            id: instances1[0]._id,
+            sku: instances1[0].sku,
+            state: "ordered",
+          },
+        ],
+      },
+      {
+        variationId: variations[1]._id,
+        quantity: 1,
+        totalCents: randNum(100_00, 200_00),
+        instances: [
+          {
+            id: instances2[0]._id,
+            sku: instances2[0].sku,
+            state: "ordered",
+          },
+        ],
+      },
+    ];
+    const finalAmountCents = randNum(200_00, 400_00);
+    const pendingOrder = {
+      userId,
+      items,
+      deliveryAddress: userAddress,
+      paymentSummary: {
+        subtotalCents: finalAmountCents,
+        appliedBalanceCents: 0,
+        finalAmountCents,
+      },
+      paymentMethodId,
+      paymentStates: pendingPaymentStates,
+      deliveryStates: pendingDeliveryStates,
+      states: pendingOrderStates,
+      orderDate: now,
+      estimateReceivedDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // +7 days
+    };
+    // Execute all write operations in parallel
+    const [, , , createdOrders] = await Promise.all([
+      ModelVariation.bulkWrite(variationStockUpdates, { session }),
+      VariationInstance.updateMany(
+        { _id: { $in: allInstanceIdsToUpdate } },
+        { $set: { isActive: false } },
+        { session }
+      ),
+      InventoryMovement.insertMany(inventoryMovementsToCreate, { session }),
+      Order.create([pendingOrder], { session }),
+    ]);
+    console.log("✅ Mocked pending order successfully.");
+    return createdOrders[0];
+  } catch (error) {
+    throw new Error(`Error mocking pending order: ${error}`);
+  }
+}
+
+// mock return at the beginning of return process
+async function mockOrderReturn(
+  session: mongoose.mongo.ClientSession,
+  orderId: mongoose.Types.ObjectId
+): Promise<IOrderReturn> {
+  console.log("⏳ ", "Mocking order return...");
+
+  try {
+    // Cleaning up existing return requests for idempotency
+    await OrderReturn.deleteMany({ orderId }).session(session);
+
+    // Fetch the order
+    const order = await Order.findById(orderId).session(session);
+    if (!order) {
+      throw new Error("Order not found.");
+    }
+    // Ensure order is completed
+    const latestState = order.states.at(-1);
+    if (!latestState) {
+      throw new Error("Order doesn't have an states!");
+    }
+    const latestStateLookupId = getOrderStateLookupId(latestState.id);
+    if (!["5", "6"].includes(latestStateLookupId)) {
+      throw new Error("Only delivered or completed orders can be returned.");
+    }
+
+    // Get some items from the order to return -> update their states to "return pending"
+    const itemsToReturn: any = [];
+    const firstItem = order.items[0];
+    const firstItemInstance = firstItem.instances[0];
+    itemsToReturn.push({
+      variationId: firstItem.variationId,
+      quantity: 1,
+      totalCents: Math.floor(firstItem.totalCents / firstItem.quantity),
+      instances: [
+        {
+          id: firstItemInstance.id,
+          sku: firstItemInstance.sku,
+        },
+      ],
+    });
+    firstItem.instances[0].state = "return pending";
+
+    // Fetch a return reason
+    const returnReasonId = await ReturnReason.findOne().session(session).lean();
+    if (!returnReasonId) {
+      throw new Error(
+        "No return reasons found. Please mock return reasons first."
+      );
+    }
+
+    // Prepare order return data
+    const sysUserId = getSysUserId();
+    const orderReturn = {
+      orderId: order._id,
+      items: itemsToReturn,
+      pickupAddress: order.deliveryAddress,
+      refundSummary: {
+        toCardCents: 99_00,
+        toBalanceCents: 0,
+        finalRefundAmountCents: 99_00,
+      },
+      refundStates: [
+        {
+          id: getRefundStateId("1"),
+          notes: "Return requested nby mock function.",
+          createdBy: sysUserId,
+        },
+      ],
+      pickupStates: [
+        {
+          id: getPickupStateId("1"),
+          notes: "Return pickup requested by mock function.",
+          createdBy: sysUserId,
+        },
+      ],
+      states: [
+        {
+          id: getReturnStateId("1"),
+          notes: "Return requested by mock function.",
+          createdBy: sysUserId,
+        },
+      ],
+      estimatePickupDate: new Date(Date.now() + ESTIMATE_PICKUP_TIME_GAP),
+      reasonId: returnReasonId._id,
+      imageUrls: genRandImgUrls(3, {
+        width: 800,
+        height: 800,
+        category: "return",
+      }),
+      buyerReason: "The product is defective.",
+    };
+
+    const [, createdOrderReturns] = await Promise.all([
+      order.save({ session }),
+      OrderReturn.create([orderReturn], { session }),
+    ]);
+
+    console.log("✅ Mocked order return successfully.");
+    return createdOrderReturns[0];
+  } catch (error) {
+    throw new Error(`Error mocking order return: ${error}`);
+  }
+}
+
 export async function mockAllData(): Promise<void> {
   console.log("⏳ ", "Mocking all data...");
 
   const session = await mongoose.startSession();
-  session.startTransaction();
 
   try {
-    // Ensure appCache is initialized
-    if (!appCache.systemUserId) {
-      throw new Error(
-        "System user ID not found in cache. Please initialize the cache first."
-      );
-    }
-    if (!appCache.buyerRoleId) {
-      throw new Error(
-        "Buyer role ID not found in cache. Please initialize the cache first."
-      );
-    }
-    if (!appCache.adminRoleId) {
-      throw new Error(
-        "Admin role ID not found in cache. Please initialize the cache first."
-      );
-    }
-    if (!appCache.instanceConditions) {
-      throw new Error(
-        "Instance conditions not found in cache. Please initialize the cache first."
-      );
-    }
-    if (!appCache.inventoryMovementTypes) {
-      throw new Error(
-        "Inventory movement types not found in cache. Please initialize the cache first."
-      );
-    }
-
-    const cache = {
-      systemUserId: appCache.systemUserId,
-      buyerRoleId: appCache.buyerRoleId,
-      adminRoleId: appCache.adminRoleId,
-      instanceConditions: appCache.instanceConditions,
-      inventoryMovementTypes: appCache.inventoryMovementTypes,
-    };
+    // Order is matter
 
     // User
-    const users = await mockUsers(session, cache);
+    session.startTransaction();
+    const users = await mockUsers(session, 3);
     await mockUserAddresses(session, users);
+    await session.commitTransaction();
+    console.log("✅ User data committed.");
 
     // Product
-    const brands = await mockProductBrands(session, cache);
-    const categories = await mockProductCategories(session, cache);
-    const os = await mockProductOs(session, cache);
-    const products = await mockProduct(session, cache, brands, categories);
-    const productModels = await mockProductModels(session, cache, products, os);
-    const modelVariations = await mockModelVariations(
-      session,
-      cache,
-      productModels
-    );
+    session.startTransaction();
+    const brands = await mockProductBrands(session);
+    const categories = await mockProductCategories(session);
+    const os = await mockProductOs(session);
+    const products = await mockProduct(session, brands, categories);
+    const productModels = await mockProductModels(session, products, os);
+    const modelVariations = await mockModelVariations(session, productModels);
     const variationInstances = await mockVariationInstances(
       session,
-      cache,
       modelVariations
     );
+    await session.commitTransaction();
+    console.log("✅ Product data committed.");
 
     // Inventory
-    await mockInventoryMovements(session, cache, variationInstances);
-
+    session.startTransaction();
+    await mockInventoryMovements(session, variationInstances);
     await session.commitTransaction();
+    console.log("✅ Inventory data committed.");
+
+    // Actual buyerMe and order
+    session.startTransaction();
+    const buyerMe = await mockBuyerMe(session, {
+      fullName: "Dung Tran Quang",
+      email: "dungtranquang2005@gmail.com",
+      phoneNumber: "0901234567",
+      password: "password123456789",
+      birth: new Date("2005-11-26"),
+      gender: "male",
+    });
+    const completeOrder = await mockCompleteOrder(session, buyerMe._id);
+    await mockOrderReturn(session, completeOrder._id);
+    await session.commitTransaction();
+    console.log("✅ Order data committed.");
+
     console.log("✅ ", "All data mocked successfully.");
   } catch (error) {
     await session.abortTransaction();

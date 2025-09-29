@@ -1,5 +1,7 @@
 import {
   AVATAR_ALLOWED_TYPES,
+  ORDER_RETURN_IMG_ALLOWED_TYPES,
+  PRODUCT_IMAGE_ALLOWED_TYPES,
   VERIFICATION_CODE_LENGTH,
 } from "../../common/configs.common";
 import jwt from "jsonwebtoken";
@@ -23,6 +25,16 @@ import {
   OrderResponse,
   PaymentMethodResponse,
   UserSelfPaymentMethodResponse,
+  DeliveryStateResponse,
+  PaymentStateResponse,
+  OrderReturnResponse,
+  OrderStateResponse,
+  OrderDetailResponse,
+  ReturnStateResponse,
+  RefundStateResponse,
+  PickupStateResponse,
+  ReturnReasonResponse,
+  OrderReturnDetailResponse,
 } from "../../common/types.common";
 import { Types } from "mongoose";
 import ModelVariation from "../models/product/modelVariation.model";
@@ -43,7 +55,10 @@ export function isValidUrl(url: any): boolean {
   }
 }
 
-export async function isValidImgUrl(url: any): Promise<boolean> {
+export async function isValidImgUrl(
+  url: any,
+  category: "order return" | "product" | "avatar"
+): Promise<boolean> {
   if (!isValidUrl(url)) return false;
 
   try {
@@ -51,8 +66,16 @@ export async function isValidImgUrl(url: any): Promise<boolean> {
     if (!res.ok) return false;
 
     const contentType = res.headers.get("content-type");
-    if (contentType && AVATAR_ALLOWED_TYPES.includes(contentType as any))
+    const ALLOWED_TYPES =
+      category === "order return"
+        ? ORDER_RETURN_IMG_ALLOWED_TYPES
+        : category === "product"
+        ? PRODUCT_IMAGE_ALLOWED_TYPES
+        : AVATAR_ALLOWED_TYPES;
+
+    if (contentType && ALLOWED_TYPES.includes(contentType as any)) {
       return true;
+    }
 
     return false;
   } catch {
@@ -60,11 +83,14 @@ export async function isValidImgUrl(url: any): Promise<boolean> {
   }
 }
 
-export async function isValidImgUrls(imgUrls: any): Promise<boolean> {
+export async function isValidImgUrls(
+  imgUrls: any,
+  category: "order return" | "product" | "avatar"
+): Promise<boolean> {
   if (!Array.isArray(imgUrls)) return false;
 
   for (const url of imgUrls) {
-    if (!(await isValidImgUrl(url))) return false;
+    if (!(await isValidImgUrl(url, category))) return false;
   }
 
   return true;
@@ -197,21 +223,6 @@ export async function genInstanceSku(
   return `${brandCode}-${modelName}-${sizeMm}-${varNameCode}-${uniqueId}`;
 }
 
-export function compareAddress(address1: any, address2: any): boolean {
-  return (
-    address1.name === address2.name &&
-    address1.street === address2.street &&
-    address1.apartmentNumber === address2.apartmentNumber &&
-    address1.wardCode === address2.wardCode &&
-    address1.districtCode === address2.districtCode &&
-    address1.cityProvinceCode === address2.cityProvinceCode &&
-    address1.countryCode === address2.countryCode &&
-    address1.location.coordinates[0] === address2.location.coordinates[0] && // long
-    address1.location.coordinates[1] === address2.location.coordinates[1] && // lat
-    address1.phoneNumber === address2.phoneNumber
-  );
-}
-
 /*
  * Check if a value is present (not undefined or null).
  * @param val - The value to check.
@@ -275,7 +286,7 @@ export function formatUserAddressResponse(address: any): UserAddressResponse {
     wardCode: address.wardCode,
     districtCode: address.districtCode,
     cityProvinceCode: address.cityProvinceCode,
-    countryCode: address.country,
+    countryCode: address.countryCode,
     location: address.location,
     phoneNumber: address.phoneNumber,
     fullAddress: address.fullAddress,
@@ -475,43 +486,105 @@ export function formatOrderResponse(order: any): OrderResponse {
           imageUrls: variation.imageUrls,
           additionalPriceCents: variation.additionalPriceCents,
           stockQuantity: variation.stockQuantity,
+          stopSelling: variation.stopSelling,
+          isDeleted: variation.isDeleted,
           productModel: {
             id: model._id,
             name: model.name,
             priceCents: model.priceCents,
+            stopSelling: model.stopSelling,
+            isDeleted: model.isDeleted,
             product: {
               id: product._id,
               name: product.name,
+              stopSelling: product.stopSelling,
+              isDeleted: product.isDeleted,
             },
           },
         },
         quantity: item.quantity,
         totalCents: item.totalCents,
-        instanceIds: item.instanceIds,
+        instances: item.instances,
       };
     }),
+    deliveryAddress: order.deliveryAddress,
+    transaction: order.transaction,
     paymentSummary: order.paymentSummary,
-    deliveryStateId: order.deliveryStateId,
+    paymentMethodId: order.paymentMethodId,
+    deliveryStates: order.deliveryStates,
+    paymentStates: order.paymentStates,
+    states: order.states,
     orderDate: order.orderDate,
     estimateReceivedDate: order.estimateReceivedDate,
     receivedDate: order.receivedDate,
-    deliveryAddress: order.deliveryAddress,
-    payment: order.payment,
-    paymentMethodId: order.paymentMethodId,
+    fulfilledBy: order.fulfilledBy,
+    fulfilledAt: order.fulfilledAt,
+    buyerCancelReasonId: order.buyerCancelReasonId,
+    canReturn: order.canReturn,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
   };
 }
 
-export function formatPaymentMethodResponse(method: any): PaymentMethodResponse {
+export function formatOrderDetailResponse(order: any): OrderDetailResponse {
+  const {
+    paymentMethodId,
+    paymentStates,
+    deliveryStates,
+    states,
+    ...restData
+  } = formatOrderResponse(order);
+
+  // All via populate
+  return {
+    ...restData,
+    paymentMethod: {
+      id: order.paymentMethodId._id,
+      name: order.paymentMethodId.name,
+    },
+    paymentStates: order.paymentStates.map((s: any) => ({
+      id: s.id._id,
+      lookupId: s.id.lookupId,
+      name: s.id.name,
+      notes: s.notes,
+      createdBy: s.createdBy,
+      createdAt: s.createdAt,
+    })),
+    deliveryStates: order.deliveryStates.map((s: any) => ({
+      id: s.id._id,
+      lookupId: s.id.lookupId,
+      name: s.id.name,
+      level: s.id.level,
+      notes: s.notes,
+      createdBy: s.createdBy,
+      createdAt: s.createdAt,
+    })),
+    states: order.states.map((s: any) => ({
+      id: s.id._id,
+      lookupId: s.id.lookupId,
+      name: s.id.name,
+      level: s.id.level,
+      notes: s.notes,
+      createdBy: s.createdBy,
+      createdAt: s.createdAt,
+    })),
+  };
+}
+
+export function formatPaymentMethodResponse(
+  method: any
+): PaymentMethodResponse {
   return {
     id: method._id,
+    lookupId: method.lookupId,
     name: method.name,
     description: method.description,
   };
 }
 
-export function formatUserSelfPaymentMethodResponse(method: any): UserSelfPaymentMethodResponse {
+export function formatUserSelfPaymentMethodResponse(
+  method: any
+): UserSelfPaymentMethodResponse {
   return {
     id: method._id,
     stripePaymentMethodId: method.stripePaymentMethodId,
@@ -523,44 +596,185 @@ export function formatUserSelfPaymentMethodResponse(method: any): UserSelfPaymen
   };
 }
 
+export function formatDeliveryStateResponse(state: any): DeliveryStateResponse {
+  return {
+    id: state._id,
+    lookupId: state.lookupId,
+    name: state.name,
+    level: state.level,
+  };
+}
+
+export function formatPaymentStateResponse(state: any): PaymentStateResponse {
+  return {
+    id: state._id,
+    lookupId: state.lookupId,
+    name: state.name,
+  };
+}
+
+export function formatOrderReturnResponse(
+  orderReturn: any
+): OrderReturnResponse {
+  return {
+    id: orderReturn._id,
+    orderId: orderReturn.orderId,
+    items: orderReturn.items.map((item: any) => {
+      const variation = item.variation; // Via virtual
+      const model = variation.productModel; // Via virtual and populate
+      const product = model.product; // Via virtual and populate
+
+      return {
+        variation: {
+          id: variation._id,
+          name: variation.name,
+          color: variation.color,
+          imageUrls: variation.imageUrls,
+          additionalPriceCents: variation.additionalPriceCents,
+          stockQuantity: variation.stockQuantity,
+          stopSelling: variation.stopSelling,
+          isDeleted: variation.isDeleted,
+          productModel: {
+            id: model._id,
+            name: model.name,
+            priceCents: model.priceCents,
+            stopSelling: model.stopSelling,
+            isDeleted: model.isDeleted,
+            product: {
+              id: product._id,
+              name: product.name,
+              stopSelling: product.stopSelling,
+              isDeleted: product.isDeleted,
+            },
+          },
+        },
+        quantity: item.quantity,
+        totalCents: item.totalCents,
+        instances: item.instances,
+      };
+    }),
+    pickupAddress: orderReturn.pickupAddress,
+    transaction: orderReturn.transaction,
+    refundSummary: orderReturn.refundSummary,
+    refundStates: orderReturn.refundStates,
+    pickupStates: orderReturn.pickupStates,
+    states: orderReturn.states,
+    pickupDate: orderReturn.pickupDate,
+    estimatePickupDate: orderReturn.estimatePickupDate,
+    reasonId: orderReturn.reasonId,
+    imageUrls: orderReturn.imageUrls,
+    buyerReason: orderReturn.buyerReason,
+    createdAt: orderReturn.createdAt,
+    updatedAt: orderReturn.updatedAt,
+  };
+}
+
+export function formatOrderReturnDetailResponse(
+  orderReturn: any
+): OrderReturnDetailResponse {
+  const { refundStates, pickupStates, states, reasonId, ...restData } =
+    formatOrderReturnResponse(orderReturn);
+
+  return {
+    ...restData,
+    reason: formatReturnReason(reasonId),
+    refundStates: orderReturn.refundStates.map((s: any) => ({
+      id: s.id._id,
+      lookupId: s.id.lookupId,
+      name: s.id.name,
+      notes: s.notes,
+      createdBy: s.createdBy,
+      createdAt: s.createdAt,
+    })),
+    pickupStates: orderReturn.pickupStates.map((s: any) => ({
+      id: s.id._id,
+      lookupId: s.id.lookupId,
+      name: s.id.name,
+      level: s.id.level,
+      notes: s.notes,
+      createdBy: s.createdBy,
+      createdAt: s.createdAt,
+    })),
+    states: orderReturn.states.map((s: any) => ({
+      id: s.id._id,
+      lookupId: s.id.lookupId,
+      name: s.id.name,
+      level: s.id.level,
+      notes: s.notes,
+      createdBy: s.createdBy,
+      createdAt: s.createdAt,
+    })),
+  };
+}
+
+export function formatOrderStateResponse(state: any): OrderStateResponse {
+  return formatDeliveryStateResponse(state);
+}
+
+export function formatPickupStateResponse(state: any): PickupStateResponse {
+  return formatDeliveryStateResponse(state);
+}
+
+export function formatReturnStateResponse(state: any): ReturnStateResponse {
+  return formatOrderStateResponse(state);
+}
+
+export function formatRefundStateResponse(state: any): RefundStateResponse {
+  return formatPaymentStateResponse(state);
+}
+
+export function formatReturnReason(reason: any): ReturnReasonResponse {
+  return {
+    id: reason._id,
+    name: reason.name,
+    description: reason.description,
+  };
+}
+
 // --- CACHING FUNCTIONS ---
-export function getConditionId(conditionName: string): Types.ObjectId {
+export function getInstanceConditionId(lookupId: string): Types.ObjectId {
   const { instanceConditions } = appCache;
   if (!instanceConditions) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const conditionId = instanceConditions[conditionName.toLowerCase()];
+  const conditionId = instanceConditions[lookupId];
   if (!conditionId) {
-    throw new Error(`Condition '${conditionName}' not found in cache.`);
+    throw new Error(
+      `Condition with lookupId '${lookupId}' not found in cache.`
+    );
   }
 
   return conditionId;
 }
 
-export function getMovementTypeId(movementTypeName: string): Types.ObjectId {
+export function getMovementTypeId(lookupId: string): Types.ObjectId {
   const { inventoryMovementTypes } = appCache;
   if (!inventoryMovementTypes) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const movementTypeId = inventoryMovementTypes[movementTypeName.toLowerCase()];
+  const movementTypeId = inventoryMovementTypes[lookupId];
   if (!movementTypeId) {
-    throw new Error(`Movement type '${movementTypeName}' not found in cache.`);
+    throw new Error(
+      `Movement type with lookupId '${lookupId}' not found in cache.`
+    );
   }
 
   return movementTypeId;
 }
 
-export function getDeliveryStateId(stateName: string): Types.ObjectId {
+export function getDeliveryStateId(lookupId: string): Types.ObjectId {
   const { deliveryStates } = appCache;
   if (!deliveryStates) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const state = deliveryStates[stateName.toLowerCase()];
+  const state = deliveryStates[lookupId];
   if (!state) {
-    throw new Error(`Delivery state '${stateName}' not found in cache.`);
+    throw new Error(
+      `Delivery state with lookupId '${lookupId}' not found in cache.`
+    );
   }
 
   return state.id;
@@ -581,58 +795,122 @@ export function getDeliveryStateLevel(stateId: Types.ObjectId): number {
   throw new Error(`Delivery state with ID '${stateId}' not found in cache.`);
 }
 
-export function getPaymentStatusId(statusName: string): Types.ObjectId {
-  const { paymentStatuses } = appCache;
-  if (!paymentStatuses) {
+export function getDeliveryStateLookupId(stateId: Types.ObjectId): string {
+  const { deliveryStates } = appCache;
+  if (!deliveryStates) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const statusId = paymentStatuses[statusName.toLowerCase()];
-  if (!statusId) {
-    throw new Error(`Payment status '${statusName}' not found in cache.`);
+  for (const lookupId in deliveryStates) {
+    if (deliveryStates[lookupId].id.equals(stateId)) {
+      return lookupId;
+    }
   }
-
-  return statusId;
+  throw new Error(`Delivery state with ID '${stateId}' not found in cache.`);
 }
 
-export function getPaymentStatusName(statusId: Types.ObjectId): string {
-  const { paymentStatuses } = appCache;
-  if (!paymentStatuses) {
+export function getPaymentStateId(lookupId: string): Types.ObjectId {
+  const { paymentStates } = appCache;
+  if (!paymentStates) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const statusName in paymentStatuses) {
-    if (paymentStatuses[statusName].equals(statusId)) {
-      return statusName;
+  const stateId = paymentStates[lookupId];
+  if (!stateId) {
+    throw new Error(
+      `Payment state with lookupId '${lookupId}' not found in cache.`
+    );
+  }
+
+  return stateId;
+}
+
+export function getPaymentStateLookupId(stateId: Types.ObjectId): string {
+  const { paymentStates } = appCache;
+  if (!paymentStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const lookupId in paymentStates) {
+    if (paymentStates[lookupId].equals(stateId)) {
+      return lookupId;
     }
   }
 
-  throw new Error(`Payment status with ID '${statusId}' not found in cache.`);
+  throw new Error(`Payment state with ID '${stateId}' not found in cache.`);
 }
 
-export function getPaymentMethodId(methodName: string): Types.ObjectId {
+export function getOrderStateId(lookupId: string): Types.ObjectId {
+  const { orderStates } = appCache;
+  if (!orderStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const state = orderStates[lookupId];
+  if (!state) {
+    throw new Error(
+      `Order state with lookupId '${lookupId}' not found in cache.`
+    );
+  }
+
+  return state.id;
+}
+
+export function getOrderStateLookupId(stateId: Types.ObjectId): string {
+  const { orderStates } = appCache;
+  if (!orderStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const lookupId in orderStates) {
+    if (orderStates[lookupId].id.equals(stateId)) {
+      return lookupId;
+    }
+  }
+
+  throw new Error(`Order state with ID '${stateId}' not found in cache.`);
+}
+
+export function getOrderStateLevel(stateId: Types.ObjectId): number {
+  const { orderStates } = appCache;
+  if (!orderStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const stateName in orderStates) {
+    if (orderStates[stateName].id.equals(stateId)) {
+      return orderStates[stateName].level;
+    }
+  }
+
+  throw new Error(`Order state with ID '${stateId}' not found in cache.`);
+}
+
+export function getPaymentMethodId(lookupId: string): Types.ObjectId {
   const { paymentMethods } = appCache;
   if (!paymentMethods) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const methodId = paymentMethods[methodName.toLowerCase()];
+  const methodId = paymentMethods[lookupId];
   if (!methodId) {
-    throw new Error(`Payment method '${methodName}' not found in cache.`);
+    throw new Error(
+      `Payment method with lookupId '${lookupId}' not found in cache.`
+    );
   }
 
   return methodId;
 }
 
-export function getPaymentMethodName(methodId: Types.ObjectId): string {
+export function getPaymentMethodLookupId(methodId: Types.ObjectId): string {
   const { paymentMethods } = appCache;
   if (!paymentMethods) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const methodName in paymentMethods) {
-    if (paymentMethods[methodName].equals(methodId)) {
-      return methodName;
+  for (const lookupId in paymentMethods) {
+    if (paymentMethods[lookupId].equals(methodId)) {
+      return lookupId;
     }
   }
 
@@ -646,4 +924,141 @@ export function getSysUserId(): Types.ObjectId {
   }
 
   return systemUserId;
+}
+
+export function getRefundStateId(lookupId: string): Types.ObjectId {
+  const { refundStates } = appCache;
+  if (!refundStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const stateId = refundStates[lookupId];
+  if (!stateId) {
+    throw new Error(
+      `Refund state with lookupId '${lookupId}' not found in cache.`
+    );
+  }
+
+  return stateId;
+}
+
+export function getRefundStateLookupId(stateId: Types.ObjectId): string {
+  const { refundStates } = appCache;
+  if (!refundStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const lookupId in refundStates) {
+    if (refundStates[lookupId].equals(stateId)) {
+      return lookupId;
+    }
+  }
+
+  throw new Error(`Refund state with ID '${stateId}' not found in cache.`);
+}
+
+export function getReturnStateId(lookupId: string): Types.ObjectId {
+  const { returnStates } = appCache;
+  if (!returnStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const state = returnStates[lookupId];
+  if (!state) {
+    throw new Error(
+      `Return state with lookupId '${lookupId}' not found in cache.`
+    );
+  }
+
+  return state.id;
+}
+
+export function getReturnStateLevel(stateId: Types.ObjectId): number {
+  const { returnStates } = appCache;
+  if (!returnStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const stateName in returnStates) {
+    if (returnStates[stateName].id.equals(stateId)) {
+      return returnStates[stateName].level;
+    }
+  }
+  throw new Error(`Return state with ID '${stateId}' not found in cache.`);
+}
+
+export function getReturnStateLookupId(stateId: Types.ObjectId): string {
+  const { returnStates } = appCache;
+  if (!returnStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const lookupId in returnStates) {
+    if (returnStates[lookupId].id.equals(stateId)) {
+      return lookupId;
+    }
+  }
+  throw new Error(`Return state with ID '${stateId}' not found in cache.`);
+}
+
+export function getPickupStateId(lookupId: string): Types.ObjectId {
+  const { pickupStates } = appCache;
+  if (!pickupStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const state = pickupStates[lookupId];
+  if (!state) {
+    throw new Error(
+      `Pickup state with lookupId '${lookupId}' not found in cache.`
+    );
+  }
+
+  return state.id;
+}
+
+export function getPickupStateLevel(stateId: Types.ObjectId): number {
+  const { pickupStates } = appCache;
+  if (!pickupStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const stateName in pickupStates) {
+    if (pickupStates[stateName].id.equals(stateId)) {
+      return pickupStates[stateName].level;
+    }
+  }
+  throw new Error(`Pickup state with ID '${stateId}' not found in cache.`);
+}
+
+export function getPickupStateLookupId(stateId: Types.ObjectId): string {
+  const { pickupStates } = appCache;
+  if (!pickupStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const lookupId in pickupStates) {
+    if (pickupStates[lookupId].id.equals(stateId)) {
+      return lookupId;
+    }
+  }
+  throw new Error(`Pickup state with ID '${stateId}' not found in cache.`);
+}
+
+export function getAdminRoleId(): Types.ObjectId {
+  const { adminRoleId } = appCache;
+  if (!adminRoleId) {
+    throw new Error("Admin role ID not found in application cache.");
+  }
+
+  return adminRoleId;
+}
+
+export function getBuyerRoleId(): Types.ObjectId {
+  const { buyerRoleId } = appCache;
+  if (!buyerRoleId) {
+    throw new Error("Buyer role ID not found in application cache.");
+  }
+
+  return buyerRoleId;
 }

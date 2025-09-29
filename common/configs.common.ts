@@ -1,6 +1,9 @@
 import { ADMIN_USER, SYSTEM_USER } from "../server/configs/configs";
 
 export const PASSWORD_MIN_LENGTH = 15;
+export const PASSWORD_MAX_LENGTH = 45;
+export const PASSWORD_HINT_MESSAGE = `Password must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters long and contain at least one letter and one number.`;
+
 export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 20;
 
@@ -8,8 +11,6 @@ export const VERIFICATION_TOKEN_LENGTH = 6;
 export const VERIFICATION_TOKEN_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 export const SPECIAL_CHARS_REGEX = /[~`!@#$%^&*()_+\-=[\]{};':"\\|,.<>/? ]/;
-
-export const PASSWORD_HINT_MESSAGE = `Password must be at least ${PASSWORD_MIN_LENGTH} characters long and contain at least one number or letter.`;
 
 export const AVATAR_ALLOWED_TYPES = ["image/jpg", "image/png"] as const;
 export const AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -39,9 +40,8 @@ export const PRODUCT_IMAGE_MAX_HEIGHT = 1500; // Increased for better detail/zoo
 export const PRODUCT_IMAGE_BEST_WIDTH = 600;
 export const PRODUCT_IMAGE_BEST_HEIGHT = 696;
 export const PRODUCT_IMAGE_HINT_MESSAGE = `Product image must be a valid image URL or file. Recommended maximum size: 2MB. Recommended dimensions: Between 200x200 pixels and 1500x1500 pixels. Allowed formats: JPG, PNG, and WebP.`; // Added WebP and clarified "recommended" sizes/dimensions
-
-export const IMMUTABILITY_USER_EMAILS: string[] = [SYSTEM_USER.email] as const;
-export const PROTECTED_USER_EMAILS: string[] = [ADMIN_USER.email] as const;
+export const IMMUTABILITY_USER_EMAILS = [SYSTEM_USER.email] as const;
+export const PROTECTED_USER_EMAILS = [ADMIN_USER.email] as const;
 export const MODIFIABLE_PROTECTED_USER_FIELDS = [
   "fullName",
   "avatarUrl",
@@ -63,7 +63,9 @@ export const MODIFIABLE_PROTECTED_ROLES_FIELDS = [
 export const PRODUCT_NAME_MIN_LENGTH = 3;
 export const PRODUCT_NAME_MAX_LENGTH = 100;
 
-export const ESTIMATE_RECEIVED_DATE = 7 * 24 * 60 * 60 * 1000; // 7 days
+export const ESTIMATE_RECEIVED_TIME_GAP = 7 * 24 * 60 * 60 * 1000; // 7 days
+export const ESTIMATE_PICKUP_TIME_GAP = 1 * 24 * 60 * 60 * 1000; // 1 day
+export const MAX_ESTIMATE_PICKUP_TIME_GAP = 3 * 24 * 60 * 60 * 1000; // 3 days
 
 export const USER_GENDER_OPTIONS = ["male", "female", "other"] as const;
 
@@ -271,3 +273,17 @@ export const PRODUCT_MOCK_OPTIONS = {
 } as const;
 
 export const PRODUCT_TYPES = ["watch", "band"] as const;
+
+export const MAX_ORDER_RETURN_IMG_UPLOAD = 5;
+export const ORDER_RETURN_IMG_ALLOWED_TYPES = [
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic", // Common for iPhone
+] as const;
+export const ORDER_RETURN_IMG_MAX_SIZE = 5 * 1024 * 1024; // 5MB
+export const ORDER_RETURN_IMG_HINT_MESSAGE = `Each image must be a valid image file with a maximum size of 5MB. Allowed formats are JPG, PNG, WEBP, and HEIC. You can upload up to ${MAX_ORDER_RETURN_IMG_UPLOAD} images.`;
+
+export const BUYER_RETURN_REASON_MIN_LENGTH = 10;
+export const BUYER_RETURN_REASON_MAX_LENGTH = 500;
+export const BUYER_RETURN_REASON_HINT_MESSAGE = `Return reason must be between ${BUYER_RETURN_REASON_MIN_LENGTH} and ${BUYER_RETURN_REASON_MAX_LENGTH} characters long.`;

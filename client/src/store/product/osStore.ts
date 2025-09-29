@@ -1,68 +1,31 @@
 import { create } from "zustand";
-import type { ProductOsListResponse, ProductOsResponse } from "../../../../common/types.common"
+import type { ProductOsListResponse } from "../../../../common/types.common";
 import { PRODUCT_OS_URL } from "../../configs";
-import { formatError, retrieve } from "../../utils/utils";
+import { retrieve } from "../../utils/utils";
+import { formatError } from "../../../../common/utils.common";
 
 type ProductOsState = {
-  oses?: ProductOsListResponse;
-  isFetching?: true;
-  fetchErr?: string;
-  isGetting?: true;
-  getErr?: string;
+  oses: ProductOsListResponse | null;
 
-  fetchOses: () => Promise<void>;
-
-  getOs: (osId: string) => Promise<ProductOsResponse | undefined>;
+  fetchOses: () => Promise<ProductOsListResponse>;
 };
 
 export const useProductOsStore = create<ProductOsState>((set, get) => ({
-  oses: undefined,
-  isFetching: undefined,
-  fetchErr: undefined,
-  isGetting: undefined,
-  getErr: undefined,
+  oses: null,
 
-  async fetchOses(): Promise<void> {
+  async fetchOses(): Promise<ProductOsListResponse> {
     const { oses } = get();
-    if (!oses) {
-      set({ isFetching: true, fetchErr: undefined });
+    if (oses) return oses;
 
-      try {
-        const res = await retrieve(PRODUCT_OS_URL);
-        if (!res.success) {
-          set({ fetchErr: res.message });
-          return;
-        }
-
-        set({ oses: res.data as ProductOsListResponse });
-      } catch (error) {
-        set({ fetchErr: formatError(error) });
-      } finally {
-        set({ isFetching: undefined });
-      }
-    }
-  },
-
-  async getOs(osId: string): Promise<ProductOsResponse | undefined> {
-    const { oses } = get();
-    if (oses) {
-      const os = oses.oses.oses.find((o) => o.id === osId);
-      if (os) return os;
-    }
-
-    set({ isGetting: true, getErr: undefined });
     try {
-      const res = await retrieve(`${PRODUCT_OS_URL}/${osId}`);
-      if (!res.success) {
-        set({ getErr: res.message });
-        return;
-      }
+      const res = await retrieve(PRODUCT_OS_URL);
+      if (!res.success) throw new Error(res.message);
 
-      return res.data as ProductOsResponse;
+      const oses = res.data as ProductOsListResponse;
+      set({ oses });
+      return oses;
     } catch (error) {
-      set({ getErr: formatError(error) });
-    } finally {
-      set({ isGetting: undefined });
+      throw new Error(formatError(error));
     }
   },
 }));

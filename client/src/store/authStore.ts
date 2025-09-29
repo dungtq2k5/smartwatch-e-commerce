@@ -11,9 +11,8 @@ import type {
   UserUpdateContactInfo,
   UserUpdateSelfPassword,
   UserSetSelfPassword,
-  UserCartListResponse,
 } from "../../../common/types.common";
-import { formatError, post, patch, retrieve, remove } from "../utils/utils";
+import { post, patch, retrieve, remove } from "../utils/utils";
 import {
   AUTH_BY_GOOGLE_URL,
   CHECK_AUTH_URL,
@@ -29,134 +28,119 @@ import {
   LOGOUT_URL,
   USER_DELETE_ACCOUNT_URL,
 } from "../configs";
+import { formatError } from "../../../common/utils.common";
 
 type AuthState = {
-  user?: UserResponse;
+  user: UserResponse | null;
   isAuth: boolean; // If this is true, user data must be defined
-  isLoading?: true;
-  isCheckingAuth?: true;
-  isDeleting?: true;
-
-  carts?: UserCartListResponse;
-  isFetching?: true;
-  fetchErr?: string;
-
-  startLoading: () => void;
-  stopLoading: () => void;
 
   // Validate and authenticate user
-  checkAuth: () => Promise<void>;
+  checkAuth: () => Promise<boolean>;
 
-  signup: (user: UserSignup) => Promise<void>;
+  signup: (user: UserSignup) => Promise<UserResponse>;
 
-  verify: (data: UserVerify) => Promise<void>;
+  verify: (data: UserVerify) => Promise<UserResponse>;
 
-  login: (data: UserLogin) => Promise<void>;
+  login: (data: UserLogin) => Promise<UserResponse>;
   logout: () => Promise<void>;
 
-  authByGoogle: (data: UserAuthByGoogle) => Promise<void>;
+  authByGoogle: (data: UserAuthByGoogle) => Promise<UserResponse>;
 
   // Update user data
   forgotPassword: (data: UserForgotPassword) => Promise<void>;
   resetPassword: (password: string, token: string) => Promise<void>;
 
-  updateSelfGeneralInfo: (data: UserUpdateSelfGeneralInfo) => Promise<void>;
+  updateSelfGeneralInfo: (
+    data: UserUpdateSelfGeneralInfo
+  ) => Promise<UserResponse>;
 
-  updateSelfContactInfo: (data: UserUpdateContactInfo) => Promise<void>;
+  updateSelfContactInfo: (data: UserUpdateContactInfo) => Promise<UserResponse>;
 
-  updateSelfPassword: (data: UserUpdateSelfPassword) => Promise<void>;
+  updateSelfPassword: (data: UserUpdateSelfPassword) => Promise<UserResponse>;
 
-  setSelfPassword: (data: UserSetSelfPassword) => Promise<void>;
+  setSelfPassword: (data: UserSetSelfPassword) => Promise<UserResponse>;
 
   deleteAccount: () => Promise<void>;
 
-  resetUserBalance: () => void;
+  resetUserBalanceCache: () => void;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: undefined,
+  user: null,
   isAuth: false,
-  isLoading: undefined,
-  isCheckingAuth: undefined,
-  isFetching: undefined,
 
-  startLoading: () => set({ isLoading: true }),
-  stopLoading: () => set({ isLoading: undefined }),
-
-  async checkAuth(): Promise<void> {
+  async checkAuth(): Promise<boolean> {
     const { isAuth } = get();
-    if (isAuth) return;
+    if (isAuth) return true;
 
-    set({ isCheckingAuth: true });
     try {
       const res = await retrieve(CHECK_AUTH_URL);
-      if (!res.success) return;
+      if (!res.success) return false;
 
       const { user, isAuth } = res.data as CheckAuthResponse;
       set({ user, isAuth });
       console.log("User authenticated:", user); // DEV temp for testing
+      return isAuth;
     } catch {
       set({ user: undefined, isAuth: false });
-    } finally {
-      set({ isCheckingAuth: undefined });
     }
+
+    return false;
   },
 
-  async signup(userData: UserSignup): Promise<void> {
+  async signup(userData: UserSignup): Promise<UserResponse> {
     const { user } = get();
     if (user) throw new Error("User already signed up");
 
-    set({ isLoading: true });
     try {
       const res = await post(SIGNUP_URL, userData);
       if (!res.success) {
         throw new Error(res.message);
       }
 
-      set({ user: res.data as UserResponse });
+      const user = res.data as UserResponse;
+      set({ user });
+      return user;
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isLoading: undefined });
     }
   },
 
-  async verify(data: UserVerify): Promise<void> {
+  async verify(data: UserVerify): Promise<UserResponse> {
     const { user, isAuth } = get();
-    if (user?.isEmailVerified && user?.isPhoneNumberVerified && isAuth)
+    if (user?.isEmailVerified && user?.isPhoneNumberVerified && isAuth) {
       throw new Error("User already verified");
+    }
 
-    set({ isLoading: true });
     try {
       const res = await post(VERIFY_USER_URL, data);
       if (!res.success) {
         throw new Error(res.message);
       }
 
-      set({ isAuth: true, user: res.data as UserResponse });
+      const user = res.data as UserResponse;
+      set({ isAuth: true, user });
+      return user;
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isLoading: undefined });
     }
   },
 
-  async login(data: UserLogin): Promise<void> {
+  async login(data: UserLogin): Promise<UserResponse> {
     const { isAuth } = get();
     if (isAuth) throw new Error("User already logged in");
 
-    set({ isLoading: true });
     try {
       const res = await post(LOGIN_URL, data);
       if (!res.success) {
         throw new Error(res.message);
       }
 
-      set({ user: res.data as UserResponse, isAuth: true });
+      const user = res.data as UserResponse;
+      set({ user, isAuth: true });
+      return user;
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isLoading: undefined });
     }
   },
 
@@ -164,7 +148,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { isAuth } = get();
     if (!isAuth) throw new Error("User not login yet");
 
-    set({ isLoading: true });
     try {
       const res = await post(LOGOUT_URL);
       if (!res.success) {
@@ -174,8 +157,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: undefined, isAuth: false });
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isLoading: undefined });
     }
   },
 
@@ -183,7 +164,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { isAuth } = get();
     if (isAuth) throw new Error("User already logged in");
 
-    set({ isLoading: true });
     try {
       const res = await post(FORGOT_PASSWORD_URL, data);
       if (!res.success) {
@@ -191,8 +171,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isLoading: undefined });
     }
   },
 
@@ -200,7 +178,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { isAuth } = get();
     if (isAuth) throw new Error("User already logged in");
 
-    set({ isLoading: true });
     try {
       const res = await post(`${RESET_PASSWORD_URL}/${token}`, { password });
       if (!res.success) {
@@ -208,35 +185,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isLoading: undefined });
     }
   },
 
-  async authByGoogle(data: UserAuthByGoogle): Promise<void> {
+  async authByGoogle(data: UserAuthByGoogle): Promise<UserResponse> {
     const { isAuth } = get();
     if (isAuth) throw new Error("User already logged in");
 
-    set({ isLoading: true });
     try {
       const res = await post(AUTH_BY_GOOGLE_URL, data);
       if (!res.success) {
         throw new Error(res.message);
       }
 
-      set({ user: res.data as UserResponse, isAuth: true });
+      const user = res.data as UserResponse;
+      set({ user, isAuth: true });
+      return user;
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isLoading: undefined });
     }
   },
 
-  async updateSelfGeneralInfo(data: UserUpdateSelfGeneralInfo): Promise<void> {
+  async updateSelfGeneralInfo(
+    data: UserUpdateSelfGeneralInfo
+  ): Promise<UserResponse> {
     const { isAuth } = get();
     if (!isAuth) throw new Error("User not logged in");
 
-    set({ isLoading: true });
     try {
       const res = await patch(
         USER_UPDATE_SELF_GENERAL_INFO_URL,
@@ -247,19 +222,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(res.message);
       }
 
-      set({ user: res.data as UserResponse });
+      const user = res.data as UserResponse;
+      set({ user });
+      return user;
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isLoading: undefined });
     }
   },
 
-  async updateSelfContactInfo(data: UserUpdateContactInfo): Promise<void> {
+  async updateSelfContactInfo(
+    data: UserUpdateContactInfo
+  ): Promise<UserResponse> {
     const { isAuth } = get();
     if (!isAuth) throw new Error("User not logged in");
 
-    set({ isLoading: true });
     try {
       const res = await patch(
         USER_UPDATE_SELF_CONTACT_INFO_URL,
@@ -270,55 +246,55 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(res.message);
       }
 
-      set({ user: res.data as UserResponse });
+      const user = res.data as UserResponse;
+      set({ user });
+      return user;
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isLoading: undefined });
     }
   },
 
-  async updateSelfPassword(data: UserUpdateSelfPassword): Promise<void> {
+  async updateSelfPassword(
+    data: UserUpdateSelfPassword
+  ): Promise<UserResponse> {
     const { isAuth, user } = get();
     if (!isAuth) throw new Error("User not logged in");
     if (!user || user.authProvider !== "local") {
       throw new Error("Cannot update password when user is auth by provider");
     }
 
-    set({ isLoading: true });
     try {
       const res = await patch(USER_UPDATE_SELF_PASSWORD_URL, undefined, data);
       if (!res.success) {
         throw new Error(res.message);
       }
 
-      set({ user: res.data as UserResponse });
+      const user = res.data as UserResponse;
+      set({ user });
+      return user;
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isLoading: undefined });
     }
   },
 
-  async setSelfPassword(data: UserSetSelfPassword): Promise<void> {
+  async setSelfPassword(data: UserSetSelfPassword): Promise<UserResponse> {
     const { isAuth, user } = get();
     if (!isAuth) throw new Error("User not logged in");
     if (!user || user.authProvider === "local") {
       throw new Error("Cannot set password when user is not auth by provider");
     }
 
-    set({ isLoading: true });
     try {
       const res = await patch(USER_SET_SELF_PASSWORD_URL, undefined, data);
       if (!res.success) {
         throw new Error(res.message);
       }
 
-      set({ user: res.data as UserResponse });
+      const user = res.data as UserResponse;
+      set({ user });
+      return user;
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isLoading: undefined });
     }
   },
 
@@ -326,7 +302,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { isAuth } = get();
     if (!isAuth) throw new Error("User not logged in");
 
-    set({ isDeleting: true });
     try {
       const res = await remove(USER_DELETE_ACCOUNT_URL);
       if (!res.success) {
@@ -336,15 +311,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: undefined, isAuth: false });
     } catch (error) {
       throw new Error(formatError(error));
-    } finally {
-      set({ isDeleting: undefined });
     }
   },
 
-  resetUserBalance(): void {
+  resetUserBalanceCache(): void {
     const { user } = get();
     if (!user) return;
 
     set({ user: { ...user, userBalanceCents: 0 } });
-  }
+  },
 }));

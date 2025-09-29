@@ -91,24 +91,28 @@ function sanitizeModelVariationInput(
   next();
 }
 
-function sanitizeSearchProductInput(
+function sanitizeProductSearchInput(
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
   console.log("▶️ ", "Sanitizing product search input...");
-  const { searchTerm, type, stopSelling } = req.query;
+
+  // Since req.query can't be modifiable so we create a new query obj for the request
+  const sanitizedQuery = { ...req.query };
+  const { searchTerm, type, stopSelling } = sanitizedQuery;
 
   if (typeof searchTerm === "string") {
-    req.query.searchTerm = removeOddSpaces(searchTerm);
+    sanitizedQuery.searchTerm = removeOddSpaces(searchTerm);
   }
   if (typeof type === "string") {
-    req.query.type = removeOddSpaces(type).toLowerCase();
+    sanitizedQuery.type = removeOddSpaces(type).toLowerCase();
   }
   if (typeof stopSelling === "string") {
-    req.query.stopSelling = removeAllSpaces(stopSelling.toLowerCase());
+    sanitizedQuery.stopSelling = removeAllSpaces(stopSelling.toLowerCase());
   }
 
+  req["sanitizedQuery"] = sanitizedQuery;
   next();
 }
 
@@ -259,19 +263,22 @@ function sanitizeProductDetailQuery(
   next: NextFunction
 ): void {
   console.log("▶️ ", "Sanitizing product detail query input...");
-  const { modelStopSelling, variationStopSelling } = req.query;
+
+  const sanitizedQuery = { ...req.query };
+  const { modelStopSelling, variationStopSelling } = sanitizedQuery;
 
   if (typeof modelStopSelling === "string") {
-    req.query.modelStopSelling = removeAllSpaces(
+    sanitizedQuery.modelStopSelling = removeAllSpaces(
       modelStopSelling.toLowerCase()
     );
   }
   if (typeof variationStopSelling === "string") {
-    req.query.variationStopSelling = removeAllSpaces(
+    sanitizedQuery.variationStopSelling = removeAllSpaces(
       variationStopSelling.toLowerCase()
     );
   }
 
+  req["sanitizedQuery"] = sanitizedQuery;
   next();
 }
 
@@ -300,7 +307,7 @@ export function inputSanitizer(
     case "variation":
       return sanitizeModelVariationInput;
     case "product search":
-      return sanitizeSearchProductInput;
+      return sanitizeProductSearchInput;
     case "product details":
       return sanitizeProductDetailQuery;
   }
@@ -354,7 +361,10 @@ export function verifyProductInput(
           if (!categoryId) {
             errors.push("ID is required.");
           }
-          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
+          if (
+            isPresent(imageUrls) &&
+            !(await isValidImgUrls(imageUrls, "product"))
+          ) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
           if (typeof description !== "string" || !description) {
@@ -407,7 +417,10 @@ export function verifyProductInput(
           ) {
             errors.push("ID must be a non-empty string.");
           }
-          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
+          if (
+            isPresent(imageUrls) &&
+            !(await isValidImgUrls(imageUrls, "product"))
+          ) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
           if (
@@ -440,7 +453,7 @@ export function verifyProductInput(
             priceCentsMin,
             priceCentsMax,
             sortBy,
-          } = req.query;
+          } = req["sanitizedQuery"] || req.query;
 
           if (limit !== undefined && !isValidNumString(limit)) {
             errors.push("limit must be a valid number string.");
@@ -513,7 +526,8 @@ export function verifyProductInput(
         }
         case "details": {
           console.log("Validating product details input...");
-          const { modelStopSelling, variationStopSelling } = req.query;
+          const { modelStopSelling, variationStopSelling } =
+            req["sanitizedQuery"] || req.query;
 
           if (
             modelStopSelling !== undefined &&
@@ -563,7 +577,10 @@ export function verifyBrandInput(
           } else if (typeof name !== "string") {
             errors.push("name must be a non-empty string.");
           }
-          if (isPresent(logoUrl) && !(await isValidImgUrls(logoUrl))) {
+          if (
+            isPresent(logoUrl) &&
+            !(await isValidImgUrls(logoUrl, "product"))
+          ) {
             errors.push("logo URL must be a valid image URL.");
           }
           if (
@@ -580,7 +597,10 @@ export function verifyBrandInput(
           if (name !== undefined && (typeof name !== "string" || !name)) {
             errors.push("name must be a non-empty string.");
           }
-          if (isPresent(logoUrl) && !(await isValidImgUrls(logoUrl))) {
+          if (
+            isPresent(logoUrl) &&
+            !(await isValidImgUrls(logoUrl, "product"))
+          ) {
             errors.push("logo URL must be a valid image URL or null.");
           }
           if (
@@ -675,7 +695,10 @@ export function verifyOsInput(
           } else if (typeof name !== "string") {
             errors.push("name must be a non-empty string.");
           }
-          if (isPresent(logoUrl) && !(await isValidImgUrls(logoUrl))) {
+          if (
+            isPresent(logoUrl) &&
+            !(await isValidImgUrls(logoUrl, "product"))
+          ) {
             errors.push("logo URL must be a valid image URL.");
           }
           if (
@@ -692,7 +715,10 @@ export function verifyOsInput(
           if (name !== undefined && (typeof name !== "string" || !name)) {
             errors.push("name must be a non-empty string.");
           }
-          if (isPresent(logoUrl) && !(await isValidImgUrls(logoUrl))) {
+          if (
+            isPresent(logoUrl) &&
+            !(await isValidImgUrls(logoUrl, "product"))
+          ) {
             errors.push("logo URL must be a valid image URL.");
           }
           if (
@@ -767,7 +793,10 @@ export function verifyProductModelInput(
           ) {
             errors.push("stock price must be a non-negative number.");
           }
-          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
+          if (
+            isPresent(imageUrls) &&
+            !(await isValidImgUrls(imageUrls, "product"))
+          ) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
           if (!feature) {
@@ -1225,7 +1254,10 @@ export function verifyProductModelInput(
           ) {
             errors.push("stock price must be a non-negative number.");
           }
-          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
+          if (
+            isPresent(imageUrls) &&
+            !(await isValidImgUrls(imageUrls, "product"))
+          ) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
           if (feature !== undefined) {
@@ -1722,7 +1754,10 @@ export function verifyModelVariationInput(
               errors.push("color name must be a non-empty string.");
             }
           }
-          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
+          if (
+            isPresent(imageUrls) &&
+            !(await isValidImgUrls(imageUrls, "product"))
+          ) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
           if (
@@ -1869,7 +1904,10 @@ export function verifyModelVariationInput(
               }
             }
           }
-          if (isPresent(imageUrls) && !(await isValidImgUrls(imageUrls))) {
+          if (
+            isPresent(imageUrls) &&
+            !(await isValidImgUrls(imageUrls, "product"))
+          ) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
           if (

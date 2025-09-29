@@ -9,13 +9,17 @@ import {
 import { Types } from "mongoose";
 import { HttpError } from "../../utils/errorHandler";
 import Product from "../../models/product/product.model";
-import ProductModel from "../../models/product/productModel.model";
+import ProductModel, { IProductModel } from "../../models/product/productModel.model";
 import ProductOs from "../../models/product/productOs.model";
 import { RequestAuth } from "../../utils/types";
 import { formatProductModelResponse } from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 import ModelVariation from "../../models/product/modelVariation.model";
-import { cleanObj, isEmptyObj, shallowMerge } from "../../../common/utils.common";
+import {
+  cleanObj,
+  isEmptyObj,
+  shallowMerge,
+} from "../../../common/utils.common";
 
 export async function create(
   req: Request,
@@ -69,7 +73,10 @@ export async function create(
       name,
     }).lean();
     if (existingModel) {
-      throw new HttpError(409, "Product model with model or size already exists");
+      throw new HttpError(
+        409,
+        "Product model with model or size already exists"
+      );
     }
 
     // Create new model
@@ -294,13 +301,17 @@ export async function update(
       throw new HttpError(400, "Diameter is required for circular screens");
     }
     if (!updatedIsCircular && !updatedDimension) {
-      throw new HttpError(400, "Dimension is required for non-circular screens");
+      throw new HttpError(
+        400,
+        "Dimension is required for non-circular screens"
+      );
     }
 
     // Update imageUrls on Firebase Storage
-    if (updateData.imageUrls) {
-      const imgUrlToRemove = model.imageUrls!.filter(
-        (url) => !updateData.imageUrls!.includes(url)
+    const imageUrls = updateData.imageUrls;
+    if (imageUrls && imageUrls.length > 0) {
+      const imgUrlToRemove = model.imageUrls.filter(
+        (url) => !imageUrls.includes(url)
       );
       if (imgUrlToRemove.length > 0) {
         await deleteManyFileFromFirebaseStorage(
@@ -313,10 +324,7 @@ export async function update(
     model.name = updateData.name || model.name;
     model.priceCents = updateData.priceCents ?? model.priceCents;
     model.stockPriceCents = updateData.stockPriceCents ?? model.stockPriceCents;
-    model.imageUrls =
-      updateData.imageUrls === null
-        ? []
-        : updateData.imageUrls || model.imageUrls;
+    model.imageUrls = imageUrls === null ? [] : imageUrls || model.imageUrls;
     if (updateData.feature) {
       const featureObj = model.toObject().feature;
 
@@ -327,24 +335,23 @@ export async function update(
         updateData.feature.waterResistance === null
           ? null
           : featureObj.waterResistance
-          ? shallowMerge(
-              featureObj.waterResistance,
-              updateData.feature.waterResistance
-            )
-          : updateData.feature.waterResistance &&
-            updateData.feature.waterResistance.rating
-          ? updateData.feature.waterResistance
-          : null;
+            ? shallowMerge(
+                featureObj.waterResistance,
+                updateData.feature.waterResistance
+              )
+            : updateData.feature.waterResistance?.rating
+              ? { rating: updateData.feature.waterResistance.rating, description: updateData.feature.waterResistance.description || null }
+              : null;
       model.feature.utilities =
         updateData.feature.utilities === null
           ? null
           : featureObj.utilities
-          ? shallowMerge(featureObj.utilities, updateData.feature.utilities)
-          : !updateData.feature.utilities
-          ? null
-          : Object.keys(cleanObj(updateData.feature.utilities)).length // Handle empty obj {}
-          ? updateData.feature.utilities
-          : null;
+            ? shallowMerge(featureObj.utilities, updateData.feature.utilities as any)
+            : !updateData.feature.utilities
+              ? null
+              : Object.keys(cleanObj(updateData.feature.utilities)).length // Handle empty obj {}
+                ? updateData.feature.utilities as any
+                : null;
       model.feature.supportedAppsForNotifications =
         updateData.feature.supportedAppsForNotifications === null
           ? []
@@ -362,9 +369,9 @@ export async function update(
         updateData.config.camera === null
           ? null
           : configObj.camera
-          ? shallowMerge(configObj.camera, updateData.config.camera)
+          ? shallowMerge(configObj.camera, updateData.config.camera as any)
           : updateData.config.camera && updateData.config.camera.resolutionMp
-          ? updateData.config.camera
+          ? updateData.config.camera as any
           : null;
       model.config.chipset = updateData.config.chipset || configObj.chipset;
       model.config.memory = shallowMerge(
@@ -522,16 +529,17 @@ async function hasConstraints(modelId: Types.ObjectId): Promise<boolean> {
 }
 
 async function executeDeletion(
-  modelToDelete: any,
+  modelToDelete: IProductModel,
   deletedBy: Types.ObjectId
 ): Promise<void> {
   try {
     if (await hasConstraints(modelToDelete._id)) {
       // Soft delete
-      modelToDelete.isDeleted = true;
-      modelToDelete.deletedAt = new Date();
-      modelToDelete.deletedBy = deletedBy;
-      await modelToDelete.save();
+      await ProductModel.findByIdAndUpdate(modelToDelete._id, {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy,
+      });
       return;
     }
 
@@ -541,7 +549,7 @@ async function executeDeletion(
       "product-image"
     );
 
-    await modelToDelete.deleteOne();
+    await ProductModel.findByIdAndDelete(modelToDelete._id);
   } catch (error) {
     console.error("❌ ", "Error deleting product model:", error);
     throw error;

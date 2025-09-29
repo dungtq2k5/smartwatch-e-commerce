@@ -1,3 +1,5 @@
+export const ROOT_URL = "/api/v1";
+
 export const HASH_SALT = 10;
 export const JWT_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 export const JWT_NAME = "auth_token";
@@ -15,7 +17,8 @@ export const ADMIN_USER = {
   gender: "other",
 } as const;
 
-export const PERMISSION_LIST = [ // 60 permissions
+export const PERMISSION_LIST = [
+  // 60 permissions
   // Users
   { name: "create user", code: "c_usr" },
   { name: "read user", code: "r_usr" },
@@ -55,11 +58,6 @@ export const PERMISSION_LIST = [ // 60 permissions
   { name: "create order return", code: "c_order_return" },
   { name: "read order return", code: "r_order_return" },
   { name: "update order return", code: "u_order_return" },
-
-  // Order refunds
-  { name: "create order refund", code: "c_order_refund" },
-  { name: "read order refund", code: "r_order_refund" },
-  { name: "update order refund", code: "u_order_refund" },
 
   // Products
   { name: "create product", code: "c_product" },
@@ -147,8 +145,31 @@ export const BUYER_PERMISSION_LIST = [
   PERMISSION_LIST[27], // create order return
   PERMISSION_LIST[28], // read order return
   PERMISSION_LIST[29], // update order return
-
-  PERMISSION_LIST[30], // create order refund
-  PERMISSION_LIST[31], // read order refund
-  PERMISSION_LIST[32], // update order refund
 ] as const;
+
+export const ORDER_VARIATION_INSTANCE_STATES = [
+  {
+    name: "ordered",
+    description: "The item has been ordered.",
+  },
+  {
+    name: "return pending",
+    description: "The customer has request a return for this item.",
+  },
+  {
+    name: "returned",
+    description: "The item has been successfully returned and processed.",
+  },
+  {
+    name: "return declined",
+    description: "The return request for this item has been declined.",
+  },
+  {
+    name: "cancelled",
+    description: "The item has been cancelled before shipping.",
+  },
+] as const;
+
+export const RETURN_POLICY_DAYS = 14; // Return window is 14 days after reception
+
+export const MAX_ITEMS_FOR_CREATE_BULK_CART = 10; // Max 10 items can be added to cart at once

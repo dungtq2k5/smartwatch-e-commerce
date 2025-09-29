@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { RequestAuth } from "../../utils/types";
 import { HttpError } from "../../utils/errorHandler";
-import ProductOs from "../../models/product/productOs.model";
+import ProductOs, { IProductOs } from "../../models/product/productOs.model";
 import {
   ProductOsCreate,
   ProductOsListResponse,
@@ -232,23 +232,28 @@ async function hasConstraints(osId: Types.ObjectId): Promise<boolean> {
 }
 
 async function executeDeletion(
-  osToDelete: any,
+  osToDelete: IProductOs,
   deletedBy: Types.ObjectId
 ): Promise<void> {
   try {
     if (await hasConstraints(osToDelete._id)) {
       // Soft delete
-      osToDelete.isDeleted = true;
-      osToDelete.deletedAt = new Date();
-      osToDelete.deletedBy = deletedBy;
-      await osToDelete.save();
+      await ProductOs.findByIdAndUpdate(
+        osToDelete._id,
+        {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy,
+        },
+      );
       return;
     }
 
     if (osToDelete.logoUrl) {
       await deleteFileFromFirebaseStorage(osToDelete.logoUrl, "product-image");
     }
-    await osToDelete.deleteOne();
+
+    await ProductOs.findByIdAndDelete(osToDelete._id);
   } catch (error) {
     console.error("❌ ", "Error deleting product os:", error);
     throw error;

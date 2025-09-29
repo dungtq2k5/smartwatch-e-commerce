@@ -1,26 +1,29 @@
 import { Request, Response, NextFunction } from "express";
 import { RequestAuth } from "../../utils/types";
 import {
-  PaymentMethodListResponse,
   SuccessResponse,
   CheckoutSessionResponse,
 } from "../../../common/types.common";
 import Order from "../../models/order/order.model";
 import { HttpError } from "../../utils/errorHandler";
 import {
-  formatPaymentMethodResponse,
-  getPaymentMethodName,
-  getPaymentStatusId,
-  getPaymentStatusName,
+  getOrderStateId,
+  getPaymentMethodLookupId,
+  getPaymentStateId,
+  getPaymentStateLookupId,
+  getSysUserId,
 } from "../../utils/utils";
 import stripe from "../../configs/stripe.config";
 import Stripe from "stripe";
 import mongoose, { Types } from "mongoose";
-import { executeCartDeletion, executeOrderDeletion } from "./order.controller";
+import {
+  executeCartDeletion,
+  handleOrderDeletion,
+  getLatestStateId,
+} from "./order.controller";
 import User from "../../models/user/user.model";
-import PaymentMethod from "../../models/order/paymentMethod.model";
 import UserPaymentMethod from "../../models/user/userPaymentMethod.model";
-import { isNoneArrObj } from "../../../common/utils.common";
+import { formatError, isNoneArrObj } from "../../../common/utils.common";
 
 export async function createCheckoutSession(
   req: Request,
@@ -59,12 +62,18 @@ export async function createCheckoutSession(
       );
     }
 
-    // Check order is in pending state
-    if (getPaymentStatusName(order.paymentStatusId) !== "pending") {
+    // Check latest payment status is in pending state
+    const latestPaymentStateId = getLatestStateId(order.paymentStates)!;
+    const latestPaymentStateLookupId =
+      getPaymentStateLookupId(latestPaymentStateId);
+    if (latestPaymentStateLookupId !== "1") {
       throw new HttpError(400, "Order is not in a valid state for payment.");
     }
-    // Check order is not COD
-    if (getPaymentMethodName(order.paymentMethodId) === "cash") {
+    // Check order is COD
+    if (
+      getPaymentMethodLookupId(new Types.ObjectId(order.paymentMethodId)) ===
+      "1"
+    ) {
       throw new HttpError(
         400,
         "Cannot create checkout session for COD orders."
@@ -72,16 +81,7 @@ export async function createCheckoutSession(
     }
 
     // Check user exists and valid
-    const user = await User.findById(userId);
-    if (!user || user.isDeleted) {
-      throw new HttpError(404, "User not found.");
-    }
-    if (user.isLocked) {
-      throw new HttpError(
-        403,
-        "Your account is locked. Please contact support."
-      );
-    }
+    const user = (await User.findById(userId))!; // valid user was handled in auth middleware
 
     // Create stripeCustomerId if not exists
     let stripeCustomerId = user.stripeCustomerId;
@@ -136,8 +136,8 @@ export async function createCheckoutSession(
       mode: "payment",
       customer: stripeCustomerId,
       payment_intent_data: { setup_future_usage: "on_session" },
-      success_url: `${process.env.CLIENT_URL}/order-status?redirect_status=succeeded&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/order-status?redirect_status=failed`,
+      success_url: `${process.env.CLIENT_URL}/order-status?method=stripe&redirect_status=succeeded&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URL}/order-status?method=stripe&redirect_status=failed`,
       metadata: {
         orderId: order._id.toString(),
       },
@@ -180,12 +180,13 @@ export async function handleStripeWebhook(
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (error) {
+    const errMsg = formatError(error);
     console.error(
       "❌ ",
       "Webhook signature verification failed:",
-      error.message
+      errMsg
     );
-    res.status(400).send(`Webhook Error: ${error.message}`);
+    res.status(400).send(`Webhook Error: ${errMsg}`);
     return;
   }
 
@@ -280,13 +281,23 @@ export async function handleStripeWebhook(
         );
 
         // Update order
+        const sysUserId = getSysUserId();
+        order.paymentStates.push({
+          id: getPaymentStateId("2"), // paid
+          notes: "Payment succeeded via Stripe.",
+          createdBy: sysUserId,
+        });
+        order.states.push({
+          id: getOrderStateId("2"), // confirmed
+          notes: "Order confirmed after successful payment.",
+          createdBy: sysUserId,
+        });
         order.orderDate = new Date();
-        order.paymentStatusId = getPaymentStatusId("paid");
-        order.payment = {
+        order.transaction = {
           amountCents: checkoutSession.amount_total as number,
           currency: checkoutSession.currency as string,
           transactionDate: new Date(checkoutSession.created * 1000), // Convert to JS Date
-          relatedTransactionId: paymentIntentId,
+          paymentIntentId,
         };
 
         await order.save({ session });
@@ -314,10 +325,23 @@ export async function handleStripeWebhook(
         }
 
         // Update order and its items
-        await executeOrderDeletion(order, session, {
+        await handleOrderDeletion(order, session, {
           deleteOrderItself: false,
         });
-        order.paymentStatusId = getPaymentStatusId("failed");
+
+        const sysUserId = getSysUserId();
+        order.paymentStates.push({
+          id: getPaymentStateId("3"), // failed
+          notes: "Payment session expired.",
+          createdBy: sysUserId,
+        });
+        order.states.push({
+          id: getOrderStateId("7"), // cancelled
+          notes: "Order cancelled due to payment timeout.",
+          createdBy: sysUserId,
+        });
+
+        await order.save({ session });
         console.log(
           "✅ ",
           "Order updated successfully after checkout session expired."
@@ -340,25 +364,22 @@ export async function handleStripeWebhook(
   }
 }
 
-export async function getAll(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Fetching all payment methods...");
-
+// --- HELPER FUNCTIONS ---
+export async function createRefund(
+  paymentIntentId: string,
+  amountCents?: number
+): Promise<Stripe.Refund> {
+  console.log("▶️ ", `Creating Stripe refund for ${paymentIntentId}...`);
   try {
-    const paymentMethods = await PaymentMethod.find().lean();
-
-    res.status(200).json({
-      success: true,
-      message: "Payment methods fetched successfully.",
-      data: {
-        total: paymentMethods.length,
-        methods: paymentMethods.map(formatPaymentMethodResponse),
-      },
-    } as SuccessResponse<PaymentMethodListResponse>);
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      amount: amountCents,
+      reason: "requested_by_customer",
+    });
+    console.log("✅ ", `Stripe refund ${refund.id} created successfully.`);
+    return refund;
   } catch (error) {
-    next(error);
+    console.error("❌ ", "Error creating Stripe refund:", error);
+    throw error;
   }
 }

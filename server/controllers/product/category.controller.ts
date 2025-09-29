@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { RequestAuth } from "../../utils/types";
 import { HttpError } from "../../utils/errorHandler";
-import ProductCategory from "../../models/product/productCategory.model";
+import ProductCategory, { IProductCategory } from "../../models/product/productCategory.model";
 import {
   ProductCategoryCreate,
   ProductCategoryListResponse,
@@ -12,6 +12,7 @@ import {
 import { formatProductCategoryResponse } from "../../utils/utils";
 import { Types } from "mongoose";
 import Product from "../../models/product/product.model";
+import { formatError } from "../../../common/utils.common";
 
 export async function create(
   req: Request,
@@ -220,27 +221,31 @@ async function hasConstraints(categoryId: Types.ObjectId): Promise<boolean> {
     return hasConstraints;
   } catch (error) {
     console.error("❌ ", "Error checking category constraints:", error);
-    throw new Error(error);
+    throw error;
   }
 }
 
 async function executeDeletion(
-  categoryToDelete: any,
+  categoryToDelete: IProductCategory,
   deletedBy: Types.ObjectId
 ): Promise<void> {
   try {
     if (await hasConstraints(categoryToDelete._id)) {
       // Soft delete
-      categoryToDelete.isDeleted = true;
-      categoryToDelete.deletedAt = new Date();
-      categoryToDelete.deletedBy = deletedBy;
-      await categoryToDelete.save();
+      await ProductCategory.findByIdAndUpdate(
+        categoryToDelete._id,
+        {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy,
+        },
+      );
       return;
     }
 
-    await categoryToDelete.deleteOne();
+    await ProductCategory.findByIdAndDelete(categoryToDelete._id);
   } catch (error) {
     console.error("❌ ", "Error deleting product category:", error);
-    throw new Error(error);
+    throw error;
   }
 }

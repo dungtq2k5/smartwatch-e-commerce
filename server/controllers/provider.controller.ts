@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import Provider from "../models/inventory/provider.model";
+import Provider, { IProvider } from "../models/inventory/provider.model";
 import { HttpError } from "../utils/errorHandler";
 import { RequestAuth } from "../utils/types";
 import { formatProviderResponse } from "../utils/utils";
@@ -198,7 +198,7 @@ export async function remove(
 }
 
 // -- HELPER FUNCTIONS --
-async function hasConstraints(providerId: string): Promise<boolean> {
+async function hasConstraints(providerId: Types.ObjectId | string): Promise<boolean> {
   console.log("▶️ ", "Checking constraints for provider...");
 
   try {
@@ -231,21 +231,25 @@ async function hasConstraints(providerId: string): Promise<boolean> {
 }
 
 async function executeDeletion(
-  providerToDelete: any,
+  providerToDelete: IProvider,
   deletedBy: Types.ObjectId
 ): Promise<void> {
   console.log("▶️ ", "Executing deletion of provider...");
 
   try {
     if (await hasConstraints(providerToDelete._id)) {
-      providerToDelete.isDeleted = true;
-      providerToDelete.deletedAt = new Date();
-      providerToDelete.deletedBy = deletedBy;
-      await providerToDelete.save();
+      await Provider.findByIdAndUpdate(
+        providerToDelete._id,
+        {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy,
+        },
+      );
       return;
     }
 
-    await providerToDelete.deleteOne();
+    await Provider.findByIdAndDelete(providerToDelete._id);
   } catch (error) {
     console.error("❌ ", "Error deleting provider:", error);
     throw error;

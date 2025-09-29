@@ -14,7 +14,7 @@ import type {
 import {
   formatVariationInstanceResponse,
   genInstanceSku,
-  getConditionId,
+  getInstanceConditionId,
   getMovementTypeId,
 } from "../../utils/utils";
 import { appCache } from "../../configs/cache";
@@ -108,7 +108,7 @@ export async function create(
       modelVariationId: variationId,
       supplierSerialNumber,
       supplierImeiNumber,
-      conditionId: conditionId || getConditionId("new"),
+      conditionId: conditionId || getInstanceConditionId("1"), // new
       isActive,
       inactiveAt: isActive ? undefined : new Date(),
     });
@@ -128,7 +128,7 @@ export async function create(
     await inventoryMovement.save({ session });
 
     // Increase stock
-    variation.stockQuantity! += 1;
+    variation.stockQuantity += 1;
     await variation.save({ session });
 
     // Commit transaction
@@ -280,7 +280,7 @@ export async function update(
     // Check conditionId exists
     const updatedConditionId =
       conditionId === null
-        ? getConditionId("new")
+        ? getInstanceConditionId("1") // new
         : conditionId
         ? new Types.ObjectId(conditionId)
         : instance.conditionId;

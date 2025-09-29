@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import type { ProductListResponse } from "../../../common/types.common";
 import ProductCard from "../components/product/ProductCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -8,9 +8,8 @@ import { MAX_PRODUCTS_PER_PAGE } from "../configs";
 import ProductCardSkeleton from "../components/skeleton/ProductCardSkeleton";
 import ApiError from "../components/ApiError";
 import { useProductStore } from "../store/product/productStore";
-import { formatError } from "../utils/utils";
 import Pagination from "../components/Pagination";
-import { removeOddSpaces } from "../../../common/utils.common";
+import { formatError, removeOddSpaces } from "../../../common/utils.common";
 
 type SearchForm = {
   offset: number;
@@ -20,15 +19,17 @@ type SearchForm = {
 
 type ProductsState = {
   searchProducts?: ProductListResponse;
-  apiError?: string;
+  apiError: string | null;
   isFetching: boolean;
 };
 
 export default function SearchProduct() {
   // DEV temp for testing
-  // const count = useRef(0);
-  // count.current++;
-  // console.log("SearchProduct render count:", count.current);
+  const count = useRef(0);
+  count.current++;
+  console.log("SearchProduct render count:", count.current);
+
+  const location = useLocation();
 
   const { fetchProducts } = useProductStore();
 
@@ -39,9 +40,11 @@ export default function SearchProduct() {
   });
   const [products, setProducts] = useState<ProductsState>({
     searchProducts: undefined,
-    apiError: undefined,
+    apiError: null,
     isFetching: true,
   });
+
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const handleFetchProducts = useCallback(
     async (query: SearchForm): Promise<void> => {
@@ -49,7 +52,7 @@ export default function SearchProduct() {
       setProducts((prev) => ({
         ...prev,
         isFetching: true,
-        apiError: undefined,
+        apiError: null,
       }));
 
       try {
@@ -80,18 +83,22 @@ export default function SearchProduct() {
   );
 
   const mainContainerRef = useRef<HTMLDivElement>(null);
-  const location = useLocation();
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const urlSearchTerm = urlParams.get("searchTerm");
-    if (urlSearchTerm) {
-      setSearchForm((prev) => ({
-        ...prev,
-        searchTerm: urlSearchTerm,
-      }));
+    if (location.pathname === "/search") {
+      const urlSearchTerm = searchParams.get("searchTerm");
+      if (urlSearchTerm) {
+        const newSearchForm = {
+          ...searchForm,
+          offset: 0,
+          searchTerm: urlSearchTerm,
+        };
+        setSearchForm(newSearchForm);
+        handleFetchProducts(newSearchForm);
+      }
     }
-  }, [location.search]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.search]);
 
   // Handle debounced search when searchTerm changes
   useEffect(() => {
@@ -101,13 +108,10 @@ export default function SearchProduct() {
         return;
       }
 
-      const newSearchForm = {
-        ...searchForm,
-        offset: 0,
-      };
-      setSearchForm(newSearchForm);
-
-      await handleFetchProducts(newSearchForm);
+      setSearchParams((prev) => {
+        prev.set("searchTerm", searchForm.searchTerm);
+        return prev;
+      });
     }, 500);
 
     return () => {
@@ -124,7 +128,7 @@ export default function SearchProduct() {
     }));
     setProducts({
       searchProducts: undefined,
-      apiError: undefined,
+      apiError: null,
       isFetching: false,
     });
   }, []);
@@ -148,7 +152,10 @@ export default function SearchProduct() {
   return (
     <main className="container--g" ref={mainContainerRef}>
       {/* Big search bar */}
-      <form className="input-group input-group-lg mb-4 shadow-sm rounded-3">
+      <form
+        className="input-group input-group-lg mb-4 shadow-sm rounded-3"
+        onSubmit={(e) => e.preventDefault()}
+      >
         <label htmlFor="searchTerm" hidden aria-hidden>
           Search
         </label>

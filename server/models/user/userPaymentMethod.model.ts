@@ -1,9 +1,24 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-const userPaymentMethodSchema = new mongoose.Schema(
+export interface IUserPaymentMethod extends Document<Types.ObjectId> {
+  userId: Types.ObjectId;
+  stripePaymentMethodId: string;
+  type: "card";
+  card: {
+    brand: string; // e.g., 'visa', 'mastercard'
+    last4: string; // e.g., '4242'
+    expMonth: number;
+    expYear: number;
+  };
+  isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const userPaymentMethodSchema: Schema<IUserPaymentMethod> = new Schema(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -55,8 +70,9 @@ userPaymentMethodSchema.index(
   { unique: true, partialFilterExpression: { isDefault: true } }
 );
 
-const UserPaymentMethod = mongoose.model(
-  "UserPaymentMethod",
-  userPaymentMethodSchema
-);
+const UserPaymentMethod: Model<IUserPaymentMethod> =
+  mongoose.model<IUserPaymentMethod>(
+    "UserPaymentMethod",
+    userPaymentMethodSchema
+  );
 export default UserPaymentMethod;

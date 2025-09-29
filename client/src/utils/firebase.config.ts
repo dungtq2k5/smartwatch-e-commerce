@@ -37,3 +37,7 @@ export const productImgStorage = getStorage(
   app,
   `gs://${import.meta.env.VITE_FIREBASE_PRODUCT_IMAGE_BUCKET}`
 );
+export const returnImgStorage = getStorage(
+  app,
+  `gs://${import.meta.env.VITE_FIREBASE_RETURN_IMAGE_BUCKET}`
+);

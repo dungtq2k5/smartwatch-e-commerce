@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import ProductCard from "../components/product/ProductCard";
 import { useProductStore } from "../store/product/productStore";
 import type {
@@ -9,35 +9,39 @@ import type {
 import {
   MAX_POPULAR_PRODUCTS_DISPLAY,
   MAX_PRODUCTS_PER_PAGE,
+  WAITING_EMOJI,
 } from "../configs";
-import { formatError } from "../utils/utils";
 import ApiError from "../components/ApiError";
 import defaultProductImg from "../assets/default-product.webp";
 import { useProductCategoryStore } from "../store/product/categoryStore";
 import { useProductBrandStore } from "../store/product/brandStore";
-import { centsToUSD } from "../../../common/utils.common";
+import { centsToUSD, formatError } from "../../../common/utils.common";
 import HorizontalDivider from "../components/HorizontalDivider";
 import ProductCardSkeleton from "../components/skeleton/ProductCardSkeleton";
 import FilterSidebarSkeleton from "../components/skeleton/FilterSidebarSkeleton";
 import Pagination from "../components/Pagination";
+import toast from "react-hot-toast";
+import {
+  PRODUCT_SEARCH_SORT_OPTIONS,
+  PRODUCT_TYPES,
+} from "../../../common/configs.common";
 
-type FetchingState = {
-  searchProducts: boolean;
-  mostPopularProducts: boolean;
-  productMaxPrice: boolean;
+type process = {
+  isProcessing: boolean;
+  isInitializing: boolean;
+  isSearchingProducts: boolean;
 };
 
-type ApiErrorState = {
-  searchProducts?: string;
-  mostPopularProducts?: string;
-  productMaxPrice?: string;
+type ApiErr = {
+  initErr: string | null;
+  searchErr: string | null;
 };
 
-type ProductsState = {
-  mostPopularProducts?: ProductListResponse;
-  searchProducts?: ProductListResponse;
-  productMaxPrice?: number;
-};
+type Product = Partial<{
+  mostPopularProducts: ProductListResponse;
+  searchProducts: ProductListResponse;
+  productMaxPrice: number;
+}>;
 
 type SearchForm = Omit<
   ProductSearchQuery,
@@ -50,31 +54,28 @@ type SearchForm = Omit<
 
 export default function Home() {
   // DEV temp for testing
-  // const renderCount = useRef(0);
-  // renderCount.current += 1;
-  // console.log("Home render count:", renderCount.current);
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  console.log("Home render count:", renderCount.current);
+
+  const location = useLocation();
 
   const { fetchProducts } = useProductStore();
-  const {
-    categories,
-    isFetching: isCateFetching,
-    fetchErr: fetchCateErr,
-    fetchCategories,
-  } = useProductCategoryStore();
-  const {
-    brands,
-    isFetching: isBrandFetching,
-    fetchErr: fetchBrandErr,
-    fetchBrands,
-  } = useProductBrandStore();
+  const { categories, fetchCategories } = useProductCategoryStore();
+  const { brands, fetchBrands } = useProductBrandStore();
 
-  const [isFetching, setIsFetching] = useState<FetchingState>({
-    searchProducts: true,
-    mostPopularProducts: true,
-    productMaxPrice: true,
+  const [process, setProcess] = useState<process>({
+    isProcessing: true,
+    isInitializing: true,
+    isSearchingProducts: true,
   });
-  const [apiError, setApiError] = useState<ApiErrorState>({});
-  const [products, setProducts] = useState<ProductsState>({});
+  const [apiErr, setApiErr] = useState<ApiErr>({
+    initErr: null,
+    searchErr: null,
+  });
+  const [products, setProducts] = useState<Product>({});
+
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchForm, setSearchForm] = useState<SearchForm>({
     offset: "0",
@@ -82,14 +83,116 @@ export default function Home() {
     searchTerm: "",
   });
 
-  const handleFetchSearchProducts = useCallback(
-    async (query: SearchForm): Promise<void> => {
-      setApiError((prev) => ({ ...prev, searchProducts: undefined }));
-      setIsFetching((prev) => ({ ...prev, searchProducts: true }));
+  const allSmartwatchesSectionRef = useRef<HTMLDivElement>(null);
+
+  // Fetch set initial when first loaded: popular products, brands, categories, and set max price
+  useEffect(() => {
+    const handleFetchSetInitialData = async (): Promise<void> => {
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: true,
+        isInitializing: true,
+      }));
+      setApiErr((prev) => ({ ...prev, initErr: null }));
 
       try {
+        const [mostPopularProducts, , , productMaxPrice] = await Promise.all([
+          fetchProducts({
+            limit: MAX_POPULAR_PRODUCTS_DISPLAY.toString(),
+            stopSelling: "false", // Always query products that are not stopped selling
+          }),
+          fetchBrands(),
+          fetchCategories(),
+          fetchProducts({
+            limit: "1",
+            sortBy: "basePriceCents_desc",
+            stopSelling: "false", // Always query products that are not stopped selling
+          }),
+        ]);
+
+        if (productMaxPrice.products.total === 0) {
+          throw new Error("No products available to determine max price.");
+        }
+
+        setProducts((prev) => ({
+          ...prev,
+          mostPopularProducts,
+          productMaxPrice: productMaxPrice.products.products[0].basePriceCents,
+        }));
+      } catch (error) {
+        setApiErr((prev) => ({ ...prev, initErr: formatError(error) }));
+      } finally {
+        setProcess((prev) => ({
+          ...prev,
+          isProcessing: false,
+          isInitializing: false,
+        }));
+      }
+    };
+
+    handleFetchSetInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch set search products when first loaded or search params change
+  useEffect(() => {
+    const handleFetchSetSearchProducts = async (): Promise<void> => {
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: true,
+        isSearchingProducts: true,
+      }));
+      setApiErr((prev) => ({ ...prev, searchErr: null }));
+
+      try {
+        const [
+          urlType,
+          urlBrandId,
+          urlCategoryId,
+          urlPriceCentsMin,
+          urlPriceCentsMax,
+          urlSortBy,
+          urlSearchTerm,
+          urlOffset,
+          urlLimit,
+        ] = [
+          searchParams.get("type"),
+          searchParams.get("brandId"),
+          searchParams.get("categoryId"),
+          searchParams.get("priceCentsMin"),
+          searchParams.get("priceCentsMax"),
+          searchParams.get("sortBy"),
+          searchParams.get("searchTerm"),
+          searchParams.get("offset"),
+          searchParams.get("limit"),
+        ];
+
+        const newSearchForm: SearchForm = {
+          ...searchForm,
+          type:
+            urlType &&
+            PRODUCT_TYPES.includes(urlType as (typeof PRODUCT_TYPES)[number])
+              ? (urlType as ProductSearchQuery["type"])
+              : undefined,
+          brandId: urlBrandId || undefined,
+          categoryId: urlCategoryId || undefined,
+          priceCentsMin: urlPriceCentsMin || undefined,
+          priceCentsMax: urlPriceCentsMax || undefined,
+          sortBy:
+            urlSortBy &&
+            PRODUCT_SEARCH_SORT_OPTIONS.includes(
+              urlSortBy as (typeof PRODUCT_SEARCH_SORT_OPTIONS)[number]
+            )
+              ? (urlSortBy as ProductSearchQuery["sortBy"])
+              : undefined,
+          searchTerm: urlSearchTerm || "", // If blank -> will be removed in fetchProducts
+          offset: urlOffset || "0",
+          limit: urlLimit || MAX_PRODUCTS_PER_PAGE.toString(),
+        };
+        setSearchForm(newSearchForm);
+
         const searchProducts = await fetchProducts({
-          ...query,
+          ...newSearchForm,
           stopSelling: "false", // Always query products that are not stopped selling
         });
 
@@ -98,150 +201,124 @@ export default function Home() {
           searchProducts,
         }));
       } catch (error) {
-        setApiError((prev) => ({
-          ...prev,
-          searchProducts: formatError(error),
-        }));
+        setApiErr((prev) => ({ ...prev, searchErr: formatError(error) }));
       } finally {
-        setIsFetching((prev) => ({ ...prev, searchProducts: false }));
-      }
-    },
-    [fetchProducts]
-  );
-
-  const allSmartwatchesSectionRef = useRef<HTMLDivElement>(null);
-
-  // Fetch initial when first loaded: popular products, searchProducts, brands, categories, and set max price
-  useEffect(() => {
-    const handleFetchInitialData = async (): Promise<void> => {
-      // Fetch popular products
-      setApiError((prev) => ({ ...prev, mostPopularProducts: undefined }));
-      setIsFetching((prev) => ({ ...prev, mostPopularProducts: true }));
-
-      try {
-        const mostPopularProducts = await fetchProducts({
-          limit: MAX_POPULAR_PRODUCTS_DISPLAY.toString(),
-          stopSelling: "false", // Always query products that are not stopped selling
-        });
-
-        setProducts((prev) => ({
+        setProcess((prev) => ({
           ...prev,
-          mostPopularProducts,
+          isProcessing: false,
+          isSearchingProducts: false,
         }));
-      } catch (error) {
-        setApiError((prev) => ({
-          ...prev,
-          mostPopularProducts: formatError(error),
-        }));
-      } finally {
-        setIsFetching((prev) => ({ ...prev, mostPopularProducts: false }));
-      }
-
-      // Fetch search products
-      handleFetchSearchProducts(searchForm);
-
-      // Fetch brands
-      fetchBrands();
-
-      // Fetch categories
-      fetchCategories();
-
-      // Fetch max price
-      setApiError((prev) => ({ ...prev, productMaxPrice: undefined }));
-      setIsFetching((prev) => ({ ...prev, productMaxPrice: true }));
-
-      try {
-        const productMaxPrice = await fetchProducts({
-          limit: "1",
-          sortBy: "basePriceCents_desc",
-          stopSelling: "false", // Always query products that are not stopped selling
-        });
-
-        if (productMaxPrice.products.total) {
-          const maxPrice =
-            productMaxPrice.products.products[0].basePriceCents + 100_00; // Add 100.00 cents to ensure the range includes the max price
-
-          setProducts((prev) => ({
-            ...prev,
-            productMaxPrice: maxPrice,
-          }));
-        }
-      } catch (error) {
-        setApiError((prev) => ({
-          ...prev,
-          productMaxPrice: formatError(error),
-        }));
-      } finally {
-        setIsFetching((prev) => ({ ...prev, productMaxPrice: false }));
       }
     };
 
-    handleFetchInitialData();
+    handleFetchSetSearchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location.search]);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+      if (process.isProcessing) return;
+
       const { name, value } = e.target;
       setSearchForm((prev) => ({ ...prev, [name]: value }));
     },
-    []
+    [process.isProcessing]
   );
 
   const handleSearch = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
+      if (process.isProcessing) {
+        toast("Another action is in progress. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
 
-      // Reset offset to 0 when searching
-      const newSearchForm = {
-        ...searchForm,
-        offset: "0",
-      };
-      setSearchForm(newSearchForm);
+      const {
+        type,
+        brandId,
+        categoryId,
+        priceCentsMin,
+        priceCentsMax,
+        searchTerm,
+      } = searchForm;
 
-      await handleFetchSearchProducts(newSearchForm);
+      setSearchParams((prev) => {
+        prev.set("offset", "0"); // Reset offset to 0 when searching
+        prev.set("limit", MAX_PRODUCTS_PER_PAGE.toString());
+        if (type) prev.set("type", type);
+        else prev.delete("type");
+        if (brandId) prev.set("brandId", brandId);
+        else prev.delete("brandId");
+        if (categoryId) prev.set("categoryId", categoryId);
+        else prev.delete("categoryId");
+        if (priceCentsMin) prev.set("priceCentsMin", priceCentsMin);
+        else prev.delete("priceCentsMin");
+        if (priceCentsMax) prev.set("priceCentsMax", priceCentsMax);
+        else prev.delete("priceCentsMax");
+        if (searchTerm) prev.set("searchTerm", searchTerm);
+        else prev.delete("searchTerm");
+        return prev;
+      });
     },
-    [handleFetchSearchProducts, searchForm]
+    [process.isProcessing, searchForm, setSearchParams]
   );
 
   const handleSort = useCallback(
     async (e: React.ChangeEvent<HTMLSelectElement>): Promise<void> => {
-      const sortBy = e.target.value;
+      if (process.isProcessing) {
+        toast("Another action is in progress. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
+      const sortBy = (e.target.value as ProductSearchQuery["sortBy"]) || "";
 
-      const newSearchForm = {
-        ...searchForm,
-        sortBy: sortBy ? (sortBy as ProductSearchQuery["sortBy"]) : undefined,
-      };
-      setSearchForm(newSearchForm);
-
-      await handleFetchSearchProducts(newSearchForm);
+      setSearchParams((prev) => {
+        prev.set("limit", MAX_PRODUCTS_PER_PAGE.toString());
+        if (sortBy) prev.set("sortBy", sortBy);
+        else prev.delete("sortBy");
+        return prev;
+      });
     },
-    [handleFetchSearchProducts, searchForm]
+    [process.isProcessing, setSearchParams]
   );
 
   const handleClearFilters = useCallback(async (): Promise<void> => {
-    const newSearchForm = {
-      offset: "0",
-      limit: MAX_PRODUCTS_PER_PAGE.toString(),
-      searchTerm: "",
-    };
-    setSearchForm(newSearchForm);
-
-    await handleFetchSearchProducts(newSearchForm);
-  }, [handleFetchSearchProducts]);
-
-  const handleOffsetChange = useCallback((newOffset: number) => {
-    const newSearchForm = {
-      ...searchForm,
-      offset: newOffset.toString(),
-    };
-    setSearchForm(newSearchForm);
-    handleFetchSearchProducts(newSearchForm);
-
-    if (allSmartwatchesSectionRef.current) {
-      allSmartwatchesSectionRef.current.scrollIntoView({ behavior: "smooth" });
+    if (process.isProcessing) {
+      toast("Another action is in progress. Please wait.", {
+        icon: WAITING_EMOJI,
+      });
+      return;
     }
-  }, [handleFetchSearchProducts, searchForm]);
+
+    setSearchParams({});
+  }, [process.isProcessing, setSearchParams]);
+
+  const handleOffsetChange = useCallback(
+    (newOffset: number) => {
+      if (process.isProcessing) {
+        toast("Another action is in progress. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
+
+      if (allSmartwatchesSectionRef.current) {
+        allSmartwatchesSectionRef.current.scrollIntoView({
+          behavior: "smooth",
+        });
+      }
+
+      setSearchParams((prev) => {
+        prev.set("offset", newOffset.toString());
+        prev.set("limit", MAX_PRODUCTS_PER_PAGE.toString());
+        return prev;
+      });
+    },
+    [process.isProcessing, setSearchParams]
+  );
 
   return (
     <main className="container--g">
@@ -250,7 +327,7 @@ export default function Home() {
         <h1 className="h3 fw-bold text-uppercase mb-4">
           Most Popular Smartwatches
         </h1>
-        {isFetching.mostPopularProducts ? (
+        {process.isInitializing ? (
           <div className="row g-4">
             {Array.from({ length: MAX_POPULAR_PRODUCTS_DISPLAY }).map(
               (_, i) => (
@@ -260,8 +337,8 @@ export default function Home() {
               )
             )}
           </div>
-        ) : apiError.mostPopularProducts ? (
-          <ApiError errMsg={apiError.mostPopularProducts} />
+        ) : apiErr.initErr ? (
+          <ApiError errMsg={apiErr.initErr} />
         ) : !products.mostPopularProducts ? (
           <ApiError errMsg="Popular products data is not available." />
         ) : !products.mostPopularProducts.products.total ? (
@@ -299,7 +376,7 @@ export default function Home() {
         <div className="row">
           {/* Filter sidebar */}
           <aside className="col-lg-3">
-            {isBrandFetching || isCateFetching || isFetching.productMaxPrice ? (
+            {process.isInitializing ? (
               <FilterSidebarSkeleton />
             ) : (
               <div className="border rounded-3 shadow-sm p-4">
@@ -334,11 +411,7 @@ export default function Home() {
                       value={searchForm.brandId || ""}
                       onChange={handleSearchChange}
                     >
-                      {fetchBrandErr ? (
-                        <option value="" disabled>
-                          {fetchBrandErr}
-                        </option>
-                      ) : !brands ? (
+                      {!brands ? (
                         <option value="" disabled>
                           No brands available
                         </option>
@@ -370,11 +443,7 @@ export default function Home() {
                       value={searchForm.categoryId || ""}
                       onChange={handleSearchChange}
                     >
-                      {fetchCateErr ? (
-                        <option value="" disabled>
-                          {fetchCateErr}
-                        </option>
-                      ) : !categories ? (
+                      {!categories ? (
                         <option value="" disabled>
                           No categories available
                         </option>
@@ -396,11 +465,7 @@ export default function Home() {
                   </div>
                   {/* Filter by price range */}
                   <div className="mb-3">
-                    {apiError.productMaxPrice ? (
-                      <p className="mb-0 text-muted">
-                        {apiError.productMaxPrice}
-                      </p>
-                    ) : !products.productMaxPrice ? (
+                    {!products.productMaxPrice ? (
                       <p className="mb-0 text-muted">No price data available</p>
                     ) : (
                       <>
@@ -409,7 +474,12 @@ export default function Home() {
                           <span id="priceValue">
                             $0 -{" "}
                             {centsToUSD(
-                              parseInt(products.productMaxPrice.toString())
+                              parseInt(
+                                (
+                                  searchForm.priceCentsMax ??
+                                  products.productMaxPrice
+                                ).toString()
+                              )
                             )}
                           </span>
                         </label>
@@ -425,6 +495,7 @@ export default function Home() {
                             searchForm.priceCentsMax ?? products.productMaxPrice
                           }
                           onChange={handleSearchChange}
+                          disabled={process.isProcessing}
                         />
                       </>
                     )}
@@ -432,9 +503,9 @@ export default function Home() {
                   <button
                     type="submit"
                     className="btn btn-primary w-100"
-                    disabled={isFetching.searchProducts}
+                    disabled={process.isProcessing}
                   >
-                    {isFetching.searchProducts ? (
+                    {process.isSearchingProducts ? (
                       <>
                         <span
                           className="spinner-border spinner-border-sm me-2"
@@ -453,6 +524,7 @@ export default function Home() {
                     type="reset"
                     className="btn btn-danger w-100"
                     onClick={handleClearFilters}
+                    disabled={process.isProcessing}
                   >
                     Clear All Filters
                   </button>
@@ -474,7 +546,9 @@ export default function Home() {
                     id="sortBy"
                     name="sortBy"
                     className="form-select w-auto"
+                    value={searchForm.sortBy || ""}
                     onChange={handleSort}
+                    disabled={process.isProcessing}
                   >
                     <option value="">Default</option>
                     <option value="basePriceCents_asc">
@@ -487,24 +561,33 @@ export default function Home() {
                 </div>
               </div>
               {/* Product list */}
-              {isFetching.searchProducts ? (
-                <div className="row g-2">
+              {process.isSearchingProducts ? (
+                <div className="row g-3">
                   {Array.from({ length: MAX_PRODUCTS_PER_PAGE }).map((_, i) => (
                     <div className="col-md-6 col-lg-4" key={i++}>
                       <ProductCardSkeleton />
                     </div>
                   ))}
                 </div>
-              ) : apiError.searchProducts ? (
-                <ApiError errMsg={apiError.searchProducts} />
+              ) : apiErr.searchErr ? (
+                <ApiError errMsg={apiErr.searchErr} />
               ) : !products.searchProducts ? (
                 <ApiError errMsg="Filtered products data is not available." />
               ) : !products.searchProducts.products.total ? (
-                <p className="mb-0 text-muted text-center">
-                  No products found matching your criteria.
-                </p>
+                <div className="d-flex justify-content-center align-items-center h-100">
+                  <p className="mb-0 text-muted">
+                    Uh oh! We couldn't find any listings. Try turning off some
+                    filters or
+                    <button
+                      className="btn btn-link p-0 ms-1 mb-1"
+                      onClick={handleClearFilters}
+                    >
+                      reset filters
+                    </button>
+                  </p>
+                </div>
               ) : (
-                <div className="row g-2">
+                <div className="row g-3">
                   {products.searchProducts.products.products.map((product) => (
                     <div className="col-md-6 col-lg-4" key={product.id}>
                       <Link

@@ -1,13 +1,13 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
 import toast from "react-hot-toast";
-import { isValidPassword } from "../../../../common/utils.common";
+import { formatError, isValidPassword } from "../../../../common/utils.common";
 import { useAuthStore } from "../../store/authStore";
 import { PASSWORD_HINT_MESSAGE } from "../../../../common/configs.common";
 import type { FormInput } from "../../utils/types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
-import { formatError } from "../../utils/utils";
+import { WAITING_EMOJI } from "../../configs";
 
 type FormData = {
   password: FormInput;
@@ -27,7 +27,9 @@ const SetSelfPasswordModal = memo(
     renderCount.current += 1;
     console.log("SetSelfPasswordModal render count:", renderCount.current);
 
-    const { user, isLoading, setSelfPassword } = useAuthStore();
+    const { user, setSelfPassword } = useAuthStore();
+
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     const [formData, setFormData] = useState<FormData>({
       password: { val: "" },
@@ -47,6 +49,7 @@ const SetSelfPasswordModal = memo(
 
     const handleChange = useCallback(
       async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isSubmitting) return;
         const { name, value: val } = e.target;
 
         let err = "";
@@ -66,12 +69,18 @@ const SetSelfPasswordModal = memo(
           [name]: { val, err },
         }));
       },
-      [formData.password.val]
+      [formData.password.val, isSubmitting]
     );
 
     const handleSubmit = useCallback(
       async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
+        if (isSubmitting) {
+          toast("Submission is in progress. Please wait.", {
+            icon: WAITING_EMOJI,
+          });
+          return;
+        }
 
         const validateForm = (): boolean => {
           let isValid = true;
@@ -103,16 +112,19 @@ const SetSelfPasswordModal = memo(
             password: formData.password.val,
           };
 
+          setIsSubmitting(true);
           try {
             await setSelfPassword(data);
             onHide();
             toast.success("Password set successfully");
           } catch (error) {
             toast.error(formatError(error));
+          } finally {
+            setIsSubmitting(false);
           }
         }
       },
-      [formData, onHide, setSelfPassword]
+      [formData, isSubmitting, onHide, setSelfPassword]
     );
 
     return (
@@ -150,7 +162,10 @@ const SetSelfPasswordModal = memo(
               <label htmlFor="password">New Password</label>
               {formData.password.err && (
                 <div className="text-danger small mt-1">
-                  <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                  <FontAwesomeIcon
+                    icon={faTriangleExclamation}
+                    className="me-2"
+                  />
                   {formData.password.err}
                 </div>
               )}
@@ -177,7 +192,10 @@ const SetSelfPasswordModal = memo(
               </div>
               {formData.confirmPassword.err && (
                 <div className="text-danger small mt-1">
-                  <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                  <FontAwesomeIcon
+                    icon={faTriangleExclamation}
+                    className="me-2"
+                  />
                   {formData.confirmPassword.err}
                 </div>
               )}
@@ -189,12 +207,12 @@ const SetSelfPasswordModal = memo(
               type="button"
               variant="secondary"
               onClick={onHide}
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
               Close
             </Button>
-            <Button type="submit" variant="primary" disabled={isLoading}>
-              {isLoading ? (
+            <Button type="submit" variant="primary" disabled={isSubmitting}>
+              {isSubmitting ? (
                 <>
                   <span
                     className="spinner-border spinner-border-sm me-2"

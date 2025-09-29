@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { RequestAuth } from "../../utils/types";
-import Product from "../../models/product/product.model";
+import Product, { IProduct } from "../../models/product/product.model";
 import { HttpError } from "../../utils/errorHandler";
 import ProductBrand from "../../models/product/productBrand.model";
 import ProductCategory from "../../models/product/productCategory.model";
@@ -124,7 +124,7 @@ export async function getWithModelsAndVariations(
 ): Promise<void> {
   console.log("▶️ ", "Fetching product's models and variations...");
   const { id } = req.params;
-  const reqQuery = req.query as ProductDetailQuery;
+  const reqQuery = req["sanitizedQuery"] as ProductDetailQuery;
 
   const modelQueryMatch: any = { isDeleted: false };
   const variationQueryMatch: any = { isDeleted: false };
@@ -244,7 +244,7 @@ export async function search(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Searching products...");
-  const reqQuery = req.query as ProductSearchQuery;
+  const reqQuery = req["sanitizedQuery"] as ProductSearchQuery;
 
   const limit = reqQuery.limit ? parseInt(reqQuery.limit) : 9;
   const offset = reqQuery.offset ? parseInt(reqQuery.offset) : 0;
@@ -322,22 +322,6 @@ export async function search(
             { $sort: sortStage },
             { $skip: offset },
             { $limit: limit },
-            // { Use format function instead
-            //   $project: {
-            //     id: "$_id", // Rename _id to id
-            //     _id: 0, // Exclude _id from output
-            //     name: 1,
-            //     brand: 1,
-            //     category: 1,
-            //     imageUrls: 1,
-            //     basePriceCents: 1,
-            //     description: 1,
-            //     createdBy: 1,
-            //     createdAt: 1,
-            //     updatedAt: 1,
-            //     stopSelling: 1,
-            //   },
-            // },
           ],
         },
       },
@@ -431,9 +415,10 @@ export async function update(
     }
 
     // Update imageUrls on Firebase Storage
-    if (updateData.imageUrls) {
-      const imgUrlToRemove = product.imageUrls!.filter(
-        (url) => !updateData.imageUrls!.includes(url)
+    const imageUrls = updateData.imageUrls;
+    if (imageUrls && imageUrls.length > 0) {
+      const imgUrlToRemove = product.imageUrls.filter(
+        (url) => !imageUrls.includes(url)
       );
       if (imgUrlToRemove.length > 0) {
         await deleteManyFileFromFirebaseStorage(
@@ -448,7 +433,8 @@ export async function update(
     product.brandId = updatedBrandId;
     product.categoryId = updatedCategoryId;
     product.description = updateData.description || product.description;
-    product.imageUrls = updateData.imageUrls || product.imageUrls;
+    product.imageUrls =
+      imageUrls === null ? [] : imageUrls || product.imageUrls;
     product.stopSelling = updateData.stopSelling ?? product.stopSelling;
     product.basePriceCents =
       updateData.basePriceCents ?? product.basePriceCents;
@@ -532,16 +518,17 @@ async function hasConstraints(productId: Types.ObjectId): Promise<boolean> {
 }
 
 async function executeDeletion(
-  productToDelete: any,
+  productToDelete: IProduct,
   deletedBy: Types.ObjectId
 ): Promise<void> {
   try {
     if (await hasConstraints(productToDelete._id)) {
       // Soft delete
-      productToDelete.isDeleted = true;
-      productToDelete.deletedAt = new Date();
-      productToDelete.deletedBy = deletedBy;
-      await productToDelete.save();
+      await Product.findByIdAndUpdate(productToDelete._id, {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy,
+      });
       return;
     }
 
@@ -551,7 +538,7 @@ async function executeDeletion(
       "product-image"
     );
 
-    await productToDelete.deleteOne();
+    await Product.findByIdAndDelete(productToDelete._id);
   } catch (error) {
     console.error("❌ ", "Error deleting product:", error);
     throw error;

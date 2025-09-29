@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import User from "../../models/user/user.model";
+import User, { IUser } from "../../models/user/user.model";
 import {
   formatAdminUserResponse,
   formatUserResponse,
@@ -57,6 +57,7 @@ import ProductOs from "../../models/product/productOs.model";
 import ProductModel from "../../models/product/productModel.model";
 import ModelVariation from "../../models/product/modelVariation.model";
 import stripe from "../../configs/stripe.config";
+import { formatError } from "../../../common/utils.common";
 
 // --- ADMIN FUNCTIONS ---
 export async function create(
@@ -388,10 +389,11 @@ export async function updateGeneralInfo(
         const reqUserId = new Types.ObjectId(
           (req["auth"] as RequestAuth).userId
         );
-        user.roles!.push(
+        user.roles.push(
           ...rolesToAdd.map((id) => ({
             id: new Types.ObjectId(id),
             assignedBy: reqUserId,
+            assignedAt: new Date(),
           }))
         );
       }
@@ -403,7 +405,7 @@ export async function updateGeneralInfo(
           { session }
         );
         rolesToRemove.forEach((removeId) => {
-          user.roles!.pull({ id: new Types.ObjectId(removeId) });
+          user.roles = user.roles.filter((role) => !role.id.equals(removeId));
         });
       }
     }
@@ -781,6 +783,15 @@ export async function updateSelfContactInfo(
 
   const { value, type } = req.body as UserUpdateContactInfo;
   const user = req["user"];
+  if (!user) {
+    return next(
+      new HttpError(
+        500,
+        "User data not found, this should be handled by middlewares."
+      )
+    );
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -882,6 +893,15 @@ export async function deleteSelf(
   }
 
   const reqUser = req["user"];
+  if (!reqUser) {
+    return next(
+      new HttpError(
+        500,
+        "User data not found, this should be handled by middlewares."
+      )
+    );
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -942,6 +962,15 @@ export async function updateSelfGeneralInfo(
 ): Promise<void> {
   console.log("▶️ ", "Processing update user request...");
   const user = req["user"];
+  if (!user) {
+    return next(
+      new HttpError(
+        500,
+        "User data not found, this should be handled by middlewares."
+      )
+    );
+  }
+
   const { fullName, avatarUrl, birth, gender } =
     req.body as UserUpdateSelfGeneralInfo;
 
@@ -985,6 +1014,15 @@ export async function updateSelfPassword(
 ): Promise<void> {
   console.log("▶️ ", "Processing update user password request...");
   const user = req["user"];
+  if (!user) {
+    return next(
+      new HttpError(
+        500,
+        "User data not found, this should be handled by middlewares."
+      )
+    );
+  }
+
   const { currentPassword, newPassword } = req.body as UserUpdateSelfPassword;
 
   try {
@@ -1030,6 +1068,15 @@ export async function setSelfPassword(
 ): Promise<void> {
   console.log("▶️ ", "Processing set user password request...");
   const user = req["user"];
+  if (!user) {
+    return next(
+      new HttpError(
+        500,
+        "User data not found, this should be handled by middlewares."
+      )
+    );
+  }
+
   const { password } = req.body as UserSetSelfPassword;
 
   try {
@@ -1129,12 +1176,12 @@ async function hasConstraints(userId: Types.ObjectId): Promise<boolean> {
 
     return hasConstraints;
   } catch (error) {
-    throw new Error(error);
+    throw new Error(formatError(error));
   }
 }
 
 async function executeDeletion(
-  userToDelete: any,
+  userToDelete: IUser,
   deletedBy: Types.ObjectId,
   session: mongoose.ClientSession
 ): Promise<void> {
@@ -1187,10 +1234,17 @@ async function executeDeletion(
     // Check for constraints to decide deletion strategy
     if (await hasConstraints(userToDelete._id)) {
       // Soft delete
-      userToDelete.isDeleted = true;
-      userToDelete.deletedAt = new Date();
-      userToDelete.deletedBy = deletedBy;
-      await userToDelete.save({ session });
+      await User.findByIdAndUpdate(
+        userToDelete._id,
+        {
+          $set: {
+            isDeleted: true,
+            deletedAt: new Date(),
+            deletedBy,
+          },
+        },
+        { session }
+      );
       return;
     }
 
@@ -1214,8 +1268,8 @@ async function executeDeletion(
       { session }
     );
     await UserAddress.deleteMany({ userId: userToDelete._id }, { session });
-    await userToDelete.deleteOne({ session });
+    await User.findByIdAndDelete(userToDelete._id, { session });
   } catch (error) {
-    throw new Error(error);
+    throw new Error(formatError(error));
   }
 }

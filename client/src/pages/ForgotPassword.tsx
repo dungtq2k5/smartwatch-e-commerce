@@ -3,6 +3,7 @@ import type { FormInput } from "../utils/types";
 import { useAuthStore } from "../store/authStore";
 import { useCallback, useState } from "react";
 import {
+  formatError,
   isValidEmail,
   isValidVnPhoneNumber,
 } from "../../../common/utils.common";
@@ -10,10 +11,12 @@ import type { UserForgotPassword } from "../../../common/types.common";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import toast from "react-hot-toast";
-import { formatError } from "../utils/utils";
+import { WAITING_EMOJI } from "../configs";
 
 export default function ForgotPassword() {
-  const { forgotPassword, isLoading } = useAuthStore();
+  const { forgotPassword } = useAuthStore();
+
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const [emailOrPhone, setEmailOrPhone] = useState<FormInput>({
     val: "",
@@ -22,6 +25,8 @@ export default function ForgotPassword() {
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>): void => {
+      if (isSubmitting) return;
+
       const { value: val } = e.target;
 
       let err = "";
@@ -33,12 +38,18 @@ export default function ForgotPassword() {
 
       setEmailOrPhone({ val, err });
     },
-    []
+    [isSubmitting]
   );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
+      if (isSubmitting) {
+        toast("Submission is in progress. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
 
       const validateForm = (): boolean => {
         const val = emailOrPhone.val;
@@ -63,16 +74,19 @@ export default function ForgotPassword() {
             emailOrPhone.val,
         } as unknown as UserForgotPassword;
 
+        setIsSubmitting(true);
         try {
           await forgotPassword(data);
           setIsSent(true);
         } catch (error) {
           toast.error(formatError(error));
           return;
+        } finally {
+          setIsSubmitting(false);
         }
       }
     },
-    [emailOrPhone.val, forgotPassword]
+    [emailOrPhone.val, forgotPassword, isSubmitting]
   );
 
   return (
@@ -112,7 +126,10 @@ export default function ForgotPassword() {
             <label htmlFor="emailOrPhone">Email or phone number</label>
             {emailOrPhone.err && (
               <div className="text-danger small mt-1">
-                <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                <FontAwesomeIcon
+                  icon={faTriangleExclamation}
+                  className="me-2"
+                />
                 {emailOrPhone.err}
               </div>
             )}
@@ -121,9 +138,9 @@ export default function ForgotPassword() {
           <button
             className="w-100 btn btn-lg btn-primary mt-3"
             type="submit"
-            disabled={isLoading}
+            disabled={isSubmitting}
           >
-            {isLoading ? (
+            {isSubmitting ? (
               <>
                 <span
                   className="spinner-border spinner-border-sm me-2"

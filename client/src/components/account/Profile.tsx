@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AVATAR_ALLOWED_TYPES,
   USER_GENDER_OPTIONS,
 } from "../../../../common/configs.common";
-import { AVATAR_HINT_MESSAGE } from "../../configs";
+import { AVATAR_HINT_MESSAGE, WAITING_EMOJI } from "../../configs";
 import {
+  formatError,
   capFirstLetter,
-  convertUtcToLocalISOString,
-  isValidAvatar,
+  getLocalDateString,
   isValidBirthDate,
   isValidUserFullName,
   readFileAsDataUrl,
@@ -17,7 +17,7 @@ import { useAuthStore } from "../../store/authStore";
 import ApiError from "../ApiError";
 import type { FormFileInput, FormInput } from "../../utils/types";
 import type { UserUpdateSelfGeneralInfo } from "../../../../common/types.common";
-import { formatError, uploadFile } from "../../utils/utils";
+import { getImgFileErrs, uploadFile } from "../../utils/utils";
 import toast from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
@@ -37,14 +37,20 @@ type FormData = {
   avatar: FormFileInput;
 };
 
-type ModalUpdateState = {
+type Process = {
+  isProcessing: boolean;
+  isUpdatingSelfGeneralInfo: boolean;
+  isDeletingAccount: boolean;
+};
+
+type ModalUpdate = {
   email: boolean;
   phoneNumber: boolean;
   password: boolean;
   setPassword: boolean;
 };
 
-type ModalVerifyState = Pick<ModalUpdateState, "email" | "phoneNumber">;
+type ModalVerify = Pick<ModalUpdate, "email" | "phoneNumber">;
 
 export default function Profile() {
   // DEV temp for testing
@@ -52,31 +58,20 @@ export default function Profile() {
   renderCount.current += 1;
   console.log("Profile render count:", renderCount.current);
 
-  const {
-    user,
-    isLoading,
-    isDeleting,
-    startLoading,
-    stopLoading,
-    updateSelfGeneralInfo,
-    deleteAccount,
-  } = useAuthStore();
+  const { user, updateSelfGeneralInfo, deleteAccount } = useAuthStore();
   const navigate = useNavigate();
-
-  const originalBirthDate = useMemo(
-    () =>
-      convertUtcToLocalISOString(user?.birth || new Date().toString()).slice(
-        0,
-        10
-      ),
-    [user?.birth]
-  );
 
   const [formData, setFormData] = useState<FormData>({
     fullName: { val: user?.fullName || "Not provided" },
     gender: user?.gender || "other",
-    birth: { val: originalBirthDate },
+    birth: { val: user?.birth || new Date().toISOString() }, // Default to today if not set
     avatar: { file: user?.avatarUrl || defaultAvatar },
+  });
+
+  const [process, setProcess] = useState<Process>({
+    isProcessing: false,
+    isUpdatingSelfGeneralInfo: false,
+    isDeletingAccount: false,
   });
 
   const changeAvatarRef = useRef<HTMLInputElement | null>(null);
@@ -84,14 +79,14 @@ export default function Profile() {
     user?.avatarUrl || defaultAvatar
   );
 
-  const [modalUpdateState, setModalUpdateState] = useState<ModalUpdateState>({
+  const [modalUpdate, setModalUpdate] = useState<ModalUpdate>({
     email: false,
     phoneNumber: false,
     password: false,
     setPassword: false,
   });
 
-  const [modalVerifyState, setModalVerifyState] = useState<ModalVerifyState>({
+  const [modalVerify, setModalVerify] = useState<ModalVerify>({
     email: false,
     phoneNumber: false,
   });
@@ -114,6 +109,13 @@ export default function Profile() {
   }, [formData.avatar.file]);
 
   const handleRemoveAvatar = useCallback((): void => {
+    if (process.isProcessing) {
+      toast("Another action is in progress. Please wait.", {
+        icon: WAITING_EMOJI,
+      });
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       avatar: {
@@ -121,10 +123,12 @@ export default function Profile() {
         err: undefined,
       },
     }));
-  }, []);
+  }, [process.isProcessing]);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+      if (process.isProcessing) return;
+
       const { name, value, type } = e.target;
 
       if (type === "file") {
@@ -151,12 +155,18 @@ export default function Profile() {
         [name]: { val: value, err: undefined },
       }));
     },
-    []
+    [process.isProcessing]
   );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
+      if (process.isProcessing) {
+        toast("Another action is in progress. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
 
       const validateForm = async (): Promise<boolean> => {
         let allValid = true;
@@ -176,37 +186,47 @@ export default function Profile() {
           newFormData.birth.err = "Date of birth is invalid";
           allValid = false;
         }
-        if (
-          newFormData.avatar.file instanceof File &&
-          (await isValidAvatar(newFormData.avatar.file)).length
-        ) {
-          newFormData.avatar.err = "Avatar file is invalid";
-          allValid = false;
+        if (newFormData.avatar.file instanceof File) {
+          const imgFileErrs = await getImgFileErrs(
+            newFormData.avatar.file,
+            "avatar"
+          );
+          if (imgFileErrs.length) {
+            newFormData.avatar.err = `Avatar file is invalid: ${imgFileErrs.join(
+              ", "
+            )}`;
+            allValid = false;
+          }
         }
 
         setFormData(newFormData);
         return allValid;
       };
 
-      startLoading();
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: true,
+        isUpdatingSelfGeneralInfo: true,
+      }));
       if (await validateForm()) {
         const getChangedData = async (): Promise<UserUpdateSelfGeneralInfo> => {
           const changedData: UserUpdateSelfGeneralInfo = {};
+
           if (formData.fullName.val !== user?.fullName) {
             changedData.fullName = formData.fullName.val;
           }
           if (formData.gender !== user?.gender) {
             changedData.gender = formData.gender;
           }
-          if (formData.birth.val !== originalBirthDate) {
-            changedData.birth = formData.birth.val;
+          if (formData.birth.val !== user?.birth) {
+            changedData.birth = new Date(formData.birth.val).toISOString();
           }
           if (formData.avatar.file instanceof File) {
             const downloadUrl = await uploadFile(
               formData.avatar.file,
               "avatar"
             );
-            if (!downloadUrl) throw new Error("Failed to upload avatar");
+            if (!downloadUrl) throw new Error("Failed to upload avatar.");
             changedData.avatarUrl = downloadUrl;
           } else if (formData.avatar.file === null && user?.avatarUrl) {
             changedData.avatarUrl = null; // Remove avatar
@@ -227,45 +247,70 @@ export default function Profile() {
         } catch (error) {
           toast.error(formatError(error));
         } finally {
-          stopLoading();
+          setProcess((prev) => ({
+            ...prev,
+            isProcessing: false,
+            isUpdatingSelfGeneralInfo: false,
+          }));
         }
         return;
       }
-      stopLoading();
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: false,
+        isUpdatingSelfGeneralInfo: false,
+      }));
     },
     [
       formData,
-      originalBirthDate,
-      startLoading,
-      stopLoading,
+      process.isProcessing,
       updateSelfGeneralInfo,
       user?.avatarUrl,
+      user?.birth,
       user?.fullName,
       user?.gender,
     ]
   );
 
   const closeModal = useCallback((): void => {
-    setModalUpdateState({
+    setModalUpdate({
       email: false,
       phoneNumber: false,
       password: false,
       setPassword: false,
     });
-    setModalVerifyState({
+    setModalVerify({
       email: false,
       phoneNumber: false,
     });
   }, []);
 
   const handleDeleteAccount = useCallback(async (): Promise<void> => {
+    if (process.isProcessing) {
+      toast("Another action is in progress. Please wait.", {
+        icon: WAITING_EMOJI,
+      });
+      return;
+    }
+
+    setProcess((prev) => ({
+      ...prev,
+      isProcessing: true,
+      isDeletingAccount: true,
+    }));
     try {
       await deleteAccount();
       navigate("/login", { replace: true });
     } catch (error) {
       toast.error(formatError(error));
+    } finally {
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: false,
+        isDeletingAccount: false,
+      }));
     }
-  }, [deleteAccount, navigate]);
+  }, [deleteAccount, navigate, process.isProcessing]);
 
   return (
     <>
@@ -300,7 +345,10 @@ export default function Profile() {
                   />
                   {formData.fullName.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                      <FontAwesomeIcon
+                        icon={faTriangleExclamation}
+                        className="me-2"
+                      />
                       {formData.fullName.err}
                     </div>
                   )}
@@ -329,24 +377,24 @@ export default function Profile() {
                       disabled
                     />
                     <button
-                      className="btn btn-secondary"
                       type="button"
+                      className="btn btn-secondary"
                       onClick={() =>
-                        setModalUpdateState((prev) => ({
+                        setModalUpdate((prev) => ({
                           ...prev,
                           email: true,
                         }))
                       }
-                      disabled={isLoading}
+                      disabled={process.isProcessing}
                     >
                       change
                     </button>
                     {user.email && !user.isEmailVerified && (
                       <button
-                        className="btn btn-warning"
                         type="button"
+                        className="btn btn-warning"
                         onClick={() =>
-                          setModalVerifyState((prev) => ({
+                          setModalVerify((prev) => ({
                             ...prev,
                             email: true,
                           }))
@@ -381,28 +429,29 @@ export default function Profile() {
                       disabled
                     />
                     <button
-                      className="btn btn-secondary"
                       type="button"
+                      className="btn btn-secondary"
                       onClick={() =>
-                        setModalUpdateState((prev) => ({
+                        setModalUpdate((prev) => ({
                           ...prev,
                           phoneNumber: true,
                         }))
                       }
-                      disabled={isLoading}
+                      disabled={process.isProcessing}
                     >
                       change
                     </button>
                     {user.phoneNumber && !user.isPhoneNumberVerified && (
                       <button
-                        className="btn btn-warning"
                         type="button"
+                        className="btn btn-warning"
                         onClick={() =>
-                          setModalVerifyState((prev) => ({
+                          setModalVerify((prev) => ({
                             ...prev,
                             phoneNumber: true,
                           }))
                         }
+                        disabled={process.isProcessing}
                       >
                         verify
                       </button>
@@ -426,15 +475,15 @@ export default function Profile() {
                           disabled
                         />
                         <button
-                          className="btn btn-secondary"
                           type="button"
+                          className="btn btn-secondary"
                           onClick={() =>
-                            setModalUpdateState((prev) => ({
+                            setModalUpdate((prev) => ({
                               ...prev,
                               password: true,
                             }))
                           }
-                          disabled={isLoading}
+                          disabled={process.isProcessing}
                         >
                           change
                         </button>
@@ -448,15 +497,15 @@ export default function Profile() {
                         email as well.
                       </p>
                       <button
-                        className="btn btn-link p-0"
                         type="button"
+                        className="btn btn-link p-0"
                         onClick={() =>
-                          setModalUpdateState((prev) => ({
+                          setModalUpdate((prev) => ({
                             ...prev,
                             setPassword: true,
                           }))
                         }
-                        disabled={isLoading}
+                        disabled={process.isProcessing}
                       >
                         set password
                       </button>
@@ -496,12 +545,15 @@ export default function Profile() {
                     id="birth"
                     name="birth"
                     className="form-control"
-                    value={formData.birth.val}
+                    value={getLocalDateString(formData.birth.val)}
                     onChange={handleChange}
                   />
                   {formData.birth.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                      <FontAwesomeIcon
+                        icon={faTriangleExclamation}
+                        className="me-2"
+                      />
                       {formData.birth.err}
                     </div>
                   )}
@@ -546,7 +598,7 @@ export default function Profile() {
                     type="button"
                     className="btn btn-link text-danger p-0 me-2"
                     onClick={handleRemoveAvatar}
-                    disabled={isLoading}
+                    disabled={process.isProcessing}
                   >
                     remove
                   </button>
@@ -555,19 +607,28 @@ export default function Profile() {
                   type="button"
                   className="btn btn-link p-0"
                   onClick={() => changeAvatarRef.current?.click()}
-                  disabled={isLoading}
+                  disabled={process.isProcessing}
                 >
                   {formData.avatar.file ? "change" : "upload"}
                 </button>
+                {formData.avatar.err && (
+                  <div className="text-danger small mt-1">
+                    <FontAwesomeIcon
+                      icon={faTriangleExclamation}
+                      className="me-2"
+                    />
+                    {formData.avatar.err}
+                  </div>
+                )}
               </div>
             </div>
 
             <button
               type="submit"
               className="btn btn-primary mt-4"
-              disabled={isLoading}
+              disabled={process.isProcessing}
             >
-              {isLoading ? (
+              {process.isUpdatingSelfGeneralInfo ? (
                 <>
                   <span
                     className="spinner-border spinner-border-sm me-2"
@@ -595,9 +656,9 @@ export default function Profile() {
               type="button"
               className="btn btn-outline-danger"
               onClick={handleDeleteAccount}
-              disabled={isDeleting}
+              disabled={process.isProcessing}
             >
-              {isDeleting ? (
+              {process.isDeletingAccount ? (
                 <>
                   <span
                     className="spinner-border spinner-border-sm me-2"
@@ -612,34 +673,27 @@ export default function Profile() {
           </div>
 
           {/* Modals for changing email, phone number, password and set password */}
-          <UpdateSelfEmailModal
-            show={modalUpdateState.email}
-            onHide={closeModal}
-          />
+          <UpdateSelfEmailModal show={modalUpdate.email} onHide={closeModal} />
           <UpdateSelfPhoneModal
-            show={modalUpdateState.phoneNumber}
+            show={modalUpdate.phoneNumber}
             onHide={closeModal}
           />
           <UpdateSelfPasswordModal
-            show={modalUpdateState.password}
+            show={modalUpdate.password}
             onHide={closeModal}
           />
           <SetSelfPasswordModal
-            show={modalUpdateState.setPassword}
+            show={modalUpdate.setPassword}
             onHide={closeModal}
           />
 
           {/* Modals for verifying email and phone number */}
-          <Modal show={modalVerifyState.email} onHide={closeModal} centered>
+          <Modal show={modalVerify.email} onHide={closeModal} centered>
             <Modal.Header closeButton></Modal.Header>
             <VerifyForm type="email" onSuccess={closeModal} />
           </Modal>
 
-          <Modal
-            show={modalVerifyState.phoneNumber}
-            onHide={closeModal}
-            centered
-          >
+          <Modal show={modalVerify.phoneNumber} onHide={closeModal} centered>
             <Modal.Header closeButton></Modal.Header>
             <VerifyForm type="phoneNumber" onSuccess={closeModal} />
           </Modal>

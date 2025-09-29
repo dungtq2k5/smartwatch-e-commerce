@@ -7,6 +7,8 @@ import {
   formatUserResponse,
   genJWTAndSetCookie,
   genVerificationCode,
+  getBuyerRoleId,
+  getSysUserId,
 } from "../utils/utils";
 import Otp from "../models/user/otp.model";
 import {
@@ -43,7 +45,6 @@ import crypto from "crypto";
 import PasswordResetToken from "../models/user/passwordResetToken.model";
 import admin from "firebase-admin";
 import Role from "../models/role/role.model";
-import { appCache } from "../configs/cache";
 import { RequestAuth } from "../utils/types";
 import stripe from "../configs/stripe.config";
 
@@ -281,7 +282,7 @@ export async function verifyUser(
 
     // Update stripeCustomerId if has
     if (user.stripeCustomerId) {
-      const customerData = {};
+      const customerData: any = {};
       if (type === "email") {
         customerData["email"] = user.email as string;
       } else {
@@ -652,7 +653,15 @@ export async function validatePassword(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️", "Validating user password...");
-  const userId = req["auth"].userId;
+  const userId = req["auth"]?.userId;
+  if (!userId) {
+    return next(
+      new HttpError(
+        500,
+        "userId not found, this should be handled by middlewares."
+      )
+    );
+  }
   const { password } = req.body as UserValidatePassword;
 
   try {
@@ -685,20 +694,17 @@ export async function validatePassword(
 async function assignDefaultBuyerRole(
   session: mongoose.ClientSession
 ): Promise<{ roleId: Types.ObjectId; assignedBy: Types.ObjectId }> {
-  const { buyerRoleId, systemUserId } = appCache;
-
-  if (!buyerRoleId || !systemUserId) {
-    throw new Error("Application cache not initialized properly.");
-  }
-
   try {
+    const buyerRoleId = getBuyerRoleId();
+    const sysUserId = getSysUserId();
+
     await Role.updateOne(
       { _id: buyerRoleId },
       { $inc: { userAssigned: 1 } },
       { session }
     );
 
-    return { roleId: buyerRoleId, assignedBy: systemUserId };
+    return { roleId: buyerRoleId, assignedBy: sysUserId };
   } catch (error) {
     console.error("❌ ", "Error assigning default buyer role:", error);
     throw error;

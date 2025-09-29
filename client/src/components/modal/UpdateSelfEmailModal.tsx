@@ -2,13 +2,13 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../../store/authStore";
 import { Button, Modal } from "react-bootstrap";
 import type { FormInput } from "../../utils/types";
-import { isValidEmail } from "../../../../common/utils.common";
+import { formatError, isValidEmail } from "../../../../common/utils.common";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import type { UserUpdateContactInfo } from "../../../../common/types.common";
-import { formatError } from "../../utils/utils";
 import toast from "react-hot-toast";
 import VerifyForm from "../VerifyForm";
+import { WAITING_EMOJI } from "../../configs";
 
 const UpdateSelfEmailModal = memo(
   ({
@@ -23,7 +23,9 @@ const UpdateSelfEmailModal = memo(
     renderCount.current += 1;
     console.log("UpdateSelfEmailModal render count:", renderCount.current);
 
-    const { isLoading, updateSelfContactInfo } = useAuthStore();
+    const { updateSelfContactInfo } = useAuthStore();
+
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [email, setEmail] = useState<FormInput>({ val: "" });
     const [isUpdated, setIsUpdated] = useState<boolean>(false);
 
@@ -38,6 +40,8 @@ const UpdateSelfEmailModal = memo(
 
     const handleEmailChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isSubmitting) return;
+
         const { value: val } = e.target;
 
         setEmail({
@@ -49,12 +53,18 @@ const UpdateSelfEmailModal = memo(
             : undefined,
         });
       },
-      []
+      [isSubmitting]
     );
 
     const handleSubmit = useCallback(
       async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (isSubmitting) {
+          toast("Submission is in progress. Please wait.", {
+            icon: WAITING_EMOJI,
+          });
+          return;
+        }
 
         const validateEmail = (): boolean => {
           if (!email.val) {
@@ -75,15 +85,18 @@ const UpdateSelfEmailModal = memo(
             value: email.val,
           };
 
+          setIsSubmitting(true);
           try {
             await updateSelfContactInfo(data);
             setIsUpdated(true);
           } catch (error) {
             toast.error(formatError(error));
+          } finally {
+            setIsSubmitting(false);
           }
         }
       },
-      [email.val, updateSelfContactInfo]
+      [email.val, isSubmitting, updateSelfContactInfo]
     );
 
     return (
@@ -113,7 +126,8 @@ const UpdateSelfEmailModal = memo(
                   </div>
                 )}
                 <div id="emailHelp" className="form-text mt-1">
-                  We will send a verification email to this address at next step.
+                  We will send a verification email to this address at next
+                  step.
                 </div>
               </div>
             </Modal.Body>
@@ -123,12 +137,12 @@ const UpdateSelfEmailModal = memo(
                 type="button"
                 variant="secondary"
                 onClick={onHide}
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" variant="primary" disabled={isSubmitting}>
+                {isSubmitting ? (
                   <>
                     <span
                       className="spinner-border spinner-border-sm me-2"

@@ -1,4 +1,7 @@
-import { PERMISSION_LIST } from "../server/configs/configs";
+import {
+  ORDER_VARIATION_INSTANCE_STATES,
+  PERMISSION_LIST,
+} from "../server/configs/configs";
 import {
   USER_GENDER_OPTIONS,
   AUTH_PROVIDER_OPTIONS,
@@ -165,6 +168,13 @@ export type BaseUserAddress = {
   updatedAt: string;
 };
 
+export type UserAddressCompare = Omit<
+  BaseUserAddress,
+  "id" | "userId" | "countryCode" | "fullAddress" | "isDefault" | "createdAt" | "updatedAt"
+> & {
+  countryCode: string;
+};
+
 export type UserAddressResponse = Omit<BaseUserAddress, "userId">;
 
 export type UserAddressListResponse = {
@@ -206,12 +216,15 @@ export type UserCartCreate = {
   variationId: string;
   quantity?: number;
 };
+export type UserCartBulkCreate = {
+  items: UserCartCreate[];
+};
 /**
  * Represents the detailed response for a user's cart item, excluding the user ID.
  *
  * @remarks
  * This type extends {@link BaseUserCart} (excluding the `userId` property) and adds additional
- * information such as the total price in cents, selling status, and detailed variation/model/product info.
+ * information such as the total price in cents, selling states, and detailed variation/model/product info.
  *
  * @property {number} totalCents - The total price in cents, calculated as `(additionalPriceCents + model.priceCents) * item.quantity`.
  * @property {boolean} stopSelling - Indicates whether any of the product, model, or variation is no longer being sold.
@@ -641,6 +654,13 @@ export type ProviderResponse = {
 
 export type ProviderUpdate = Partial<ProviderCreate>;
 
+export type StateResponse = {
+  id: string;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+};
+
 export type OrderCreate = {
   userAddressId: string;
   items: {
@@ -650,16 +670,30 @@ export type OrderCreate = {
   paymentMethodId: string;
   applyUserBalance?: boolean; // If true, use user's balance to discount the order
 };
+export type OrderUpdateFulfillItem = {
+  items: {
+    variationId: string;
+    instanceIds: string[];
+  }[];
+};
 export type OrderUpdateBase = Partial<{
   deliveryStateId: string;
   deliveryAddressId: string;
   estimateReceivedDate: string;
+  stateId: string;
 }>;
 export type OrderUpdateSelf = Pick<
   OrderUpdateBase,
-  "deliveryStateId" | "deliveryAddressId"
->;
-export type OrderUpdate = OrderUpdateBase;
+  "stateId" | "deliveryAddressId"
+> & {
+  buyerCancelReasonId?: string | null; // Must be provided when stateId is "canceled by buyer"
+};
+export type OrderUpdate = Pick<
+  OrderUpdateBase,
+  "deliveryStateId" | "estimateReceivedDate"
+> & {
+  notes: string | null; // For admin to note reason for update
+};
 export type OrderResponse = {
   id: string;
   userId: string;
@@ -672,40 +706,54 @@ export type OrderResponse = {
       | "imageUrls"
       | "additionalPriceCents"
       | "stockQuantity"
+      | "stopSelling"
     > & {
-      productModel: Pick<ProductModelResponse, "id" | "name" | "priceCents"> & {
-        product: Pick<ProductResponse, "id" | "name">;
+      isDeleted: boolean;
+      productModel: Pick<
+        ProductModelResponse,
+        "id" | "name" | "priceCents" | "stopSelling"
+      > & {
+        isDeleted: boolean;
+        product: Pick<ProductResponse, "id" | "name" | "stopSelling"> & {
+          isDeleted: boolean;
+        };
       };
     };
     quantity: number;
     totalCents: number;
-    instanceIds: {
+    instances: {
       id: string;
       sku: string;
+      state: (typeof ORDER_VARIATION_INSTANCE_STATES)[number]["name"];
     }[];
   }[];
+  deliveryAddress: Omit<
+    BaseUserAddress,
+    "id" | "userId" | "isDefault" | "createdAt" | "updatedAt"
+  >;
+  transaction: {
+    amountCents: number;
+    currency: string;
+    transactionDate: string;
+    createdAt: string;
+    paymentIntentId: string | null;
+  } | null; // Order isn't paid yet (newly created), or paymentMethod is COD
   paymentSummary: {
     subtotalCents: number;
     appliedBalanceCents: number;
     finalAmountCents: number;
   };
-  deliveryStateId: string | null; // Order isn't paid yet (newly created)
-  orderDate: string | null; // Order isn't paid yet (newly created)
+  paymentMethodId: string;
+  paymentStates: StateResponse[];
+  deliveryStates: StateResponse[];
+  states: StateResponse[]; // Order states history
+  orderDate: string | null;
   estimateReceivedDate: string;
   receivedDate: string | null;
-  deliveryAddress: Omit<
-    BaseUserAddress,
-    "id" | "userId" | "isDefault" | "createdAt" | "updatedAt"
-  > | null; // Order isn't paid yet (newly created)
-  payment: {
-    amountCents: number;
-    methodId: string;
-    currency: string;
-    transactionDate: string;
-    createdAt: string;
-    relatedTransactionId: string | null; // If this order is paid by a transaction
-  } | null; // Order isn't paid yet (newly created), or paymentMethod is COD
-  paymentMethodId: string;
+  fulfilledBy: string | null;
+  fulfilledAt: string | null;
+  buyerCancelReasonId: string | null;
+  canReturn: boolean; // Based on receivedDate and return policy config
   createdAt: string;
   updatedAt: string;
 };
@@ -713,8 +761,10 @@ export type OrderSearchQuery = Partial<{
   limit: string;
   offset: string;
   searchTerm: string; // Product/model/variation name, or order ID
-  deliveryStateId: string;
-  paymentStatusId: string;
+  deliveryStateIds: string[];
+  paymentStateIds: string[];
+  stateIds: string[]; // Order state IDs
+  userId: string; // For admin to search by user ID
 }>;
 export type OrderListResponse = {
   total: number;
@@ -724,6 +774,30 @@ export type OrderListResponse = {
   };
   offset: number;
   limit: number;
+};
+export type OrderDetailResponse = Omit<
+  OrderResponse,
+  "paymentMethodId" | "paymentStates" | "deliveryStates" | "states"
+> & {
+  paymentMethod: Pick<PaymentMethodResponse, "id" | "name">;
+  paymentStates: (StateResponse & { lookupId: string; name: string })[];
+  deliveryStates: (StateResponse & {
+    lookupId: string;
+    name: string;
+    level: number;
+  })[];
+  states: (StateResponse & { lookupId: string; name: string; level: number })[];
+};
+
+export type OrderStateResponse = {
+  id: string;
+  lookupId: string;
+  name: string;
+  level: number;
+};
+export type OrderStateListResponse = {
+  total: number;
+  states: OrderStateResponse[];
 };
 
 export type UserValidatePassword = {
@@ -750,6 +824,7 @@ export type ProductDetailQuery = Partial<{
 
 export type PaymentMethodResponse = {
   id: string;
+  lookupId: string;
   name: string;
   description: string | null;
 };
@@ -767,7 +842,7 @@ export type UserSelfPaymentMethodResponse = {
     last4: string;
     expMonth: number;
     expYear: number;
-  },
+  };
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
@@ -775,6 +850,149 @@ export type UserSelfPaymentMethodResponse = {
 
 export type CheckoutSessionResponse = {
   url: string | null;
+};
+
+export type DeliveryStateResponse = {
+  id: string;
+  lookupId: string;
+  name: string;
+  level: number;
+};
+export type DeliveryStateListResponse = {
+  total: number;
+  states: DeliveryStateResponse[];
+};
+
+export type PaymentStateResponse = {
+  id: string;
+  lookupId: string;
+  name: string;
+};
+export type PaymentStateListResponse = {
+  total: number;
+  states: PaymentStateResponse[];
+};
+
+export type OrderReturnCreate = {
+  reasonId: string;
+  imageUrls?: string[] | null;
+  buyerReason?: string | null;
+  userAddressIdToPickup: string;
+  estimatePickupDate?: string | null;
+  items:
+    | {
+        variationId: string;
+        instanceIds: string[];
+      }[]
+    | "all"; // "all" means return whole order
+};
+export type OrderReturnUpdateBase = Partial<{
+  reasonId: string;
+  imageUrls: string[] | null;
+  buyerReason: string | null;
+  userAddressIdToPickup: string;
+  estimatePickupDate: string;
+  pickupStateId: string;
+  stateId: string;
+}>;
+export type OrderReturnUpdateSelf = Pick<
+  OrderReturnUpdateBase,
+  | "reasonId"
+  | "imageUrls"
+  | "buyerReason"
+  | "userAddressIdToPickup"
+  | "estimatePickupDate"
+  | "stateId"
+>;
+export type OrderReturnUpdateState = {
+  returnStateId: string;
+  notes: string | null;
+};
+export type OrderReturnUpdatePickupState = Partial<{
+  pickupStateId: string;
+  estimatePickupDate: string; // Only for "pickup rescheduled" state
+}> & {
+  notes: string | null;
+};
+export type OrderReturnResponse = {
+  id: string;
+  orderId: string;
+  items: Array<
+    Omit<OrderResponse["items"][number], "instances"> & {
+      instances: Array<
+        Omit<OrderResponse["items"][number]["instances"][number], "state">
+      >;
+    }
+  >;
+  pickupAddress: OrderResponse["deliveryAddress"];
+  transaction: {
+    amountCents: number;
+    currency: string;
+    transactionDate: string;
+    createdAt: string;
+    paymentIntentId: string | null;
+  } | null; // Return hasn't been refunded yet
+  refundSummary: {
+    toCardCents: number;
+    toBalanceCents: number;
+    finalRefundAmountCents: number;
+  };
+  refundStates: StateResponse[];
+  pickupStates: StateResponse[];
+  states: StateResponse[];
+  pickupDate: string | null;
+  estimatePickupDate: string;
+  reasonId: string;
+  imageUrls: string[];
+  buyerReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+export type OrderReturnDetailResponse = Omit<
+  OrderReturnResponse,
+  "refundStates" | "pickupStates" | "states" | "reasonId"
+> & {
+  refundStates: (StateResponse & { lookupId: string; name: string })[];
+  pickupStates: (StateResponse & {
+    lookupId: string;
+    name: string;
+    level: number;
+  })[];
+  states: (StateResponse & { lookupId: string; name: string; level: number })[];
+  reason: ReturnReasonResponse;
+};
+export type OrderReturnListResponse = {
+  total: number;
+  returns: {
+    total: number;
+    returns: OrderReturnResponse[];
+  };
+  offset: number;
+  limit: number;
+};
+export type OrderReturnSearchQuery = Partial<{
+  limit: string;
+  offset: string;
+  userId: string; // For admin to search by user ID
+}>;
+
+export type RefundStateResponse = PaymentStateResponse;
+export type RefundStateListResponse = PaymentStateListResponse;
+
+export type PickupStateResponse = DeliveryStateResponse;
+export type PickupStateListResponse = DeliveryStateListResponse;
+
+export type ReturnStateResponse = OrderStateResponse;
+export type ReturnStateListResponse = OrderStateListResponse;
+
+export type ReturnReasonResponse = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+export type ReturnReasonListResponse = {
+  total: number;
+  reasons: ReturnReasonResponse[];
 };
 
 // --- HELPER TYPES ---

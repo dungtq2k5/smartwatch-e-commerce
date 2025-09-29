@@ -4,10 +4,9 @@ import type {
   ProductListResponse,
   UserCartCreate,
 } from "../../../common/types.common";
-import { centsToUSD } from "../../../common/utils.common";
+import { centsToUSD, formatError } from "../../../common/utils.common";
 import { useProductStore } from "../store/product/productStore";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { formatError } from "../utils/utils";
 import ApiError from "../components/ApiError";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -17,26 +16,28 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import ProductDetailSpecsModal from "../components/modal/ProductDetailSpecsModal";
 import ProductDetailSkeleton from "../components/skeleton/ProductDetailSkeleton";
-import type { ModelPicked, VariationPicked } from "../utils/types";
+import type { BuyNowItem, ModelPicked, VariationPicked } from "../utils/types";
 import toast from "react-hot-toast";
 import { useUserCartStore } from "../store/cartStore";
 import ProductCardSkeleton from "../components/skeleton/ProductCardSkeleton";
 import ProductCard from "../components/product/ProductCard";
 import defaultProductImg from "../assets/default-product.webp";
 import HorizontalDivider from "../components/HorizontalDivider";
-import { MAX_PRODUCTS_SUGGEST_DISPLAY } from "../configs";
+import { MAX_PRODUCTS_SUGGEST_DISPLAY, WAITING_EMOJI } from "../configs";
 
-type FetchingState = {
-  productDetail: boolean;
-  productsSuggest: boolean;
+type process = {
+  isProcessing: boolean;
+  isFetchingProductDetail: boolean;
+  isFetchingProductsSuggest: boolean;
+  isCreatingCart: boolean;
 };
 
-type ApiErrorState = {
-  productDetail?: string;
-  productsSuggest?: string;
+type ApiErr = {
+  productDetail: string | null;
+  productsSuggest: string | null;
 };
 
-type ProductsState = {
+type Product = {
   productDetail?: ProductDetailResponse;
   productsSuggest?: ProductListResponse;
 };
@@ -47,29 +48,34 @@ export default function ProductDetail() {
   count.current += 1;
   console.log(`ProductDetail rendered ${count.current} times`);
 
-  const { fetchProducts, fetchProductDetail } = useProductStore();
-  const { isLoading: isCreatingCart, createCart } = useUserCartStore();
-  const params = useParams();
+  const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { fetchProducts, fetchProductDetail } = useProductStore();
+  const { createCart } = useUserCartStore();
 
-  const [isFetching, setIsFetching] = useState<FetchingState>({
-    productDetail: true,
-    productsSuggest: true,
+  const [process, setProcess] = useState<process>({
+    isProcessing: true,
+    isFetchingProductDetail: true,
+    isFetchingProductsSuggest: true,
+    isCreatingCart: false,
   });
-  const [apiError, setApiError] = useState<ApiErrorState>({});
-  const [products, setProducts] = useState<ProductsState>({});
+  const [apiErr, setApiErr] = useState<ApiErr>({
+    productDetail: null,
+    productsSuggest: null,
+  });
+  const [products, setProducts] = useState<Product>({});
   const [modelPicked, setModelPicked] = useState<ModelPicked>(undefined);
   const [variationPicked, setVariationPicked] =
     useState<VariationPicked>(undefined);
 
   const [mainImgIdx, setMainImgIdx] = useState<number>(0);
 
-  const [modalSpecsState, setModalSpecsState] = useState<boolean>(false);
+  const [modalSpecs, setModalSpecs] = useState<boolean>(false);
 
   // Fetch initial when first loaded or params.id changes: product detail, products suggest, reset states
   useEffect(() => {
-    const handleFetchInitialData = async (): Promise<void> => {
+    const handleFetchSetInitialData = async (): Promise<void> => {
       // If modelId and variationId are in URL, select them
       const urlParams = new URLSearchParams(location.search);
       const urlModelId = urlParams.get("modelId");
@@ -79,26 +85,25 @@ export default function ProductDetail() {
         navigate(location.pathname, { replace: true });
       }
 
-      setIsFetching((prev) => ({
+      // Fetch product detail
+      setProcess((prev) => ({
         ...prev,
-        productDetail: true,
-        productsSuggest: true,
+        isProcessing: true,
+        isFetchingProductDetail: true,
       }));
-      setApiError((prev) => ({
+      setApiErr((prev) => ({
         ...prev,
-        productDetail: undefined,
-        productsSuggest: undefined,
+        productDetail: null,
       }));
 
       let productDetail: ProductDetailResponse | undefined;
 
-      // Fetch product detail
       try {
-        if (!params.id) {
+        if (!id) {
           throw new Error("Product ID is required");
         }
 
-        productDetail = await fetchProductDetail(params.id, {
+        productDetail = await fetchProductDetail(id, {
           modelStopSelling: "false",
           variationStopSelling: "false",
         });
@@ -150,18 +155,28 @@ export default function ProductDetail() {
           variation: variationPicked,
         });
       } catch (error) {
-        setApiError((prev) => ({
+        setApiErr((prev) => ({
           ...prev,
           productDetail: formatError(error),
         }));
       } finally {
-        setIsFetching((prev) => ({
+        setProcess((prev) => ({
           ...prev,
-          productDetail: false,
+          isProcessing: false,
+          isFetchingProductDetail: false,
         }));
       }
 
       // Fetch products suggest based on brand
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: true,
+        isFetchingProductsSuggest: true,
+      }));
+      setApiErr((prev) => ({
+        ...prev,
+        productsSuggest: null,
+      }));
       try {
         if (productDetail) {
           const productsSuggest = await fetchProducts({
@@ -176,14 +191,15 @@ export default function ProductDetail() {
           }));
         }
       } catch (error) {
-        setApiError((prev) => ({
+        setApiErr((prev) => ({
           ...prev,
           productsSuggest: formatError(error),
         }));
       } finally {
-        setIsFetching((prev) => ({
+        setProcess((prev) => ({
           ...prev,
-          productsSuggest: false,
+          isProcessing: false,
+          isFetchingProductsSuggest: false,
         }));
       }
     };
@@ -192,34 +208,98 @@ export default function ProductDetail() {
     setModelPicked(undefined);
     setVariationPicked(undefined);
     setMainImgIdx(0);
-    setModalSpecsState(false);
+    setModalSpecs(false);
 
-    handleFetchInitialData();
+    handleFetchSetInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
+  }, [id]);
 
   const handleAddToCart = useCallback(async () => {
-    if (!variationPicked) return;
+    if (!variationPicked) {
+      toast.error("Please select a product variation.");
+      return;
+    }
+    if (process.isProcessing) {
+      toast("Another action is in progress. Please wait.", {
+        icon: WAITING_EMOJI,
+      });
+      return;
+    }
 
     const data: UserCartCreate = {
       variationId: variationPicked.variation.id,
       quantity: 1,
     };
 
+    setProcess((prev) => ({
+      ...prev,
+      isProcessing: true,
+      isCreatingCart: true,
+    }));
     try {
       await createCart(data);
       toast.success("Product added to cart successfully!");
     } catch (error) {
       toast.error(formatError(error));
+    } finally {
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: false,
+        isCreatingCart: false,
+      }));
     }
-  }, [createCart, variationPicked]);
+  }, [createCart, process.isProcessing, variationPicked]);
+
+  const handleBuyNow = useCallback(async () => {
+    if (!variationPicked || !modelPicked || !products.productDetail) {
+      toast.error("Product data is not available for checkout.");
+      return;
+    }
+
+    if (process.isProcessing) {
+      toast("Another action is in progress. Please wait.", {
+        icon: WAITING_EMOJI,
+      });
+      return;
+    }
+
+    const product = products.productDetail;
+
+    const buyNowItem: BuyNowItem = {
+      variation: {
+        ...variationPicked.variation,
+        productModel: {
+          ...modelPicked.model,
+          product: {
+            id: product.id,
+            name: product.name,
+            type: product.type,
+            brand: product.brand,
+            category: product.category,
+          },
+        },
+      },
+      totalCents:
+        variationPicked.variation.additionalPriceCents +
+        modelPicked.model.priceCents,
+      quantity: 1,
+    };
+
+    navigate("/checkout", { state: { buyNowItem } }); // Save to Browser history state
+  }, [
+    modelPicked,
+    navigate,
+    process.isProcessing,
+    products.productDetail,
+    variationPicked,
+  ]);
 
   return (
     <main className="container--g py-4">
-      {isFetching.productDetail ? (
+      {process.isFetchingProductDetail ? (
         <ProductDetailSkeleton />
-      ) : apiError.productDetail ? (
-        <ApiError errMsg={apiError.productDetail} />
+      ) : apiErr.productDetail ? (
+        <ApiError errMsg={apiErr.productDetail} />
       ) : !products.productDetail || !modelPicked || !variationPicked ? (
         <ApiError errMsg="Product data is not available." />
       ) : (
@@ -293,8 +373,7 @@ export default function ProductDetail() {
                 </div>
                 <div className="product-detail-price--g mb-2">
                   {centsToUSD(
-                    products.productDetail.basePriceCents +
-                      modelPicked.model.priceCents +
+                    modelPicked.model.priceCents +
                       variationPicked.variation.additionalPriceCents
                   )}
                 </div>
@@ -364,7 +443,7 @@ export default function ProductDetail() {
                   <button
                     type="button"
                     className="btn btn-link p-0"
-                    onClick={() => setModalSpecsState(true)}
+                    onClick={() => setModalSpecs(true)}
                   >
                     View Specifications
                   </button>
@@ -376,9 +455,9 @@ export default function ProductDetail() {
                       type="button"
                       className="btn btn-outline-primary"
                       onClick={handleAddToCart}
-                      disabled={isCreatingCart}
+                      disabled={process.isProcessing}
                     >
-                      {isCreatingCart ? (
+                      {process.isCreatingCart ? (
                         <>
                           <span
                             className="spinner-border spinner-border-sm me-2"
@@ -396,9 +475,13 @@ export default function ProductDetail() {
                         </>
                       )}
                     </button>
-                    <button type="button" className="btn-premium--g">
+                    <button
+                      type="button"
+                      className="btn-premium--g"
+                      onClick={handleBuyNow}
+                    >
                       <FontAwesomeIcon icon={faBolt} className="me-2" />
-                      Buy now {/* TODO later... */}
+                      Buy now
                     </button>
                   </div>
                 ) : (
@@ -418,7 +501,7 @@ export default function ProductDetail() {
             <div className="my-3">
               <HorizontalDivider />
             </div>
-            {isFetching.productsSuggest ? (
+            {process.isFetchingProductsSuggest ? (
               <div className="row g-2">
                 {Array.from({ length: MAX_PRODUCTS_SUGGEST_DISPLAY }).map(
                   (_, i) => (
@@ -428,8 +511,8 @@ export default function ProductDetail() {
                   )
                 )}
               </div>
-            ) : apiError.productsSuggest ? (
-              <ApiError errMsg={apiError.productsSuggest} />
+            ) : apiErr.productsSuggest ? (
+              <ApiError errMsg={apiErr.productsSuggest} />
             ) : !products.productsSuggest?.products.total ? (
               <p className="mb-0 text-muted text-center">
                 No products suggest available.
@@ -456,8 +539,8 @@ export default function ProductDetail() {
             productDetail={products.productDetail}
             modelPicked={modelPicked}
             variationPicked={variationPicked}
-            show={modalSpecsState}
-            onHide={() => setModalSpecsState(false)}
+            show={modalSpecs}
+            onHide={() => setModalSpecs(false)}
           />
         </>
       )}

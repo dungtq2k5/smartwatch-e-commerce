@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import {
   IMMUTABILITY_USER_EMAILS,
   MODIFIABLE_PROTECTED_USER_FIELDS,
@@ -7,15 +7,56 @@ import {
   AUTH_PROVIDER_OPTIONS,
 } from "../../../common/configs.common";
 
-const userRole = new mongoose.Schema(
+export interface IUserRole {
+  id: Types.ObjectId;
+  assignedBy: Types.ObjectId;
+  assignedAt: Date;
+}
+
+interface IUserEmailOnly {
+  email: string;
+  phoneNumber: null;
+}
+interface IUserPhoneOnly {
+  email: null;
+  phoneNumber: string;
+}
+interface IUserEmailAndPhone {
+  email: string;
+  phoneNumber: string;
+}
+interface IUserBase extends Document<Types.ObjectId> {
+  fullName: string;
+  avatarUrl: string | null;
+  isEmailVerified: boolean;
+  isPhoneNumberVerified: boolean;
+  password: string;
+  birth: Date;
+  gender: (typeof USER_GENDER_OPTIONS)[number];
+  stripeCustomerId: string | null;
+  userBalanceCents: number;
+  lastLogin: Date | null;
+  isLocked: boolean;
+  authProvider: (typeof AUTH_PROVIDER_OPTIONS)[number];
+  roles: IUserRole[];
+  createdAt: Date;
+  updatedAt: Date;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+  deletedBy: Schema.Types.ObjectId | null;
+}
+export type IUser = (IUserEmailOnly | IUserPhoneOnly | IUserEmailAndPhone) &
+  IUserBase;
+
+const userRole: Schema<IUserRole> = new Schema(
   {
     id: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "Role",
       required: true,
     },
     assignedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -28,7 +69,7 @@ const userRole = new mongoose.Schema(
   { _id: false }
 );
 
-const userSchema = new mongoose.Schema(
+const userSchema: Schema<IUser> = new Schema(
   {
     fullName: {
       type: String,
@@ -118,7 +159,7 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     deletedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: false,
       default: null,
@@ -140,13 +181,13 @@ userSchema.pre("save", function (next) {
     return next();
   }
 
-  if (IMMUTABILITY_USER_EMAILS.includes(this.email)) {
+  if (IMMUTABILITY_USER_EMAILS.includes(this.email as any)) {
     return next(
       new Error(`Immutable user '${this.email}' cannot be modified.`)
     );
   }
 
-  if (PROTECTED_USER_EMAILS.includes(this.email)) {
+  if (PROTECTED_USER_EMAILS.includes(this.email as any)) {
     // Get all fields that were modified
     const modifiedPaths = this.modifiedPaths();
 
@@ -235,5 +276,5 @@ userSchema.pre("deleteOne", preventBaseUserMod("deletes"));
 userSchema.pre("deleteMany", preventBaseUserMod("deletes"));
 userSchema.pre("findOneAndDelete", preventBaseUserMod("deletes"));
 
-const User = mongoose.model("User", userSchema);
+const User: Model<IUser> = mongoose.model<IUser>("User", userSchema);
 export default User;

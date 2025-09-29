@@ -1,7 +1,7 @@
 https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lmbu/vn-public-apis
 
 - Legends:
-  🔥 Developing.
+  🔥 Working on.
   ✅ Completed.
   ❌ Not started.
   📝 Some notes.
@@ -21,6 +21,7 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - zustand for controllers.
     - react-google-maps/api for location.
     - lodash.debounce for geocoding (geographic coordinates).
+    - jspdf, html2canvas for generating PDF file with content.
   - Faker for mocking data.
 
 - 📝 Todos:
@@ -30,7 +31,7 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - Find default image for product ❌.
     - Auto login user when user is verified ✅.
     - When user auth by Google send back to BackEnd idToken ✅.
-    - Copilot styling prompt:
+    - Detect console open just like website that watching movies ❌.
 
   - Backend - API: (remember isDeleted field)
     - Because __v field is only activated with doc.save() so stick with find-modify-save method when modifying data 📝.
@@ -44,6 +45,7 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - Better user friendly when sending email or SMS (with datetime for lock/unlock) ❌.
     - What happen when user add last items to their cart -> checkout -> leave checkout -> return to their cart (product will be display as out of stock temporary) ❌.
     - Email user when they've leaving their pending cart for to long before removing them ❌.
+    - Refresh token ❌.
 
   - Database init:
     - Init roles & permissions ✅.

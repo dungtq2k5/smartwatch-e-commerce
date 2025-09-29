@@ -163,7 +163,7 @@ export async function update(
     if (updatedPermissionIds === null) {
       role.permissions?.splice(0, role.permissions.length); // Clear all permissions
     } else if (updatedPermissionIds) {
-      const currentPermissionIds = role.permissions!.map(
+      const currentPermissionIds = role.permissions.map(
         (p) => p.id.toString() as string
       );
 
@@ -182,10 +182,11 @@ export async function update(
         const reqUserId = new Types.ObjectId(
           (req["auth"] as RequestAuth).userId
         );
-        role.permissions!.push(
+        role.permissions.push(
           ...permissionIdsToAdd.map((id) => ({
             id: new Types.ObjectId(id),
             assignedBy: reqUserId,
+            assignedAt: new Date(),
           }))
         );
       }
@@ -195,9 +196,10 @@ export async function update(
         (id) => !updatedPermissionIds.includes(id)
       );
       if (permissionIdsToRemove.length > 0) {
-        permissionIdsToRemove.forEach((removeId) => {
-          role.permissions!.pull({ id: new Types.ObjectId(removeId) });
-        });
+        role.permissions = role.permissions.filter(
+          (permission) =>
+            !permissionIdsToRemove.includes(permission.id.toString())
+        );
       }
     }
 

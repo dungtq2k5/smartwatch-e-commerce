@@ -15,23 +15,44 @@ import type {
   UserAddressResponse,
   UserCartListResponse,
 } from "../../../common/types.common";
-import { capEveryFirstLetter, centsToUSD } from "../../../common/utils.common";
+import {
+  capEveryFirstLetter,
+  centsToUSD,
+  formatError,
+} from "../../../common/utils.common";
 import { useUserCartStore } from "../store/cartStore";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import defaultProductImg from "../assets/default-product.webp";
 import SlashColor from "../components/SlashColor";
 import CreateAddressModal from "../components/modal/CreateAddressModal";
-import { usePaymentMethodStore } from "../store/paymentMethodStore";
+import { usePaymentMethodStore } from "../store/order/paymentMethodStore";
 import SelectAddressModal from "../components/modal/SelectAddressModal";
 import { faCcStripe } from "@fortawesome/free-brands-svg-icons";
-import { useUserOrderStore } from "../store/orderStore";
+import { useOrderStore } from "../store/order/orderStore";
 import toast from "react-hot-toast";
-import { formatError, post } from "../utils/utils";
+import { post } from "../utils/utils";
 import SmallSpinner from "../components/SmallSpinner";
-import { ORDER_URL } from "../configs";
+import { ORDER_URL, WAITING_EMOJI } from "../configs";
 import CheckoutSkeleton from "../components/skeleton/CheckoutSkeleton";
+import type { BuyNowItem } from "../utils/types";
 
-type ModalState = {
+// Handle both UserCartListResponse and BuyNowItem
+type CheckoutCart =
+  | ({
+      readonly type: "UserCartListResponse";
+    } & UserCartListResponse)
+  | ({
+      readonly type: "BuyNowItem";
+    } & BuyNowItem);
+
+type Process = {
+  isProcessing: boolean;
+  isFetching: boolean;
+  isGettingDefaultAddress: boolean;
+  isCreatingOrder: boolean;
+};
+
+type Modal = {
   addAddress: boolean;
   changeAddress: boolean;
 };
@@ -43,57 +64,85 @@ export default function Checkout() {
   console.log("Checkout render count:", count.current);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const buyNowItem = location.state?.buyNowItem as BuyNowItem | undefined; // Get via Browser history state
 
-  const { user, resetUserBalance } = useAuthStore();
+  const { user, resetUserBalanceCache } = useAuthStore();
+  const { addresses, getDefaultAddress } = useUserAddressStore();
   const {
-    isGetting: isGettingAddress,
-    getErr: fetchAddressErr,
-    addresses,
-    getDefaultAddress,
-  } = useUserAddressStore();
-  const {
-    isFetching: isFetchingCart,
-    fetchErr: fetchCartErr,
-    cart,
-    totalCents,
-    isAllItemAvailable,
+    totalCents: cartTotalCents,
+    isAllItemAvailable: cartIsAllItemAvailable,
     fetchCart,
-    clearCart,
+    clearCartCache,
   } = useUserCartStore();
-  const {
-    isFetching: isFetchingPaymentMethods,
-    fetchErr: fetchPaymentMethodsErr,
-    paymentMethods,
-    fetchPaymentMethods,
-  } = usePaymentMethodStore();
-  const { createOrder } = useUserOrderStore();
+  const { paymentMethods, fetchPaymentMethods } = usePaymentMethodStore();
+  const { createOrder } = useOrderStore();
+
+  const totalCents = buyNowItem ? buyNowItem.totalCents : cartTotalCents;
+  const isAllItemAvailable = buyNowItem ? true : cartIsAllItemAvailable;
+
+  const [process, setProcess] = useState<Process>({
+    isProcessing: true,
+    isFetching: true,
+    isGettingDefaultAddress: true,
+    isCreatingOrder: false,
+  });
+  const [apiErr, setApiErr] = useState<string | null>(null);
+
+  const [checkoutCart, setCheckoutCart] = useState<CheckoutCart | undefined>(
+    buyNowItem
+      ? {
+          type: "BuyNowItem",
+          ...buyNowItem,
+        }
+      : undefined
+  );
 
   const [selectedAddress, setSelectedAddress] = useState<
     UserAddressResponse | undefined
   >(undefined);
-  const [modalState, setModalState] = useState<ModalState>({
+  const [modal, setModal] = useState<Modal>({
     addAddress: false,
     changeAddress: false,
   });
+
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     PaymentMethodResponse | undefined
   >(undefined);
 
   const [applyUserBalance, setApplyUserBalance] = useState<boolean>(false);
 
-  const [isCreatingOrder, setIsCreatingOrder] = useState<boolean>(false);
-
-  // Fetch initial when first loaded: cart, payment methods (set)
+  // Fetch initial when first loaded: addresses, cart, payment methods (set), checkoutCart
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       if (!user) return;
 
-      // Fetch cart
-      await fetchCart();
+      setProcess((prev) => ({ ...prev, isProcessing: true, isFetching: true }));
+      try {
+        const [fetchedCart, fetchedPaymentMethods] = await Promise.all([
+          !buyNowItem ? fetchCart() : Promise.resolve(),
+          fetchPaymentMethods(),
+        ]);
 
-      // Fetch and set payment methods
-      const methods = await fetchPaymentMethods();
-      setSelectedPaymentMethod(methods?.methods[0]);
+        // If buyNowItem isn't provided, fetch the cart
+        if (fetchedCart) {
+          setCheckoutCart({
+            type: "UserCartListResponse",
+            ...fetchedCart,
+          });
+        }
+
+        // Fetch and set payment methods
+        setSelectedPaymentMethod(fetchedPaymentMethods.methods[0]);
+      } catch (error) {
+        setApiErr(formatError(error));
+      } finally {
+        setProcess((prev) => ({
+          ...prev,
+          isProcessing: false,
+          isFetching: false,
+        }));
+      }
     };
 
     handleFetchSetInitialData();
@@ -117,8 +166,24 @@ export default function Checkout() {
 
       // If no address is selected (e.g., on initial load), set the default one.
       if (!selectedAddress) {
-        const defaultAddress = await getDefaultAddress();
-        setSelectedAddress(defaultAddress);
+        setProcess((prev) => ({
+          ...prev,
+          isProcessing: true,
+          isGettingDefaultAddress: true,
+        }));
+
+        try {
+          const defaultAddress = await getDefaultAddress();
+          setSelectedAddress(defaultAddress);
+        } catch (error) {
+          toast.error(formatError(error));
+        } finally {
+          setProcess((prev) => ({
+            ...prev,
+            isProcessing: false,
+            isGettingDefaultAddress: false,
+          }));
+        }
       }
     };
 
@@ -127,10 +192,14 @@ export default function Checkout() {
   }, [addresses]);
 
   const genItemsList = useCallback(
-    (cart: UserCartListResponse): JSX.Element | null => {
+    (checkoutCart: CheckoutCart): JSX.Element | null => {
+      const items =
+        checkoutCart.type === "BuyNowItem"
+          ? [checkoutCart]
+          : checkoutCart.items;
       return (
         <ul className="list-group list-group-flush">
-          {cart.items.map((item) => (
+          {items.map((item) => (
             <li
               key={item.variation.id}
               className="list-group-item d-flex align-items-center"
@@ -170,7 +239,7 @@ export default function Checkout() {
   );
 
   const closeModal = useCallback((): void => {
-    setModalState({
+    setModal({
       addAddress: false,
       changeAddress: false,
     });
@@ -217,7 +286,14 @@ export default function Checkout() {
     // By cash -> submit and order
     // By Stripe -> redirect to Stripe payment page
 
-    if (!selectedPaymentMethod || !selectedAddress || !cart) {
+    if (process.isProcessing) {
+      toast("Another action is in progress. Please wait.", {
+        icon: WAITING_EMOJI,
+      });
+      return;
+    }
+
+    if (!selectedPaymentMethod || !selectedAddress || !checkoutCart) {
       toast.error(
         !selectedPaymentMethod
           ? "Please select a payment method."
@@ -228,27 +304,44 @@ export default function Checkout() {
       return;
     }
 
-    setIsCreatingOrder(true);
-
     const order: OrderCreate = {
       userAddressId: selectedAddress.id,
       paymentMethodId: selectedPaymentMethod.id,
       applyUserBalance,
-      items: cart.items.map((item) => ({
-        variationId: item.variation.id,
-        quantity: item.quantity,
-      })),
+      items:
+        checkoutCart.type === "BuyNowItem"
+          ? [
+              {
+                variationId: checkoutCart.variation.id,
+                quantity: checkoutCart.quantity,
+              },
+            ]
+          : checkoutCart.items.map((item) => ({
+              variationId: item.variation.id,
+              quantity: item.quantity,
+            })),
     };
 
+    setProcess((prev) => ({
+      ...prev,
+      isProcessing: true,
+      isCreatingOrder: true,
+    }));
     try {
       const newOrder = await createOrder(order);
 
-      if (applyUserBalance) resetUserBalance();
+      if (applyUserBalance) resetUserBalanceCache();
 
       if (selectedPaymentMethod.name === "cash") {
+        navigate(`/order-status?method=cod&redirect_status=succeeded`, {
+          replace: true,
+        });
+
+        if (checkoutCart.type === "UserCartListResponse") {
+          clearCartCache();
+        }
+
         toast.success("Successfully ordering!");
-        navigate(`/account/orders`);
-        clearCart();
         return;
       }
 
@@ -269,15 +362,20 @@ export default function Checkout() {
     } catch (error) {
       toast.error(formatError(error));
     } finally {
-      setIsCreatingOrder(false);
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: false,
+        isCreatingOrder: false,
+      }));
     }
   }, [
     applyUserBalance,
-    cart,
-    clearCart,
+    checkoutCart,
+    clearCartCache,
     createOrder,
     navigate,
-    resetUserBalance,
+    process.isProcessing,
+    resetUserBalanceCache,
     selectedAddress,
     selectedPaymentMethod,
   ]);
@@ -289,24 +387,19 @@ export default function Checkout() {
 
         {!user ? (
           <ApiError errMsg="User data is not available." />
-        ) : isGettingAddress || isFetchingCart || isFetchingPaymentMethods ? (
+        ) : process.isFetching ? (
           <CheckoutSkeleton />
-        ) : fetchAddressErr ||
-          fetchCartErr ||
-          !cart ||
-          fetchPaymentMethodsErr ||
-          !paymentMethods ||
-          !selectedPaymentMethod ? (
-          <ApiError
-            errMsg={
-              fetchAddressErr ||
-              fetchCartErr ||
-              (fetchPaymentMethodsErr
-                ? "Payment methods data is not available."
-                : "Cart or address data is not available.")
-            }
-          />
-        ) : !cart.total || !isAllItemAvailable ? (
+        ) : apiErr ? (
+          <ApiError errMsg={apiErr} />
+        ) : !checkoutCart ? (
+          <ApiError errMsg="Cart data is not available." />
+        ) : !paymentMethods ? (
+          <ApiError errMsg="Payment methods data is not available." />
+        ) : !selectedPaymentMethod ? (
+          <ApiError errMsg="Selected payment method data is not available." />
+        ) : (checkoutCart.type === "UserCartListResponse" &&
+            !checkoutCart.total) ||
+          !isAllItemAvailable ? (
           <div className="text-center">
             <p>You don't have any available items to checkout.</p>
             <Link to="/cart" className="btn btn-primary">
@@ -338,7 +431,7 @@ export default function Checkout() {
                         type="button"
                         className="btn btn-link p-0"
                         onClick={() =>
-                          setModalState((prev) => ({
+                          setModal((prev) => ({
                             ...prev,
                             addAddress: true,
                           }))
@@ -366,7 +459,7 @@ export default function Checkout() {
                         type="button"
                         className="btn btn-link p-0"
                         onClick={() =>
-                          setModalState((prev) => ({
+                          setModal((prev) => ({
                             ...prev,
                             changeAddress: true,
                           }))
@@ -483,11 +576,11 @@ export default function Checkout() {
                   <button
                     type="button"
                     className="btn-premium--g w-100"
-                    disabled={isCreatingOrder}
+                    disabled={process.isProcessing}
                     onClick={handleCheckout}
                   >
                     {selectedPaymentMethod.name === "cash" ? (
-                      isCreatingOrder ? (
+                      process.isCreatingOrder ? (
                         <>
                           <span
                             className="spinner-border spinner-border-sm me-2"
@@ -501,7 +594,7 @@ export default function Checkout() {
                     ) : (
                       selectedPaymentMethod.name === "stripe" && (
                         <>
-                          {isCreatingOrder ? (
+                          {process.isCreatingOrder ? (
                             <>
                               <SmallSpinner />{" "}
                             </>
@@ -518,10 +611,12 @@ export default function Checkout() {
                   </button>
                 </div>
                 {/* Checkout items */}
-                {genItemsList(cart)}
-                <div className="card-footer bg-white text-center">
-                  <Link to="/cart">Edit Cart</Link>
-                </div>
+                {genItemsList(checkoutCart)}
+                {!buyNowItem && (
+                  <div className="card-footer bg-white text-center">
+                    <Link to="/cart">Edit Cart</Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -531,13 +626,13 @@ export default function Checkout() {
       {/* Modals */}
       <CreateAddressModal
         isFirstAddress={!addresses || addresses.total === 0}
-        show={modalState.addAddress}
+        show={modal.addAddress}
         onHide={closeModal}
         onSuccess={handleSelectAddress}
       />
       <SelectAddressModal
         currentAddressId={selectedAddress?.id}
-        show={modalState.changeAddress}
+        show={modal.changeAddress}
         onHide={closeModal}
         onSelect={handleSelectAddress}
       />

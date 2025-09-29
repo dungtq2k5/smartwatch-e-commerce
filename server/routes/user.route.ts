@@ -87,6 +87,14 @@ router.delete("/me", verifyPermission("d_usr"), userController.deleteSelf);
 
 // -- routes for cart
 router.post(
+  "/me/carts/many",
+  verifyPermission("c_usr_cart"),
+  verifyEmptyBody,
+  inputSanitizer("create many cart"),
+  verifyCartInput("create many"),
+  cartController.createBulkSelf
+);
+router.post(
   "/me/carts",
   verifyPermission("c_usr_cart"),
   verifyEmptyBody,
@@ -94,7 +102,7 @@ router.post(
   cartController.createSelf
 );
 router.get(
-  "/me/carts/",
+  "/me/carts",
   verifyPermission("r_usr_cart"),
   cartController.getSelfAll
 );

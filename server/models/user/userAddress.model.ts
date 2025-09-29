@@ -1,10 +1,30 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import { VN_COUNTRY_CODE } from "../../../common/configs.common";
 
-const userAddressSchema = new mongoose.Schema(
+export interface IUserAddress extends Document<Types.ObjectId> {
+  userId: Types.ObjectId;
+  name: string;
+  street: string;
+  apartmentNumber: string;
+  wardCode: string;
+  districtCode: string;
+  cityProvinceCode: string;
+  countryCode: string;
+  phoneNumber: string;
+  fullAddress: string;
+  location: {
+    locationType: "point";
+    coordinates: [number, number]; // [longitude, latitude]
+  };
+  isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const userAddressSchema: Schema<IUserAddress> = new Schema(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -51,7 +71,7 @@ const userAddressSchema = new mongoose.Schema(
         locationType: {
           type: String,
           enum: ["point"],
-          required: false,
+          required: true,
           default: "point",
         },
         coordinates: {
@@ -76,5 +96,8 @@ userAddressSchema.index(
   { unique: true, partialFilterExpression: { isDefault: true } }
 );
 
-const UserAddress = mongoose.model("UserAddress", userAddressSchema);
+const UserAddress: Model<IUserAddress> = mongoose.model<IUserAddress>(
+  "UserAddress",
+  userAddressSchema
+);
 export default UserAddress;

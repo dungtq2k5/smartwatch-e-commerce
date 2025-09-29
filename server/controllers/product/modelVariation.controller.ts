@@ -10,7 +10,7 @@ import {
   ModelVariationUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
-import ModelVariation from "../../models/product/modelVariation.model";
+import ModelVariation, { IModelVariation } from "../../models/product/modelVariation.model";
 import { RequestAuth } from "../../utils/types";
 import { formatModelVariationResponse } from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
@@ -263,7 +263,10 @@ export async function update(
         $or: orConditions,
       }).lean();
       if (existingVariation) {
-        throw new HttpError(409, "Product model variation name already exists.");
+        throw new HttpError(
+          409,
+          "Product model variation name already exists."
+        );
       }
     }
 
@@ -283,9 +286,10 @@ export async function update(
     }
 
     // Handle remove imageUrls on Firebase Storage
-    if (updateData.imageUrls) {
-      const imgUrlToRemove = variation.imageUrls!.filter(
-        (url) => !updateData.imageUrls!.includes(url)
+    const imageUrls = updateData.imageUrls;
+    if (imageUrls && imageUrls.length > 0) {
+      const imgUrlToRemove = variation.imageUrls.filter(
+        (url) => !imageUrls.includes(url)
       );
       if (imgUrlToRemove.length > 0) {
         await deleteManyFileFromFirebaseStorage(
@@ -299,9 +303,7 @@ export async function update(
     variation.name = updateData.name || variation.name;
     variation.color = updatedColor;
     variation.imageUrls =
-      updateData.imageUrls === null
-        ? []
-        : updateData.imageUrls || variation.imageUrls;
+      imageUrls === null ? [] : imageUrls || variation.imageUrls;
     variation.additionalPriceCents =
       updateData.additionalPriceCents ?? variation.additionalPriceCents;
     if (updateData.band && !isEmptyObj(updateData.band)) {
@@ -413,7 +415,7 @@ export async function remove(
 // --- HELPER FUNCTIONS ---
 // Auto handle delete in cart
 async function executeDeletion(
-  variationToDelete: any,
+  variationToDelete: IModelVariation,
   deletedBy: Types.ObjectId,
   session: mongoose.ClientSession
 ): Promise<void> {
@@ -427,10 +429,15 @@ async function executeDeletion(
 
     if (variationToDelete.stockQuantity > 0) {
       // Soft delete
-      variationToDelete.isDeleted = true;
-      variationToDelete.deletedAt = new Date();
-      variationToDelete.deletedBy = deletedBy;
-      await variationToDelete.save({ session });
+      await ModelVariation.findByIdAndUpdate(
+        variationToDelete._id,
+        {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy,
+        },
+        { session }
+      );
       return;
     }
 
@@ -439,7 +446,8 @@ async function executeDeletion(
       variationToDelete.imageUrls,
       "product-image"
     );
-    await variationToDelete.deleteOne({ session });
+
+    await ModelVariation.findByIdAndDelete(variationToDelete._id, { session });
   } catch (error) {
     console.error("❌ ", "Error deleting product model variation:", error);
     throw error;

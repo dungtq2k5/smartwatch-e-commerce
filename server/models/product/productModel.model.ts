@@ -1,6 +1,109 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-const modelFeatureSchema = new mongoose.Schema(
+// --- INTERFACES ---
+export interface IModelFeature {
+  speakerAndMicrophone: boolean;
+  waterResistance: {
+    rating: string;
+    description: string | null;
+  } | null;
+  utilities: {
+    healths: string[];
+    sports: string[];
+    specials: string[];
+    others: string[];
+  } | null;
+  supportedAppsForNotifications: string[];
+}
+
+export interface IModelConfig {
+  connectivities: string[];
+  camera: {
+    resolutionMp: number;
+    features: string[];
+  } | null;
+  chipset: string;
+  memory: {
+    ramBytes: number;
+    storageBytes: number;
+  };
+  osId: Types.ObjectId;
+  compatiblePhoneOs: string[];
+  appsConnect: string[];
+  sensors: string[];
+}
+
+export interface IModelBattery {
+  capacityMah: number;
+  timeOnline: {
+    aodOnMin: number;
+    aodOffMin: number;
+    typicalUsageMin: number | null;
+    standByMin: number | null;
+  };
+  timeFullChargeMin: number;
+  chargingType: string;
+}
+
+interface ICircularScreen {
+  isCircular: true;
+  diameterMm: number;
+  dimension: null; // Explicitly set to null to prevent dimension from being present
+}
+interface INonCircularScreen {
+  isCircular: false;
+  diameterMm: null; // Explicitly set to null
+  dimension: {
+    wMm: number;
+    hMm: number;
+    thicknessMm: number;
+  };
+}
+interface IModelScreenBase {
+  display: {
+    diagonalSizeInch: number;
+    displayType: string;
+  };
+  brightness: {
+    minNits: number;
+    maxNits: number;
+  };
+  resolution: {
+    wPx: number;
+    hPx: number;
+  };
+  glassMaterial: string;
+  bezelMaterial: string;
+  shape: string;
+}
+export type IModelScreen = (ICircularScreen | INonCircularScreen) &
+  IModelScreenBase;
+
+export interface IProductModel extends Document<Types.ObjectId> {
+  productId: Types.ObjectId;
+  name: string;
+  priceCents: number;
+  stockPriceCents: number;
+  imageUrls: string[];
+  feature: IModelFeature;
+  config: IModelConfig;
+  battery: IModelBattery;
+  screen: IModelScreen;
+  caseMaterial: string;
+  watchWeightMg: number;
+  compatibleBandLugWidthMm: number;
+  releaseDate: Date;
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+  stopSelling: boolean;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+  deletedBy: Types.ObjectId | null;
+}
+
+// --- SCHEMAS AND MODELS ---
+const modelFeatureSchema: Schema<IModelFeature> = new Schema(
   {
     speakerAndMicrophone: {
       type: Boolean,
@@ -59,7 +162,7 @@ const modelFeatureSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const modelConfigSchema = new mongoose.Schema(
+const modelConfigSchema: Schema<IModelConfig> = new Schema(
   {
     connectivities: {
       type: [String],
@@ -104,7 +207,7 @@ const modelConfigSchema = new mongoose.Schema(
       _id: false,
     },
     osId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "ProductOs",
       required: true,
     },
@@ -134,7 +237,7 @@ modelConfigSchema.virtual("os", {
   justOne: true,
 });
 
-const modelBatterySchema = new mongoose.Schema(
+const modelBatterySchema: Schema<IModelBattery> = new Schema(
   {
     capacityMah: {
       type: Number,
@@ -183,7 +286,7 @@ const modelBatterySchema = new mongoose.Schema(
   { _id: false }
 );
 
-const modelScreenSchema = new mongoose.Schema(
+const modelScreenSchema: Schema<IModelScreen> = new Schema(
   {
     display: {
       type: {
@@ -282,10 +385,10 @@ const modelScreenSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const productModelSchema = new mongoose.Schema(
+const productModelSchema: Schema<IProductModel> = new Schema(
   {
     productId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "Product",
       required: true,
     },
@@ -344,7 +447,7 @@ const productModelSchema = new mongoose.Schema(
       required: true,
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -364,7 +467,7 @@ const productModelSchema = new mongoose.Schema(
       default: null,
     },
     deletedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: false,
       default: null,
@@ -392,5 +495,8 @@ productModelSchema.index(
   }
 );
 
-const ProductModel = mongoose.model("ProductModel", productModelSchema);
+const ProductModel: Model<IProductModel> = mongoose.model<IProductModel>(
+  "ProductModel",
+  productModelSchema
+);
 export default ProductModel;

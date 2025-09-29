@@ -5,15 +5,16 @@ import type { UserLogin } from "../../../common/types.common";
 import toast from "react-hot-toast";
 import type { FormInput } from "../utils/types";
 import {
+  formatError,
   isValidEmail,
   isValidPassword,
   isValidVnPhoneNumber,
 } from "../../../common/utils.common";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { formatError } from "../utils/utils";
 import AuthByGoogleBtn from "../components/AuthByGoogleBtn";
 import HorizontalDivider from "../components/HorizontalDivider";
+import { WAITING_EMOJI } from "../configs";
 
 type FormData = {
   emailOrPhone: FormInput;
@@ -26,7 +27,9 @@ export default function Login() {
   renderCount.current += 1;
   console.log("Login render count:", renderCount.current);
 
-  const { login, user, isLoading } = useAuthStore();
+  const { login, user } = useAuthStore();
+
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<FormData>({
     emailOrPhone: { val: "" },
@@ -37,6 +40,8 @@ export default function Login() {
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>): void => {
+      if (isSubmitting) return;
+
       const { name, value: val } = e.target;
 
       let err = "";
@@ -56,12 +61,16 @@ export default function Login() {
         },
       }));
     },
-    []
+    [isSubmitting]
   );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
+      if (isSubmitting) {
+        toast("Login is in progress. Please wait.", { icon: WAITING_EMOJI });
+        return;
+      }
 
       const validateForm = (): boolean => {
         let isAllValid = true;
@@ -96,15 +105,18 @@ export default function Login() {
           password: formData.password.val,
         } as unknown as UserLogin;
 
+        setIsSubmitting(true);
         try {
           await login(data);
-          navigate("/");
+          navigate("/", { replace: true });
         } catch (error) {
           toast.error(formatError(error));
+        } finally {
+          setIsSubmitting(false);
         }
       }
     },
-    [formData, login, navigate]
+    [formData, isSubmitting, login, navigate]
   );
 
   return (
@@ -160,9 +172,9 @@ export default function Login() {
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={isLoading}
+            disabled={isSubmitting}
           >
-            {isLoading ? (
+            {isSubmitting ? (
               <>
                 <span
                   className="spinner-border spinner-border-sm me-2"

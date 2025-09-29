@@ -10,7 +10,7 @@ import Login from "./pages/Login.tsx";
 import Verify from "./pages/Verify.tsx";
 import ForgotPassword from "./pages/ForgotPassword.tsx";
 import { Toaster } from "react-hot-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Account from "./pages/Account.tsx";
@@ -23,6 +23,11 @@ import SearchProduct from "./pages/SearchProduct.tsx";
 import Cart from "./pages/Cart.tsx";
 import Checkout from "./pages/Checkout.tsx";
 import OrderStatus from "./pages/OrderStatus.tsx";
+import Purchase from "./components/account/Purchase.tsx";
+import PurchaseDetail from "./components/account/PurchaseDetail.tsx";
+import ReturnRefund from "./pages/ReturnRefundCreate.tsx";
+import ReturnRefundDetail from "./pages/ReturnRefundDetail.tsx";
+import ReturnRefundUpdate from "./pages/ReturnRefundUpdate.tsx";
 
 export default function App() {
   // DEV for testing
@@ -30,10 +35,17 @@ export default function App() {
   // renderCount.current += 1;
   // console.log("App render count:", renderCount.current);
 
-  const { checkAuth, isCheckingAuth } = useAuthStore();
+  const { checkAuth } = useAuthStore();
+  const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
 
   useEffect(() => {
-    checkAuth();
+    const handleCheckAuth = async (): Promise<void> => {
+      setIsCheckingAuth(true);
+      await checkAuth();
+      setIsCheckingAuth(false);
+    };
+
+    handleCheckAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -64,7 +76,7 @@ export default function App() {
         <Route element={<AuthRoute />}>
           {/*
             TODO
-            - user orders(checkout) page.
+            - user purchase(checkout) page.
             - user balance page: display balance, transaction history, transfer to bank card.
             - user bank card page: add, remove, update bank card.
           */}
@@ -73,11 +85,30 @@ export default function App() {
             <Route path="profile" element={<Profile />}></Route>
             <Route path="bank-card" element={<BankAndCard />}></Route>
             <Route path="address" element={<Address />}></Route>
+
+            <Route path="purchase">
+              <Route index element={<Purchase />}></Route>
+              <Route path="order/:id" element={<PurchaseDetail />}></Route>
+              <Route
+                path="order/:id/return-refund/:returnId"
+                element={<ReturnRefundDetail />}
+              ></Route>
+            </Route>
+
           </Route>
 
           <Route path="/cart" element={<Cart />}></Route>
           <Route path="/checkout" element={<Checkout />}></Route>
           <Route path="/order-status" element={<OrderStatus />}></Route>
+
+          <Route path="/return-refund">
+            <Route path="create/:orderId" element={<ReturnRefund />}></Route>
+            <Route
+              path="update/:orderId/:returnId"
+              element={<ReturnRefundUpdate />}
+            ></Route>
+          </Route>
+
         </Route>
 
         <Route path="*" element={<NotFound />}></Route>
@@ -85,7 +116,11 @@ export default function App() {
 
       <Footer />
 
-      <Toaster />
+      <Toaster
+        toastOptions={{
+          style: { minWidth: "max-content" },
+        }}
+      />
     </>
   );
 }

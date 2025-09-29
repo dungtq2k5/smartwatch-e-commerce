@@ -4,7 +4,6 @@ import { useRef } from "react";
 import type { ModelPicked, VariationPicked } from "../../utils/types";
 import {
   bytesToMB,
-  convertUtcToLocalISOString,
   formatTime,
   safeString,
 } from "../../../../common/utils.common";
@@ -616,11 +615,9 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Release Date</td>
                       <td>
-                        {
-                          convertUtcToLocalISOString(
-                            modelPicked.model.releaseDate
-                          ).split("T")[0]
-                        }
+                        {new Date(
+                          modelPicked.model.releaseDate
+                        ).toLocaleDateString()}
                       </td>
                     </tr>
                     {/* <tr>

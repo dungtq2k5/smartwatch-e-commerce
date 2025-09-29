@@ -1,7 +1,24 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import { PRODUCT_TYPES } from "../../../common/configs.common";
 
-const productSchema = new mongoose.Schema(
+export interface IProduct extends Document<Types.ObjectId> {
+  name: string;
+  type: (typeof PRODUCT_TYPES)[number];
+  brandId: Types.ObjectId;
+  categoryId: Types.ObjectId;
+  description: string;
+  imageUrls: string[];
+  basePriceCents: number;
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+  stopSelling: boolean;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+  deletedBy: Types.ObjectId | null;
+}
+
+const productSchema: Schema<IProduct> = new Schema(
   {
     name: {
       type: String,
@@ -17,12 +34,12 @@ const productSchema = new mongoose.Schema(
       enum: PRODUCT_TYPES,
     },
     brandId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "ProductBrand",
       required: true,
     },
     categoryId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "ProductCategory",
       required: true,
     },
@@ -41,7 +58,7 @@ const productSchema = new mongoose.Schema(
       min: 0,
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -61,7 +78,7 @@ const productSchema = new mongoose.Schema(
       default: null,
     },
     deletedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: false,
       default: null,
@@ -88,5 +105,8 @@ productSchema.virtual("category", {
   justOne: true,
 });
 
-const Product = mongoose.model("Product", productSchema);
+const Product: Model<IProduct> = mongoose.model<IProduct>(
+  "Product",
+  productSchema
+);
 export default Product;

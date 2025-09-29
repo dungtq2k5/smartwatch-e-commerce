@@ -4,13 +4,21 @@ import { useUserAddressStore } from "../../store/addressStore";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Loading from "../Loading";
 import ApiError from "../ApiError";
-import ConfirmDeleteModal from "../modal/ConfirmDeleteModal";
+import ConfirmSubmitModal from "../modal/ConfirmSubmitModal";
 import toast from "react-hot-toast";
 import CreateAddressModal from "../modal/CreateAddressModal";
 import UpdateAddressModal from "../modal/UpdateAddressModal";
-import { formatError } from "../../utils/utils";
+import { WAITING_EMOJI } from "../../configs";
+import { formatError } from "../../../../common/utils.common";
+import SmallSpinner from "../SmallSpinner";
 
-type ModalState = {
+type Process = {
+  isProcessing: boolean;
+  isFetching: boolean;
+  isSettingDefault: boolean;
+};
+
+type Modal = {
   create: boolean;
   addressIdToUpdate?: string;
   addressIdToDelete?: string;
@@ -22,28 +30,48 @@ export default function Address() {
   renderCount.current += 1;
   console.log("Address render count:", renderCount.current);
 
-  const {
-    addresses,
-    isFetching,
-    fetchErr,
-    isLoading,
-    fetchAddresses,
-    deleteAddress,
-    updateAddress,
-  } = useUserAddressStore();
+  const { addresses, fetchAddresses, deleteAddress, updateAddress } =
+    useUserAddressStore();
 
-  const [modalState, setModalState] = useState<ModalState>({
+  const [process, setProcess] = useState<Process>({
+    isProcessing: true,
+    isFetching: true,
+    isSettingDefault: false,
+  });
+  const [apiErr, setApiErr] = useState<string | null>(null);
+
+  const [modal, setModal] = useState<Modal>({
     create: false,
     addressIdToUpdate: undefined,
     addressIdToDelete: undefined,
   });
 
   useEffect((): void => {
-    fetchAddresses();
+    const handleFetchAddresses = async (): Promise<void> => {
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: true,
+        isFetching: true,
+      }));
+      setApiErr(null);
+
+      try {
+        await fetchAddresses();
+      } catch (error) {
+        setApiErr(formatError(error));
+      } finally {
+        setProcess((prev) => ({
+          ...prev,
+          isProcessing: false,
+          isFetching: false,
+        }));
+      }
+    };
+    handleFetchAddresses();
   }, [fetchAddresses]);
 
   const closeModal = useCallback((): void => {
-    setModalState({
+    setModal({
       create: false,
       addressIdToUpdate: undefined,
       addressIdToDelete: undefined,
@@ -51,33 +79,61 @@ export default function Address() {
   }, []);
 
   const handleDeleteAddress = useCallback(async (): Promise<void> => {
-    if (!modalState.addressIdToDelete) return;
+    if (process.isProcessing) {
+      toast("Another action is in progress. Please wait.", {
+        icon: WAITING_EMOJI,
+      });
+      return;
+    }
+    if (!modal.addressIdToDelete) {
+      toast.error("No address selected for deletion.");
+      return;
+    }
+
     try {
-      await deleteAddress(modalState.addressIdToDelete);
+      await deleteAddress(modal.addressIdToDelete);
       toast.success("Address deleted successfully.");
     } catch (error) {
       toast.error(formatError(error));
     }
-  }, [deleteAddress, modalState.addressIdToDelete]);
+  }, [process.isProcessing, modal.addressIdToDelete, deleteAddress]);
 
   const handleSetDefaultAddress = useCallback(
     async (addressId: string): Promise<void> => {
+      if (process.isProcessing) {
+        toast("Another action is in progress. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
+
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: true,
+        isSettingDefault: true,
+      }));
       try {
         await updateAddress({ isDefault: true }, addressId);
         toast.success("Default address set successfully.");
       } catch (error) {
         toast.error(formatError(error));
+      } finally {
+        setProcess((prev) => ({
+          ...prev,
+          isProcessing: false,
+          isSettingDefault: false,
+        }));
       }
     },
-    [updateAddress]
+    [process.isProcessing, updateAddress]
   );
 
   return (
     <>
-      {isFetching ? (
+      {process.isFetching ? (
         <Loading loadingMsg="Hang on we are loading your addresses..." />
-      ) : fetchErr ? (
-        <ApiError errMsg={fetchErr} />
+      ) : apiErr ? (
+        <ApiError errMsg={apiErr} />
       ) : !addresses ? (
         <ApiError errMsg="Could not load addresses." />
       ) : (
@@ -88,11 +144,11 @@ export default function Address() {
               type="button"
               className="btn btn-primary d-flex align-items-center"
               onClick={() =>
-                setModalState((prev) => ({ ...prev, create: true }))
+                setModal((prev) => ({ ...prev, create: true }))
               }
-              disabled={isLoading}
+              disabled={process.isProcessing}
             >
-              <FontAwesomeIcon icon={faPlus} size="sm" /> Add new address
+              <FontAwesomeIcon icon={faPlus} size="sm" className="me-2" />Add new address
             </button>
           </div>
 
@@ -105,9 +161,9 @@ export default function Address() {
                 type="button"
                 className="btn btn-link p-0"
                 onClick={() =>
-                  setModalState((prev) => ({ ...prev, create: true }))
+                  setModal((prev) => ({ ...prev, create: true }))
                 }
-                disabled={isLoading}
+                disabled={process.isProcessing}
               >
                 Add new address
               </button>
@@ -140,12 +196,12 @@ export default function Address() {
                         type="button"
                         className="btn btn-link p-0 me-2"
                         onClick={() =>
-                          setModalState((prev) => ({
+                          setModal((prev) => ({
                             ...prev,
                             addressIdToUpdate: address.id,
                           }))
                         }
-                        disabled={isLoading}
+                        disabled={process.isProcessing}
                       >
                         Edit
                       </button>
@@ -154,12 +210,12 @@ export default function Address() {
                           type="button"
                           className="btn btn-link p-0 text-danger"
                           onClick={() =>
-                            setModalState((prev) => ({
+                            setModal((prev) => ({
                               ...prev,
                               addressIdToDelete: address.id,
                             }))
                           }
-                          disabled={isLoading}
+                          disabled={process.isProcessing}
                         >
                           Delete
                         </button>
@@ -170,9 +226,13 @@ export default function Address() {
                         type="button"
                         className="btn btn-link p-0"
                         onClick={() => handleSetDefaultAddress(address.id)}
-                        disabled={isLoading}
+                        disabled={process.isProcessing}
                       >
-                        Set as default
+                        {process.isSettingDefault ? (
+                          <SmallSpinner />
+                        ) : (
+                          "Set as default"
+                        )}
                       </button>
                     )}
                   </div>
@@ -182,22 +242,28 @@ export default function Address() {
           )}
 
           {/* Modals */}
-          <ConfirmDeleteModal
-            title="Are you sure you want to delete this address? This action cannot be undone."
-            show={modalState.addressIdToDelete !== undefined}
+          <ConfirmSubmitModal
+            show={modal.addressIdToDelete !== undefined}
             onHide={closeModal}
-            onDelete={handleDeleteAddress}
+            onSubmit={handleDeleteAddress}
+            custom={{
+              action: "delete",
+              title: "Delete Address",
+              body: "Are you sure you want to delete this address? This action cannot be undone.",
+              cancelText: "Cancel",
+              submitText: "Delete",
+            }}
           />
 
           <CreateAddressModal
             isFirstAddress={addresses.total === 0}
-            show={modalState.create}
+            show={modal.create}
             onHide={closeModal}
           />
 
           <UpdateAddressModal
             isOnlyOneAddress={addresses.total === 1}
-            addressId={modalState.addressIdToUpdate}
+            addressId={modal.addressIdToUpdate}
             onHide={closeModal}
           />
         </>

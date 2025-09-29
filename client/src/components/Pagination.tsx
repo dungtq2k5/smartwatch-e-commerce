@@ -76,11 +76,11 @@ const Pagination = memo(
               <span aria-hidden="true">&laquo;</span>
             </button>
           </li>
-          {paginationRange.map((page, index) => {
+          {paginationRange.map((page, idx) => {
             const isCurrent = page === currentPage;
             if (page === "...") {
               return (
-                <li key={`ellipsis-${index}`} className="page-item disabled">
+                <li key={`ellipsis-${idx+1}`} className="page-item disabled">
                   <span className="page-link">...</span>
                 </li>
               );

@@ -3,6 +3,7 @@ import { provinces } from "../../../../common/vnAddresses";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AddressFormData } from "../../utils/types";
 import {
+  formatError,
   getCityProvince,
   getDistrict,
   getDistrictsByProvinceCode,
@@ -25,7 +26,13 @@ import debounce from "lodash.debounce";
 import Loading from "../Loading";
 import ApiError from "../ApiError";
 import AddressMapInput from "../AddressMapInput";
-import { formatError } from "../../utils/utils";
+import { WAITING_EMOJI } from "../../configs";
+
+type Process = {
+  isProcessing: boolean;
+  isFetching: boolean;
+  isUpdating: boolean;
+};
 
 const UpdateAddressModal = memo(
   ({
@@ -44,12 +51,18 @@ const UpdateAddressModal = memo(
     renderCount.current += 1;
     console.log("UpdateAddressModal render count:", renderCount.current);
 
-    const { isGetting, getErr, getAddress, isLoading, updateAddress } =
-      useUserAddressStore();
+    const { getAddress, updateAddress } = useUserAddressStore();
 
     const [address, setAddress] = useState<UserAddressResponse | undefined>(
       undefined
     );
+
+    const [process, setProcess] = useState<Process>({
+      isProcessing: false,
+      isFetching: false,
+      isUpdating: false,
+    });
+    const [apiErr, setApiErr] = useState<string | null>(null);
 
     const [formData, setFormData] = useState<AddressFormData>({
       name: { val: "" },
@@ -66,8 +79,15 @@ const UpdateAddressModal = memo(
     useEffect(() => {
       if (addressId) {
         const handleSetAddress = async (): Promise<void> => {
-          const addressRes = await getAddress(addressId);
-          if (addressRes) {
+          setProcess((prev) => ({
+            ...prev,
+            isProcessing: true,
+            isFetching: true,
+          }));
+          setApiErr(null);
+
+          try {
+            const addressRes = await getAddress(addressId);
             setAddress(addressRes);
             setFormData({
               name: { val: addressRes.name },
@@ -83,6 +103,14 @@ const UpdateAddressModal = memo(
               ],
               isDefault: addressRes.isDefault,
             });
+          } catch (error) {
+            setApiErr(formatError(error));
+          } finally {
+            setProcess((prev) => ({
+              ...prev,
+              isProcessing: false,
+              isFetching: false,
+            }));
           }
         };
 
@@ -103,7 +131,9 @@ const UpdateAddressModal = memo(
           });
         }, 200); // Delay to allow modal to close before resetting
       }
-    }, [addressId, getAddress, isOnlyOneAddress]);
+
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [addressId, isOnlyOneAddress]);
 
     const { isLoaded: isMapLoaded } = useJsApiLoader({
       id: "google-map-script",
@@ -191,6 +221,8 @@ const UpdateAddressModal = memo(
 
     const handleChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+        if (process.isProcessing) return;
+
         const { name, value: val } = e.target;
 
         if (e.target.tagName === "INPUT") {
@@ -257,12 +289,18 @@ const UpdateAddressModal = memo(
           }
         }
       },
-      []
+      [process.isProcessing]
     );
 
     const handleSubmit = useCallback(
       async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
+        if (process.isProcessing) {
+          toast("Another action is in progress. Please wait.", {
+            icon: WAITING_EMOJI,
+          });
+          return;
+        }
 
         const validateForm = (): boolean => {
           let allValid = true;
@@ -341,6 +379,11 @@ const UpdateAddressModal = memo(
             return;
           }
 
+          setProcess((prev) => ({
+            ...prev,
+            isProcessing: true,
+            isUpdating: true,
+          }));
           try {
             const updatedAddress = await updateAddress(addressData, address.id);
             onSuccess?.(updatedAddress.id);
@@ -348,10 +391,23 @@ const UpdateAddressModal = memo(
             toast.success("Address updated successfully!");
           } catch (error) {
             toast.error(formatError(error));
+          } finally {
+            setProcess((prev) => ({
+              ...prev,
+              isProcessing: false,
+              isUpdating: false,
+            }));
           }
         }
       },
-      [address, formData, updateAddress, onHide, onSuccess]
+      [
+        process.isProcessing,
+        address,
+        formData,
+        updateAddress,
+        onSuccess,
+        onHide,
+      ]
     );
 
     return (
@@ -360,11 +416,11 @@ const UpdateAddressModal = memo(
           <Modal.Title>Update Address</Modal.Title>
         </Modal.Header>
 
-        {isGetting ? (
+        {process.isFetching ? (
           <Loading loadingMsg="Loading address details..." />
-        ) : getErr ? (
+        ) : apiErr ? (
           <div className="p-4">
-            <ApiError errMsg={getErr} />
+            <ApiError errMsg={apiErr} />
           </div>
         ) : !address ? (
           <div className="p-4">
@@ -390,7 +446,10 @@ const UpdateAddressModal = memo(
                     <label htmlFor="name">Full name</label>
                     {formData.name.err && (
                       <div className="text-danger small mt-1">
-                        <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                        <FontAwesomeIcon
+                          icon={faTriangleExclamation}
+                          className="me-2"
+                        />
                         {formData.name.err}
                       </div>
                     )}
@@ -413,7 +472,10 @@ const UpdateAddressModal = memo(
                     <label htmlFor="phoneNumber">Phone number</label>
                     {formData.phoneNumber.err && (
                       <div className="text-danger small mt-1">
-                        <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                        <FontAwesomeIcon
+                          icon={faTriangleExclamation}
+                          className="me-2"
+                        />
                         {formData.phoneNumber.err}
                       </div>
                     )}
@@ -499,7 +561,10 @@ const UpdateAddressModal = memo(
                     <label htmlFor="street">Street</label>
                     {formData.street.err && (
                       <div className="text-danger small mt-1">
-                        <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                        <FontAwesomeIcon
+                          icon={faTriangleExclamation}
+                          className="me-2"
+                        />
                         {formData.street.err}
                       </div>
                     )}
@@ -521,7 +586,10 @@ const UpdateAddressModal = memo(
                     <label htmlFor="apartmentNumber">Apartment/Building</label>
                     {formData.apartmentNumber.err && (
                       <div className="text-danger small mt-1">
-                        <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                        <FontAwesomeIcon
+                          icon={faTriangleExclamation}
+                          className="me-2"
+                        />
                         {formData.apartmentNumber.err}
                       </div>
                     )}
@@ -560,12 +628,16 @@ const UpdateAddressModal = memo(
                 type="button"
                 variant="secondary"
                 onClick={onHide}
-                disabled={isLoading}
+                disabled={process.isProcessing}
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={isLoading}>
-                {isLoading ? (
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={process.isProcessing}
+              >
+                {process.isUpdating ? (
                   <>
                     <span
                       className="spinner-border spinner-border-sm me-2"

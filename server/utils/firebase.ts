@@ -1,9 +1,13 @@
-import { userAvatarBucket, productImgBucket } from "../configs/firebaseAdmin.config";
+import {
+  userAvatarBucket,
+  productImgBucket,
+  returnImgBucket,
+} from "../configs/firebaseAdmin.config";
 
 // Function won't throw error
 export async function deleteFileFromFirebaseStorage(
   downloadUrl: string,
-  bucketName: "user-avatar" | "product-image"
+  bucketName: "user-avatar" | "product-image" | "return-image"
 ): Promise<void> {
   if (
     !downloadUrl ||
@@ -39,12 +43,15 @@ export async function deleteFileFromFirebaseStorage(
       return;
     }
 
-    const storageBucket = bucketName === "user-avatar" ? userAvatarBucket : productImgBucket;
+    const storageBucket =
+      bucketName === "user-avatar"
+        ? userAvatarBucket
+        : bucketName === "product-image"
+        ? productImgBucket
+        : returnImgBucket;
     const file = storageBucket.file(filePath);
     await file.delete();
-    console.log(
-      `File ${filePath} deleted from Firebase Storage successfully.`
-    );
+    console.log(`File ${filePath} deleted from Firebase Storage successfully.`);
   } catch (error) {
     const pathForLog = filePath || downloadUrl;
     // Check for object not found error (code 404 for GCS)
@@ -68,7 +75,7 @@ export async function deleteFileFromFirebaseStorage(
 // Function won't throw error
 export async function deleteManyFileFromFirebaseStorage(
   downloadUrls: string[],
-  bucketName: "user-avatar" | "product-image"
+  bucketName: "user-avatar" | "product-image" | "return-image"
 ): Promise<void> {
   for (const downloadUrl of downloadUrls) {
     await deleteFileFromFirebaseStorage(downloadUrl, bucketName);

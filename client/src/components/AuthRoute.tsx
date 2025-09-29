@@ -13,8 +13,8 @@ const AuthRoute = memo(() => {
   // User not exists -> tell them to login
   if (!user) {
     return (
-      <main className="container--g container--center--g">
-        <h1>
+      <main className="container--center--g">
+        <h1 className="text-center">
           Please <Link to="/login">Login</Link> to view this page
         </h1>
       </main>

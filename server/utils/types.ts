@@ -1,4 +1,15 @@
 import { Types } from "mongoose";
+import { IUser } from "../models/user/user.model";
+
+declare global {
+  namespace Express {
+    interface Request {
+      auth?: RequestAuth;
+      user?: IUser;
+      sanitizedQuery?: any;
+    }
+  }
+}
 
 export type ErrorThrowback = {
   statusCode: number;
@@ -16,6 +27,13 @@ export type RequestAuth = {
   isBuyerOnly?: boolean;
 };
 
-export type KeyObjectId = {
-  [key: string]: Types.ObjectId;
+export type LookupIdObjectId = {
+  [lookupId: string]: Types.ObjectId;
+};
+
+export type ReturnItem = {
+  variationId: Types.ObjectId;
+  quantity: number;
+  totalCents: number;
+  instances: { id: Types.ObjectId; sku: string }[];
 };

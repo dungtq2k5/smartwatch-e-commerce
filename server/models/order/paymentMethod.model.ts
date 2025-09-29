@@ -1,6 +1,17 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-const paymentMethodSchema = new mongoose.Schema({
+export interface IPaymentMethod extends Document<Types.ObjectId> {
+  lookupId: string;
+  name: string;
+  description: string;
+}
+
+const paymentMethodSchema: Schema<IPaymentMethod> = new Schema({
+  lookupId: {
+    type: String,
+    required: true,
+    unique: true,
+  },
   name: {
     type: String,
     required: true,
@@ -8,10 +19,12 @@ const paymentMethodSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: false,
-    default: null,
+    required: true,
   },
 });
 
-const PaymentMethod = mongoose.model("PaymentMethod", paymentMethodSchema);
+const PaymentMethod: Model<IPaymentMethod> = mongoose.model<IPaymentMethod>(
+  "PaymentMethod",
+  paymentMethodSchema
+);
 export default PaymentMethod;

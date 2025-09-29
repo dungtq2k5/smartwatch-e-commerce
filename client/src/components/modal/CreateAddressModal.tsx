@@ -3,6 +3,7 @@ import { provinces } from "../../../../common/vnAddresses";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AddressFormData } from "../../utils/types";
 import {
+  formatError,
   getCityProvince,
   getDistrict,
   getDistrictsByProvinceCode,
@@ -20,8 +21,8 @@ import toast from "react-hot-toast";
 import { useJsApiLoader } from "@react-google-maps/api";
 import debounce from "lodash.debounce";
 import AddressMapInput from "../AddressMapInput";
-import { formatError } from "../../utils/utils";
 import { VN_COUNTRY_CODE } from "../../../../common/configs.common";
+import { WAITING_EMOJI } from "../../configs";
 
 const defaultCityProvinceCode = provinces.data[0].code;
 const defaultDistrictCode = getDistrictsByProvinceCode(defaultCityProvinceCode)
@@ -46,7 +47,9 @@ const CreateAddressModal = memo(
     renderCount.current += 1;
     console.log("CreateAddressModal render count:", renderCount.current);
 
-    const { isLoading, createAddress } = useUserAddressStore();
+    const { createAddress } = useUserAddressStore();
+
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     const { isLoaded: isMapLoaded } = useJsApiLoader({
       id: "google-map-script",
@@ -234,6 +237,12 @@ const CreateAddressModal = memo(
     const handleSubmit = useCallback(
       async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
+        if (isSubmitting) {
+          toast("Submission is in progress. Please wait.", {
+            icon: WAITING_EMOJI,
+          });
+          return;
+        }
 
         const validateForm = (): boolean => {
           let allValid = true;
@@ -291,6 +300,7 @@ const CreateAddressModal = memo(
             isDefault: formData.isDefault,
           };
 
+          setIsSubmitting(true);
           try {
             const newAddress = await createAddress(addressData);
             onSuccess?.(newAddress.id);
@@ -298,10 +308,12 @@ const CreateAddressModal = memo(
             toast.success("Address created successfully!");
           } catch (error) {
             toast.error(formatError(error));
+          } finally {
+            setIsSubmitting(false);
           }
         }
       },
-      [createAddress, formData, handleClose, onSuccess]
+      [createAddress, formData, handleClose, isSubmitting, onSuccess]
     );
 
     return (
@@ -329,7 +341,10 @@ const CreateAddressModal = memo(
                   <label htmlFor="name">Full name</label>
                   {formData.name.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                      <FontAwesomeIcon
+                        icon={faTriangleExclamation}
+                        className="me-2"
+                      />
                       {formData.name.err}
                     </div>
                   )}
@@ -352,7 +367,10 @@ const CreateAddressModal = memo(
                   <label htmlFor="phoneNumber">Phone number</label>
                   {formData.phoneNumber.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                      <FontAwesomeIcon
+                        icon={faTriangleExclamation}
+                        className="me-2"
+                      />
                       {formData.phoneNumber.err}
                     </div>
                   )}
@@ -438,7 +456,10 @@ const CreateAddressModal = memo(
                   <label htmlFor="street">Street</label>
                   {formData.street.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                      <FontAwesomeIcon
+                        icon={faTriangleExclamation}
+                        className="me-2"
+                      />
                       {formData.street.err}
                     </div>
                   )}
@@ -460,7 +481,10 @@ const CreateAddressModal = memo(
                   <label htmlFor="apartmentNumber">Apartment/Building</label>
                   {formData.apartmentNumber.err && (
                     <div className="text-danger small mt-1">
-                      <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
+                      <FontAwesomeIcon
+                        icon={faTriangleExclamation}
+                        className="me-2"
+                      />
                       {formData.apartmentNumber.err}
                     </div>
                   )}
@@ -499,12 +523,12 @@ const CreateAddressModal = memo(
               type="button"
               variant="secondary"
               onClick={handleClose}
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={isLoading}>
-              {isLoading ? (
+            <Button type="submit" variant="primary" disabled={isSubmitting}>
+              {isSubmitting ? (
                 <>
                   <span
                     className="spinner-border spinner-border-sm me-2"

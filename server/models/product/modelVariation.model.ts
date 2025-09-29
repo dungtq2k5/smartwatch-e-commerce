@@ -1,6 +1,58 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Model, Schema , Types} from "mongoose";
 
-const variationBandSchema = new mongoose.Schema(
+// --- INTERFACES ---
+export interface IColor {
+  hex: string;
+  name: string;
+}
+
+export interface IVariationBand {
+  widthMm: number;
+  lugWidthMm: number;
+  material: string;
+  colors: IColor[];
+  claspType: string;
+  adjustableRange: { minMm: number; maxMm: number };
+  style: string;
+  quickRelease: boolean;
+  waterResistance: boolean;
+  hypoallergenic: boolean;
+  weightMg: number;
+}
+
+export interface IModelVariation extends Document<Types.ObjectId> {
+  productModelId: Types.ObjectId;
+  name: string;
+  color: IColor;
+  imageUrls: string[];
+  additionalPriceCents: number;
+  band: IVariationBand;
+  stockQuantity: number;
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+  stopSelling: boolean;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+  deletedBy: Types.ObjectId | null;
+}
+
+// --- SCHEMAS & MODELS ---
+const colorSchema: Schema<IColor> = new Schema(
+  {
+    hex: {
+      type: String,
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+  },
+  { _id: false }
+);
+
+const variationBandSchema: Schema<IVariationBand> = new Schema(
   {
     widthMm: {
       type: Number,
@@ -18,18 +70,7 @@ const variationBandSchema = new mongoose.Schema(
     },
     colors: {
       // A band can have multiple colors
-      type: [
-        {
-          hex: {
-            type: String,
-            required: true,
-          },
-          name: {
-            type: String,
-            required: true,
-          },
-        },
-      ],
+      type: [colorSchema],
       required: true,
     },
     claspType: {
@@ -80,10 +121,10 @@ const variationBandSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const modelVariationSchema = new mongoose.Schema(
+const modelVariationSchema: Schema<IModelVariation> = new Schema(
   {
     productModelId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "ProductModel",
       required: true,
     },
@@ -93,18 +134,8 @@ const modelVariationSchema = new mongoose.Schema(
     },
     color: {
       // unique with isDeleted: false
-      type: {
-        hex: {
-          type: String,
-          required: true,
-        },
-        name: {
-          type: String,
-          required: true,
-        },
-      },
+      type: colorSchema,
       required: true,
-      _id: false,
     },
     imageUrls: {
       type: [String],
@@ -128,7 +159,7 @@ const modelVariationSchema = new mongoose.Schema(
       min: 0,
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -148,7 +179,7 @@ const modelVariationSchema = new mongoose.Schema(
       default: null,
     },
     deletedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: false,
       default: null,
@@ -194,5 +225,8 @@ modelVariationSchema.pre("save", function (next) {
   next();
 });
 
-const ModelVariation = mongoose.model("ModelVariation", modelVariationSchema);
+const ModelVariation: Model<IModelVariation> = mongoose.model<IModelVariation>(
+  "ModelVariation",
+  modelVariationSchema
+);
 export default ModelVariation;

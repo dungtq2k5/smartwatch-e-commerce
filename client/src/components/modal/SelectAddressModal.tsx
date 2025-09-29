@@ -7,11 +7,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import CreateAddressModal from "./CreateAddressModal";
 import UpdateAddressModal from "./UpdateAddressModal";
+import { formatError } from "../../../../common/utils.common";
 
-type ModalState = {
+type Modal = {
   selectAddress: boolean;
   createAddress: boolean;
-  addressIdToEdit?: string;
+  addressIdToEdit: string | null;
 };
 
 const SelectAddressModal = memo(
@@ -31,21 +32,32 @@ const SelectAddressModal = memo(
     renderCount.current += 1;
     console.log("SelectAddressModal render count:", renderCount.current);
 
-    const { isFetching, fetchErr, addresses, fetchAddresses } =
-      useUserAddressStore();
+    const { addresses, fetchAddresses } = useUserAddressStore();
+
+    const [isFetching, setIsFetching] = useState<boolean>(false);
+    const [apiErr, setApiErr] = useState<string | null>(null);
 
     const [selectedAddressId, setSelectedAddressId] =
       useState(currentAddressId);
-    const [modalState, setModalState] = useState<ModalState>({
+    const [modal, setModal] = useState<Modal>({
       selectAddress: show,
       createAddress: false,
-      addressIdToEdit: undefined,
+      addressIdToEdit: null,
     });
 
     // Fetch on initial loaded: addresses
     useEffect(() => {
       const handleFetchAddresses = async (): Promise<void> => {
-        if (!addresses) await fetchAddresses();
+        setIsFetching(true);
+        setApiErr(null);
+
+        try {
+          await fetchAddresses();
+        } catch (error) {
+          setApiErr(formatError(error));
+        } finally {
+          setIsFetching(false);
+        }
       };
 
       handleFetchAddresses();
@@ -54,7 +66,7 @@ const SelectAddressModal = memo(
 
     // Reset selected address when modal is closed or currentAddressId changes
     useEffect(() => {
-      setModalState((prev) => ({
+      setModal((prev) => ({
         ...prev,
         selectAddress: show,
       }));
@@ -78,16 +90,16 @@ const SelectAddressModal = memo(
     );
 
     const closeSubModal = useCallback((): void => {
-      setModalState({
+      setModal({
         selectAddress: true,
         createAddress: false,
-        addressIdToEdit: undefined,
+        addressIdToEdit: null,
       });
     }, []);
 
     return (
       <>
-        <Modal show={modalState.selectAddress} onHide={onHide} centered>
+        <Modal show={modal.selectAddress} onHide={onHide} centered>
           <Modal.Header closeButton>
             <Modal.Title>Select Address</Modal.Title>
           </Modal.Header>
@@ -96,8 +108,8 @@ const SelectAddressModal = memo(
             <Modal.Body>
               {isFetching ? (
                 <Loading loadingMsg="Loading addresses..." />
-              ) : fetchErr ? (
-                <ApiError errMsg={fetchErr} />
+              ) : apiErr ? (
+                <ApiError errMsg={apiErr} />
               ) : !addresses ? (
                 <ApiError errMsg="Addresses data not available." />
               ) : !addresses.total ? (
@@ -132,7 +144,7 @@ const SelectAddressModal = memo(
                                 type="button"
                                 className="btn btn-link p-0 btn-sm"
                                 onClick={() =>
-                                  setModalState({
+                                  setModal({
                                     selectAddress: false,
                                     createAddress: false,
                                     addressIdToEdit: addr.id,
@@ -158,10 +170,10 @@ const SelectAddressModal = memo(
                     type="button"
                     className="btn btn-outline-primary w-100"
                     onClick={() =>
-                      setModalState({
+                      setModal({
                         selectAddress: false,
                         createAddress: true,
-                        addressIdToEdit: undefined,
+                        addressIdToEdit: null,
                       })
                     }
                   >
@@ -191,14 +203,14 @@ const SelectAddressModal = memo(
 
         <CreateAddressModal
           isFirstAddress={!addresses || addresses.total === 0}
-          show={modalState.createAddress}
+          show={modal.createAddress}
           onHide={closeSubModal}
           onSuccess={setSelectedAddressId}
         />
 
         <UpdateAddressModal
           isOnlyOneAddress={!addresses || addresses.total === 1}
-          addressId={modalState.addressIdToEdit}
+          addressId={modal.addressIdToEdit || undefined}
           onHide={closeSubModal}
           onSuccess={setSelectedAddressId}
         />

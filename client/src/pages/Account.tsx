@@ -1,18 +1,20 @@
 import {
+  faBox,
   faLandmark,
-  faMapPin,
+  faLocationDot,
   faRightFromBracket,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import defaultAvatar from "../assets/default-avatar.webp";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import HorizontalDivider from "../components/HorizontalDivider";
 import ApiError from "../components/ApiError";
 import toast from "react-hot-toast";
-import { formatError } from "../utils/utils";
+import { WAITING_EMOJI } from "../configs";
+import { formatError } from "../../../common/utils.common";
 
 export default function Account() {
   // DEV temp for testing
@@ -20,17 +22,27 @@ export default function Account() {
   renderCount.current += 1;
   console.log("Account render count:", renderCount.current);
 
-  const { user, isDeleting, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
+
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
   const handleLogout = useCallback(async (): Promise<void> => {
+    if (isLoggingOut) {
+      toast("Logout is in progress. Please wait.", { icon: WAITING_EMOJI });
+      return;
+    }
+
+    setIsLoggingOut(true);
     try {
       await logout();
       navigate("/login", { replace: true });
     } catch (error) {
       toast.error(formatError(error));
+    } finally {
+      setIsLoggingOut(false);
     }
-  }, [logout, navigate]);
+  }, [isLoggingOut, logout, navigate]);
 
   return (
     <>
@@ -57,13 +69,20 @@ export default function Account() {
                 </div>
                 <nav className="nav flex-column nav-pills">
                   <NavLink to="/account/profile" className="nav-link">
-                    <FontAwesomeIcon icon={faUser} /> My Profile
+                    <FontAwesomeIcon icon={faUser} className="me-2" /> My
+                    Profile
                   </NavLink>
                   <NavLink to="/account/bank-card" className="nav-link">
-                    <FontAwesomeIcon icon={faLandmark} /> Banks & Cards
+                    <FontAwesomeIcon icon={faLandmark} className="me-2" /> Banks
+                    & Cards
                   </NavLink>
                   <NavLink to="/account/address" className="nav-link">
-                    <FontAwesomeIcon icon={faMapPin} /> Addresses
+                    <FontAwesomeIcon icon={faLocationDot} className="me-2" /> My
+                    addresses
+                  </NavLink>
+                  <NavLink to="/account/purchase" className="nav-link">
+                    <FontAwesomeIcon icon={faBox} className="me-2" /> My
+                    purchases
                   </NavLink>
                 </nav>
                 <div className="my-2">
@@ -73,17 +92,20 @@ export default function Account() {
                   type="button"
                   className="btn btn-link text-danger px-3"
                   onClick={handleLogout}
-                  disabled={isDeleting}
+                  disabled={isLoggingOut}
                 >
                   <FontAwesomeIcon icon={faRightFromBracket} className="me-2" />
-                  {isDeleting ? "Leaving..." : "Logout"}
+                  {isLoggingOut ? "Leaving..." : "Logout"}
                 </button>
               </aside>
             </div>
 
             {/* Main content */}
             <div className="col-md-9">
-              <main className="border rounded-3 shadow-sm p-4 h-100">
+              <main
+                className="border rounded-3 shadow-sm p-4 h-100"
+                style={{ maxWidth: "1200px" }}
+              >
                 <Outlet />
               </main>
             </div>
