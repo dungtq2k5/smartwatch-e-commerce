@@ -3,6 +3,7 @@ import User from "../../models/user/user.model";
 import {
   formatAdminUserAddressResponse,
   formatUserAddressResponse,
+  isPresent,
 } from "../../utils/utils";
 import {
   AdminUserAddressResponse,
@@ -14,7 +15,6 @@ import {
 } from "../../../common/types.common";
 import { HttpError } from "../../utils/errorHandler";
 import mongoose, { Types } from "mongoose";
-import { RequestAuth } from "../../utils/types";
 import UserAddress from "../../models/user/userAddress.model";
 import { formatAddress, isValidAddress } from "../../../common/utils.common";
 
@@ -25,8 +25,17 @@ export async function getAll(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing get user addresses request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
-  if (isBuyerOnly) {
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (!isBuyerOnly) {
     return next(
       new HttpError(403, "You do not have permission to perform this action.")
     );
@@ -72,8 +81,17 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing create user address request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
-  if (isBuyerOnly) {
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (!isBuyerOnly) {
     return next(
       new HttpError(403, "You do not have permission to perform this action.")
     );
@@ -173,7 +191,14 @@ export async function getSelfAll(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing get user addresses request...");
-  const { userId } = req["auth"] as RequestAuth;
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    throw new HttpError(
+      500,
+      "User ID not found, this should be handled in middlewares."
+    );
+  }
 
   try {
     const addresses = await UserAddress.find({ userId })
@@ -203,8 +228,20 @@ export async function update(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️ ", "Processing update user address request...");
-  const { userId: reqUserId, isBuyerOnly } = req["auth"] as RequestAuth;
+  console.log("▶️ ", "Processing update self user address request...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { userId: userIdFromParams, id: addressId } = req.params;
 
   const targetUserId = userIdFromParams || reqUserId;
@@ -320,7 +357,7 @@ export async function update(
       message: "User address updated successfully",
       data: formatUserAddressResponse(address),
     } as SuccessResponse<UserAddressResponse>);
-    console.log("✅", "User address updated successfully.");
+    console.log("✅", "User self address updated successfully.");
   } catch (error) {
     await session.abortTransaction();
     next(error);
@@ -334,8 +371,20 @@ export async function remove(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️ ", "Processing delete user address request...");
-  const { userId: reqUserId, isBuyerOnly } = req["auth"] as RequestAuth;
+  console.log("▶️ ", "Processing delete self user address request...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { userId: userIdFromParams, id: addressId } = req.params;
 
   const targetUserId = userIdFromParams || reqUserId;
@@ -371,7 +420,7 @@ export async function remove(
       success: true,
       message: "User address deleted successfully",
     } as SuccessResponse);
-    console.log("✅", "User address deleted successfully.");
+    console.log("✅", "User self address deleted successfully.");
   } catch (error) {
     next(error);
   }
@@ -383,6 +432,16 @@ export async function createSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing create user address request...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const {
     name,
     street,
@@ -394,7 +453,6 @@ export async function createSelf(
     phoneNumber,
     isDefault,
   } = req.body as UserAddressCreate;
-  const { userId } = req["auth"] as RequestAuth;
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -458,7 +516,16 @@ export async function getSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing get user address request...");
-  const { userId } = req["auth"] as RequestAuth;
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id: addressId } = req.params;
 
   try {
@@ -491,7 +558,16 @@ export async function getSelfDefault(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing get user default address request...");
-  const { userId } = req["auth"] as RequestAuth;
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
 
   try {
     const address = await UserAddress.findOne({

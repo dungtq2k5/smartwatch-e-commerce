@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import Provider, { IProvider } from "../models/inventory/provider.model";
 import { HttpError } from "../utils/errorHandler";
-import { RequestAuth } from "../utils/types";
-import { formatProviderResponse } from "../utils/utils";
+import { formatProviderResponse, isPresent } from "../utils/utils";
 import {
   ProviderCreate,
   ProviderResponse,
@@ -18,6 +17,16 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating provider...");
+
+  const reqUserId = req["auth"]?.userId;
+  if (!isPresent(reqUserId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled by middlewares."
+      )
+    );
+  }
   const { fullName, email, phoneNumber } = req.body as ProviderCreate;
 
   try {
@@ -40,12 +49,11 @@ export async function create(
     }
 
     // Create
-    const reqUserId = (req["auth"] as RequestAuth).userId;
     const provider = new Provider({
       fullName,
       email,
       phoneNumber,
-      createdBy: reqUserId,
+      createdBy: new Types.ObjectId(reqUserId),
     });
 
     await provider.save();
@@ -171,6 +179,16 @@ export async function remove(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Deleting provider...");
+
+  const reqUserId = req["auth"]?.userId;
+  if (!isPresent(reqUserId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled by middlewares."
+      )
+    );
+  }
   const id = req.params.id;
 
   try {
@@ -184,8 +202,7 @@ export async function remove(
     }
 
     // Execute deletion
-    const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
-    await executeDeletion(provider, reqUserId);
+    await executeDeletion(provider, new Types.ObjectId(reqUserId));
 
     res.status(200).json({
       success: true,
@@ -198,7 +215,9 @@ export async function remove(
 }
 
 // -- HELPER FUNCTIONS --
-async function hasConstraints(providerId: Types.ObjectId | string): Promise<boolean> {
+async function hasConstraints(
+  providerId: Types.ObjectId | string
+): Promise<boolean> {
   console.log("▶️ ", "Checking constraints for provider...");
 
   try {
@@ -238,14 +257,11 @@ async function executeDeletion(
 
   try {
     if (await hasConstraints(providerToDelete._id)) {
-      await Provider.findByIdAndUpdate(
-        providerToDelete._id,
-        {
-          isDeleted: true,
-          deletedAt: new Date(),
-          deletedBy,
-        },
-      );
+      await Provider.findByIdAndUpdate(providerToDelete._id, {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy,
+      });
       return;
     }
 

@@ -12,9 +12,9 @@ const ConfirmSubmitModal = memo(
   }: Readonly<{
     show: boolean;
     onHide: () => void;
-    onSubmit: () => Promise<void>;
+    onSubmit: () => Promise<void> | void;
     custom?: Partial<{
-      action: "update" | "delete";
+      action: "update" | "delete" | "leave";
       title: string;
       body: string;
       cancelText: string;

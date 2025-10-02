@@ -79,10 +79,9 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
 
       const newAddress = res.data as UserAddressResponse;
       // Refresh addresses by adding the new address and handle isDefault
-      set((state) => {
-        if (!state.addresses) return {}; // Should not happen
-
-        let existingAddresses = state.addresses.addresses;
+      const { addresses } = get();
+      if (addresses) {
+        let existingAddresses = addresses.addresses;
 
         // If new address is default, make sure no other address is non-default
         if (newAddress.isDefault) {
@@ -93,14 +92,14 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
 
         const updatedAddresses = [...existingAddresses, newAddress];
 
-        return {
+        set({
           addresses: {
-            ...state.addresses,
+            ...addresses,
             total: updatedAddresses.length,
             addresses: updatedAddresses,
           },
-        };
-      });
+        });
+      }
 
       return newAddress;
     } catch (error) {
@@ -117,11 +116,8 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
       if (!res.success) throw new Error(res.message);
 
       const updatedAddress = res.data as UserAddressResponse;
-
-      set((state) => {
-        const { addresses } = state;
-        if (!addresses) return {}; // Should not happen
-
+      const { addresses } = get();
+      if (addresses) {
         let updatedAddresses = addresses.addresses;
 
         // If the update was set to default, also update other addresses which were default
@@ -133,18 +129,21 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
           });
         } else {
           // If not set to default, just update the specific address
-          updatedAddresses = updatedAddresses.map((addr) =>
-            addr.id === addressId ? updatedAddress : addr
+          const addrIdxToUpdate = updatedAddresses.findIndex(
+            (addr) => addr.id === addressId
           );
+          if (addrIdxToUpdate !== -1) {
+            updatedAddresses[addrIdxToUpdate] = updatedAddress;
+          }
         }
 
-        return {
+        set({
           addresses: {
-            ...addresses,
+            total: updatedAddresses.length,
             addresses: updatedAddresses,
           },
-        };
-      });
+        });
+      }
 
       return updatedAddress;
     } catch (error) {

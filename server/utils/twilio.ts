@@ -1,6 +1,6 @@
 import { twilioClient, twilioPhoneNumber } from "../configs/twilio.config";
 import { PROJECT_NAME } from "../../common/configs.common";
-import { convertVnPhoneNumberToE164 } from "../../common/utils.common";
+import { convertVnPhoneNumberToE164, formatError } from "../../common/utils.common";
 
 export async function sendVerificationSms(
   plainPhoneNumber: string,
@@ -17,7 +17,7 @@ export async function sendVerificationSms(
 
     console.log("✅", "Verification SMS sent successfully:", message.sid);
   } catch (error) {
-    throw new Error(`Failed to send verification SMS: ${error.message}`);
+    throw new Error(`Failed to send verification SMS: ${formatError(error)}`);
   }
 }
 
@@ -37,7 +37,7 @@ export async function sendPasswordResetSms(
 
     console.log("✅", "Password reset SMS sent successfully:", message.sid);
   } catch (error) {
-    throw new Error(`Failed to send password reset SMS: ${error.message}`);
+    throw new Error(`Failed to send password reset SMS: ${formatError(error)}`);
   }
 }
 
@@ -60,7 +60,7 @@ export async function sendPasswordResetSuccessSms(
     );
   } catch (error) {
     throw new Error(
-      `Failed to send password reset success SMS: ${error.message}`
+      `Failed to send password reset success SMS: ${formatError(error)}`
     );
   }
 }
@@ -82,7 +82,7 @@ export async function sendLockAccountChangeSms(
 
     console.log("✅", "Account unlock SMS sent successfully:", message.sid);
   } catch (error) {
-    throw new Error(`Failed to send account unlock SMS: ${error.message}`);
+    throw new Error(`Failed to send account unlock SMS: ${formatError(error)}`);
   }
 }
 
@@ -115,7 +115,7 @@ export async function sendPhoneNumberChangeSms(
       );
     } catch (error) {
       throw new Error(
-        `Failed to send phone number change SMS to ${plainPhoneNumber}: ${error.message}`
+        `Failed to send phone number change SMS to ${plainPhoneNumber}: ${formatError(error)}`
       );
     }
   }
@@ -144,7 +144,7 @@ export async function sendPhoneNumberVerifiedSms(
     );
   } catch (error) {
     throw new Error(
-      `Failed to send phone number verified SMS: ${error.message}`
+      `Failed to send phone number verified SMS: ${formatError(error)}`
     );
   }
 }

@@ -1,29 +1,31 @@
 import { Request, Response, NextFunction } from "express";
-import { RequestAuth } from "../../utils/types";
 import {
   SuccessResponse,
   CheckoutSessionResponse,
-} from "../../../common/types.common";
-import Order from "../../models/order/order.model";
-import { HttpError } from "../../utils/errorHandler";
+  StripeSetupIntentResponse,
+} from "../../common/types.common";
+import Order from "../models/order/order.model";
+import { HttpError } from "../utils/errorHandler";
 import {
   getOrderStateId,
   getPaymentMethodLookupId,
   getPaymentStateId,
   getPaymentStateLookupId,
   getSysUserId,
-} from "../../utils/utils";
-import stripe from "../../configs/stripe.config";
+  isPresent,
+} from "../utils/utils";
+import stripe from "../configs/stripe.config";
 import Stripe from "stripe";
 import mongoose, { Types } from "mongoose";
 import {
   executeCartDeletion,
   handleOrderDeletion,
   getLatestStateId,
-} from "./order.controller";
-import User from "../../models/user/user.model";
-import UserPaymentMethod from "../../models/user/userPaymentMethod.model";
-import { formatError, isNoneArrObj } from "../../../common/utils.common";
+} from "./order/order.controller";
+import User from "../models/user/user.model";
+import UserPaymentMethod from "../models/user/userPaymentMethod.model";
+import { formatError, isNoneArrObj } from "../../common/utils.common";
+import { USER_PAYMENT_METHOD_TYPES } from "../configs/configs";
 
 export async function createCheckoutSession(
   req: Request,
@@ -31,8 +33,17 @@ export async function createCheckoutSession(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating checkout session...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id: orderId } = req.params;
-  const userId = (req["auth"] as RequestAuth).userId;
 
   try {
     // Check orderId exists
@@ -63,7 +74,7 @@ export async function createCheckoutSession(
     }
 
     // Check latest payment status is in pending state
-    const latestPaymentStateId = getLatestStateId(order.paymentStates)!;
+    const latestPaymentStateId = getLatestStateId(order.paymentStates);
     const latestPaymentStateLookupId =
       getPaymentStateLookupId(latestPaymentStateId);
     if (latestPaymentStateLookupId !== "1") {
@@ -80,30 +91,8 @@ export async function createCheckoutSession(
       );
     }
 
-    // Check user exists and valid
-    const user = (await User.findById(userId))!; // valid user was handled in auth middleware
-
     // Create stripeCustomerId if not exists
-    let stripeCustomerId = user.stripeCustomerId;
-    if (!stripeCustomerId) {
-      const customerData: {
-        name: string;
-        email?: string;
-        phone?: string;
-      } = { name: user.fullName };
-
-      if (user.email) {
-        customerData["email"] = user.email;
-      }
-      if (user.phoneNumber) {
-        customerData["phone"] = user.phoneNumber;
-      }
-
-      const customer = await stripe.customers.create(customerData);
-      stripeCustomerId = customer.id;
-      user.stripeCustomerId = stripeCustomerId;
-      await user.save();
-    }
+    const stripeCustomerId = await findOrCreateStripeCustomer(userId);
 
     // Setup line items for checkout session
     const line_items = order.items.map((item) => {
@@ -124,14 +113,14 @@ export async function createCheckoutSession(
               ? product.imageUrls
               : undefined,
           },
-          unit_amount: item.totalCents! / item.quantity!,
+          unit_amount: item.totalCents / item.quantity,
         },
-        quantity: item.quantity!,
+        quantity: item.quantity,
       };
     });
 
     const sessionPayload: Stripe.Checkout.SessionCreateParams = {
-      payment_method_types: ["card"],
+      payment_method_types: [...USER_PAYMENT_METHOD_TYPES],
       line_items,
       mode: "payment",
       customer: stripeCustomerId,
@@ -154,6 +143,9 @@ export async function createCheckoutSession(
     }
 
     const session = await stripe.checkout.sessions.create(sessionPayload);
+    if (!session.url) {
+      throw new HttpError(500, "Failed to create Stripe checkout session.");
+    }
 
     res.status(200).json({
       success: true,
@@ -181,11 +173,7 @@ export async function handleStripeWebhook(
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (error) {
     const errMsg = formatError(error);
-    console.error(
-      "❌ ",
-      "Webhook signature verification failed:",
-      errMsg
-    );
+    console.error("❌ ", "Webhook signature verification failed:", errMsg);
     res.status(400).send(`Webhook Error: ${errMsg}`);
     return;
   }
@@ -275,7 +263,7 @@ export async function handleStripeWebhook(
           order.userId,
           order.items.map(({ variationId, quantity }) => ({
             variationId,
-            quantity: quantity!,
+            quantity,
           })),
           session
         );
@@ -381,5 +369,74 @@ export async function createRefund(
   } catch (error) {
     console.error("❌ ", "Error creating Stripe refund:", error);
     throw error;
+  }
+}
+
+export async function findOrCreateStripeCustomer(
+  userId: string
+): Promise<string> {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found.");
+    }
+
+    if (user.stripeCustomerId) {
+      return user.stripeCustomerId;
+    }
+
+    const customer = await stripe.customers.create({
+      email: user.email || undefined,
+      phone: user.phoneNumber || undefined,
+      name: user.fullName,
+      metadata: { userId: userId },
+    });
+
+    user.stripeCustomerId = customer.id;
+    await user.save();
+
+    return customer.id;
+  } catch (error) {
+    console.error("❌ ", "Error in findOrCreateStripeCustomer:", error);
+    throw error;
+  }
+}
+
+export async function createSetupIntent(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing create setup intent request...");
+
+  const user = req["user"];
+  if (!isPresent(user)) {
+    throw new HttpError(
+      500,
+      "Request user not found, this should be handled in middlewares."
+    );
+  }
+
+  try {
+    const customerId = await findOrCreateStripeCustomer(user.id);
+
+    const setupIntent = await stripe.setupIntents.create({
+      customer: customerId,
+      payment_method_types: [...USER_PAYMENT_METHOD_TYPES],
+      usage: "on_session",
+    });
+
+    if (!setupIntent.client_secret) {
+      throw new HttpError(500, "Failed to create Stripe setup intent.");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Setup intent created successfully.",
+      data: { clientSecret: setupIntent.client_secret },
+    } as SuccessResponse<StripeSetupIntentResponse>);
+    console.log("✅ ", "Setup intent created successfully.");
+  } catch (error) {
+    next(error);
   }
 }

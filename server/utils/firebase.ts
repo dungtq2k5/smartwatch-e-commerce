@@ -52,7 +52,7 @@ export async function deleteFileFromFirebaseStorage(
     const file = storageBucket.file(filePath);
     await file.delete();
     console.log(`File ${filePath} deleted from Firebase Storage successfully.`);
-  } catch (error) {
+  } catch (error: any) {
     const pathForLog = filePath || downloadUrl;
     // Check for object not found error (code 404 for GCS)
     if (

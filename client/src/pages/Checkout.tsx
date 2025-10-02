@@ -9,7 +9,6 @@ import ApiError from "../components/ApiError";
 import { useUserAddressStore } from "../store/addressStore";
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import type {
-  CheckoutSessionResponse,
   OrderCreate,
   PaymentMethodResponse,
   UserAddressResponse,
@@ -30,9 +29,8 @@ import SelectAddressModal from "../components/modal/SelectAddressModal";
 import { faCcStripe } from "@fortawesome/free-brands-svg-icons";
 import { useOrderStore } from "../store/order/orderStore";
 import toast from "react-hot-toast";
-import { post } from "../utils/utils";
 import SmallSpinner from "../components/SmallSpinner";
-import { ORDER_URL, WAITING_EMOJI } from "../configs";
+import { WAITING_EMOJI } from "../configs";
 import CheckoutSkeleton from "../components/skeleton/CheckoutSkeleton";
 import type { BuyNowItem } from "../utils/types";
 
@@ -76,7 +74,7 @@ export default function Checkout() {
     clearCartCache,
   } = useUserCartStore();
   const { paymentMethods, fetchPaymentMethods } = usePaymentMethodStore();
-  const { createOrder } = useOrderStore();
+  const { createOrder, createCheckoutSession } = useOrderStore();
 
   const totalCents = buyNowItem ? buyNowItem.totalCents : cartTotalCents;
   const isAllItemAvailable = buyNowItem ? true : cartIsAllItemAvailable;
@@ -346,18 +344,10 @@ export default function Checkout() {
       }
 
       if (selectedPaymentMethod.name === "stripe") {
-        const res = await post(
-          `${ORDER_URL}/${newOrder.id}/create-checkout-session`
-        );
-        if (!res.success) throw new Error(res.message);
-
-        const data = res.data as CheckoutSessionResponse;
-        if (!data.url) {
-          throw new Error("Could not create Stripe checkout session.");
-        }
+        const checkout = await createCheckoutSession(newOrder.id);
 
         // Redirect to Stripe checkout session
-        window.location.href = data.url;
+        window.location.href = checkout.url;
       }
     } catch (error) {
       toast.error(formatError(error));
@@ -372,6 +362,7 @@ export default function Checkout() {
     applyUserBalance,
     checkoutCart,
     clearCartCache,
+    createCheckoutSession,
     createOrder,
     navigate,
     process.isProcessing,

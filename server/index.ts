@@ -99,7 +99,7 @@ app.use(`${ROOT_URL}/refund-states`, refundStateRoutes);
 app.use(`${ROOT_URL}/providers`, providerRoutes);
 
 app.use((req, res, next) => {
-  next(new HttpError(404, `Request not found: ${req.originalUrl}`));
+  next(new HttpError(404, `Request not found: ${req.originalUrl} with method ${req.method}.`));
 });
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) =>

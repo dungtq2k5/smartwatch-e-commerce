@@ -18,6 +18,7 @@ import PurchaseItem from "./PurchaseItem";
 import {
   ORDER_LOOKUPID_MSG_LEGEND,
   ORDER_LOOKUPID_STATE_LEGEND,
+  WAITING_EMOJI,
 } from "../../configs";
 import toast from "react-hot-toast";
 import { useUserCartStore } from "../../store/cartStore";
@@ -25,6 +26,15 @@ import { useOrderStateStore } from "../../store/order/orderStateStore";
 import { useDeliveryStateStore } from "../../store/order/deliveryStateStore";
 import { usePaymentMethodStore } from "../../store/order/paymentMethodStore";
 import ApiError from "../ApiError";
+import PurchaseCardSkeleton from "../skeleton/PurchaseCardSkeleton";
+import SmallSpinner from "../SmallSpinner";
+
+type Process = {
+  isProcessing: boolean;
+  isInitializing: boolean;
+  isCreatingCart: boolean;
+  isCreatingCheckoutSession: boolean;
+};
 
 const PurchaseCard = memo(
   ({
@@ -48,6 +58,7 @@ const PurchaseCard = memo(
       canCancelOrder,
       canBuyAgainOrder,
       canPay,
+      createCheckoutSession,
     } = useOrderStore();
     const { createManyCart } = useUserCartStore();
 
@@ -68,18 +79,23 @@ const PurchaseCard = memo(
       PaymentMethodResponse | undefined
     >(getPaymentMethodSync(order.paymentMethodId));
 
-    const [isInitializing, setIsInitializing] = useState<boolean>(
-      !orderState || !deliveryState
-    );
+    const [process, setProcess] = useState<Process>({
+      isProcessing: false,
+      isInitializing: false,
+      isCreatingCart: false,
+      isCreatingCheckoutSession: false,
+    });
     const [apiErr, setApiErr] = useState<string | null>(null);
-
-    const [isCreatingCart, setIsCreatingCart] = useState<boolean>(false);
 
     useEffect(() => {
       const handleFetchSetInitialData = async (): Promise<void> => {
         if (orderState && deliveryState && paymentMethod) return;
 
-        setIsInitializing(true);
+        setProcess((prev) => ({
+          ...prev,
+          isProcessing: true,
+          isInitializing: true,
+        }));
         setApiErr(null);
 
         try {
@@ -103,7 +119,11 @@ const PurchaseCard = memo(
         } catch (error) {
           setApiErr(formatError(error));
         } finally {
-          setIsInitializing(false);
+          setProcess((prev) => ({
+            ...prev,
+            isProcessing: false,
+            isInitializing: false,
+          }));
         }
       };
 
@@ -168,6 +188,13 @@ const PurchaseCard = memo(
         return;
       }
 
+      if (process.isProcessing) {
+        toast("Another action is being processed. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
+
       if (availableItems.length === 0) {
         toast.error("No available items to buy again.");
         return;
@@ -179,22 +206,56 @@ const PurchaseCard = memo(
         quantity: item.quantity,
       }));
 
-      setIsCreatingCart(true);
+      setProcess((prev) => ({
+        ...prev,
+        isProcessing: true,
+        isCreatingCart: true,
+      }));
       try {
         await createManyCart({ items: cartData });
         navigate("/cart");
       } catch (error) {
         toast.error(formatError(error));
       } finally {
-        setIsCreatingCart(false);
+        setProcess((prev) => ({
+          ...prev,
+          isProcessing: false,
+          isCreatingCart: false,
+        }));
       }
-    }, [availableItems, canBuyAgain, createManyCart, navigate]);
+    }, [
+      availableItems,
+      canBuyAgain,
+      createManyCart,
+      navigate,
+      process.isProcessing,
+    ]);
 
-    // TODO not paid yet button to redirect to payment gateway
+    const handlePayNow = useCallback(async (): Promise<void> => {
+      if (!notPaidYet) {
+        toast.error("Cannot pay for this order.");
+        return;
+      }
+
+      if (process.isProcessing) {
+        toast("Another action is being processed. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
+
+      try {
+        const checkout = await createCheckoutSession(order.id);
+        window.location.href = checkout.url;
+      } catch (error) {
+        toast.error(formatError(error));
+      }
+    }, [createCheckoutSession, notPaidYet, order.id, process.isProcessing]);
+
     return (
       <>
-        {isInitializing ? (
-          <p>Loading....</p> // TODO loading skeleton
+        {process.isInitializing ? (
+          <PurchaseCardSkeleton />
         ) : apiErr ? (
           <ApiError errMsg={apiErr} />
         ) : (
@@ -275,7 +336,7 @@ const PurchaseCard = memo(
                       type="button"
                       className="btn btn-primary"
                       onClick={() => onSubmitReceived(order.id)}
-                      disabled={isCreatingCart}
+                      disabled={process.isProcessing}
                     >
                       Submit Received
                     </button>
@@ -287,7 +348,7 @@ const PurchaseCard = memo(
                       onClick={() =>
                         navigate(`return-refund/create/${order.id}`)
                       }
-                      disabled={isCreatingCart}
+                      disabled={process.isProcessing}
                     >
                       Request For Return/Refund
                     </button>
@@ -297,7 +358,7 @@ const PurchaseCard = memo(
                       type="button"
                       className="btn btn-outline-danger"
                       onClick={() => onCancelOrder(order.id)}
-                      disabled={isCreatingCart}
+                      disabled={process.isProcessing}
                     >
                       Cancel Order
                     </button>
@@ -307,9 +368,9 @@ const PurchaseCard = memo(
                       type="button"
                       className="btn btn-primary"
                       onClick={handleBuyAgain}
-                      disabled={isCreatingCart}
+                      disabled={process.isProcessing}
                     >
-                      {isCreatingCart ? (
+                      {process.isCreatingCart ? (
                         <>
                           <span
                             className="spinner-border spinner-border-sm me-2"
@@ -322,16 +383,19 @@ const PurchaseCard = memo(
                       )}
                     </button>
                   )}
-                  {notPaidYet && (
+                  {!notPaidYet && (
                     <button
                       type="button"
                       className="btn btn-primary"
-                      onClick={() =>
-                        console.log("TODO redirect to payment gateway")
-                      }
-                      disabled={isCreatingCart}
+                      onClick={handlePayNow}
+                      disabled={process.isProcessing}
                     >
-                      Pay Now
+                      {process.isCreatingCheckoutSession && (
+                        <>
+                          <SmallSpinner />{" "}
+                        </>
+                      )}
+                      Pay Now with <span className="fw-bold">Stripe</span>
                     </button>
                   )}
                 </div>

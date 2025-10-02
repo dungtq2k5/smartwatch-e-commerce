@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import DeliveryState from "../../models/order/deliveryState.model";
 import { formatDeliveryStateResponse } from "../../utils/utils";
-import { DeliveryStateListResponse, SuccessResponse } from "../../../common/types.common";
+import {
+  DeliveryStateListResponse,
+  SuccessResponse,
+} from "../../../common/types.common";
 
 export async function getAll(
   req: Request,
@@ -11,7 +14,9 @@ export async function getAll(
   console.log("▶️ ", "Fetching all delivery states...");
 
   try {
-    const deliveryStates = await DeliveryState.find().sort({ lookupId: 1 }).lean();
+    const deliveryStates = await DeliveryState.find()
+      .sort({ lookupId: 1 })
+      .lean();
 
     res.status(200).json({
       success: true,

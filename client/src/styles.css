@@ -11,6 +11,9 @@
   --warning-color: #FBBC05;
   --light-color: #F8F9FA;
   --dark-color: #202124;
+
+  --stripe-main-color: #5167FC;
+  --stripe-link-main-color: #28a745;
 }
 
 body {
@@ -53,7 +56,9 @@ body {
   border-radius: 4px;
 }
 
-.form-check-input, .form-check-label, .form-select {
+.form-check-input,
+.form-check-label,
+.form-select {
   cursor: pointer;
 }
 
@@ -487,7 +492,8 @@ body {
 
 .pdf-label-container {
   position: absolute;
-  left: -9999px; /* Position off-screen */
+  /* Position off-screen */
+  left: -9999px;
   width: 500px;
   background-color: white;
   color: black;

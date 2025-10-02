@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { RequestAuth } from "../utils/types";
 import {
   RoleCreate,
   RoleListResponse,
@@ -9,7 +8,7 @@ import {
 } from "../../common/types.common";
 import Role from "../models/role/role.model";
 import mongoose, { Types } from "mongoose";
-import { formatRoleResponse } from "../utils/utils";
+import { formatRoleResponse, isPresent } from "../utils/utils";
 import { HttpError } from "../utils/errorHandler";
 import Permission from "../models/role/permission.model";
 import User from "../models/user/user.model";
@@ -20,7 +19,18 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating a new role...");
+
+  const reqUserId = req["auth"]?.userId;
+  if (!isPresent(reqUserId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled by middlewares."
+      )
+    );
+  }
   const { name, permissionIds } = req.body as RoleCreate;
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -32,7 +42,7 @@ export async function create(
     }
 
     // Check permissions exist and create permission list
-    const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
+    const reqUserIdObjId = new Types.ObjectId(reqUserId);
     let permissions: { id: Types.ObjectId; assignedBy: Types.ObjectId }[] = [];
     if (permissionIds) {
       if (permissionIds.length > 0) {
@@ -46,14 +56,14 @@ export async function create(
 
       permissions = permissionIds.map((id) => ({
         id: new Types.ObjectId(id),
-        assignedBy: reqUserId,
+        assignedBy: reqUserIdObjId,
       }));
     }
 
     const newRole = new Role({
       name,
       permissions,
-      createdBy: reqUserId,
+      createdBy: reqUserIdObjId,
     });
 
     await newRole.save({ session });
@@ -132,6 +142,16 @@ export async function update(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating role...");
+
+  const reqUserId = req["auth"]?.userId;
+  if (!isPresent(reqUserId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled by middlewares."
+      )
+    );
+  }
   const { id } = req.params;
 
   try {
@@ -179,13 +199,11 @@ export async function update(
           throw new HttpError(400, "One or more permissions do not exist.");
         }
 
-        const reqUserId = new Types.ObjectId(
-          (req["auth"] as RequestAuth).userId
-        );
+        const reqUserIdObjId = new Types.ObjectId(reqUserId);
         role.permissions.push(
           ...permissionIdsToAdd.map((id) => ({
             id: new Types.ObjectId(id),
-            assignedBy: reqUserId,
+            assignedBy: reqUserIdObjId,
             assignedAt: new Date(),
           }))
         );

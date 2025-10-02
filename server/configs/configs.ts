@@ -173,3 +173,5 @@ export const ORDER_VARIATION_INSTANCE_STATES = [
 export const RETURN_POLICY_DAYS = 14; // Return window is 14 days after reception
 
 export const MAX_ITEMS_FOR_CREATE_BULK_CART = 10; // Max 10 items can be added to cart at once
+
+export const USER_PAYMENT_METHOD_TYPES = ["card"] as const;

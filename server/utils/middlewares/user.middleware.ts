@@ -682,7 +682,7 @@ export function verifyCartInput(
 
           if (!variationId) {
             errors.push("variationId is required.");
-          } else if (typeof variationId !== "string" || !variationId) {
+          } else if (typeof variationId !== "string") {
             errors.push("variationId must be a non-empty string.");
           }
           if (
@@ -697,7 +697,7 @@ export function verifyCartInput(
           console.log("Validating update cart input...");
           const { quantity } = req.body;
 
-          if (!quantity) {
+          if (!isPresent(quantity)) {
             errors.push("quantity is required.");
           } else if (typeof quantity !== "number" || quantity < 0) {
             errors.push("quantity must be a non-negative number.");
@@ -745,4 +745,32 @@ export function verifyCartInput(
       next(error);
     }
   };
+}
+
+export function verifyPaymentMethodInput(
+  type: "create"
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    console.log(" ", "Validating payment method input...");
+
+    let errors: string[] = [];
+    try {
+      if (type === "create") {
+        const { stripePaymentMethodId } = req.body;
+
+        if (!stripePaymentMethodId) {
+          errors.push("stripePaymentMethodId is required.");
+        } else if (typeof stripePaymentMethodId !== "string") {
+          errors.push("stripePaymentMethodId must be non-empty string.");
+        }
+      }
+
+      if (errors.length > 0) {
+        throw new HttpError(400, errors);
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  }
 }

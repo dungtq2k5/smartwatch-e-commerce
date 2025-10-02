@@ -9,6 +9,7 @@ import {
   genVerificationCode,
   getBuyerRoleId,
   getSysUserId,
+  isPresent,
 } from "../utils/utils";
 import Otp from "../models/user/otp.model";
 import {
@@ -45,7 +46,6 @@ import crypto from "crypto";
 import PasswordResetToken from "../models/user/passwordResetToken.model";
 import admin from "firebase-admin";
 import Role from "../models/role/role.model";
-import { RequestAuth } from "../utils/types";
 import stripe from "../configs/stripe.config";
 
 export async function signup(
@@ -235,7 +235,16 @@ export async function verifyUser(
   next: NextFunction
 ) {
   console.log("▶️", "Processing user verification request...");
-  const userId = (req["auth"] as RequestAuth).userId;
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled by middlewares."
+      )
+    );
+  }
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -387,9 +396,9 @@ export async function authByGoogle(
 
         // Extract birth date
         if (person.birthdays && person.birthdays.length > 0) {
-          const bday = person.birthdays.find((b: any) => b.date);
-          if (bday && bday.date) {
-            const { year, month, day } = bday.date;
+          const birthday = person.birthdays.find((b: any) => b.date);
+          if (birthday && birthday.date) {
+            const { year, month, day } = birthday.date;
             if (year && month && day) {
               birth = new Date(Date.UTC(year, month - 1, day));
             }
@@ -614,7 +623,16 @@ export async function checkAuth(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️", "Checking authentication status...");
-  const userId = (req["auth"] as RequestAuth).userId;
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled by middlewares."
+      )
+    );
+  }
 
   try {
     if (!Types.ObjectId.isValid(userId)) {
@@ -658,7 +676,7 @@ export async function validatePassword(
     return next(
       new HttpError(
         500,
-        "userId not found, this should be handled by middlewares."
+        "User ID not found, this should be handled by middlewares."
       )
     );
   }

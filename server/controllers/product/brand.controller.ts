@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { RequestAuth } from "../../utils/types";
 import { HttpError } from "../../utils/errorHandler";
-import ProductBrand, { IProductBrand } from "../../models/product/productBrand.model";
+import ProductBrand, {
+  IProductBrand,
+} from "../../models/product/productBrand.model";
 import {
   ProductBrandCreate,
   ProductBrandListResponse,
@@ -9,7 +10,7 @@ import {
   ProductBrandUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
-import { formatProductBrandResponse } from "../../utils/utils";
+import { formatProductBrandResponse, isPresent } from "../../utils/utils";
 import { Types } from "mongoose";
 import Product from "../../models/product/product.model";
 import { deleteFileFromFirebaseStorage } from "../../utils/firebase";
@@ -20,6 +21,16 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating product brand...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { name, logoUrl, description } = req.body as ProductBrandCreate;
 
   try {
@@ -33,7 +44,6 @@ export async function create(
     }
 
     // Create brand
-    const { userId } = req["auth"] as RequestAuth;
     const brand = new ProductBrand({
       name,
       logoUrl, // mongoose will save as null since the default value is null
@@ -176,6 +186,16 @@ export async function remove(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Deleting product brand...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id } = req.params;
 
   try {
@@ -188,8 +208,7 @@ export async function remove(
       throw new HttpError(404, "Product brand not found.");
     }
 
-    const userId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
-    await executeDeletion(brand, userId);
+    await executeDeletion(brand, new Types.ObjectId(userId));
 
     res.status(200).json({
       success: true,
@@ -202,7 +221,9 @@ export async function remove(
 }
 
 // --- HELPER FUNCTIONS ---
-async function hasConstraints(brandId: Types.ObjectId | string): Promise<boolean> {
+async function hasConstraints(
+  brandId: Types.ObjectId | string
+): Promise<boolean> {
   console.log("▶️ ", "Checking brand constraints...");
 
   try {
@@ -241,14 +262,11 @@ async function executeDeletion(
   try {
     if (await hasConstraints(brandToDelete._id)) {
       // Soft delete
-      await ProductBrand.findByIdAndUpdate(
-        brandToDelete._id,
-        {
-          isDeleted: true,
-          deletedAt: new Date(),
-          deletedBy,
-        },
-      );
+      await ProductBrand.findByIdAndUpdate(brandToDelete._id, {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy,
+      });
       return;
     }
 

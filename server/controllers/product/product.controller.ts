@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { RequestAuth } from "../../utils/types";
 import Product, { IProduct } from "../../models/product/product.model";
 import { HttpError } from "../../utils/errorHandler";
 import ProductBrand from "../../models/product/productBrand.model";
@@ -18,6 +17,7 @@ import {
   formatModelVariationResponse,
   formatProductModelResponse,
   formatProductResponse,
+  isPresent,
 } from "../../utils/utils";
 import { Types } from "mongoose";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
@@ -29,6 +29,16 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating product...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const {
     name,
     type,
@@ -63,7 +73,6 @@ export async function create(
     }
 
     // Create product
-    const { userId } = req["auth"] as RequestAuth;
     const product = new Product({
       name,
       type,
@@ -318,11 +327,7 @@ export async function search(
       {
         $facet: {
           metadata: [{ $count: "total" }],
-          data: [
-            { $sort: sortStage },
-            { $skip: offset },
-            { $limit: limit },
-          ],
+          data: [{ $sort: sortStage }, { $skip: offset }, { $limit: limit }],
         },
       },
     ]);
@@ -459,6 +464,16 @@ export async function remove(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Deleting product...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id } = req.params;
 
   try {
@@ -471,8 +486,7 @@ export async function remove(
       throw new HttpError(404, "Product not found.");
     }
 
-    const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
-    await executeDeletion(product, reqUserId);
+    await executeDeletion(product, new Types.ObjectId(userId));
 
     res.status(200).json({
       success: true,

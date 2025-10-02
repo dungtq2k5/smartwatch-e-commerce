@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type {
+  CheckoutSessionResponse,
   OrderCreate,
   OrderDetailResponse,
   OrderListResponse,
@@ -16,6 +17,8 @@ type OrderState = {
   orderCache: OrderResponse | null;
   orderDetailCache: OrderDetailResponse | null;
 
+  createCheckoutSession: (orderId: string) => Promise<CheckoutSessionResponse>;
+
   createOrder: (order: OrderCreate) => Promise<OrderResponse>;
 
   fetchOrders: (
@@ -28,7 +31,6 @@ type OrderState = {
   checkItemIsReturned: (item: OrderResponse["items"][0]) => boolean;
   checkItemAvailable: (
     item: OrderResponse["items"][0] | OrderReturnResponse["items"][0]
-
   ) => boolean;
   updateSelfOrder: (
     id: string,
@@ -55,6 +57,19 @@ type OrderState = {
 export const useOrderStore = create<OrderState>((set, get) => ({
   orderCache: null,
   orderDetailCache: null,
+
+  async createCheckoutSession(
+    orderId: string
+  ): Promise<CheckoutSessionResponse> {
+    try {
+      const res = await post(`${ORDER_URL}/${orderId}/create-checkout-session`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as CheckoutSessionResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
 
   async createOrder(order: OrderCreate): Promise<OrderResponse> {
     try {

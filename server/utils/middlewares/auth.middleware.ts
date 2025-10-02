@@ -3,7 +3,7 @@ import { getJWTPayload } from "../utils";
 import { JWT_NAME } from "../../configs/configs";
 import { HttpError } from "../errorHandler";
 import { PermissionCode } from "../../../common/types.common";
-import User from "../../models/user/user.model";
+import User, { IUser } from "../../models/user/user.model";
 import { Types } from "mongoose";
 import "../../models/role/permission.model"; // Need this import to populate function
 import "../../models/role/role.model"; // Need this import to populate function
@@ -126,7 +126,7 @@ export function verifyPermission(permissionCode: PermissionCode) {
       user.depopulate("roles.id");
 
       // Attach user and auth info to the request for subsequent handlers
-      req["user"] = user;
+      req["user"] = user as any as IUser;
       req["auth"] = {
         userId,
         isBuyerOnly,

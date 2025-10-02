@@ -1,4 +1,5 @@
 import { PROJECT_NAME } from "../../common/configs.common";
+import { formatError } from "../../common/utils.common";
 import { transporter, sender } from "../configs/nodemailer.config";
 
 export async function sendVerificationEmail(
@@ -19,7 +20,7 @@ export async function sendVerificationEmail(
     const info = await transporter.sendMail(mailOptions);
     console.log("✅", "Verification email sent successfully:", info.response);
   } catch (error) {
-    throw new Error(`Failed to send verification email: ${error.message}`);
+    throw new Error(`Failed to send verification email: ${formatError(error)}`);
   }
 }
 
@@ -41,7 +42,7 @@ export async function sendWelcomeEmail(
     const info = await transporter.sendMail(mailOptions);
     console.log("✅", "Welcome email sent successfully:", info.response);
   } catch (error) {
-    throw new Error(`Failed to send welcome email: ${error.message}`);
+    throw new Error(`Failed to send welcome email: ${formatError(error)}`);
   }
 }
 
@@ -64,7 +65,7 @@ export async function sendPasswordResetEmail(
     const info = await transporter.sendMail(mailOptions);
     console.log("✅", "Password reset email sent successfully:", info.response);
   } catch (error) {
-    throw new Error(`Failed to send password reset email: ${error.message}`);
+    throw new Error(`Failed to send password reset email: ${formatError(error)}`);
   }
 }
 
@@ -90,7 +91,7 @@ export async function sendPasswordResetSuccessEmail(
     );
   } catch (error) {
     throw new Error(
-      `Failed to send password reset success email: ${error.message}`
+      `Failed to send password reset success email: ${formatError(error)}`
     );
   }
 }
@@ -120,7 +121,7 @@ export async function sendLockAccountChangeEmail(
     const info = await transporter.sendMail(mailOptions);
     console.log("✅", "Account unlock email sent successfully:", info.response);
   } catch (error) {
-    throw new Error(`Failed to send account unlock email: ${error.message}`);
+    throw new Error(`Failed to send account unlock email: ${formatError(error)}`);
   }
 }
 
@@ -154,7 +155,7 @@ export async function sendEmailChangeEmail(
     );
   } catch (error) {
     throw new Error(
-      `Failed to send email updated notification: ${error.message}`
+      `Failed to send email updated notification: ${formatError(error)}`
     );
   }
 }
@@ -189,7 +190,7 @@ export async function sendPhoneNumberChangeEmail(
     );
   } catch (error) {
     throw new Error(
-      `Failed to send phone number updated notification: ${error.message}`
+      `Failed to send phone number updated notification: ${formatError(error)}`
     );
   }
 }
@@ -224,7 +225,7 @@ export async function sendEmailVerifiedEmail(
     );
   } catch (error) {
     throw new Error(
-      `Failed to send email verified notification: ${error.message}`
+      `Failed to send email verified notification: ${formatError(error)}`
     );
   }
 }
@@ -259,7 +260,7 @@ export async function sendPhoneNumberVerifiedEmail(
     );
   } catch (error) {
     throw new Error(
-      `Failed to send phone number verified notification: ${error.message}`
+      `Failed to send phone number verified notification: ${formatError(error)}`
     );
   }
 }

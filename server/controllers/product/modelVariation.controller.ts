@@ -10,9 +10,10 @@ import {
   ModelVariationUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
-import ModelVariation, { IModelVariation } from "../../models/product/modelVariation.model";
-import { RequestAuth } from "../../utils/types";
-import { formatModelVariationResponse } from "../../utils/utils";
+import ModelVariation, {
+  IModelVariation,
+} from "../../models/product/modelVariation.model";
+import { formatModelVariationResponse, isPresent } from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 import { isEmptyObj, shallowMerge } from "../../../common/utils.common";
 import Cart from "../../models/user/cart.model";
@@ -23,6 +24,16 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating product model variation...");
+
+  const reqUserId = req["auth"]?.userId;
+  if (!isPresent(reqUserId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { productId, modelId } = req.params;
 
   try {
@@ -62,7 +73,6 @@ export async function create(
       throw new HttpError(409, "Product model variation already exists.");
     }
 
-    const reqUserId = (req["auth"] as RequestAuth).userId;
     const variation = new ModelVariation({
       productModelId: modelId,
       name,
@@ -352,7 +362,18 @@ export async function remove(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Removing product model variation...");
+
+  const reqUserId = req["auth"]?.userId;
+  if (!isPresent(reqUserId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { productId, modelId, id } = req.params;
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -394,8 +415,7 @@ export async function remove(
       throw new HttpError(404, "Product model variation not found.");
     }
 
-    const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
-    await executeDeletion(variation, reqUserId, session);
+    await executeDeletion(variation, new Types.ObjectId(reqUserId), session);
 
     await session.commitTransaction();
 

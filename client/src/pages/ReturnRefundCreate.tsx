@@ -44,6 +44,7 @@ import type { FormInput } from "../utils/types";
 import toast from "react-hot-toast";
 import { useReturnStore } from "../store/returnRefund/returnStore";
 import { WAITING_EMOJI } from "../configs";
+import ReturnCreateSkeleton from "../components/skeleton/ReturnCreateSkeleton";
 
 type FormData = {
   reasonId: string;
@@ -654,7 +655,7 @@ export default function ReturnRefundCreate() {
         <h1 className="mb-4 fw-semibold text-center">Return / Refund</h1>
 
         {process.isInitializing ? (
-          <p>Loading data...</p> // TODO replace with skeleton
+          <ReturnCreateSkeleton />
         ) : apiErr ? (
           <ApiError errMsg={apiErr} />
         ) : !order ? (

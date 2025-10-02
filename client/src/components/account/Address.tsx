@@ -67,8 +67,10 @@ export default function Address() {
         }));
       }
     };
+
     handleFetchAddresses();
-  }, [fetchAddresses]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const closeModal = useCallback((): void => {
     setModal({
@@ -135,11 +137,11 @@ export default function Address() {
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
       ) : !addresses ? (
-        <ApiError errMsg="Could not load addresses." />
+        <ApiError errMsg="Addresses data not found." />
       ) : (
         <>
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="h3 card-title mb-0">My Addresses</h1>
+            <h1 className="h3 card-title">My Addresses</h1>
             <button
               type="button"
               className="btn btn-primary d-flex align-items-center"
@@ -173,7 +175,7 @@ export default function Address() {
               {addresses.addresses.map((address) => (
                 <div
                   key={address.id}
-                  className="list-group-item d-flex justify-content-between align-items-center"
+                  className="list-group-item d-flex justify-content-between align-items-center p-3"
                 >
                   {/* Left side */}
                   <div className="flex-grow-1">
@@ -194,7 +196,7 @@ export default function Address() {
                     <div>
                       <button
                         type="button"
-                        className="btn btn-link p-0 me-2"
+                        className="btn btn-link p-0 me-3"
                         onClick={() =>
                           setModal((prev) => ({
                             ...prev,

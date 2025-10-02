@@ -1,14 +1,14 @@
 import {
   faBox,
-  faLandmark,
+  faCreditCard,
   faLocationDot,
   faRightFromBracket,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import defaultAvatar from "../assets/default-avatar.webp";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useCallback, useRef, useState } from "react";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { useAuthStore } from "../store/authStore";
 import HorizontalDivider from "../components/HorizontalDivider";
 import ApiError from "../components/ApiError";
@@ -23,9 +23,18 @@ export default function Account() {
   console.log("Account render count:", renderCount.current);
 
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { user, logout } = useAuthStore();
 
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (location.pathname === "/account") {
+      navigate("/account/profile", { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location]);
 
   const handleLogout = useCallback(async (): Promise<void> => {
     if (isLoggingOut) {
@@ -69,20 +78,20 @@ export default function Account() {
                 </div>
                 <nav className="nav flex-column nav-pills">
                   <NavLink to="/account/profile" className="nav-link">
-                    <FontAwesomeIcon icon={faUser} className="me-2" /> My
-                    Profile
+                    <FontAwesomeIcon icon={faUser} className="me-2" />
+                    My Profile
                   </NavLink>
                   <NavLink to="/account/bank-card" className="nav-link">
-                    <FontAwesomeIcon icon={faLandmark} className="me-2" /> Banks
-                    & Cards
+                    <FontAwesomeIcon icon={faCreditCard} className="me-2" />
+                    Banks & Cards
                   </NavLink>
                   <NavLink to="/account/address" className="nav-link">
-                    <FontAwesomeIcon icon={faLocationDot} className="me-2" /> My
-                    addresses
+                    <FontAwesomeIcon icon={faLocationDot} className="me-2" />
+                    My addresses
                   </NavLink>
                   <NavLink to="/account/purchase" className="nav-link">
-                    <FontAwesomeIcon icon={faBox} className="me-2" /> My
-                    purchases
+                    <FontAwesomeIcon icon={faBox} className="me-2" />
+                    My purchases
                   </NavLink>
                 </nav>
                 <div className="my-2">

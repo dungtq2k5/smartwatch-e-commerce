@@ -8,7 +8,7 @@ import {
 } from "../../utils/middlewares/order.middleware";
 import * as order from "../../controllers/order/order.controller";
 import * as returnController from "../../controllers/returnRefund/return.controller";
-import { createCheckoutSession } from "../../controllers/order/stripe.controller";
+import { createCheckoutSession } from "../../controllers/stripe.controller";
 
 const router = express.Router();
 

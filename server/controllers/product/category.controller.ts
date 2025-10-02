@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { RequestAuth } from "../../utils/types";
 import { HttpError } from "../../utils/errorHandler";
-import ProductCategory, { IProductCategory } from "../../models/product/productCategory.model";
+import ProductCategory, {
+  IProductCategory,
+} from "../../models/product/productCategory.model";
 import {
   ProductCategoryCreate,
   ProductCategoryListResponse,
@@ -9,10 +10,9 @@ import {
   ProductCategoryUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
-import { formatProductCategoryResponse } from "../../utils/utils";
+import { formatProductCategoryResponse, isPresent } from "../../utils/utils";
 import { Types } from "mongoose";
 import Product from "../../models/product/product.model";
-import { formatError } from "../../../common/utils.common";
 
 export async function create(
   req: Request,
@@ -20,6 +20,16 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating product category...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { name, description } = req.body as ProductCategoryCreate;
 
   try {
@@ -33,7 +43,6 @@ export async function create(
     }
 
     // Create category
-    const { userId } = req["auth"] as RequestAuth;
     const category = new ProductCategory({
       name,
       description,
@@ -167,6 +176,16 @@ export async function remove(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Deleting product category...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id } = req.params;
 
   try {
@@ -179,8 +198,7 @@ export async function remove(
       throw new HttpError(404, "Product category not found.");
     }
 
-    const userId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
-    await executeDeletion(category, userId);
+    await executeDeletion(category, new Types.ObjectId(userId));
 
     res.status(200).json({
       success: true,
@@ -232,14 +250,11 @@ async function executeDeletion(
   try {
     if (await hasConstraints(categoryToDelete._id)) {
       // Soft delete
-      await ProductCategory.findByIdAndUpdate(
-        categoryToDelete._id,
-        {
-          isDeleted: true,
-          deletedAt: new Date(),
-          deletedBy,
-        },
-      );
+      await ProductCategory.findByIdAndUpdate(categoryToDelete._id, {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy,
+      });
       return;
     }
 

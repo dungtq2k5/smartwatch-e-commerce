@@ -34,6 +34,8 @@ export const USER_DELETE_ACCOUNT_URL = `${USER_URL}/me`;
 
 export const SELF_CART_URL = `${USER_URL}/me/carts`;
 
+export const SELF_PAYMENT_METHOD_URL = `${USER_URL}/me/payment-methods`;
+
 export const PRODUCT_URL = `${ROOT_URL}/products`;
 export const PRODUCT_SEARCH_URL = PRODUCT_URL;
 export const PRODUCT_CATEGORIES_URL = `${PRODUCT_URL}/categories`;
@@ -158,3 +160,6 @@ export const RETURN_LOOKUPID_STATE_LEGEND = {
   "7": "Request Cancelled", // cancelled
   "8": "Request Declined", // declined
 } as const;
+
+export const STRIPE_URL = "https://stripe.com";
+export const LINK_FAST_CHECKOUT_URL = "https://link.com";

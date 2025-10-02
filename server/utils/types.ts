@@ -21,7 +21,7 @@ export type JwtPayload = {
   isVerified: boolean;
 };
 
-export type RequestAuth = {
+type RequestAuth = {
   userId: string;
   isVerified?: boolean;
   isBuyerOnly?: boolean;

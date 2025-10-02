@@ -97,7 +97,7 @@ const Header = memo(() => {
               )}
             </Link>
           )}
-          <Link to="/account" title="my account">
+          <Link to="/account/profile" title="my account">
             <img
               src={user.avatarUrl ?? defaultAvatar}
               className="avatar--g avatar--sm--g"

@@ -31,6 +31,7 @@ import SelectAddressModal from "../modal/SelectAddressModal";
 import toast from "react-hot-toast";
 import ConfirmSubmitModal from "../modal/ConfirmSubmitModal";
 import { useUserCartStore } from "../../store/cartStore";
+import PurchaseDetailSkeleton from "../skeleton/PurchaseDetailSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -387,7 +388,7 @@ export default function PurchaseDetail() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO skeleton loading...
+        <PurchaseDetailSkeleton />
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
       ) : !orderStates ? (

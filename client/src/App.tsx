@@ -28,6 +28,7 @@ import PurchaseDetail from "./components/account/PurchaseDetail.tsx";
 import ReturnRefund from "./pages/ReturnRefundCreate.tsx";
 import ReturnRefundDetail from "./pages/ReturnRefundDetail.tsx";
 import ReturnRefundUpdate from "./pages/ReturnRefundUpdate.tsx";
+import CreateUserPaymentMethod from "./pages/CreateUserPaymentMethod.tsx";
 
 export default function App() {
   // DEV for testing
@@ -75,10 +76,7 @@ export default function App() {
 
         <Route element={<AuthRoute />}>
           {/*
-            TODO
-            - user purchase(checkout) page.
-            - user balance page: display balance, transaction history, transfer to bank card.
-            - user bank card page: add, remove, update bank card.
+            TODO user balance page: display balance, transaction history, transfer to bank card.
           */}
           <Route path="/account" element={<Account />}>
             <Route index element={<Profile />}></Route>
@@ -94,7 +92,6 @@ export default function App() {
                 element={<ReturnRefundDetail />}
               ></Route>
             </Route>
-
           </Route>
 
           <Route path="/cart" element={<Cart />}></Route>
@@ -109,6 +106,10 @@ export default function App() {
             ></Route>
           </Route>
 
+          <Route
+            path="/payment/create"
+            element={<CreateUserPaymentMethod />}
+          ></Route>
         </Route>
 
         <Route path="*" element={<NotFound />}></Route>

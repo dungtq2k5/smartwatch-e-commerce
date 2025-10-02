@@ -9,10 +9,11 @@ import {
 import { Types } from "mongoose";
 import { HttpError } from "../../utils/errorHandler";
 import Product from "../../models/product/product.model";
-import ProductModel, { IProductModel } from "../../models/product/productModel.model";
+import ProductModel, {
+  IProductModel,
+} from "../../models/product/productModel.model";
 import ProductOs from "../../models/product/productOs.model";
-import { RequestAuth } from "../../utils/types";
-import { formatProductModelResponse } from "../../utils/utils";
+import { formatProductModelResponse, isPresent } from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 import ModelVariation from "../../models/product/modelVariation.model";
 import {
@@ -27,6 +28,16 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating product model...");
+
+  const reqUserId = req["auth"]?.userId;
+  if (!isPresent(reqUserId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const productId = req.params.id;
 
   try {
@@ -80,7 +91,6 @@ export async function create(
     }
 
     // Create new model
-    const reqUserId = (req["auth"] as RequestAuth).userId;
     const newModel = new ProductModel({
       productId,
       name,
@@ -335,23 +345,30 @@ export async function update(
         updateData.feature.waterResistance === null
           ? null
           : featureObj.waterResistance
-            ? shallowMerge(
-                featureObj.waterResistance,
-                updateData.feature.waterResistance
-              )
-            : updateData.feature.waterResistance?.rating
-              ? { rating: updateData.feature.waterResistance.rating, description: updateData.feature.waterResistance.description || null }
-              : null;
+          ? shallowMerge(
+              featureObj.waterResistance,
+              updateData.feature.waterResistance
+            )
+          : updateData.feature.waterResistance?.rating
+          ? {
+              rating: updateData.feature.waterResistance.rating,
+              description:
+                updateData.feature.waterResistance.description || null,
+            }
+          : null;
       model.feature.utilities =
         updateData.feature.utilities === null
           ? null
           : featureObj.utilities
-            ? shallowMerge(featureObj.utilities, updateData.feature.utilities as any)
-            : !updateData.feature.utilities
-              ? null
-              : Object.keys(cleanObj(updateData.feature.utilities)).length // Handle empty obj {}
-                ? updateData.feature.utilities as any
-                : null;
+          ? shallowMerge(
+              featureObj.utilities,
+              updateData.feature.utilities as any
+            )
+          : !updateData.feature.utilities
+          ? null
+          : Object.keys(cleanObj(updateData.feature.utilities)).length // Handle empty obj {}
+          ? (updateData.feature.utilities as any)
+          : null;
       model.feature.supportedAppsForNotifications =
         updateData.feature.supportedAppsForNotifications === null
           ? []
@@ -371,7 +388,7 @@ export async function update(
           : configObj.camera
           ? shallowMerge(configObj.camera, updateData.config.camera as any)
           : updateData.config.camera && updateData.config.camera.resolutionMp
-          ? updateData.config.camera as any
+          ? (updateData.config.camera as any)
           : null;
       model.config.chipset = updateData.config.chipset || configObj.chipset;
       model.config.memory = shallowMerge(
@@ -455,6 +472,16 @@ export async function remove(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Removing product model...");
+
+  const reqUserId = req["auth"]?.userId;
+  if (!isPresent(reqUserId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { productId, id: modelId } = req.params;
 
   try {
@@ -480,8 +507,7 @@ export async function remove(
       throw new HttpError(404, "Product model not found");
     }
 
-    const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
-    await executeDeletion(model, reqUserId);
+    await executeDeletion(model, new Types.ObjectId(reqUserId));
 
     res.status(200).json({
       success: true,

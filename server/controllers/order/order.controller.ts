@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import {
+import type {
   OrderCreate,
   OrderDetailResponse,
   OrderListResponse,
@@ -13,7 +13,6 @@ import {
 import { HttpError } from "../../utils/errorHandler";
 import mongoose, { Types } from "mongoose";
 import UserAddress from "../../models/user/userAddress.model";
-import { RequestAuth } from "../../utils/types";
 import ModelVariation from "../../models/product/modelVariation.model";
 import VariationInstance from "../../models/product/variationInstance.model";
 import InventoryMovement from "../../models/inventory/inventoryMovement.model";
@@ -31,12 +30,13 @@ import {
   getPaymentStateId,
   getPaymentStateLookupId,
   getSysUserId,
+  isPresent,
 } from "../../utils/utils";
 import Order, { IOrder } from "../../models/order/order.model";
 import { ESTIMATE_RECEIVED_TIME_GAP } from "../../../common/configs.common";
 import Cart from "../../models/user/cart.model";
 import User from "../../models/user/user.model";
-import { createRefund } from "./stripe.controller";
+import { createRefund } from "../stripe.controller";
 import CancelReason from "../../models/order/cancelReason.model";
 import { compareUserAddress } from "../../../common/utils.common";
 
@@ -47,7 +47,17 @@ export async function createSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating order...");
-  const userId = (req["auth"] as RequestAuth).userId;
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID is missing, this should handled by middleware."
+      )
+    );
+  }
+
   const { userAddressId, items, paymentMethodId, applyUserBalance } =
     req.body as OrderCreate;
 
@@ -163,7 +173,7 @@ export async function createSelf(
     }
 
     // Calculating total cents
-    const user = req["user"]; // Form middleware
+    const user = req["user"]; // From middleware
     if (!user) {
       throw new HttpError(
         500,
@@ -239,10 +249,10 @@ export async function createSelf(
           createdBy: sysUserId,
         },
         {
-          id: getOrderStateId("2"),
+          id: getOrderStateId("2"), // confirmed
           notes,
           createdBy: sysUserId,
-        } // confirmed
+        }
       );
       order.orderDate = new Date();
       await executeCartDeletion(userId, items, session);
@@ -289,6 +299,16 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Getting order by ID...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or role is missing, this should handled by middleware."
+      )
+    );
+  }
   const { id } = req.params;
 
   try {
@@ -302,7 +322,6 @@ export async function get(
     }
 
     // Check permission
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
     if (!order.userId.equals(userId) && isBuyerOnly) {
       throw new HttpError(
         403,
@@ -327,6 +346,16 @@ export async function getDetails(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Getting order details by ID...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or role is missing, this should handled by middleware."
+      )
+    );
+  }
   const { id } = req.params;
 
   try {
@@ -348,7 +377,6 @@ export async function getDetails(
     }
 
     // Check permission
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
     if (!order.userId.equals(userId) && isBuyerOnly) {
       throw new HttpError(
         403,
@@ -375,7 +403,15 @@ export async function search(
 ): Promise<void> {
   console.log("▶️ ", "Searching orders...");
 
-  const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or role is missing, this should handled by middleware."
+      )
+    );
+  }
   const reqQuery = req["sanitizedQuery"] as OrderSearchQuery;
 
   const limit = reqQuery.limit ? parseInt(reqQuery.limit, 10) : 9;
@@ -549,6 +585,16 @@ export async function updateSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating self order...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or role is missing, this should handled by middleware."
+      )
+    );
+  }
   const { id } = req.params;
 
   const session = await mongoose.startSession();
@@ -565,7 +611,6 @@ export async function updateSelf(
     }
 
     // Check permission
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
     if (isBuyerOnly && order.userId.toString() !== userId) {
       throw new HttpError(
         403,
@@ -786,6 +831,16 @@ export async function fulfillItem(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Fulfilling order item...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or role is missing, this should handled by middleware."
+      )
+    );
+  }
   const { id: orderId } = req.params;
 
   const session = await mongoose.startSession();
@@ -802,7 +857,6 @@ export async function fulfillItem(
     }
 
     // Check permission
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
     if (isBuyerOnly) {
       throw new HttpError(
         403,
@@ -942,6 +996,16 @@ export async function updateDeliveryState(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating order...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or role is missing, this should handled by middleware."
+      )
+    );
+  }
   const { id } = req.params;
 
   const session = await mongoose.startSession();
@@ -958,7 +1022,6 @@ export async function updateDeliveryState(
     }
 
     // Check permission
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
     if (isBuyerOnly) {
       throw new HttpError(
         403,

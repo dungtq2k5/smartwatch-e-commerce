@@ -16,10 +16,10 @@ import {
   genInstanceSku,
   getInstanceConditionId,
   getMovementTypeId,
+  isPresent,
 } from "../../utils/utils";
 import { appCache } from "../../configs/cache";
 import InventoryMovement from "../../models/inventory/inventoryMovement.model";
-import type { RequestAuth } from "../../utils/types";
 
 export async function create(
   req: Request,
@@ -27,7 +27,18 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating variation instance...");
+
+  const reqUserId = req["auth"]?.userId;
+  if (!isPresent(reqUserId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { productId, modelId, variationId } = req.params;
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -116,7 +127,6 @@ export async function create(
     await instance.save({ session });
 
     // Create inventory movement
-    const reqUserId = (req["auth"] as RequestAuth).userId;
     const inventoryMovement = new InventoryMovement({
       sku,
       movementTypeId: getMovementTypeId("stock adjustment"),

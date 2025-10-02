@@ -4,6 +4,7 @@ import {
   formatAdminUserResponse,
   formatUserResponse,
   genVerificationCode,
+  isPresent,
 } from "../../utils/utils";
 import type {
   AdminUserListResponse,
@@ -41,7 +42,6 @@ import { deleteFileFromFirebaseStorage } from "../../utils/firebase";
 import Otp from "../../models/user/otp.model";
 import PasswordResetToken from "../../models/user/passwordResetToken.model";
 import { VERIFICATION_CODE_TTL } from "../../../common/configs.common";
-import { RequestAuth } from "../../utils/types";
 import Role from "../../models/role/role.model";
 import Order from "../../models/order/order.model";
 import UserPaymentMethod from "../../models/user/userPaymentMethod.model";
@@ -66,6 +66,16 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing create user request...");
+
+  const reqUserId = req["auth"]?.userId;
+  if (!isPresent(reqUserId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -127,10 +137,10 @@ export async function create(
         { session }
       );
 
-      const reqUserId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
+      const reqUserIdObjId = new Types.ObjectId(reqUserId);
       roles = roleIds.map((id) => ({
         id: new Types.ObjectId(id),
-        assignedBy: reqUserId,
+        assignedBy: reqUserIdObjId,
       }));
     }
 
@@ -170,7 +180,16 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing get user request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   if (isBuyerOnly) {
     return next(
       new HttpError(403, "You do not have permission to perform this action.")
@@ -206,7 +225,15 @@ export async function search(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing search users request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   if (isBuyerOnly) {
     return next(
       new HttpError(403, "You do not have permission to perform this action.")
@@ -247,29 +274,7 @@ export async function search(
       {
         $facet: {
           metadata: [{ $count: "total" }],
-          data: [
-            { $sort: sortStage },
-            { $skip: offset },
-            { $limit: limit },
-            // {
-            //   $project: {
-            //     id: "$_id", // Rename _id to id
-            //     _id: 0, // Exclude _id from the output
-            //     fullName: 1,
-            //     avatarUrl: 1,
-            //     email: 1,
-            //     isEmailVerified: 1,
-            //     phoneNumber: 1,
-            //     isPhoneNumberVerified: 1,
-            //     stripeCustomerId: 1,
-            //     userBalanceCents: 1,
-            //     lastLogin: 1,
-            //     createdAt: 1,
-            //     updatedAt: 1,
-            //     isLocked: 1,
-            //   },
-            // },
-          ],
+          data: [{ $sort: sortStage }, { $skip: offset }, { $limit: limit }],
         },
       },
     ]);
@@ -304,7 +309,19 @@ export async function updateGeneralInfo(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing update user request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   if (isBuyerOnly) {
     return next(
       new HttpError(403, "You do not have permission to perform this action.")
@@ -386,13 +403,11 @@ export async function updateGeneralInfo(
           { session }
         );
 
-        const reqUserId = new Types.ObjectId(
-          (req["auth"] as RequestAuth).userId
-        );
+        const reqUserIdObjId = new Types.ObjectId(reqUserId);
         user.roles.push(
           ...rolesToAdd.map((id) => ({
             id: new Types.ObjectId(id),
-            assignedBy: reqUserId,
+            assignedBy: reqUserIdObjId,
             assignedAt: new Date(),
           }))
         );
@@ -458,7 +473,16 @@ export async function updateEmail(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing update user email request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   if (isBuyerOnly) {
     return next(
       new HttpError(403, "You do not have permission to perform this action.")
@@ -580,7 +604,16 @@ export async function updatePhoneNumber(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing update user phone number request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   if (isBuyerOnly) {
     return next(
       new HttpError(403, "You do not have permission to perform this action.")
@@ -721,7 +754,19 @@ export async function remove(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing delete user request...");
-  const { userId: reqUserId, isBuyerOnly } = req["auth"] as RequestAuth;
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   if (isBuyerOnly) {
     return next(
       new HttpError(403, "You do not have permission to perform this action.")
@@ -772,7 +817,16 @@ export async function updateSelfContactInfo(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing update user contact info request...");
-  const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
 
   // Check only buyer perform this action
   if (!isBuyerOnly) {
@@ -885,7 +939,16 @@ export async function deleteSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing delete user request...");
-  const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   if (!isBuyerOnly) {
     return next(
       new HttpError(403, "You do not have permission to perform this action.")
@@ -938,8 +1001,16 @@ export async function getSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing get self user request...");
-  const { isBuyerOnly } = req["auth"] as RequestAuth;
-  const user = req["user"];
+
+  const [isBuyerOnly, user] = [req["auth"]?.isBuyerOnly, req["user"]];
+  if (!isPresent(isBuyerOnly) || !isPresent(user)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly or user not found, this should be handled in middlewares."
+      )
+    );
+  }
 
   try {
     res.status(200).json({

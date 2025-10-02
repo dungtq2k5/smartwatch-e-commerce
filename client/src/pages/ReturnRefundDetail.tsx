@@ -26,6 +26,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import ReturnLabelHtml from "../components/pdf/ReturnLabelHtml";
 import ConfirmSubmitModal from "../components/modal/ConfirmSubmitModal";
+import PurchaseDetailSkeleton from "../components/skeleton/PurchaseDetailSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -271,7 +272,7 @@ export default function ReturnRefundDetail() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO loading skeleton
+        <PurchaseDetailSkeleton />
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
       ) : !returnStates ? (

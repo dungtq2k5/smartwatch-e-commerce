@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { formatUserCartResponse } from "../../utils/utils";
+import { formatUserCartResponse, isPresent } from "../../utils/utils";
 import {
   SuccessResponse,
   UserCartCreate,
@@ -9,7 +9,6 @@ import {
 } from "../../../common/types.common";
 import { HttpError } from "../../utils/errorHandler";
 import mongoose, { Types } from "mongoose";
-import { RequestAuth } from "../../utils/types";
 import Cart from "../../models/user/cart.model";
 import ModelVariation from "../../models/product/modelVariation.model";
 import { MAX_ITEMS_FOR_CREATE_BULK_CART } from "../../configs/configs";
@@ -23,7 +22,16 @@ export async function getSelfAll(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing get user cart details request...");
-  const { userId } = req["auth"] as RequestAuth;
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
 
   try {
     const carts = await Cart.find({ userId })
@@ -90,6 +98,16 @@ export async function createSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing create user cart request...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { variationId, quantity } = req.body as UserCartCreate;
 
   const session = await mongoose.startSession();
@@ -135,7 +153,6 @@ export async function createSelf(
         - Cart exists -> update quantity
         - Cart does not exist -> create new cart
     */
-    const { userId } = req["auth"] as RequestAuth;
     const existingCart = await Cart.findOne({
       userId,
       variationId,
@@ -224,6 +241,16 @@ export async function createBulkSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing bulk create user cart request...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { items } = req.body as UserCartBulkCreate;
 
   const session = await mongoose.startSession();
@@ -249,7 +276,6 @@ export async function createBulkSelf(
     });
 
     // --- 2. Fetch Required Data in Bulk ---
-    const { userId } = req["auth"] as RequestAuth;
     const variations = await ModelVariation.find({
       _id: { $in: variationIds },
       isDeleted: false,
@@ -364,6 +390,16 @@ export async function updateSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing update user cart request...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const variationId = req.params.variationId;
 
   try {
@@ -391,7 +427,6 @@ export async function updateSelf(
     const product = model.productId;
 
     // Check cart exists
-    const { userId } = req["auth"] as RequestAuth;
     const cart = await Cart.findOne({
       userId,
       variationId,
@@ -489,6 +524,16 @@ export async function removeSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Processing delete user cart request...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const variationId = req.params.variationId;
 
   try {
@@ -502,7 +547,6 @@ export async function removeSelf(
     }
 
     // Check cart exists
-    const { userId } = req["auth"] as RequestAuth;
     const cart = await Cart.findOne({
       userId,
       variationId,

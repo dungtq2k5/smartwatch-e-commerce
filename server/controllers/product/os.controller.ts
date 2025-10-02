@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { RequestAuth } from "../../utils/types";
 import { HttpError } from "../../utils/errorHandler";
 import ProductOs, { IProductOs } from "../../models/product/productOs.model";
 import {
@@ -9,7 +8,7 @@ import {
   ProductOsUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
-import { formatProductOsResponse } from "../../utils/utils";
+import { formatProductOsResponse, isPresent } from "../../utils/utils";
 import { Types } from "mongoose";
 import ProductModel from "../../models/product/productModel.model";
 import { deleteFileFromFirebaseStorage } from "../../utils/firebase";
@@ -20,6 +19,16 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Creating product os...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { name, logoUrl, description } = req.body as ProductOsCreate;
 
   try {
@@ -33,7 +42,6 @@ export async function create(
     }
 
     // Create os
-    const { userId } = req["auth"] as RequestAuth;
     const os = new ProductOs({
       name,
       logoUrl,
@@ -173,6 +181,16 @@ export async function remove(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Deleting product os...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id } = req.params;
 
   try {
@@ -185,8 +203,7 @@ export async function remove(
       throw new HttpError(404, "Product os not found.");
     }
 
-    const userId = new Types.ObjectId((req["auth"] as RequestAuth).userId);
-    await executeDeletion(os, userId);
+    await executeDeletion(os, new Types.ObjectId(userId));
 
     res.status(200).json({
       success: true,
@@ -238,14 +255,11 @@ async function executeDeletion(
   try {
     if (await hasConstraints(osToDelete._id)) {
       // Soft delete
-      await ProductOs.findByIdAndUpdate(
-        osToDelete._id,
-        {
-          isDeleted: true,
-          deletedAt: new Date(),
-          deletedBy,
-        },
-      );
+      await ProductOs.findByIdAndUpdate(osToDelete._id, {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy,
+      });
       return;
     }
 

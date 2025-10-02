@@ -5,11 +5,14 @@ import {
   inputSanitizer,
   verifyAddressInput,
   verifyCartInput,
+  verifyPaymentMethodInput,
   verifyUserInput,
 } from "../utils/middlewares/user.middleware";
 import * as userController from "../controllers/user/user.controller";
 import * as cartController from "../controllers/user/cart.controller";
 import * as addressController from "../controllers/user/address.controller";
+import * as paymentMethodController from "../controllers/user/paymentMethod.controller";
+import { createSetupIntent } from "../controllers/stripe.controller";
 import rateLimit from "express-rate-limit";
 
 const router = express.Router();
@@ -160,6 +163,39 @@ router.delete(
   "/me/addresses/:id",
   verifyPermission("d_usr_addr"),
   addressController.remove
+);
+
+// -- routes for payment methods
+router.post(
+  "/me/payment-methods/setup-intent",
+  verifyPermission("c_usr_paym"),
+  createSetupIntent
+);
+
+router.post(
+  "/me/payment-methods",
+  verifyPermission("r_usr_paym"),
+  verifyEmptyBody,
+  verifyPaymentMethodInput("create"),
+  paymentMethodController.attachSelfPaymentMethod
+);
+
+router.get(
+  "/me/payment-methods",
+  verifyPermission("r_usr_paym"),
+  paymentMethodController.getSelfAll
+);
+
+router.patch(
+  "/me/payment-methods/:id/set-default",
+  verifyPermission("u_usr_paym"),
+  paymentMethodController.setSelfAsDefault
+);
+
+router.delete(
+  "/me/payment-methods/:id",
+  verifyPermission("d_usr_paym"),
+  paymentMethodController.removeSelf
 );
 
 // --- ROUTES FOR ADMIN MANAGEMENT ---

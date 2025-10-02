@@ -21,7 +21,7 @@ export function errorHandler(
 
   res.status(statusCode).json({
     success: false,
-    message: msg,
+    message: statusCode === 500 ? `Internal Server Error: ${msg}` : msg,
   } as ErrorResponse);
   console.log("...error handler send response completed.");
 }

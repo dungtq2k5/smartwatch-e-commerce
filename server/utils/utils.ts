@@ -7,35 +7,7 @@ import {
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "./types";
 import { JWT_NAME, JWT_TTL } from "../configs/configs";
-import {
-  AdminUserAddressResponse,
-  AdminUserResponse,
-  ProductBrandResponse,
-  ProductCategoryResponse,
-  ProductOsResponse,
-  ProductResponse,
-  ProductModelResponse,
-  RoleResponse,
-  UserAddressResponse,
-  UserCartResponse,
-  UserResponse,
-  ModelVariationResponse,
-  VariationInstanceResponse,
-  ProviderResponse,
-  OrderResponse,
-  PaymentMethodResponse,
-  UserSelfPaymentMethodResponse,
-  DeliveryStateResponse,
-  PaymentStateResponse,
-  OrderReturnResponse,
-  OrderStateResponse,
-  OrderDetailResponse,
-  ReturnStateResponse,
-  RefundStateResponse,
-  PickupStateResponse,
-  ReturnReasonResponse,
-  OrderReturnDetailResponse,
-} from "../../common/types.common";
+import * as commonType from "../../common/types.common";
 import { Types } from "mongoose";
 import ModelVariation from "../models/product/modelVariation.model";
 import { appCache } from "../configs/cache";
@@ -223,18 +195,29 @@ export async function genInstanceSku(
   return `${brandCode}-${modelName}-${sizeMm}-${varNameCode}-${uniqueId}`;
 }
 
-/*
- * Check if a value is present (not undefined or null).
- * @param val - The value to check.
- * @returns {boolean} - True if the value is present, false otherwise.
+/**
+ * A type guard that checks if a value is not `null` or `undefined`.
+ * This is useful for filtering out `null` and `undefined` values from an array
+ * while correctly narrowing the type.
+ *
+ * @example
+ * ```ts
+ * const values: (string | null | undefined)[] = ['a', null, 'b', undefined];
+ * const presentValues: string[] = values.filter(isPresent);
+ * // presentValues is ['a', 'b']
+ * ```
+ *
+ * @typeParam T - The type of the value.
+ * @param val - The value to check for presence.
+ * @returns `true` if the value is not `null` and not `undefined`, otherwise `false`.
  */
-export function isPresent(val: any): boolean {
+export function isPresent<T>(val: T): val is NonNullable<T> {
   return val !== undefined && val !== null;
 }
 
 // --- FORMATTING RESPONSE FUNCTIONS ---
 
-export function formatUserResponse(user: any): UserResponse {
+export function formatUserResponse(user: any): commonType.UserResponse {
   return {
     id: user._id,
     fullName: user.fullName,
@@ -254,14 +237,16 @@ export function formatUserResponse(user: any): UserResponse {
   };
 }
 
-export function formatAdminUserResponse(user: any): AdminUserResponse {
+export function formatAdminUserResponse(
+  user: any
+): commonType.AdminUserResponse {
   return {
     ...formatUserResponse(user),
     isLocked: user.isLocked,
   };
 }
 
-export function formatRoleResponse(role: any): RoleResponse {
+export function formatRoleResponse(role: any): commonType.RoleResponse {
   return {
     id: role._id,
     name: role.name,
@@ -277,7 +262,9 @@ export function formatRoleResponse(role: any): RoleResponse {
   };
 }
 
-export function formatUserAddressResponse(address: any): UserAddressResponse {
+export function formatUserAddressResponse(
+  address: any
+): commonType.UserAddressResponse {
   return {
     id: address._id,
     name: address.name,
@@ -298,14 +285,14 @@ export function formatUserAddressResponse(address: any): UserAddressResponse {
 
 export function formatAdminUserAddressResponse(
   address: any
-): AdminUserAddressResponse {
+): commonType.AdminUserAddressResponse {
   return {
     ...formatUserAddressResponse(address),
     userId: address.userId,
   };
 }
 
-export function formatUserCartResponse(cart: any): UserCartResponse {
+export function formatUserCartResponse(cart: any): commonType.UserCartResponse {
   const variation = cart.variation; // Via virtual
   const model = variation.productModelId; // Via populate
   const product = model.productId; // Via populate
@@ -351,7 +338,9 @@ export function formatUserCartResponse(cart: any): UserCartResponse {
   };
 }
 
-export function formatProductResponse(product: any): ProductResponse {
+export function formatProductResponse(
+  product: any
+): commonType.ProductResponse {
   return {
     id: product._id,
     name: product.name,
@@ -368,7 +357,9 @@ export function formatProductResponse(product: any): ProductResponse {
   };
 }
 
-export function formatProductBrandResponse(brand: any): ProductBrandResponse {
+export function formatProductBrandResponse(
+  brand: any
+): commonType.ProductBrandResponse {
   return {
     ...formatProductCategoryResponse(brand),
     logoUrl: brand.logoUrl,
@@ -377,7 +368,7 @@ export function formatProductBrandResponse(brand: any): ProductBrandResponse {
 
 export function formatProductCategoryResponse(
   category: any
-): ProductCategoryResponse {
+): commonType.ProductCategoryResponse {
   return {
     id: category._id,
     name: category.name,
@@ -388,11 +379,13 @@ export function formatProductCategoryResponse(
   };
 }
 
-export function formatProductOsResponse(os: any): ProductOsResponse {
+export function formatProductOsResponse(os: any): commonType.ProductOsResponse {
   return formatProductBrandResponse(os);
 }
 
-export function formatProductModelResponse(model: any): ProductModelResponse {
+export function formatProductModelResponse(
+  model: any
+): commonType.ProductModelResponse {
   // Remove osId, os from config
   const { osId, os, ...config } = model.config;
 
@@ -423,7 +416,7 @@ export function formatProductModelResponse(model: any): ProductModelResponse {
 
 export function formatModelVariationResponse(
   variation: any
-): ModelVariationResponse {
+): commonType.ModelVariationResponse {
   return {
     id: variation._id,
     productModelId: variation.productModelId,
@@ -442,7 +435,7 @@ export function formatModelVariationResponse(
 
 export function formatVariationInstanceResponse(
   instance: any
-): VariationInstanceResponse {
+): commonType.VariationInstanceResponse {
   return {
     id: instance._id,
     sku: instance.sku,
@@ -457,7 +450,9 @@ export function formatVariationInstanceResponse(
   };
 }
 
-export function formatProviderResponse(provider: any): ProviderResponse {
+export function formatProviderResponse(
+  provider: any
+): commonType.ProviderResponse {
   return {
     id: provider._id,
     fullName: provider.fullName,
@@ -469,7 +464,7 @@ export function formatProviderResponse(provider: any): ProviderResponse {
   };
 }
 
-export function formatOrderResponse(order: any): OrderResponse {
+export function formatOrderResponse(order: any): commonType.OrderResponse {
   return {
     id: order._id,
     userId: order.userId,
@@ -526,7 +521,9 @@ export function formatOrderResponse(order: any): OrderResponse {
   };
 }
 
-export function formatOrderDetailResponse(order: any): OrderDetailResponse {
+export function formatOrderDetailResponse(
+  order: any
+): commonType.OrderDetailResponse {
   const {
     paymentMethodId,
     paymentStates,
@@ -573,7 +570,7 @@ export function formatOrderDetailResponse(order: any): OrderDetailResponse {
 
 export function formatPaymentMethodResponse(
   method: any
-): PaymentMethodResponse {
+): commonType.PaymentMethodResponse {
   return {
     id: method._id,
     lookupId: method.lookupId,
@@ -584,7 +581,7 @@ export function formatPaymentMethodResponse(
 
 export function formatUserSelfPaymentMethodResponse(
   method: any
-): UserSelfPaymentMethodResponse {
+): commonType.UserSelfPaymentMethodResponse {
   return {
     id: method._id,
     stripePaymentMethodId: method.stripePaymentMethodId,
@@ -596,7 +593,9 @@ export function formatUserSelfPaymentMethodResponse(
   };
 }
 
-export function formatDeliveryStateResponse(state: any): DeliveryStateResponse {
+export function formatDeliveryStateResponse(
+  state: any
+): commonType.DeliveryStateResponse {
   return {
     id: state._id,
     lookupId: state.lookupId,
@@ -605,7 +604,9 @@ export function formatDeliveryStateResponse(state: any): DeliveryStateResponse {
   };
 }
 
-export function formatPaymentStateResponse(state: any): PaymentStateResponse {
+export function formatPaymentStateResponse(
+  state: any
+): commonType.PaymentStateResponse {
   return {
     id: state._id,
     lookupId: state.lookupId,
@@ -615,7 +616,7 @@ export function formatPaymentStateResponse(state: any): PaymentStateResponse {
 
 export function formatOrderReturnResponse(
   orderReturn: any
-): OrderReturnResponse {
+): commonType.OrderReturnResponse {
   return {
     id: orderReturn._id,
     orderId: orderReturn.orderId,
@@ -671,7 +672,7 @@ export function formatOrderReturnResponse(
 
 export function formatOrderReturnDetailResponse(
   orderReturn: any
-): OrderReturnDetailResponse {
+): commonType.OrderReturnDetailResponse {
   const { refundStates, pickupStates, states, reasonId, ...restData } =
     formatOrderReturnResponse(orderReturn);
 
@@ -707,23 +708,33 @@ export function formatOrderReturnDetailResponse(
   };
 }
 
-export function formatOrderStateResponse(state: any): OrderStateResponse {
+export function formatOrderStateResponse(
+  state: any
+): commonType.OrderStateResponse {
   return formatDeliveryStateResponse(state);
 }
 
-export function formatPickupStateResponse(state: any): PickupStateResponse {
+export function formatPickupStateResponse(
+  state: any
+): commonType.PickupStateResponse {
   return formatDeliveryStateResponse(state);
 }
 
-export function formatReturnStateResponse(state: any): ReturnStateResponse {
+export function formatReturnStateResponse(
+  state: any
+): commonType.ReturnStateResponse {
   return formatOrderStateResponse(state);
 }
 
-export function formatRefundStateResponse(state: any): RefundStateResponse {
+export function formatRefundStateResponse(
+  state: any
+): commonType.RefundStateResponse {
   return formatPaymentStateResponse(state);
 }
 
-export function formatReturnReason(reason: any): ReturnReasonResponse {
+export function formatReturnReason(
+  reason: any
+): commonType.ReturnReasonResponse {
   return {
     id: reason._id,
     name: reason.name,

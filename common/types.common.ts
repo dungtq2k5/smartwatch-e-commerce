@@ -170,7 +170,13 @@ export type BaseUserAddress = {
 
 export type UserAddressCompare = Omit<
   BaseUserAddress,
-  "id" | "userId" | "countryCode" | "fullAddress" | "isDefault" | "createdAt" | "updatedAt"
+  | "id"
+  | "userId"
+  | "countryCode"
+  | "fullAddress"
+  | "isDefault"
+  | "createdAt"
+  | "updatedAt"
 > & {
   countryCode: string;
 };
@@ -833,8 +839,9 @@ export type PaymentMethodListResponse = {
   methods: PaymentMethodResponse[];
 };
 
-export type UserSelfPaymentMethodResponse = {
+export type UserPaymentMethodResponse = {
   id: string;
+  userId: string;
   stripePaymentMethodId: string;
   type: string;
   card: {
@@ -848,8 +855,18 @@ export type UserSelfPaymentMethodResponse = {
   updatedAt: string;
 };
 
+export type UserSelfPaymentMethodResponse = Omit<
+  UserPaymentMethodResponse,
+  "userId"
+>;
+
+export type UserSelfPaymentMethodListResponse = {
+  total: number;
+  methods: UserSelfPaymentMethodResponse[];
+};
+
 export type CheckoutSessionResponse = {
-  url: string | null;
+  url: string; // Redirect user to this URL to complete payment
 };
 
 export type DeliveryStateResponse = {
@@ -993,6 +1010,14 @@ export type ReturnReasonResponse = {
 export type ReturnReasonListResponse = {
   total: number;
   reasons: ReturnReasonResponse[];
+};
+
+export type StripeSetupIntentResponse = {
+  clientSecret: string,
+};
+
+export type UserPaymentMethodCreate = {
+  stripePaymentMethodId: string;
 };
 
 // --- HELPER TYPES ---

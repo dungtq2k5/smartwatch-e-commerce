@@ -12,7 +12,7 @@ import {
 } from "../../../common/types.common";
 import mongoose, { Types } from "mongoose";
 import { HttpError } from "../../utils/errorHandler";
-import { RequestAuth, ReturnItem } from "../../utils/types";
+import { ReturnItem } from "../../utils/types";
 import Order from "../../models/order/order.model";
 import {
   formatOrderReturnDetailResponse,
@@ -31,6 +31,7 @@ import {
   getReturnStateLevel,
   getReturnStateLookupId,
   getSysUserId,
+  isPresent,
 } from "../../utils/utils";
 import {
   getLatestStateId,
@@ -49,7 +50,7 @@ import {
 import UserAddress from "../../models/user/userAddress.model";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 import User from "../../models/user/user.model";
-import { createRefund } from "../order/stripe.controller";
+import { createRefund } from "../stripe.controller";
 import ModelVariation from "../../models/product/modelVariation.model";
 import InventoryMovement from "../../models/inventory/inventoryMovement.model";
 import VariationInstance from "../../models/product/variationInstance.model";
@@ -61,6 +62,16 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Returning order...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id: orderId } = req.params;
 
   const session = await mongoose.startSession();
@@ -82,8 +93,7 @@ export async function create(
     }
 
     // Check permission
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
-    if (isBuyerOnly && order.userId.toString() !== userId) {
+    if (isBuyerOnly && !order.userId.equals(userId)) {
       throw new HttpError(403, "You don't own this resource.");
     }
 
@@ -350,6 +360,16 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Getting return order...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id: orderId, returnId } = req.params;
 
   try {
@@ -372,7 +392,6 @@ export async function get(
     }
 
     // Check permission
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
     if (isBuyerOnly && !order.userId.equals(userId)) {
       throw new HttpError(403, "You don't own this resource.");
     }
@@ -396,6 +415,16 @@ export async function getDetails(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Getting return order details...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id: orderId, returnId } = req.params;
 
   try {
@@ -425,7 +454,6 @@ export async function getDetails(
     }
 
     // Check permission
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
     if (!order.userId.equals(userId) && isBuyerOnly) {
       throw new HttpError(403, "You don't own this resource.");
     }
@@ -449,8 +477,16 @@ export async function search(
 ): Promise<void> {
   console.log("▶️ ", "Searching return orders...");
 
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id: orderId } = req.params;
-  const { isBuyerOnly, userId } = req["auth"] as RequestAuth;
   const reqQuery = req["sanitizedQuery"] as OrderReturnSearchQuery;
 
   const limit = reqQuery.limit ? parseInt(reqQuery.limit, 10) : 9;
@@ -507,7 +543,15 @@ export async function searchAll(
 ): Promise<void> {
   console.log("▶️ ", "Searching all return orders...");
 
-  const { isBuyerOnly, userId } = req["auth"] as RequestAuth;
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   const reqQuery = req["sanitizedQuery"] as OrderReturnSearchQuery;
 
   const limit = reqQuery.limit ? parseInt(reqQuery.limit, 10) : 9;
@@ -563,6 +607,16 @@ export async function updateSelf(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating return order...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id: orderId, returnId } = req.params;
 
   const session = await mongoose.startSession();
@@ -588,7 +642,6 @@ export async function updateSelf(
     }
 
     // Check permission
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
     if (isBuyerOnly && !order.userId.equals(userId)) {
       throw new HttpError(403, "You don't own this resource.");
     }
@@ -757,6 +810,16 @@ export async function updateState(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating return order state...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id: orderId, returnId } = req.params;
 
   const session = await mongoose.startSession();
@@ -778,7 +841,6 @@ export async function updateState(
     }
 
     // Check permission
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
     if (isBuyerOnly) {
       throw new HttpError(
         403,
@@ -912,6 +974,16 @@ export async function updatePickupState(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating return order pickup state...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
   const { id: orderId, returnId } = req.params;
 
   const session = await mongoose.startSession();
@@ -933,7 +1005,6 @@ export async function updatePickupState(
     }
 
     // Check permission
-    const { userId, isBuyerOnly } = req["auth"] as RequestAuth;
     if (isBuyerOnly) {
       throw new HttpError(
         403,

@@ -37,6 +37,7 @@ import toast from "react-hot-toast";
 import { WAITING_EMOJI } from "../configs";
 import { useReturnStateStore } from "../store/returnRefund/returnStateStore";
 import ConfirmSubmitModal from "../components/modal/ConfirmSubmitModal";
+import ReturnUpdateSkeleton from "../components/skeleton/ReturnUpdateSkeleton";
 
 type FormData = {
   reasonId: string;
@@ -576,8 +577,8 @@ export default function ReturnRefundUpdate() {
       <main className="container--g">
         <h1 className="mb-4 fw-semibold text-center">Edit Return / Refund</h1>
 
-        {process.isInitializing ? (
-          <p>Loading data...</p> // TODO skeleton loading
+        {!process.isInitializing ? (
+          <ReturnUpdateSkeleton />
         ) : apiErr ? (
           <ApiError errMsg={apiErr} />
         ) : !orderReturn ? (

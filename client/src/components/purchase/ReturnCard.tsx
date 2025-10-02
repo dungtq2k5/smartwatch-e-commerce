@@ -19,6 +19,7 @@ import { faCircleQuestion, faTruck } from "@fortawesome/free-solid-svg-icons";
 import { useReturnStateStore } from "../../store/returnRefund/returnStateStore";
 import { useReturnStore } from "../../store/returnRefund/returnStore";
 import ApiError from "../ApiError";
+import PurchaseCardSkeleton from "../skeleton/PurchaseCardSkeleton";
 
 const ReturnCard = memo(
   ({
@@ -38,6 +39,7 @@ const ReturnCard = memo(
     const [returnState, setReturnState] = useState<
       ReturnStateResponse | undefined
     >(latestReturnState ? getReturnStateSync(latestReturnState.id) : undefined);
+
     const [isInitializing, setIsInitializing] = useState<boolean>(false);
     const [apiErr, setApiErr] = useState<string | null>(null);
 
@@ -89,7 +91,7 @@ const ReturnCard = memo(
     return (
       <>
         {isInitializing ? (
-          <p>Loading...</p> // TODO loading skeleton
+          <PurchaseCardSkeleton />
         ) : apiErr ? (
           <ApiError errMsg={apiErr} />
         ) : (
