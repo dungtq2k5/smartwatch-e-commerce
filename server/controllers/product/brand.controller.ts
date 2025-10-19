@@ -70,14 +70,14 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Fetching product brands...");
-  const { id } = req.params;
+  const { brandId } = req.params;
 
   try {
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(brandId)) {
       throw new HttpError(404, "Product brand not found.");
     }
 
-    const brand = await ProductBrand.findById(id).lean();
+    const brand = await ProductBrand.findById(brandId).lean();
     if (!brand || brand.isDeleted) {
       throw new HttpError(404, "Product brand not found.");
     }
@@ -128,14 +128,14 @@ export async function update(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating product brand...");
-  const { id } = req.params;
+  const { brandId } = req.params;
 
   try {
     // Check brand exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(brandId)) {
       throw new HttpError(404, "Product brand not found.");
     }
-    const brand = await ProductBrand.findById(id);
+    const brand = await ProductBrand.findById(brandId);
     if (!brand || brand.isDeleted) {
       throw new HttpError(404, "Product brand not found.");
     }
@@ -196,14 +196,14 @@ export async function remove(
       )
     );
   }
-  const { id } = req.params;
+  const { brandId } = req.params;
 
   try {
     // Check brand exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(brandId)) {
       throw new HttpError(404, "Product brand not found.");
     }
-    const brand = await ProductBrand.findById(id);
+    const brand = await ProductBrand.findById(brandId);
     if (!brand || brand.isDeleted) {
       throw new HttpError(404, "Product brand not found.");
     }

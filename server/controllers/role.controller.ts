@@ -90,14 +90,14 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Fetching role details...");
-  const { id } = req.params;
+  const { roleId } = req.params;
 
   try {
     // Check exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(roleId)) {
       throw new HttpError(404, "Role not found.");
     }
-    const role = await Role.findById(id).lean();
+    const role = await Role.findById(roleId).lean();
     if (!role) {
       throw new HttpError(404, "Role not found.");
     }
@@ -152,14 +152,14 @@ export async function update(
       )
     );
   }
-  const { id } = req.params;
+  const { roleId } = req.params;
 
   try {
     // Check role exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(roleId)) {
       throw new HttpError(404, "Role not found.");
     }
-    const role = await Role.findById(id);
+    const role = await Role.findById(roleId);
     if (!role) {
       throw new HttpError(404, "Role not found.");
     }
@@ -240,16 +240,17 @@ export async function remove(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Deleting role...");
-  const { id } = req.params;
+  const { roleId } = req.params;
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     // Check role exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(roleId)) {
       throw new HttpError(404, "Role not found.");
     }
-    const role = await Role.findById(id).session(session);
+    const role = await Role.findById(roleId).session(session);
     if (!role) {
       throw new HttpError(404, "Role not found.");
     }

@@ -105,10 +105,13 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Fetching product...");
-  const { id } = req.params;
+  const { productId } = req.params;
 
   try {
-    const product = await Product.findById(id)
+    if (!Types.ObjectId.isValid(productId)) {
+      throw new HttpError(404, "Product not found.");
+    }
+    const product = await Product.findById(productId)
       .populate(["brand", "category"])
       .lean();
     if (!product || product.isDeleted) {
@@ -126,13 +129,13 @@ export async function get(
   }
 }
 
-export async function getWithModelsAndVariations(
+export async function getDetails(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Fetching product's models and variations...");
-  const { id } = req.params;
+  const { productId } = req.params;
   const reqQuery = req["sanitizedQuery"] as ProductDetailQuery;
 
   const modelQueryMatch: any = { isDeleted: false };
@@ -147,7 +150,7 @@ export async function getWithModelsAndVariations(
 
   try {
     // Check product exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(productId)) {
       throw new HttpError(
         404,
         "Fetching product with models and variations...."
@@ -155,7 +158,7 @@ export async function getWithModelsAndVariations(
     }
 
     const productDetails = await Product.aggregate([
-      { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
+      { $match: { _id: new Types.ObjectId(productId), isDeleted: false } },
       {
         $lookup: {
           from: "productbrands",
@@ -255,8 +258,8 @@ export async function search(
   console.log("▶️ ", "Searching products...");
   const reqQuery = req["sanitizedQuery"] as ProductSearchQuery;
 
-  const limit = reqQuery.limit ? parseInt(reqQuery.limit) : 9;
-  const offset = reqQuery.offset ? parseInt(reqQuery.offset) : 0;
+  const limit = reqQuery.limit ? parseInt(reqQuery.limit, 10) : 9;
+  const offset = reqQuery.offset ? parseInt(reqQuery.offset, 10) : 0;
   const query: any = {};
 
   if (reqQuery.searchTerm) {
@@ -362,14 +365,14 @@ export async function update(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating product...");
-  const { id } = req.params;
+  const { productId } = req.params;
 
   try {
     // Check product exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(productId)) {
       throw new HttpError(404, "Product not found.");
     }
-    const product = await Product.findById(id);
+    const product = await Product.findById(productId);
     if (!product || product.isDeleted) {
       throw new HttpError(404, "Product not found.");
     }
@@ -474,14 +477,14 @@ export async function remove(
       )
     );
   }
-  const { id } = req.params;
+  const { productId } = req.params;
 
   try {
     // Check product exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(productId)) {
       throw new HttpError(404, "Product not found.");
     }
-    const product = await Product.findById(id);
+    const product = await Product.findById(productId);
     if (!product || product.isDeleted) {
       throw new HttpError(404, "Product not found.");
     }

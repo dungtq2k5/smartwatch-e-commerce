@@ -287,6 +287,14 @@ export function compareUserAddress(
   );
 }
 
+export function getClosestPreMonday(): Date {
+  const today = new Date();
+  const daysToMonday = (today.getDay() + 6) % 7;
+  today.setDate(today.getDate() - daysToMonday);
+  today.setHours(0, 0, 0, 0); // Set to start of the day
+  return today;
+}
+
 // --- VALIDATION UTILS ---
 export function isValidUserFullName(fullName: any): boolean {
   if (typeof fullName !== "string") return false;

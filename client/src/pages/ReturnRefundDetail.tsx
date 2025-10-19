@@ -12,7 +12,7 @@ import type {
   ReturnStateListResponse,
 } from "../../../common/types.common";
 import ApiError from "../components/ApiError";
-import { useReturnStore } from "../store/returnRefund/returnStore";
+import { useReturnStore } from "../store/returnRefund/orderReturnStore";
 import { useReturnStateStore } from "../store/returnRefund/returnStateStore";
 import {
   RETURN_STATE_LEVEL_ICON_LEGEND,
@@ -48,9 +48,9 @@ export default function ReturnRefundDetail() {
 
   const navigate = useNavigate();
 
-  const { id: orderId, returnId } = useParams();
+  const { returnId } = useParams();
   const {
-    fetchReturnDetail,
+    getReturnDetail,
     // isLoading: isCancelingReturn,
     updateReturn,
   } = useReturnStore();
@@ -96,12 +96,11 @@ export default function ReturnRefundDetail() {
       setApiErr(null);
 
       try {
-        if (!orderId) throw new Error("Order ID is not provided.");
         if (!returnId) throw new Error("Order return ID is not provided.");
 
         const [, fetchedReturnDetail] = await Promise.all([
           fetchReturnStates(),
-          fetchReturnDetail(orderId, returnId),
+          getReturnDetail(returnId),
         ]);
 
         setReturnDetail(fetchedReturnDetail);
@@ -118,7 +117,7 @@ export default function ReturnRefundDetail() {
 
     handleFetchSetInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, returnId]);
+  }, [returnId]);
 
   const genProgressBar = useCallback(
     (
@@ -236,11 +235,11 @@ export default function ReturnRefundDetail() {
       const cancelState = getReturnStateByLookupIdSync("7"); // cancelled
       if (!cancelState) throw new Error("Return state not found.");
 
-      const { orderId, id: returnId } = returnDetail;
-      await updateReturn(orderId, returnId, {
+      const { id: returnId } = returnDetail;
+      await updateReturn(returnId, {
         stateId: cancelState.id,
       });
-      const updatedReturnDetail = await fetchReturnDetail(orderId, returnId);
+      const updatedReturnDetail = await getReturnDetail(returnId);
 
       setReturnDetail(updatedReturnDetail);
       toast.success("Return request has been cancelled.");
@@ -255,7 +254,7 @@ export default function ReturnRefundDetail() {
     }
   }, [
     canUpdate,
-    fetchReturnDetail,
+    getReturnDetail,
     getReturnStateByLookupIdSync,
     process.isProcessing,
     returnDetail,
@@ -400,9 +399,7 @@ export default function ReturnRefundDetail() {
                           type="button"
                           className="btn btn-outline-secondary"
                           onClick={() =>
-                            navigate(
-                              `/return-refund/update/${returnDetail.orderId}/${returnDetail.id}`
-                            )
+                            navigate(`/return-refund/${returnDetail.id}/update`)
                           }
                         >
                           Edit Request

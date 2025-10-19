@@ -17,7 +17,7 @@ import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useUserAddressStore } from "../../store/addressStore";
 import type {
-  UserAddressResponse,
+  UserSelfAddressResponse,
   UserAddressUpdate,
 } from "../../../../common/types.common";
 import toast from "react-hot-toast";
@@ -53,7 +53,7 @@ const UpdateAddressModal = memo(
 
     const { getAddress, updateAddress } = useUserAddressStore();
 
-    const [address, setAddress] = useState<UserAddressResponse | undefined>(
+    const [address, setAddress] = useState<UserSelfAddressResponse | undefined>(
       undefined
     );
 
@@ -115,22 +115,24 @@ const UpdateAddressModal = memo(
         };
 
         handleSetAddress();
-      } else {
-        setTimeout(() => {
-          setAddress(undefined);
-          setFormData({
-            name: { val: "" },
-            phoneNumber: { val: "" },
-            apartmentNumber: { val: "" },
-            street: { val: "" },
-            cityProvinceCode: "",
-            districtCode: "",
-            wardCode: "",
-            location: [106.6297, 10.8231],
-            isDefault: isOnlyOneAddress,
-          });
-        }, 200); // Delay to allow modal to close before resetting
+        return;
       }
+
+      setTimeout(() => {
+        setAddress(undefined);
+        setApiErr(null);
+        setFormData({
+          name: { val: "" },
+          phoneNumber: { val: "" },
+          apartmentNumber: { val: "" },
+          street: { val: "" },
+          cityProvinceCode: "",
+          districtCode: "",
+          wardCode: "",
+          location: [106.6297, 10.8231],
+          isDefault: isOnlyOneAddress,
+        });
+      }, 200); // Delay to allow modal to close before resetting
 
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [addressId, isOnlyOneAddress]);
@@ -411,7 +413,7 @@ const UpdateAddressModal = memo(
     );
 
     return (
-      <Modal show={addressId !== undefined} onHide={onHide} centered size="lg">
+      <Modal show={!!addressId} onHide={onHide} centered size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Update Address</Modal.Title>
         </Modal.Header>

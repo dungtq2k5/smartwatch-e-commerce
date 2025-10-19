@@ -24,12 +24,12 @@ router.post(
   create
 );
 
-router.get("/:id", get);
+router.get("/:brandId", get);
 
 router.get("/", getAll);
 
 router.patch(
-  "/:id",
+  "/:brandId",
   verifyPermission("u_product_brand"),
   verifyEmptyBody,
   inputSanitizer("brand"),
@@ -37,6 +37,6 @@ router.patch(
   update
 );
 
-router.delete("/:id", verifyPermission("d_product_brand"), remove);
+router.delete("/:brandId", verifyPermission("d_product_brand"), remove);
 
 export default router;

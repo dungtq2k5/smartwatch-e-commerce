@@ -4,14 +4,18 @@ import {
   faCheck,
   faClock,
   faFaceLaughBeam,
+  faHandHoldingDollar,
   faMoneyBillTransfer,
+  faReceipt,
+  faSackDollar,
   faStar,
   faTruck,
   faWarehouse,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 
-// API Endpoints
+// --- API ENDPOINTS ---
+
 const ROOT_URL = "/api/v1";
 
 const AUTH_URL = `${ROOT_URL}/auth`;
@@ -23,38 +27,48 @@ export const LOGIN_URL = `${AUTH_URL}/login`;
 export const LOGOUT_URL = `${AUTH_URL}/logout`;
 export const FORGOT_PASSWORD_URL = `${AUTH_URL}/forgot-password`;
 export const RESET_PASSWORD_URL = `${AUTH_URL}/reset-password`;
+export const REFRESH_TOKEN_URL = `${AUTH_URL}/refresh-token`;
 
 const USER_URL = `${ROOT_URL}/users`;
-export const SELF_ADDRESSES_URL = `${USER_URL}/me/addresses`;
+export const SELF_ADDRESSES_URL = `${ROOT_URL}/user-addresses/me`;
 export const USER_UPDATE_SELF_GENERAL_INFO_URL = `${USER_URL}/me`;
 export const USER_UPDATE_SELF_CONTACT_INFO_URL = `${USER_URL}/me/contact-info`;
 export const USER_UPDATE_SELF_PASSWORD_URL = `${USER_URL}/me/password`;
 export const USER_SET_SELF_PASSWORD_URL = `${USER_URL}/me/set-password`;
 export const USER_DELETE_ACCOUNT_URL = `${USER_URL}/me`;
 
-export const SELF_CART_URL = `${USER_URL}/me/carts`;
+export const SELF_CART_URL = `${ROOT_URL}/user-carts/me`;
 
-export const SELF_PAYMENT_METHOD_URL = `${USER_URL}/me/payment-methods`;
+export const SELF_PAYMENT_METHOD_URL = `${ROOT_URL}/user-payment-methods/me`;
 
 export const PRODUCT_URL = `${ROOT_URL}/products`;
 export const PRODUCT_SEARCH_URL = PRODUCT_URL;
-export const PRODUCT_CATEGORIES_URL = `${PRODUCT_URL}/categories`;
-export const PRODUCT_BRANDS_URL = `${PRODUCT_URL}/brands`;
-export const PRODUCT_OS_URL = `${PRODUCT_URL}/os`;
+export const PRODUCT_CATEGORIES_URL = `${ROOT_URL}/product-categories`;
+export const PRODUCT_BRANDS_URL = `${ROOT_URL}/product-brands`;
+export const PRODUCT_OS_URL = `${ROOT_URL}/product-os`;
 
 export const ORDER_URL = `${ROOT_URL}/orders`;
 export const SELF_ORDER_URL = `${ORDER_URL}/me`;
+export const ORDER_STATES_URL = `${ROOT_URL}/order-states`;
 
 export const PAYMENT_METHODS_URL = `${ROOT_URL}/payment-methods`;
 export const PAYMENT_STATES_URL = `${ROOT_URL}/payment-states`;
 
 export const DELIVERY_STATES_URL = `${ROOT_URL}/delivery-states`;
 
-export const ORDER_STATES_URL = `${ROOT_URL}/order-states`;
-
+export const RETURN_URL = `${ROOT_URL}/returns`;
+export const SELF_RETURN_URL = `${RETURN_URL}/me`;
 export const RETURN_STATES_URL = `${ROOT_URL}/return-states`;
 
-// Others
+export const SELF_BANK_ACCOUNTS_URL = `${ROOT_URL}/user-bank-accounts/me`;
+
+export const SELF_BALANCE_HISTORY_URL = `${ROOT_URL}/user-balance-history/me`;
+
+export const SELF_WITHDRAWAL_REQUESTS_URL = `${ROOT_URL}/withdrawal-requests/me`;
+export const WITHDRAWAL_STATES_URL = `${ROOT_URL}/withdrawal-states`;
+
+// --- OTHERS ---
+
 export const AVATAR_HINT_MESSAGE = `
   File size: maximum 5MB.
   File extensions: JPG, PNG.
@@ -66,6 +80,7 @@ export const MAX_POPULAR_PRODUCTS_DISPLAY = 5;
 export const MAX_PRODUCTS_SUGGEST_DISPLAY = 4;
 export const MAX_CART_ITEM_QUANTITY_SELECT = 5;
 export const MAX_PURCHASES_PER_PAGE = 1; // DEV temp for testing
+export const MAX_BALANCE_HISTORIES_PER_PAGE = 3; // DEV temp for testing
 
 // level -> icon
 export const ORDER_STATE_LEVEL_ICON_LEGEND = {
@@ -163,3 +178,30 @@ export const RETURN_LOOKUPID_STATE_LEGEND = {
 
 export const STRIPE_URL = "https://stripe.com";
 export const LINK_FAST_CHECKOUT_URL = "https://link.com";
+
+// bank account status -> display string
+export const USER_BANK_ACCOUNT_STATUS_LEGEND = {
+  pending: "This account is not verified yet. Please verify it to use.",
+  restricted:
+    "This account is restricted. Please contact support for more info or delete it.",
+  rejected:
+    "This account is rejected. Please contact support for more info or delete it.",
+} as const;
+
+// user balance history type -> display icon
+export const USER_BALANCE_HISTORY_TYPE_ICON_LEGEND = {
+  refund: faHandHoldingDollar,
+  withdraw_request: faSackDollar,
+  payment_to: faReceipt,
+} as const;
+
+// lookupId -> display string
+export const WITHDRAWAL_STATE_LOOKUPID_MSG_LEGEND = {
+  "1": "Your withdrawal request is created and pending approval, hang on.", // pending
+  "2": "Your withdrawal request has been approved and is being processed.", // approved
+  "3": "Your withdrawal request has been approved and is being processed.", // processing
+  "4": "Your withdrawal request has been completed successfully.", // completed
+  "5": "Your withdrawal request failed because of some reasons. If you wish please make another request.", // failed
+  "6": "Your withdrawal request has been cancelled by you.", // cancelled
+  "7": "Your withdrawal request has been rejected by admin because of some reasons. Please contact support for more info.", // rejected
+} as const;

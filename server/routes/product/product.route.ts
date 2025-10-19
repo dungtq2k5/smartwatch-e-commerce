@@ -3,9 +3,9 @@ import { verifyPermission } from "../../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../../utils/middlewares/general.middleware";
 import {
   inputSanitizer,
+  verifyModelVariationInput,
   verifyProductInput,
   verifyProductModelInput,
-  verifyModelVariationInput,
   verifyVariationInstanceInput,
 } from "../../utils/middlewares/product.middleware";
 import * as productController from "../../controllers/product/product.controller";
@@ -25,16 +25,14 @@ router.post(
   productController.create
 );
 
-router.get("/:id", productController.get);
+router.get("/:productId", productController.get);
 
-/**
-  Query: modelStopSelling, variationStopSelling
- */
+// Query: modelStopSelling, variationStopSelling
 router.get(
-  "/:id/details",
+  "/:productId/details",
   inputSanitizer("product details"),
   verifyProductInput("details"),
-  productController.getWithModelsAndVariations
+  productController.getDetails
 );
 
 router.get(
@@ -45,7 +43,7 @@ router.get(
 );
 
 router.patch(
-  "/:id",
+  "/:productId",
   verifyPermission("u_product"),
   verifyEmptyBody,
   inputSanitizer("product"),
@@ -53,11 +51,15 @@ router.patch(
   productController.update
 );
 
-router.delete("/:id", verifyPermission("d_product"), productController.remove);
+router.delete(
+  "/:productId",
+  verifyPermission("d_product"),
+  productController.remove
+);
 
-// --- PRODUCT MODEL ROUTES ---
+// -- PRODUCT MODEL ROUTES ---
 router.post(
-  "/:id/models",
+  "/:productId/models",
   verifyPermission("c_product_model"),
   verifyEmptyBody,
   inputSanitizer("model"),
@@ -65,24 +67,7 @@ router.post(
   modelController.create
 );
 
-router.get("/:productId/models/:id", modelController.get);
-
-router.get("/:productId/models", modelController.getAll);
-
-router.patch(
-  "/:productId/models/:id",
-  verifyPermission("u_product_model"),
-  verifyEmptyBody,
-  inputSanitizer("model"),
-  verifyProductModelInput("update"),
-  modelController.update
-);
-
-router.delete(
-  "/:productId/models/:id",
-  verifyPermission("d_product_model"),
-  modelController.remove
-);
+router.get("/:productId/models", modelController.getAllByProductId);
 
 // --- MODEL VARIATION ROUTES ---
 router.post(
@@ -94,52 +79,18 @@ router.post(
   variationController.create
 );
 
-router.patch(
-  "/:productId/models/:modelId/variations/:id",
-  verifyPermission("u_model_variation"),
-  verifyEmptyBody,
-  inputSanitizer("variation"),
-  verifyModelVariationInput("update"),
-  variationController.update
-);
-
-router.get(
-  "/:productId/models/:modelId/variations/:id",
-  variationController.get
-);
-
 router.get(
   "/:productId/models/:modelId/variations",
   variationController.getAll
 );
 
-router.delete(
-  "/:productId/models/:modelId/variations/:id",
-  verifyPermission("d_model_variation"),
-  variationController.remove
-);
-
-// --- VARIATION INSTANCES ROUTES ---
+// --- VARIATION INSTANCE ROUTES ---
 router.post(
   "/:productId/models/:modelId/variations/:variationId/instances",
   verifyPermission("c_variation_instance"),
   verifyEmptyBody,
   verifyVariationInstanceInput("create"),
   instanceController.create
-);
-
-router.get(
-  "/:productId/models/:modelId/variations/:variationId/instances/:id",
-  verifyPermission("r_variation_instance"),
-  instanceController.get
-);
-
-router.patch(
-  "/:productId/models/:modelId/variations/:variationId/instances/:id",
-  verifyPermission("u_variation_instance"),
-  verifyEmptyBody,
-  verifyVariationInstanceInput("update"),
-  instanceController.update
 );
 
 export default router;

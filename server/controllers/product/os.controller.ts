@@ -68,13 +68,13 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Fetching product os...");
-  const { id } = req.params;
+  const { osId } = req.params;
 
   try {
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(osId)) {
       throw new HttpError(404, "Product os not found.");
     }
-    const os = await ProductOs.findById(id).lean();
+    const os = await ProductOs.findById(osId).lean();
     if (!os || os.isDeleted) {
       throw new HttpError(404, "Product os not found.");
     }
@@ -123,14 +123,14 @@ export async function update(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating product os...");
-  const { id } = req.params;
+  const { osId } = req.params;
 
   try {
     // Check os exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(osId)) {
       throw new HttpError(404, "Product os not found.");
     }
-    const os = await ProductOs.findById(id);
+    const os = await ProductOs.findById(osId);
     if (!os || os.isDeleted) {
       throw new HttpError(404, "Product os not found.");
     }
@@ -191,14 +191,14 @@ export async function remove(
       )
     );
   }
-  const { id } = req.params;
+  const { osId } = req.params;
 
   try {
     // Check os exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(osId)) {
       throw new HttpError(404, "Product os not found.");
     }
-    const os = await ProductOs.findById(id);
+    const os = await ProductOs.findById(osId);
     if (!os || os.isDeleted) {
       throw new HttpError(404, "Product os not found.");
     }

@@ -17,7 +17,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleQuestion, faTruck } from "@fortawesome/free-solid-svg-icons";
 import { useReturnStateStore } from "../../store/returnRefund/returnStateStore";
-import { useReturnStore } from "../../store/returnRefund/returnStore";
+import { useReturnStore } from "../../store/returnRefund/orderReturnStore";
 import ApiError from "../ApiError";
 import PurchaseCardSkeleton from "../skeleton/PurchaseCardSkeleton";
 
@@ -108,11 +108,7 @@ const ReturnCard = memo(
                   <button
                     type="button"
                     className="btn btn-link p-0 text-success text-decoration-none"
-                    onClick={() =>
-                      navigate(
-                        `order/${orderReturn.orderId}/return-refund/${orderReturn.id}`
-                      )
-                    }
+                    onClick={() => navigate(`return-refund/${orderReturn.id}`)}
                   >
                     <FontAwesomeIcon icon={faTruck} className="me-2" />
                     <span>{capFirstLetter(returnState.name)}</span>
@@ -135,7 +131,7 @@ const ReturnCard = memo(
 
             {/* Item list */}
             <Link
-              to={`order/${orderReturn.orderId}/return-refund/${orderReturn.id}`}
+              to={`return-refund/${orderReturn.id}`}
               className="text-decoration-none text-dark"
             >
               <div className="card-body">
@@ -186,9 +182,7 @@ const ReturnCard = memo(
                         type="button"
                         className="btn btn-outline-secondary"
                         onClick={() =>
-                          navigate(
-                            `/return-refund/update/${orderReturn.orderId}/${orderReturn.id}`
-                          )
+                          navigate(`/return-refund/${orderReturn.id}/update`)
                         }
                       >
                         Edit Request

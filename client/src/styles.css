@@ -5,12 +5,12 @@
 */
 
 :root {
-  --primary-color: #2075ff;
+  --primary-color: #0d6efd;
   --secondary-color: #34A853;
   --danger-color: #EA4335;
   --warning-color: #FBBC05;
   --light-color: #F8F9FA;
-  --dark-color: #202124;
+  --dark-color: #212529;
 
   --stripe-main-color: #5167FC;
   --stripe-link-main-color: #28a745;
@@ -68,7 +68,7 @@ body {
   border: none;
   outline: none;
   color: rgb(255, 255, 255);
-  background: #111;
+  background: black;
   cursor: pointer;
   position: relative;
   z-index: 0;
@@ -497,4 +497,8 @@ body {
   width: 500px;
   background-color: white;
   color: black;
+}
+
+.balance-history-item--g:hover {
+  background-color: #f8f9fa;
 }

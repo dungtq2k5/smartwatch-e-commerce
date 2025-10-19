@@ -101,41 +101,35 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Getting product model variation...");
-  const { productId, modelId, id } = req.params;
+  const { variationId } = req.params;
 
   try {
-    // Check product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      throw new HttpError(404, "Product not found.");
-    }
-    const product = await Product.findById(productId).lean();
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product not found.");
-    }
-
-    // Check model exists
-    if (!Types.ObjectId.isValid(modelId)) {
-      throw new HttpError(404, "Product model not found.");
-    }
-    const model = await ProductModel.findOne({
-      isDeleted: false,
-      _id: modelId,
-      productId: productId,
-    }).lean();
-    if (!model) {
-      throw new HttpError(404, "Product model not found.");
-    }
-
-    if (!Types.ObjectId.isValid(id)) {
+    // Check variation exists
+    if (!Types.ObjectId.isValid(variationId)) {
       throw new HttpError(404, "Product model variation not found.");
     }
     const variation = await ModelVariation.findOne({
       isDeleted: false,
-      _id: id,
-      productModelId: modelId,
+      _id: variationId,
     }).lean();
     if (!variation) {
       throw new HttpError(404, "Product model variation not found.");
+    }
+
+    // Check model exists
+    const model = await ProductModel.findById(variation.productModelId)
+      .select("productId isDeleted")
+      .lean();
+    if (!model || model.isDeleted) {
+      throw new HttpError(404, "Model of this variation not found.");
+    }
+
+    // Check product exists
+    const product = await Product.findById(model.productId)
+      .select("isDeleted")
+      .lean();
+    if (!product || product.isDeleted) {
+      throw new HttpError(404, "Product of this variation not found.");
     }
 
     res.status(200).json({
@@ -211,42 +205,35 @@ export async function update(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating product model variation...");
-  const { productId, modelId, id } = req.params;
+  const { variationId } = req.params;
 
   try {
-    // Check product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      throw new HttpError(404, "Product not found.");
-    }
-    const product = await Product.findById(productId).lean();
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product not found.");
-    }
-
-    // Check model exists
-    if (!Types.ObjectId.isValid(modelId)) {
-      throw new HttpError(404, "Product model not found.");
-    }
-    const model = await ProductModel.findOne({
-      isDeleted: false,
-      _id: modelId,
-      productId: product._id,
-    }).lean();
-    if (!model) {
-      throw new HttpError(404, "Product model not found.");
-    }
-
     // Check variation id exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(variationId)) {
       throw new HttpError(404, "Product model variation not found.");
     }
     const variation = await ModelVariation.findOne({
       isDeleted: false,
-      _id: id,
-      productModelId: modelId,
+      _id: variationId,
     });
     if (!variation) {
       throw new HttpError(404, "Product model variation not found.");
+    }
+
+    // Check model exists
+    const model = await ProductModel.findById(variation.productModelId)
+      .select("productId isDeleted")
+      .lean();
+    if (!model || model.isDeleted) {
+      throw new HttpError(404, "Model of this variation not found.");
+    }
+
+    // Check product exists
+    const product = await Product.findById(model.productId)
+      .select("isDeleted")
+      .lean();
+    if (!product || product.isDeleted) {
+      throw new HttpError(404, "Product of this variation not found.");
     }
 
     // Business logic
@@ -269,7 +256,7 @@ export async function update(
     if (orConditions.length > 0) {
       const existingVariation = await ModelVariation.findOne({
         isDeleted: false,
-        productModelId: modelId,
+        productModelId: variation.productModelId,
         $or: orConditions,
       }).lean();
       if (existingVariation) {
@@ -372,47 +359,38 @@ export async function remove(
       )
     );
   }
-  const { productId, modelId, id } = req.params;
+  const { variationId } = req.params;
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // Check product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      throw new HttpError(404, "Product not found.");
-    }
-    const product = await Product.findById(productId).lean().session(session);
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product not found.");
-    }
-
-    // Check model exists
-    if (!Types.ObjectId.isValid(modelId)) {
-      throw new HttpError(404, "Product model not found.");
-    }
-    const model = await ProductModel.findOne({
-      isDeleted: false,
-      _id: modelId,
-      productId: product._id,
-    })
-      .lean()
-      .session(session);
-    if (!model) {
-      throw new HttpError(404, "Product model not found.");
-    }
-
     // Check variation id exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(variationId)) {
       throw new HttpError(404, "Product model variation not found.");
     }
     const variation = await ModelVariation.findOne({
       isDeleted: false,
-      _id: id,
-      productModelId: modelId,
+      _id: variationId,
     }).session(session);
     if (!variation) {
       throw new HttpError(404, "Product model variation not found.");
+    }
+
+    // Check model exists
+    const model = await ProductModel.findById(variation.productModelId)
+      .select("productId isDeleted")
+      .lean();
+    if (!model || model.isDeleted) {
+      throw new HttpError(404, "Model of this variation not found.");
+    }
+
+    // Check product exists
+    const product = await Product.findById(model.productId)
+      .select("isDeleted")
+      .lean();
+    if (!product || product.isDeleted) {
+      throw new HttpError(404, "Product of this variation not found.");
     }
 
     await executeDeletion(variation, new Types.ObjectId(reqUserId), session);

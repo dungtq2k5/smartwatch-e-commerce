@@ -4,82 +4,38 @@ import { verifyEmptyBody } from "../../utils/middlewares/general.middleware";
 import {
   inputSanitizer,
   verifyOrderInput,
-  verifyOrderReturnInput,
 } from "../../utils/middlewares/order.middleware";
+import {
+  inputSanitizer as returnInputSanitizer,
+  verifyOrderReturnInput,
+} from "../../utils/middlewares/orderReturn.middleware";
 import * as order from "../../controllers/order/order.controller";
-import * as returnController from "../../controllers/returnRefund/return.controller";
+import * as returnController from "../../controllers/returnRefund/orderReturn.controller";
 import { createCheckoutSession } from "../../controllers/stripe.controller";
 
 const router = express.Router();
 
-// -- route for order return
+// --- ROUTES FOR ORDER RETURN ---
+
 router.post(
-  "/:id/return",
+  "/:orderId/returns",
   verifyPermission("u_order_return"),
   verifyEmptyBody,
-  inputSanitizer("order return"),
+  returnInputSanitizer("order return"),
   verifyOrderReturnInput("create"),
   returnController.create
 );
 
-// search without orderId
-router.get(
-  "/returns",
-  verifyPermission("r_order_return"),
-  inputSanitizer("order return search"),
-  verifyOrderReturnInput("search"),
-  returnController.searchAll
-);
-
 // search within orderId
 router.get(
-  "/:id/returns",
+  "/:orderId/returns",
   verifyPermission("r_order_return"),
-  inputSanitizer("order return search"),
+  returnInputSanitizer("order return search"),
   verifyOrderReturnInput("search"),
   returnController.search
 );
 
-router.get(
-  "/:id/returns/:returnId",
-  verifyPermission("r_order_return"),
-  returnController.get
-);
-
-router.get(
-  "/:id/returns/:returnId/details",
-  verifyPermission("r_order_return"),
-  returnController.getDetails
-);
-
-router.patch(
-  "/me/:id/returns/:returnId",
-  verifyPermission("u_order_return"),
-  verifyEmptyBody,
-  inputSanitizer("order return"),
-  verifyOrderReturnInput("update"),
-  returnController.updateSelf
-);
-
-router.patch(
-  "/:id/returns/:returnId/state",
-  verifyPermission("u_order_return"),
-  verifyEmptyBody,
-  inputSanitizer("order return"),
-  verifyOrderReturnInput("update state"),
-  returnController.updateState
-);
-
-router.patch(
-  "/:id/returns/:returnId/pickup-state",
-  verifyPermission("u_order_return"),
-  verifyEmptyBody,
-  inputSanitizer("order return"),
-  verifyOrderReturnInput("update pickup state"),
-  returnController.updatePickupState
-);
-
-// -- route for order
+// --- ROUTES FOR ORDER ---
 router.post(
   "/me",
   verifyPermission("c_order"),
@@ -90,7 +46,7 @@ router.post(
 );
 
 router.post(
-  "/:id/fulfill-item",
+  "/:orderId/fulfill-item",
   verifyPermission("u_order"),
   verifyEmptyBody,
   inputSanitizer("fulfill order item"),
@@ -106,18 +62,20 @@ router.get(
   order.search
 );
 
-router.get("/:id/details", verifyPermission("r_order"), order.getDetails);
-router.get("/:id", verifyPermission("r_order"), order.get);
+router.get("/:orderId/details", verifyPermission("r_order"), order.getDetails);
+
+router.get("/:orderId", verifyPermission("r_order"), order.get);
 
 router.patch(
-  "/me/:id",
+  "/me/:orderId",
   verifyPermission("u_order"),
   verifyEmptyBody,
   verifyOrderInput("update"),
   order.updateSelf
 );
+
 router.patch(
-  "/:id",
+  "/:orderId",
   verifyPermission("u_order"),
   verifyEmptyBody,
   inputSanitizer("order"),
@@ -125,9 +83,9 @@ router.patch(
   order.updateDeliveryState
 );
 
-// -- routes for order payment
+// -- ROUTES FOR STRIPE CHECKOUT SESSION
 router.post(
-  "/:id/create-checkout-session",
+  "/:orderId/create-checkout-session",
   verifyPermission("c_order"),
   createCheckoutSession
 );

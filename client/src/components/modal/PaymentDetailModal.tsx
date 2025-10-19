@@ -1,0 +1,151 @@
+import { memo, useEffect, useRef, useState } from "react";
+import { Button, Modal } from "react-bootstrap";
+import { useOrderStore } from "../../store/order/orderStore";
+import { useOrderStateStore } from "../../store/order/orderStateStore";
+import type {
+  OrderResponse,
+  OrderStateResponse,
+} from "../../../../common/types.common";
+import {
+  capFirstLetter,
+  centsToUSD,
+  formatError,
+} from "../../../../common/utils.common";
+import ApiError from "../ApiError";
+import Loading from "../Loading";
+import { PROJECT_NAME } from "../../../../common/configs.common";
+import { Link } from "react-router-dom";
+
+const PaymentDetailModal = memo(
+  ({
+    orderId,
+    onHide,
+  }: Readonly<{
+    orderId?: string | null; // if not provided -> close modal
+    onHide: () => void;
+  }>) => {
+    // DEV temp for testing
+    const renderCount = useRef(0);
+    renderCount.current++;
+    console.log("PaymentDetailModal render count:", renderCount.current);
+
+    const { getOrder } = useOrderStore();
+    const { getOrderState } = useOrderStateStore();
+
+    const [order, setOrder] = useState<OrderResponse | null>(null);
+    const [orderState, setOrderState] = useState<OrderStateResponse | null>(
+      null
+    );
+
+    const [isInitializing, setIsInitializing] = useState<boolean>(true);
+    const [apiErr, setApiErr] = useState<string | null>(null);
+
+    // Fetch and set on initial load: order, orderState
+    useEffect(() => {
+      if (orderId) {
+        const handleFetchSetInitialData = async (): Promise<void> => {
+          setIsInitializing(true);
+          setApiErr(null);
+
+          try {
+            const order = await getOrder(orderId);
+            setOrder(order);
+
+            const latestOrderState = order.states.at(-1);
+            if (latestOrderState) {
+              const orderState = await getOrderState(latestOrderState.id);
+              setOrderState(orderState);
+            }
+          } catch (error) {
+            setApiErr(formatError(error));
+          } finally {
+            setIsInitializing(false);
+          }
+        };
+
+        handleFetchSetInitialData();
+        return;
+      }
+
+      setTimeout(() => {
+        setOrder(null);
+        setOrderState(null);
+        setApiErr(null);
+      }, 200);
+
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [orderId]);
+
+    return (
+      <Modal show={!!orderId} onHide={onHide} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Payment Details</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          {isInitializing ? (
+            <Loading loadingMsg="Loading payment details..." />
+          ) : apiErr ? (
+            <ApiError errMsg={apiErr} />
+          ) : !order ? (
+            <ApiError errMsg="Order data not found." />
+          ) : !orderState ? (
+            <ApiError errMsg="Order state data not found." />
+          ) : (
+            <>
+              {/* Header */}
+              <div className="text-center border-bottom pb-3 mb-4">
+                <h1 className="display-6 fw-bold">
+                  -{centsToUSD(order.paymentSummary.appliedBalanceCents)}
+                </h1>
+                <p className="text-success mb-0 fs-5">
+                  Payment{" "}
+                  {capFirstLetter(
+                    orderState.lookupId === "1" ? "pending" : "successful"
+                  )}
+                </p>
+              </div>
+
+              {/* Main content */}
+              <div className="bg-light p-3 rounded mb-4">
+                <h2 className="fs-5 fw-semibold mb-2">Info</h2>
+                <div className="d-flex justify-content-between">
+                  <p className="mb-0 fw-semibold">Payment to:</p>
+                  <p className="mb-0 text-muted">{PROJECT_NAME}</p>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <p className="mb-0 fw-semibold">Order ID:</p>
+                  <p className="mb-0 text-muted">{order.id}</p>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <p className="mb-0 fw-semibold">Created Time:</p>
+                  <p className="mb-0 text-muted">
+                    {new Date(order.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="mt-4 pt-3 border-top text-end">
+                <Link
+                  to={`/account/purchase/order/${order.id}`}
+                  className="btn btn-link p-0"
+                >
+                  View detail this Order
+                </Link>
+              </div>
+            </>
+          )}
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button type="button" variant="primary" onClick={onHide}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    );
+  }
+);
+
+export default PaymentDetailModal;

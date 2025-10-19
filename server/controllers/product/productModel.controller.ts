@@ -38,7 +38,7 @@ export async function create(
       )
     );
   }
-  const productId = req.params.id;
+  const { productId } = req.params;
 
   try {
     // Check if product exists
@@ -129,30 +129,29 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Getting product model...");
-  const { productId, id: modelId } = req.params;
+  const { modelId } = req.params;
 
   try {
-    // Check if product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      throw new HttpError(404, "Product not found");
-    }
-    const product = await Product.findById(productId).lean();
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product not found");
-    }
-
+    // Check if model exists
     if (!Types.ObjectId.isValid(modelId)) {
       throw new HttpError(404, "Product model not found");
     }
     const model = await ProductModel.findOne({
       isDeleted: false,
       _id: modelId,
-      productId: productId,
     })
       .populate("config.os")
       .lean();
     if (!model) {
       throw new HttpError(404, "Product model not found");
+    }
+
+    // Check if product exists
+    const product = await Product.findById(model.productId)
+      .select("isDeleted")
+      .lean();
+    if (!product || product.isDeleted) {
+      throw new HttpError(404, "Product of this model not found.");
     }
 
     res.status(200).json({
@@ -166,7 +165,7 @@ export async function get(
   }
 }
 
-export async function getAll(
+export async function getAllByProductId(
   req: Request,
   res: Response,
   next: NextFunction
@@ -217,18 +216,9 @@ export async function update(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating product model...");
-  const { productId, id: modelId } = req.params;
+  const { modelId } = req.params;
 
   try {
-    // Check if product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      throw new HttpError(404, "Product not found");
-    }
-    const product = await Product.findById(productId).lean();
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product not found");
-    }
-
     // Check if model exists
     if (!Types.ObjectId.isValid(modelId)) {
       throw new HttpError(404, "Product model not found");
@@ -236,10 +226,17 @@ export async function update(
     const model = await ProductModel.findOne({
       isDeleted: false,
       _id: modelId,
-      productId,
     });
     if (!model) {
       throw new HttpError(404, "Product model not found");
+    }
+
+    // Check if product exists
+    const product = await Product.findById(model.productId)
+      .select("isDeleted")
+      .lean();
+    if (!product || product.isDeleted) {
+      throw new HttpError(404, "Product of this model not found.");
     }
 
     // Business logic
@@ -275,7 +272,7 @@ export async function update(
     if (updatedName !== model.name) {
       const existingModel = await ProductModel.findOne({
         isDeleted: false,
-        productId,
+        productId: model.productId,
         name: updatedName,
       }).lean();
       if (existingModel) {
@@ -482,18 +479,9 @@ export async function remove(
       )
     );
   }
-  const { productId, id: modelId } = req.params;
+  const { modelId } = req.params;
 
   try {
-    // Check if product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      throw new HttpError(404, "Product not found");
-    }
-    const product = await Product.findById(productId).lean();
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product not found");
-    }
-
     // Check if model exists
     if (!Types.ObjectId.isValid(modelId)) {
       throw new HttpError(404, "Product model not found");
@@ -501,10 +489,17 @@ export async function remove(
     const model = await ProductModel.findOne({
       isDeleted: false,
       _id: modelId,
-      productId: productId,
     });
     if (!model) {
       throw new HttpError(404, "Product model not found");
+    }
+
+    // Check if product exists
+    const product = await Product.findById(model.productId)
+      .select("isDeleted")
+      .lean();
+    if (!product || product.isDeleted) {
+      throw new HttpError(404, "Product of this model not found.");
     }
 
     await executeDeletion(model, new Types.ObjectId(reqUserId));

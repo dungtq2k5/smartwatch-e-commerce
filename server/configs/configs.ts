@@ -1,8 +1,10 @@
 export const ROOT_URL = "/api/v1";
 
 export const HASH_SALT = 10;
-export const JWT_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
-export const JWT_NAME = "auth_token";
+export const JWT_TTL = 15 * 60 * 1000; // 15 mins
+export const JWT_NAME = "jwt";
+export const REFRESH_JWT_NAME = "rt";
+export const REFRESH_JWT_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export const SYSTEM_USER = {
   fullName: "System User",
@@ -18,7 +20,8 @@ export const ADMIN_USER = {
 } as const;
 
 export const PERMISSION_LIST = [
-  // 60 permissions
+  // 68 permissions
+
   // Users
   { name: "create user", code: "c_usr" },
   { name: "read user", code: "r_usr" },
@@ -111,6 +114,17 @@ export const PERMISSION_LIST = [
   { name: "read provider inventory", code: "r_provider_inventory" },
   { name: "update provider inventory", code: "u_provider_inventory" },
   { name: "delete provider inventory", code: "d_provider_inventory" },
+
+  // User bank account
+  { name: "create user bank account", code: "c_usr_bankacc" },
+  { name: "read user bank account", code: "r_usr_bankacc" },
+  { name: "update user bank account", code: "u_usr_bankacc" },
+  { name: "delete user bank account", code: "d_usr_bankacc" },
+
+  // Withdrawal request
+  { name: "create withdrawal request", code: "c_withdrawal_req" },
+  { name: "read withdrawal request", code: "r_withdrawal_req" },
+  { name: "update withdrawal request", code: "u_withdrawal_req" },
 ] as const;
 
 export const BUYER_PERMISSION_LIST = [
@@ -145,6 +159,15 @@ export const BUYER_PERMISSION_LIST = [
   PERMISSION_LIST[27], // create order return
   PERMISSION_LIST[28], // read order return
   PERMISSION_LIST[29], // update order return
+
+  PERMISSION_LIST[61], // create user bank account
+  PERMISSION_LIST[62], // read user bank account
+  PERMISSION_LIST[63], // update user bank account
+  PERMISSION_LIST[64], // delete user bank account
+
+  PERMISSION_LIST[65], // create withdrawal request
+  PERMISSION_LIST[66], // read withdrawal request
+  PERMISSION_LIST[67], // update withdrawal request
 ] as const;
 
 export const ORDER_VARIATION_INSTANCE_STATES = [

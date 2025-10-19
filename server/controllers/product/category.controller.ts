@@ -68,13 +68,13 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Fetching product categories...");
-  const { id } = req.params;
+  const { categoryId } = req.params;
 
   try {
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(categoryId)) {
       throw new HttpError(404, "Product category not found.");
     }
-    const category = await ProductCategory.findById(id).lean();
+    const category = await ProductCategory.findById(categoryId).lean();
     if (!category || category.isDeleted) {
       throw new HttpError(404, "Product category not found.");
     }
@@ -125,14 +125,14 @@ export async function update(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating product category...");
-  const { id } = req.params;
+  const { categoryId } = req.params;
 
   try {
     // Check category exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(categoryId)) {
       throw new HttpError(404, "Product category not found.");
     }
-    const category = await ProductCategory.findById(id);
+    const category = await ProductCategory.findById(categoryId);
     if (!category || category.isDeleted) {
       throw new HttpError(404, "Product category not found.");
     }
@@ -186,14 +186,14 @@ export async function remove(
       )
     );
   }
-  const { id } = req.params;
+  const { categoryId } = req.params;
 
   try {
     // Check category exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(categoryId)) {
       throw new HttpError(404, "Product category not found.");
     }
-    const category = await ProductCategory.findById(id);
+    const category = await ProductCategory.findById(categoryId);
     if (!category || category.isDeleted) {
       throw new HttpError(404, "Product category not found.");
     }

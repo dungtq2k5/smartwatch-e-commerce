@@ -102,7 +102,7 @@ export async function attachSelfPaymentMethod(
       await stripe.paymentMethods.detach(stripePaymentMethodId);
       throw new HttpError(400, "This card is already added to your account.");
     }
-    
+
     // Check if it's the first card being added
     const existingMethodsCount = await UserPaymentMethod.countDocuments({
       userId,
@@ -157,7 +157,7 @@ export async function setSelfAsDefault(
       )
     );
   }
-  const { id } = req.params;
+  const { methodId } = req.params;
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -167,11 +167,11 @@ export async function setSelfAsDefault(
       throw new HttpError(404, "Stripe customer not found for this user.");
     }
 
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(methodId)) {
       throw new HttpError(404, "Payment method not found.");
     }
     const paymentMethod = await UserPaymentMethod.findOne({
-      _id: id,
+      _id: methodId,
       userId,
     }).session(session);
     if (!paymentMethod) {
@@ -183,7 +183,7 @@ export async function setSelfAsDefault(
     }
 
     await UserPaymentMethod.updateMany(
-      { userId, _id: { $ne: id } },
+      { userId, isDefault: true },
       { isDefault: false },
       { session }
     );
@@ -202,7 +202,8 @@ export async function setSelfAsDefault(
     res.status(200).json({
       success: true,
       message: "Default payment method updated successfully.",
-    } as SuccessResponse);
+      data: formatUserSelfPaymentMethodResponse(paymentMethod),
+    } as SuccessResponse<UserSelfPaymentMethodResponse>);
     console.log("✅", "Default self payment method updated successfully.");
   } catch (error) {
     await session.abortTransaction();
@@ -228,28 +229,43 @@ export async function removeSelf(
       )
     );
   }
-  const { id } = req.params;
+  const { methodId } = req.params;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(methodId)) {
       throw new HttpError(404, "Payment method not found.");
     }
-    const paymentMethod = await UserPaymentMethod.findOne({ _id: id, userId });
+    const paymentMethod = await UserPaymentMethod.findOne({
+      _id: methodId,
+      userId,
+    }).session(session);
     if (!paymentMethod) {
       throw new HttpError(404, "Payment method not found.");
     }
 
+    await paymentMethod.deleteOne({ session });
+
+    // If it's default -> update another one (if any) to be default
     if (paymentMethod.isDefault) {
-      throw new HttpError(
-        400,
-        "Default payment method cannot be removed. Please set another payment method as default before removing this one."
-      );
+      const anotherMethod = await UserPaymentMethod.findOne({
+        userId,
+        _id: { $ne: methodId },
+      })
+        .sort({ createdAt: -1 })
+        .session(session);
+      if (anotherMethod) {
+        anotherMethod.isDefault = true;
+        await anotherMethod.save({ session });
+      }
     }
 
-    // Detach from Stripe first
+    // Detach from Stripe
     await stripe.paymentMethods.detach(paymentMethod.stripePaymentMethodId);
 
-    await paymentMethod.deleteOne();
+    await session.commitTransaction();
 
     res.status(200).json({
       success: true,
@@ -257,6 +273,9 @@ export async function removeSelf(
     } as SuccessResponse);
     console.log("✅", "Self payment method removed successfully.");
   } catch (error) {
+    await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
   }
 }

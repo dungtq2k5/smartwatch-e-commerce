@@ -7,11 +7,13 @@ import {
 import Order from "../models/order/order.model";
 import { HttpError } from "../utils/errorHandler";
 import {
+  getLatestStateId,
   getOrderStateId,
   getPaymentMethodLookupId,
   getPaymentStateId,
   getPaymentStateLookupId,
   getSysUserId,
+  getWithdrawalStateId,
   isPresent,
 } from "../utils/utils";
 import stripe from "../configs/stripe.config";
@@ -20,12 +22,13 @@ import mongoose, { Types } from "mongoose";
 import {
   executeCartDeletion,
   handleOrderDeletion,
-  getLatestStateId,
 } from "./order/order.controller";
 import User from "../models/user/user.model";
 import UserPaymentMethod from "../models/user/userPaymentMethod.model";
 import { formatError, isNoneArrObj } from "../../common/utils.common";
 import { USER_PAYMENT_METHOD_TYPES } from "../configs/configs";
+import UserBankAccount from "../models/user/userBankAccount.model";
+import WithdrawalRequest from "../models/withdrawal/withdrawalRequest.model";
 
 export async function createCheckoutSession(
   req: Request,
@@ -43,7 +46,7 @@ export async function createCheckoutSession(
       )
     );
   }
-  const { id: orderId } = req.params;
+  const { orderId } = req.params;
 
   try {
     // Check orderId exists
@@ -334,6 +337,184 @@ export async function handleStripeWebhook(
           "✅ ",
           "Order updated successfully after checkout session expired."
         );
+        break;
+      }
+      case "account.updated": {
+        const account = event.data.object as Stripe.Account;
+        const bankAccount = await UserBankAccount.findOne({
+          stripeConnectedAccountId: account.id,
+        });
+        if (!bankAccount) {
+          console.error(
+            `Webhook Error: Bank account with Stripe Connected Account ID ${account.id} not found.`
+          );
+          res.status(200).json({
+            received: true,
+            message: "Bank account not found, but acknowledged.",
+          });
+          await session.abortTransaction();
+          return;
+        }
+
+        // Update bank account details if available
+        if (account.external_accounts?.data?.length) {
+          const externalAccount = account.external_accounts.data[0];
+          const fingerprint = externalAccount.fingerprint;
+
+          // Remove duplicate bank accounts with the same fingerprint for the same user
+          if (fingerprint) {
+            const deletedDupAccount = await UserBankAccount.findOne({
+              userId: bankAccount.userId,
+              stripeBankAccountFingerprint: fingerprint,
+              _id: { $ne: bankAccount._id },
+            })
+              .lean()
+              .session(session);
+            if (deletedDupAccount) {
+              console.log(
+                "⚠️ ",
+                "Duplicate bank account detected. Removing the newly added bank account and keeping the existing one."
+              );
+              // Clean up the new, redundant Stripe account and in DB
+              await bankAccount.deleteOne({ session });
+              try {
+                await stripe.accounts.del(account.id);
+              } catch {
+                // If the account was already deleted, we can ignore this error
+                console.warn(
+                  `Could not delete Stripe account ${account.id}, it might be already deleted.`
+                );
+              }
+              await session.commitTransaction();
+              console.log(
+                "✅ ",
+                "Duplicate bank account removed successfully."
+              );
+
+              res.status(200).json({
+                received: true,
+                message: "Duplicate bank account detected and handled.",
+              });
+              return;
+            }
+
+            bankAccount.stripeBankAccountFingerprint = fingerprint;
+          }
+
+          if (externalAccount.object === "bank_account") {
+            bankAccount.accountHolderName =
+              externalAccount.account_holder_name || "Unknown";
+            bankAccount.last4 = externalAccount.last4;
+            bankAccount.bankName = externalAccount.bank_name || "Unknown Bank";
+            bankAccount.routingNumber = externalAccount.routing_number;
+            bankAccount.accountType = externalAccount.account_type
+              ? "savings"
+              : "checking";
+          }
+        }
+
+        // Update verification status
+        if (account.details_submitted && account.charges_enabled) {
+          bankAccount.isVerified = true;
+          bankAccount.requiresAction = false;
+        }
+
+        // Update account status
+        if (account.charges_enabled) {
+          bankAccount.accountStatus = "enabled";
+
+          // If there is none default enabled bank account for the user, set this as default
+          if (
+            (await UserBankAccount.countDocuments({
+              userId: bankAccount.userId,
+              accountStatus: "enabled",
+              isDefault: true,
+            }).session(session)) === 0
+          ) {
+            bankAccount.isDefault = true;
+          }
+        } else if (account.requirements?.disabled_reason) {
+          bankAccount.accountStatus = "restricted";
+        }
+
+        await bankAccount.save({ session });
+        console.log("✅ ", "User bank account updated successfully.");
+        break;
+      }
+      case "transfer.created": {
+        const transfer = event.data.object as Stripe.Transfer;
+        const withdrawalRequestId = transfer.metadata.withdrawalRequestId;
+
+        // Check if withdrawalRequestId is valid
+        const withdrawalRequest = await WithdrawalRequest.findById(
+          withdrawalRequestId
+        ).session(session);
+        if (!withdrawalRequest) {
+          // If withdrawal request is not found, we must return 200 to Stripe to stop retries for this non-existence request
+          console.error(
+            `Webhook Error: Withdrawal request with ID ${withdrawalRequestId} not found.`
+          );
+          res.status(200).json({
+            received: true,
+            message: "Withdrawal request not found, but acknowledged.",
+          });
+          await session.abortTransaction();
+          return;
+        }
+
+        // Update withdrawal request
+        withdrawalRequest.stripeTransferId = transfer.id;
+        withdrawalRequest.processedAt = new Date();
+        withdrawalRequest.states.push({
+          id: getWithdrawalStateId("4"), // completed
+          notes: `Withdrawal completed via Stripe. Transfer ID: ${transfer.id}`,
+          createdBy: getSysUserId(),
+        });
+
+        await withdrawalRequest.save({ session });
+        console.log("✅ ", "Withdrawal request updated successfully.");
+        break;
+      }
+      case "transfer.reversed": {
+        const transfer = event.data.object as Stripe.Transfer;
+        const withdrawalRequestId = transfer.metadata.withdrawalRequestId;
+
+        // Check if withdrawalRequestId is valid
+        const withdrawalRequest = await WithdrawalRequest.findById(
+          withdrawalRequestId
+        ).session(session);
+        if (!withdrawalRequest) {
+          // If withdrawal request is not found, we must return 200 to Stripe to stop retries for this non-existence request
+          console.error(
+            `Webhook Error: Withdrawal request with ID ${withdrawalRequestId} not found.`
+          );
+          res.status(200).json({
+            received: true,
+            message: "Withdrawal request not found, but acknowledged.",
+          });
+          await session.abortTransaction();
+          return;
+        }
+
+        // Refund amount back to user balance
+        await User.findByIdAndUpdate(
+          withdrawalRequest.userId,
+          { $inc: { userBalanceCents: withdrawalRequest.amountCents } },
+          { session }
+        );
+
+        // Update withdrawal request
+        withdrawalRequest.failureReason = "Transfer was reversed by Stripe";
+        withdrawalRequest.states.push({
+          id: getWithdrawalStateId("5"), // failed
+          notes: `Transfer reversed: ${
+            transfer.metadata.reversalReason || "Unknown reason"
+          }`,
+          createdBy: getSysUserId(),
+        });
+
+        await withdrawalRequest.save({ session });
+        console.log("✅ ", "Withdrawal request updated successfully.");
         break;
       }
       default:

@@ -2,6 +2,7 @@ import {
   faBox,
   faCreditCard,
   faLocationDot,
+  faMoneyBillTransfer,
   faRightFromBracket,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
@@ -93,6 +94,13 @@ export default function Account() {
                     <FontAwesomeIcon icon={faBox} className="me-2" />
                     My purchases
                   </NavLink>
+                  <NavLink to="/account/balance" className="nav-link">
+                    <FontAwesomeIcon
+                      icon={faMoneyBillTransfer}
+                      className="me-2"
+                    />
+                    My balance
+                  </NavLink>
                 </nav>
                 <div className="my-2">
                   <HorizontalDivider />
@@ -110,7 +118,7 @@ export default function Account() {
             </div>
 
             {/* Main content */}
-            <div className="col-md-9">
+            <div className="col-md-9 h-100">
               <main
                 className="border rounded-3 shadow-sm p-4 h-100"
                 style={{ maxWidth: "1200px" }}

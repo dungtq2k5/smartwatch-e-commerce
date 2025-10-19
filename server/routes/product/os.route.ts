@@ -24,12 +24,12 @@ router.post(
   create
 );
 
-router.get("/:id", get);
+router.get("/:osId", get);
 
 router.get("/", getAll);
 
 router.patch(
-  "/:id",
+  "/:osId",
   verifyPermission("u_product_os"),
   verifyEmptyBody,
   inputSanitizer("os"),
@@ -37,6 +37,6 @@ router.patch(
   update
 );
 
-router.delete("/:id", verifyPermission("d_product_os"), remove);
+router.delete("/:osId", verifyPermission("d_product_os"), remove);
 
 export default router;

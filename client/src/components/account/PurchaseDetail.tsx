@@ -57,7 +57,7 @@ export default function PurchaseDetail() {
   const { orderStates, fetchOrderStates, getOrderStateByLookupIdSync } =
     useOrderStateStore();
   const {
-    fetchOrderDetail,
+    getOrderDetail,
     updateSelfOrder,
     checkItemAvailable,
     canChangeDeliveryAddress,
@@ -68,9 +68,9 @@ export default function PurchaseDetail() {
   } = useOrderStore();
   const { createManyCart } = useUserCartStore();
 
-  const [orderDetail, setOrderDetail] = useState<
-    OrderDetailResponse | undefined
-  >(undefined);
+  const [orderDetail, setOrderDetail] = useState<OrderDetailResponse | null>(
+    null
+  );
 
   const [process, setProcess] = useState<Process>({
     isProcessing: true,
@@ -133,7 +133,7 @@ export default function PurchaseDetail() {
 
         const [, fetchedOrderDetail] = await Promise.all([
           fetchOrderStates(),
-          fetchOrderDetail(orderId),
+          getOrderDetail(orderId),
         ]);
 
         setOrderDetail(fetchedOrderDetail);
@@ -281,7 +281,7 @@ export default function PurchaseDetail() {
       });
 
       // Refresh order detail
-      const updatedOrderDetail = await fetchOrderDetail(orderDetail.id);
+      const updatedOrderDetail = await getOrderDetail(orderDetail.id);
       setOrderDetail(updatedOrderDetail);
       toast.success("Order marked as received.");
     } catch (error) {
@@ -291,7 +291,7 @@ export default function PurchaseDetail() {
     }
   }, [
     canSubmit,
-    fetchOrderDetail,
+    getOrderDetail,
     getOrderStateByLookupIdSync,
     orderDetail,
     process.isProcessing,
@@ -324,7 +324,7 @@ export default function PurchaseDetail() {
       });
 
       // Refresh order detail
-      const updatedOrderDetail = await fetchOrderDetail(orderDetail.id);
+      const updatedOrderDetail = await getOrderDetail(orderDetail.id);
       setOrderDetail(updatedOrderDetail);
       toast.success("Order has been cancelled.");
     } catch (error) {
@@ -334,7 +334,7 @@ export default function PurchaseDetail() {
     }
   }, [
     canCancel,
-    fetchOrderDetail,
+    getOrderDetail,
     getOrderStateByLookupIdSync,
     orderDetail,
     process.isProcessing,
@@ -391,9 +391,9 @@ export default function PurchaseDetail() {
         <PurchaseDetailSkeleton />
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
-      ) : !orderStates ? (
+      ) : orderStates === null ? (
         <ApiError errMsg="Order state data is not available." />
-      ) : !orderDetail ? (
+      ) : orderDetail === null ? (
         <ApiError errMsg="Order detail data is not available." />
       ) : (
         <>

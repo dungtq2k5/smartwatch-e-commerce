@@ -15,10 +15,10 @@ import { formatError } from "../../../../common/utils.common";
 import toast from "react-hot-toast";
 import PurchaseCard from "../purchase/PurchaseCard";
 import ConfirmSubmitModal from "../modal/ConfirmSubmitModal";
-import { useReturnStore } from "../../store/returnRefund/returnStore";
+import { useReturnStore } from "../../store/returnRefund/orderReturnStore";
 import { useReturnStateStore } from "../../store/returnRefund/returnStateStore";
 import ReturnCard from "../purchase/ReturnCard";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import Loading from "../Loading";
 import { usePaymentMethodStore } from "../../store/order/paymentMethodStore";
 
@@ -36,10 +36,10 @@ type Process = {
   isShowingMore: boolean;
 };
 
-type NextPageData = Partial<{
-  orders: OrderListResponse;
-  returns: OrderReturnListResponse;
-}>;
+type NextPageData = {
+  orders: OrderListResponse | null;
+  returns: OrderReturnListResponse | null;
+};
 
 type Modal = Partial<{
   orderIdToSubmit: string;
@@ -62,8 +62,6 @@ export default function Purchase() {
   const renderCount = useRef(0);
   renderCount.current += 1;
   console.log("Purchase render count:", renderCount.current);
-
-  const location = useLocation();
 
   const { deliveryStates, fetchDeliveryStates } = useDeliveryStateStore();
   const { orderStates, fetchOrderStates, getOrderStateByLookupId } =
@@ -94,7 +92,10 @@ export default function Purchase() {
     isShowingMore: false,
   });
 
-  const [nextPageData, setNextPageData] = useState<NextPageData>({});
+  const [nextPageData, setNextPageData] = useState<NextPageData>({
+    orders: null,
+    returns: null,
+  });
 
   const [modal, setModal] = useState<Modal>({});
 
@@ -158,7 +159,7 @@ export default function Purchase() {
           };
         });
 
-        setNextPageData((prev) => ({ ...prev, orders: undefined }));
+        setNextPageData((prev) => ({ ...prev, orders: null }));
         return;
       }
       if (nextReturns) {
@@ -170,7 +171,7 @@ export default function Purchase() {
             ...nextReturns.returns.returns,
           ];
           return {
-            ...nextReturns, // { total, limit, offset }
+            ...nextReturns, // total, limit, offset
             returns: {
               ...nextReturns.returns,
               total: combinedReturns.length,
@@ -178,7 +179,7 @@ export default function Purchase() {
             },
           };
         });
-        setNextPageData((prev) => ({ ...prev, returns: undefined }));
+        setNextPageData((prev) => ({ ...prev, returns: null }));
         return;
       }
 
@@ -273,7 +274,7 @@ export default function Purchase() {
       controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
+  }, [searchParams]);
 
   // May throw an error if API fails
   const getOrderStateIdsForTab = useCallback(
@@ -356,7 +357,7 @@ export default function Purchase() {
           limit: MAX_PURCHASES_PER_PAGE.toString(),
         });
 
-        setNextPageData({ returns: nextReturns });
+        setNextPageData({ orders: null, returns: nextReturns });
       } else {
         // For other tabs
         const stateIds =
@@ -370,7 +371,7 @@ export default function Purchase() {
           stateIds,
         });
 
-        setNextPageData({ orders: nextOrders });
+        setNextPageData({ orders: nextOrders, returns: null });
       }
 
       setSearchForm(newForm);
@@ -573,7 +574,6 @@ export default function Purchase() {
     try {
       const cancelState = await getReturnStateByLookupId("7"); // cancelled
       const updatedReturn = await updateReturn(
-        returnToCancel.orderId,
         returnToCancel.returnId,
         { stateId: cancelState.id }
       );
@@ -742,7 +742,7 @@ export default function Purchase() {
               })}
 
           {/* Show more */}
-          <div className="w-100 d-flex justify-content-center">
+          <div className="text-center">
             {canShowMore ? (
               <button
                 type="button"

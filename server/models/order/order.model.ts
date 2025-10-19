@@ -5,6 +5,7 @@ import {
   RETURN_POLICY_DAYS,
 } from "../../configs/configs";
 import { IUserAddress } from "../user/userAddress.model";
+import { canReturnOrder } from "../../utils/utils";
 
 /**
 items: [
@@ -43,7 +44,7 @@ type TDeliveryAddress = Omit<
   IUserAddress,
   keyof Document | "userId" | "isDefault" | "createdAt" | "updatedAt"
 >;
-export interface IDeliveryAddress extends TDeliveryAddress {};
+export interface IDeliveryAddress extends TDeliveryAddress {}
 
 export interface ITransaction {
   amountCents: number;
@@ -414,18 +415,15 @@ const orderSchema: Schema<IOrder> = new Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
 
 orderSchema.virtual("canReturn").get(function (this: IOrder) {
-  // The order must have been received to be returnable
-  if (!this.receivedDate) return false;
-
-  // Calculate the return deadline
-  const deadline = new Date(this.receivedDate);
-  deadline.setDate(deadline.getDate() + RETURN_POLICY_DAYS);
-
-  return new Date() < deadline;
+  return canReturnOrder(this.receivedDate);
 });
 
 const Order: Model<IOrder> = mongoose.model<IOrder>("Order", orderSchema);

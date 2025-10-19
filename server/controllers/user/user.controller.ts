@@ -196,7 +196,7 @@ export async function get(
     );
   }
 
-  const userId = req.params.id;
+  const { userId } = req.params;
 
   try {
     // Check user exists
@@ -328,7 +328,7 @@ export async function updateGeneralInfo(
     );
   }
 
-  const userId = req.params.id;
+  const { userId } = req.params;
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -489,7 +489,7 @@ export async function updateEmail(
     );
   }
 
-  const userId = req.params.id;
+  const { userId } = req.params;
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -620,7 +620,7 @@ export async function updatePhoneNumber(
     );
   }
 
-  const userId = req.params.id;
+  const { userId } = req.params;
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -773,7 +773,7 @@ export async function remove(
     );
   }
 
-  const userId = req.params.id;
+  const { userId } = req.params;
   if (reqUserId === userId) {
     return next(
       new HttpError(400, "You cannot delete your own account as an admin.")

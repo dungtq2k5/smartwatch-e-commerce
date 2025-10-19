@@ -75,15 +75,15 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Fetching provider by ID...");
-  const id = req.params.id;
+  const { providerId } = req.params;
 
   try {
     // Check exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(providerId)) {
       throw new HttpError(404, "Provider not found.");
     }
 
-    const provider = await Provider.findById(id).lean();
+    const provider = await Provider.findById(providerId).lean();
     if (!provider || provider.isDeleted) {
       throw new HttpError(404, "Provider not found.");
     }
@@ -105,15 +105,15 @@ export async function update(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating provider...");
-  const id = req.params.id;
+  const { providerId } = req.params;
   const { fullName, email, phoneNumber } = req.body as ProviderUpdate;
 
   try {
     // Check exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(providerId)) {
       throw new HttpError(404, "Provider not found.");
     }
-    const provider = await Provider.findById(id);
+    const provider = await Provider.findById(providerId);
     if (!provider || provider.isDeleted) {
       throw new HttpError(404, "Provider not found.");
     }
@@ -189,14 +189,14 @@ export async function remove(
       )
     );
   }
-  const id = req.params.id;
+  const { providerId } = req.params;
 
   try {
     // Check exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(providerId)) {
       throw new HttpError(404, "Provider not found.");
     }
-    const provider = await Provider.findById(id);
+    const provider = await Provider.findById(providerId);
     if (!provider || provider.isDeleted) {
       throw new HttpError(404, "Provider not found.");
     }

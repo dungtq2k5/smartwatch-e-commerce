@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import type {
   OrderCreate,
   PaymentMethodResponse,
-  UserAddressResponse,
+  UserSelfAddressResponse,
   UserCartListResponse,
 } from "../../../common/types.common";
 import {
@@ -97,7 +97,7 @@ export default function Checkout() {
   );
 
   const [selectedAddress, setSelectedAddress] = useState<
-    UserAddressResponse | undefined
+    UserSelfAddressResponse | undefined
   >(undefined);
   const [modal, setModal] = useState<Modal>({
     addAddress: false,

@@ -8,6 +8,10 @@ import {
   PRODUCT_SEARCH_SORT_OPTIONS,
   PRODUCT_TYPES,
   VN_COUNTRY_CODE,
+  USER_BALANCE_HISTORY_SEARCH_CATEGORY_OPTIONS,
+  STRIPE_BANK_ACCOUNT_STATUS,
+  BANK_ACCOUNT_TYPES,
+  WITHDRAWAL_METHODS,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -181,11 +185,11 @@ export type UserAddressCompare = Omit<
   countryCode: string;
 };
 
-export type UserAddressResponse = Omit<BaseUserAddress, "userId">;
+export type UserSelfAddressResponse = Omit<BaseUserAddress, "userId">;
 
 export type UserAddressListResponse = {
   total: number;
-  addresses: UserAddressResponse[];
+  addresses: UserSelfAddressResponse[];
 };
 
 export type UserAddressCreate = Omit<
@@ -207,7 +211,7 @@ export type UserAddressCreate = Omit<
 
 export type UserAddressUpdate = Partial<UserAddressCreate>;
 
-export type AdminUserAddressResponse = UserAddressResponse & {
+export type AdminUserAddressResponse = UserSelfAddressResponse & {
   userId: string;
 };
 
@@ -869,12 +873,7 @@ export type CheckoutSessionResponse = {
   url: string; // Redirect user to this URL to complete payment
 };
 
-export type DeliveryStateResponse = {
-  id: string;
-  lookupId: string;
-  name: string;
-  level: number;
-};
+export type DeliveryStateResponse = OrderStateResponse;
 export type DeliveryStateListResponse = {
   total: number;
   states: DeliveryStateResponse[];
@@ -942,7 +941,7 @@ export type OrderReturnResponse = {
     }
   >;
   pickupAddress: OrderResponse["deliveryAddress"];
-  transaction: {
+  refundTransaction: {
     amountCents: number;
     currency: string;
     transactionDate: string;
@@ -1013,11 +1012,114 @@ export type ReturnReasonListResponse = {
 };
 
 export type StripeSetupIntentResponse = {
-  clientSecret: string,
+  clientSecret: string;
 };
 
 export type UserPaymentMethodCreate = {
   stripePaymentMethodId: string;
+};
+
+export type UserBalanceHistorySearchQuery = Partial<{
+  limit: string;
+  offset: string;
+  category: (typeof USER_BALANCE_HISTORY_SEARCH_CATEGORY_OPTIONS)[number];
+  createdAtFrom: string; // ISO date string
+  createdAtTo: string; // ISO date string
+}>;
+
+export type UserBalanceHistoryResponse = {
+  type: "refund" | "withdraw_request" | "payment_to";
+  referenceId: string;
+  balanceCentsUsed: number;
+  state: "completed" | "pending" | "failed"; // For display only
+  createdAt: string;
+};
+export type UserBalanceHistoryListResponse = {
+  total: number;
+  histories: {
+    total: number;
+    histories: UserBalanceHistoryResponse[];
+  };
+  offset: number;
+  limit: number;
+};
+
+export type UserBankAccountSetupResponse = {
+  bankAccountId: string;
+  setupUrl: string; // onboardingUrl
+  accountStatus: typeof STRIPE_BANK_ACCOUNT_STATUS[number],
+};
+
+export type UserSelfBankAccountResponse = {
+  id: string;
+  accountHolderName: string;
+  last4: string;
+  bankName: string;
+  routingNumber: string | null;
+  accountType: typeof BANK_ACCOUNT_TYPES[number],
+  currency: string;
+  country: string;
+  isVerified: boolean;
+  isDefault: boolean;
+  accountStatus: typeof STRIPE_BANK_ACCOUNT_STATUS[number],
+  requiresAction: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+export type UserSelfBankAccountListResponse = {
+  total: number;
+  accounts: UserSelfBankAccountResponse[];
+};
+
+export type WithdrawalRequestCreate = {
+  amountCents: number;
+  bankAccountId: string;
+};
+
+export type SelfWithdrawalRequestResponse = {
+  id: string;
+  amountCents: number;
+  currency: string;
+  states: StateResponse[];
+  withdrawalMethod: typeof WITHDRAWAL_METHODS[number];
+  stripeTransferGroupId: string | null;
+  stripeTransferId: string | null;
+  bankAccount: {
+    stripeConnectedAccountId: string;
+    accountHolderName: string;
+    last4: string;
+    bankName: string;
+  };
+  failureReason: string | null;
+  processedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SelfWithdrawalRequestListResponse = {
+  total: number;
+  requests: {
+    total: number;
+    requests: SelfWithdrawalRequestResponse[];
+  }
+  offset: number;
+  limit: number;
+};
+
+export type SelfWithdrawalRequestSearchQuery = Partial<{
+  limit: string;
+  offset: string;
+}>;
+
+export type ApproveWithdrawalRequest = {
+  notes?: string | null;
+} | undefined;
+export type RejectWithdrawalRequest = ApproveWithdrawalRequest;
+
+export type WithdrawalStateResponse = OrderStateResponse;
+export type WithdrawalStateListResponse = {
+  total: number;
+  states: WithdrawalStateResponse[];
 };
 
 // --- HELPER TYPES ---

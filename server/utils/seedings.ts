@@ -23,6 +23,7 @@ import Role from "../models/role/role.model";
 import OrderState from "../models/order/orderState.model";
 import PickupState from "../models/returnRefund/pickupState.model";
 import CancelReason from "../models/order/cancelReason.model";
+import WithdrawalState from "../models/withdrawal/withdrawalState.model";
 
 export async function createSystemUser(
   session: mongoose.mongo.ClientSession
@@ -848,6 +849,74 @@ export async function createBaseAdminUser(
   }
 }
 
+export async function seedWithdrawalStates(
+  systemUserId: Types.ObjectId | string,
+  session: mongoose.mongo.ClientSession
+): Promise<void> {
+  try {
+    const count = await WithdrawalState.countDocuments().session(session);
+
+    if (count !== 0) {
+      console.log("WithdrawalStates already exist, no seeding needed.");
+      return;
+    }
+
+    let withdrawalStates = [
+      {
+        lookupId: "1",
+        name: "pending",
+        level: 1,
+        description: "A new withdrawal request that needs to be reviewed.",
+      },
+      {
+        lookupId: "2",
+        name: "approved",
+        level: 2,
+        description: "Withdrawal request has been approved by admin.",
+      },
+      {
+        lookupId: "3",
+        name: "processing",
+        level: 3,
+        description: "Withdrawal request is being processed.",
+      },
+      {
+        lookupId: "4",
+        name: "completed",
+        level: 4, // Final state
+        description: "Withdrawal request has been completed successfully.",
+      },
+      {
+        lookupId: "5",
+        name: "failed",
+        level: 4,
+        description: "Withdrawal request has failed during processing.",
+      },
+      {
+        lookupId: "6",
+        name: "cancelled",
+        level: 4,
+        description: "Withdrawal request has been cancelled by the user.",
+      },
+      {
+        lookupId: "7",
+        name: "rejected",
+        level: 4,
+        description: "Withdrawal request has been rejected during review.",
+      },
+    ];
+    withdrawalStates = withdrawalStates.map((state) => ({
+      ...state,
+      createdBy: systemUserId,
+    }));
+
+    await WithdrawalState.insertMany(withdrawalStates, { session });
+    console.log("✅ ", "WithdrawalStates seeded successfully!");
+  } catch (error) {
+    throw new Error(`Error seeding WithdrawalStates: ${error}`);
+  }
+}
+
 export async function seedAllCollections(): Promise<void> {
   console.log("🫘 ", "Seeding collections...");
 
@@ -856,32 +925,6 @@ export async function seedAllCollections(): Promise<void> {
 
   try {
     // Order is matter
-
-    // Ensure all indexes are created before seeding
-    // console.log("🔄", "Syncing indexes...");
-    // await Promise.all([
-    //   User.syncIndexes(),
-
-    //   GrnState.syncIndexes(),
-    //   InventoryMovementType.syncIndexes(),
-
-    //   DeliveryState.syncIndexes(),
-    //   PaymentMethod.syncIndexes(),
-    //   PaymentState.syncIndexes(),
-    //   OrderState.syncIndexes(),
-    //   CancelReason.syncIndexes(),
-
-    //   InstanceCondition.syncIndexes(),
-
-    //   RefundState.syncIndexes(),
-    //   ReturnState.syncIndexes(),
-    //   PickupState.syncIndexes(),
-    //   ReturnReason.syncIndexes(),
-
-    //   Permission.syncIndexes(),
-    //   Role.syncIndexes(),
-    // ]);
-    // console.log("✅", "Indexes synced successfully!");
 
     const sysUserId = await createSystemUser(session);
 
@@ -904,6 +947,8 @@ export async function seedAllCollections(): Promise<void> {
     await seedPermissions(session);
     await seedRoles(session);
     await createBaseAdminUser(session);
+
+    await seedWithdrawalStates(sysUserId, session);
 
     await session.commitTransaction();
     console.log("✅ ", "All collections seeded successfully!");

@@ -48,7 +48,7 @@ export const useProductStore = create<ProductState>(() => ({
       );
       if (!res.success) throw new Error(res.message);
 
-      return res.data;
+      return res.data as ProductListResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }

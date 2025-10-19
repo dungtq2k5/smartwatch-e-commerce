@@ -22,6 +22,7 @@ import {
   getDeliveryStateId,
   getDeliveryStateLevel,
   getDeliveryStateLookupId,
+  getLatestStateId,
   getMovementTypeId,
   getOrderStateId,
   getOrderStateLevel,
@@ -309,14 +310,14 @@ export async function get(
       )
     );
   }
-  const { id } = req.params;
+  const { orderId } = req.params;
 
   try {
     // Check exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(orderId)) {
       throw new HttpError(404, "Order not found.");
     }
-    const order = await Order.findById(id).populate(populationPath).lean();
+    const order = await Order.findById(orderId).populate(populationPath).lean();
     if (!order) {
       throw new HttpError(404, "Order not found.");
     }
@@ -356,15 +357,15 @@ export async function getDetails(
       )
     );
   }
-  const { id } = req.params;
+  const { orderId } = req.params;
 
   try {
     // Check exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(orderId)) {
       throw new HttpError(404, "Order not found.");
     }
 
-    const order = await Order.findById(id)
+    const order = await Order.findById(orderId)
       .populate(populationPath)
       .populate("paymentMethodId", "name")
       .populate("paymentStates.id", "lookupId name")
@@ -414,8 +415,8 @@ export async function search(
   }
   const reqQuery = req["sanitizedQuery"] as OrderSearchQuery;
 
-  const limit = reqQuery.limit ? parseInt(reqQuery.limit, 10) : 9;
-  const offset = reqQuery.offset ? parseInt(reqQuery.offset, 10) : 0;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
   const baseMatch: any = {};
   const exprConditions: any[] = [];
 
@@ -595,17 +596,17 @@ export async function updateSelf(
       )
     );
   }
-  const { id } = req.params;
+  const { orderId } = req.params;
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     // Check exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(orderId)) {
       throw new HttpError(404, "Order not found.");
     }
-    const order = await Order.findById(id).session(session);
+    const order = await Order.findById(orderId).session(session);
     if (!order) {
       throw new HttpError(404, "Order not found.");
     }
@@ -841,7 +842,14 @@ export async function fulfillItem(
       )
     );
   }
-  const { id: orderId } = req.params;
+  // Check permission
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const { orderId } = req.params;
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -854,14 +862,6 @@ export async function fulfillItem(
     const order = await Order.findById(orderId).session(session);
     if (!order) {
       throw new HttpError(404, "Order not found.");
-    }
-
-    // Check permission
-    if (isBuyerOnly) {
-      throw new HttpError(
-        403,
-        "You do not have permission to perform this action."
-      );
     }
 
     /*
@@ -1006,27 +1006,25 @@ export async function updateDeliveryState(
       )
     );
   }
-  const { id } = req.params;
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const { orderId } = req.params;
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     // Check exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(orderId)) {
       throw new HttpError(404, "Order not found.");
     }
-    const order = await Order.findById(id).session(session);
+    const order = await Order.findById(orderId).session(session);
     if (!order) {
       throw new HttpError(404, "Order not found.");
-    }
-
-    // Check permission
-    if (isBuyerOnly) {
-      throw new HttpError(
-        403,
-        "You do not have permission to perform this action."
-      );
     }
 
     /*
@@ -1519,23 +1517,6 @@ async function handleCancelRefund(
     );
     throw error;
   }
-}
-
-/**
- * Returns the `id` of the latest state from an array of state objects.
- *
- * @param stateArr - An array of state objects, each containing an `id` and an optional `createdAt` property.
- * @returns The `id` of the last state object in the array, or `undefined` if the array is empty.
- * @throws {HttpError} Throws an error if the state array is empty.
- */
-export function getLatestStateId(
-  stateArr: { id: Types.ObjectId; createdAt?: Date | null }[]
-): Types.ObjectId {
-  if (stateArr.length === 0) {
-    throw new HttpError(500, "State array is empty.");
-  }
-
-  return stateArr[stateArr.length - 1].id;
 }
 
 // Define the population path to be reused

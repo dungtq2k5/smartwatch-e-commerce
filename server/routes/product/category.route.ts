@@ -24,12 +24,12 @@ router.post(
   create
 );
 
-router.get("/:id", get);
+router.get("/:categoryId", get);
 
 router.get("/", getAll);
 
 router.patch(
-  "/:id",
+  "/:categoryId",
   verifyPermission("u_product_cat"),
   verifyEmptyBody,
   inputSanitizer("category"),
@@ -37,6 +37,6 @@ router.patch(
   update
 );
 
-router.delete("/:id", verifyPermission("d_product_cat"), remove);
+router.delete("/:categoryId", verifyPermission("d_product_cat"), remove);
 
 export default router;

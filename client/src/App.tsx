@@ -29,6 +29,7 @@ import ReturnRefund from "./pages/ReturnRefundCreate.tsx";
 import ReturnRefundDetail from "./pages/ReturnRefundDetail.tsx";
 import ReturnRefundUpdate from "./pages/ReturnRefundUpdate.tsx";
 import CreateUserPaymentMethod from "./pages/CreateUserPaymentMethod.tsx";
+import Balance from "./components/account/Balance.tsx";
 
 export default function App() {
   // DEV for testing
@@ -75,20 +76,18 @@ export default function App() {
         </Route>
 
         <Route element={<AuthRoute />}>
-          {/*
-            TODO user balance page: display balance, transaction history, transfer to bank card.
-          */}
           <Route path="/account" element={<Account />}>
             <Route index element={<Profile />}></Route>
             <Route path="profile" element={<Profile />}></Route>
             <Route path="bank-card" element={<BankAndCard />}></Route>
             <Route path="address" element={<Address />}></Route>
+            <Route path="balance" element={<Balance />}></Route>
 
             <Route path="purchase">
               <Route index element={<Purchase />}></Route>
               <Route path="order/:id" element={<PurchaseDetail />}></Route>
               <Route
-                path="order/:id/return-refund/:returnId"
+                path="return-refund/:returnId"
                 element={<ReturnRefundDetail />}
               ></Route>
             </Route>
@@ -101,7 +100,7 @@ export default function App() {
           <Route path="/return-refund">
             <Route path="create/:orderId" element={<ReturnRefund />}></Route>
             <Route
-              path="update/:orderId/:returnId"
+              path=":returnId/update"
               element={<ReturnRefundUpdate />}
             ></Route>
           </Route>

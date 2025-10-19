@@ -1,3 +1,4 @@
+import { Response } from "express";
 import {
   AVATAR_ALLOWED_TYPES,
   ORDER_RETURN_IMG_ALLOWED_TYPES,
@@ -6,11 +7,12 @@ import {
 } from "../../common/configs.common";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "./types";
-import { JWT_NAME, JWT_TTL } from "../configs/configs";
+import { JWT_NAME, JWT_TTL, REFRESH_JWT_NAME, REFRESH_JWT_TTL, RETURN_POLICY_DAYS } from "../configs/configs";
 import * as commonType from "../../common/types.common";
 import { Types } from "mongoose";
 import ModelVariation from "../models/product/modelVariation.model";
 import { appCache } from "../configs/cache";
+import { HttpError } from "./errorHandler";
 
 export function isValidUrl(url: any): boolean {
   if (typeof url !== "string") return false;
@@ -85,36 +87,49 @@ export function genVerificationCode(
   return randomNumber.toString().padStart(length, "0");
 }
 
-export function genJWTAndSetCookie(
-  res: any,
-  userId: string,
-  isVerified: boolean
-): string {
-  const token = jwt.sign(
-    { userId, isVerified } as JwtPayload,
+export function genJwtAndSetCookie(
+  res: Response,
+  payload: JwtPayload,
+): { accessToken: string; refreshToken: string } {
+  // Create Access token
+  const accessToken = jwt.sign(
+    payload,
     process.env.JWT_SECRET_KEY!,
     { expiresIn: JWT_TTL }
   );
 
-  res.cookie(JWT_NAME, token, {
+  // Create Refresh Token
+  const refreshToken = jwt.sign(
+    payload,
+    process.env.REFRESH_JWT_SECRET_KEY!,
+    { expiresIn: REFRESH_JWT_TTL }
+  );
+
+  res.cookie(JWT_NAME, accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-    sameSite: "Strict", // Prevent CSRF attacks
+    sameSite: "strict", // Prevent CSRF attacks
     maxAge: JWT_TTL,
   });
 
-  return token;
+  res.cookie(REFRESH_JWT_NAME, refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: REFRESH_JWT_TTL,
+  });
+
+  return { accessToken, refreshToken };
 }
 
-export function getJWTPayload(token: any): JwtPayload | false {
+export function getJwtPayload(
+  token: any,
+  secret: string = process.env.JWT_SECRET_KEY!
+): JwtPayload | false {
   if (typeof token !== "string") return false;
 
   try {
-    const payload = jwt.verify(
-      token,
-      process.env.JWT_SECRET_KEY!
-    ) as JwtPayload;
-
+    const payload = jwt.verify(token, secret) as JwtPayload;
     return payload;
   } catch {
     return false;
@@ -215,6 +230,34 @@ export function isPresent<T>(val: T): val is NonNullable<T> {
   return val !== undefined && val !== null;
 }
 
+/**
+ * Returns the `id` of the latest state from an array of state objects.
+ *
+ * @param stateArr - An array of state objects, each containing an `id` and an optional `createdAt` property.
+ * @returns The `id` of the last state object in the array, or `undefined` if the array is empty.
+ * @throws {HttpError} Throws an error if the state array is empty.
+ */
+export function getLatestStateId(
+  stateArr: { id: Types.ObjectId; createdAt?: Date | null }[]
+): Types.ObjectId {
+  if (stateArr.length === 0) {
+    throw new HttpError(500, "State array is empty.");
+  }
+
+  return stateArr.at(-1)!.id;
+}
+
+export function canReturnOrder(receivedDate: Date | null): boolean {
+  // The order must have been received to be returnable
+  if (!receivedDate) return false;
+
+  // Calculate the return deadline
+  const deadline = new Date(receivedDate);
+  deadline.setDate(deadline.getDate() + RETURN_POLICY_DAYS);
+
+  return new Date() < deadline;
+}
+
 // --- FORMATTING RESPONSE FUNCTIONS ---
 
 export function formatUserResponse(user: any): commonType.UserResponse {
@@ -264,7 +307,7 @@ export function formatRoleResponse(role: any): commonType.RoleResponse {
 
 export function formatUserAddressResponse(
   address: any
-): commonType.UserAddressResponse {
+): commonType.UserSelfAddressResponse {
   return {
     id: address._id,
     name: address.name,
@@ -515,7 +558,9 @@ export function formatOrderResponse(order: any): commonType.OrderResponse {
     fulfilledBy: order.fulfilledBy,
     fulfilledAt: order.fulfilledAt,
     buyerCancelReasonId: order.buyerCancelReasonId,
-    canReturn: order.canReturn,
+    canReturn: isPresent(order.canReturn)
+      ? order.canReturn
+      : canReturnOrder(order.receivedDate), // Make sure canReturn is always returned (because of virtuals field and will not included when use lean())
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
   };
@@ -655,7 +700,7 @@ export function formatOrderReturnResponse(
       };
     }),
     pickupAddress: orderReturn.pickupAddress,
-    transaction: orderReturn.transaction,
+    refundTransaction: orderReturn.refundTransaction,
     refundSummary: orderReturn.refundSummary,
     refundStates: orderReturn.refundStates,
     pickupStates: orderReturn.pickupStates,
@@ -740,6 +785,62 @@ export function formatReturnReason(
     name: reason.name,
     description: reason.description,
   };
+}
+
+export function formatSetupBankAccountResponse(
+  account: any
+): commonType.UserBankAccountSetupResponse {
+  return {
+    bankAccountId: account._id,
+    setupUrl: account.onboardingUrl,
+    accountStatus: account.accountStatus,
+  };
+}
+
+export function formatUserSelfBankAccountResponse(
+  account: any
+): commonType.UserSelfBankAccountResponse {
+  return {
+    id: account._id,
+    accountHolderName: account.accountHolderName,
+    last4: account.last4,
+    bankName: account.bankName,
+    routingNumber: account.routingNumber,
+    accountType: account.accountType,
+    currency: account.currency,
+    country: account.country,
+    isVerified: account.isVerified,
+    isDefault: account.isDefault,
+    accountStatus: account.accountStatus,
+    requiresAction: account.requiresAction,
+    createdAt: account.createdAt,
+    updatedAt: account.updatedAt,
+  };
+}
+
+export function formatSelfWithdrawalRequestResponse(
+  request: any
+): commonType.SelfWithdrawalRequestResponse {
+  return {
+    id: request._id,
+    amountCents: request.amountCents,
+    currency: request.currency,
+    states: request.states,
+    withdrawalMethod: request.withdrawalMethod,
+    stripeTransferGroupId: request.stripeTransferGroupId,
+    stripeTransferId: request.stripeTransferId,
+    bankAccount: request.bankAccount,
+    failureReason: request.failureReason,
+    processedAt: request.processedAt,
+    createdAt: request.createdAt,
+    updatedAt: request.updatedAt,
+  };
+}
+
+export function formatWithdrawalStateResponse(
+  state: any
+): commonType.WithdrawalStateResponse {
+  return formatOrderStateResponse(state);
 }
 
 // --- CACHING FUNCTIONS ---
@@ -1072,4 +1173,50 @@ export function getBuyerRoleId(): Types.ObjectId {
   }
 
   return buyerRoleId;
+}
+
+export function getWithdrawalStateId(lookupId: string): Types.ObjectId {
+  const { withdrawalStates } = appCache;
+  if (!withdrawalStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const state = withdrawalStates[lookupId];
+  if (!state) {
+    throw new Error(
+      `Withdrawal state with lookupId '${lookupId}' not found in cache.`
+    );
+  }
+
+  return state.id;
+}
+
+export function getWithdrawalStateLevel(stateId: Types.ObjectId): number {
+  const { withdrawalStates } = appCache;
+  if (!withdrawalStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const stateName in withdrawalStates) {
+    if (withdrawalStates[stateName].id.equals(stateId)) {
+      return withdrawalStates[stateName].level;
+    }
+  }
+
+  throw new Error(`Withdrawal state with ID '${stateId}' not found in cache.`);
+}
+
+export function getWithdrawalStateLookupId(stateId: Types.ObjectId): string {
+  const { withdrawalStates } = appCache;
+  if (!withdrawalStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const lookupId in withdrawalStates) {
+    if (withdrawalStates[lookupId].id.equals(stateId)) {
+      return lookupId;
+    }
+  }
+
+  throw new Error(`Withdrawal state with ID '${stateId}' not found in cache.`);
 }

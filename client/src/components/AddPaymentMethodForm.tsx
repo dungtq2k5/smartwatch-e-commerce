@@ -97,7 +97,7 @@ export default function AddPaymentMethodForm() {
             >
               Link
             </Link>{" "}
-            for the most convenient.
+            for the most convenient when make a payment.
           </p>
         </div>
 

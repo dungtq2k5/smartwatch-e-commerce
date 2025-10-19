@@ -164,52 +164,16 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Fetching variation instance...");
-  const { productId, modelId, variationId, id } = req.params;
+  const { instanceId } = req.params;
 
   try {
-    // Check product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      throw new HttpError(404, "Product not found.");
-    }
-    const product = await Product.findById(productId).lean();
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product not found.");
-    }
-
-    // Check model exists
-    if (!Types.ObjectId.isValid(modelId)) {
-      throw new HttpError(404, "Model not found.");
-    }
-    const model = await ProductModel.findOne({
-      isDeleted: false,
-      _id: modelId,
-      productId,
-    }).lean();
-    if (!model) {
-      throw new HttpError(404, "Model not found.");
-    }
-
-    // Check variation exists
-    if (!Types.ObjectId.isValid(variationId)) {
-      throw new HttpError(404, "Variation not found.");
-    }
-    const variation = await ModelVariation.findOne({
-      isDeleted: false,
-      _id: variationId,
-      productModelId: modelId,
-    }).lean();
-    if (!variation) {
-      throw new HttpError(404, "Variation not found.");
-    }
-
     // Check instance exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(instanceId)) {
       throw new HttpError(404, "Variation instance not found.");
     }
     const instance = await VariationInstance.findOne({
       isDeleted: false,
-      _id: id,
-      modelVariationId: variationId,
+      _id: instanceId,
     }).lean();
     if (!instance) {
       throw new HttpError(404, "Variation instance not found.");
@@ -232,52 +196,16 @@ export async function update(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Updating variation instance...");
-  const { productId, modelId, variationId, id } = req.params;
+  const { instanceId } = req.params;
 
   try {
-    // Check product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      throw new HttpError(404, "Product not found.");
-    }
-    const product = await Product.findById(productId).lean();
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product not found.");
-    }
-
-    // Check model exists
-    if (!Types.ObjectId.isValid(modelId)) {
-      throw new HttpError(404, "Model not found.");
-    }
-    const model = await ProductModel.findOne({
-      isDeleted: false,
-      _id: modelId,
-      productId,
-    }).lean();
-    if (!model) {
-      throw new HttpError(404, "Model not found.");
-    }
-
-    // Check variation exists
-    if (!Types.ObjectId.isValid(variationId)) {
-      throw new HttpError(404, "Variation not found.");
-    }
-    const variation = await ModelVariation.findOne({
-      isDeleted: false,
-      _id: variationId,
-      productModelId: modelId,
-    }).lean();
-    if (!variation) {
-      throw new HttpError(404, "Variation not found.");
-    }
-
     // Check instance exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(instanceId)) {
       throw new HttpError(404, "Variation instance not found.");
     }
     const instance = await VariationInstance.findOne({
       isDeleted: false,
-      _id: id,
-      modelVariationId: variationId,
+      _id: instanceId,
     });
     if (!instance) {
       throw new HttpError(404, "Variation instance not found.");
@@ -335,7 +263,7 @@ export async function update(
     }
     if (orConditions.length > 0) {
       const existingInstance = await VariationInstance.findOne({
-        modelVariationId: variationId,
+        modelVariationId: instance.modelVariationId,
         $or: orConditions,
       }).lean();
       if (existingInstance) {

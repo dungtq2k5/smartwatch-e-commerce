@@ -3,24 +3,42 @@ import { seedAllCollections } from "./utils/seedings";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+
 import authRoute from "./routes/auth.route";
+
 import userRoute from "./routes/user.route";
+import userCartRoute from "./routes/user/cart.route";
+import userAddressRoute from "./routes/user/userAddress.route";
+import userBankAccountRoute from "./routes/user/userBankAccount.route";
+import userBalanceHistoryRoute from "./routes/user/userBalanceHistory.route";
+import userPaymentMethodRoute from "./routes/user/userPaymentMethod.route";
+
 import roleRoute from "./routes/role.route";
+import webhookRoute from "./routes/webhook.route";
+import providerRoute from "./routes/provider.route";
+import withdrawalRequestRoute from "./routes/withdrawalRequest/withdrawalRequest.route";
+import withdrawalStateRoute from "./routes/withdrawalRequest/withdrawalState.route";
+
 import productRoute from "./routes/product/product.route";
+import productOsRoute from "./routes/product/os.route";
 import productBrandRoute from "./routes/product/brand.route";
 import productCategoryRoute from "./routes/product/category.route";
-import productOsRoute from "./routes/product/os.route";
-import orderRoutes from "./routes/order/order.route";
-import webhookRoutes from "./routes/webhook.route";
-import providerRoutes from "./routes/provider.route";
-import paymentMethodRoutes from "./routes/order/paymentMethod.route";
-import paymentStateRoutes from "./routes/order/paymentState.route";
-import deliveryStateRoutes from "./routes/order/deliveryState.route";
-import orderStateRoutes from "./routes/order/orderState.route";
-import pickupStateRoutes from "./routes/returnRefund/pickupState.route";
-import returnStateRoutes from "./routes/returnRefund/returnState.route";
-import returnReasonRoutes from "./routes/returnRefund/returnReason.route";
-import refundStateRoutes from "./routes/returnRefund/refundState.route";
+import productModelRoute from "./routes/product/productModel.route";
+import modelVariationRoute from "./routes/product/modelVariation.route";
+import variationInstanceRoute from "./routes/product/variationInstance.route";
+
+import orderRoute from "./routes/order/order.route";
+import orderStateRoute from "./routes/order/orderState.route";
+import paymentStateRoute from "./routes/order/paymentState.route";
+import deliveryStateRoute from "./routes/order/deliveryState.route";
+import paymentMethodRoute from "./routes/order/paymentMethod.route";
+
+import orderReturnRoute from "./routes/returnRefund/orderReturn.route";
+import pickupStateRoute from "./routes/returnRefund/pickupState.route";
+import returnStateRoute from "./routes/returnRefund/returnState.route";
+import refundStateRoute from "./routes/returnRefund/refundState.route";
+import returnReasonRoute from "./routes/returnRefund/returnReason.route";
+
 import { errorHandler as errorHandlerMiddleware } from "./utils/middlewares/error.middleware";
 import connectDB from "./db/connectDB";
 import { initAppCache } from "./configs/cache";
@@ -33,6 +51,7 @@ dotenv.config();
 const requiredEnvVars = [
   "SERVER_PORT",
   "JWT_SECRET_KEY",
+  "REFRESH_JWT_SECRET_KEY",
   "MONGO_URI",
   "MAILTRAP_TOKEN",
   "MAILTRAP_SENDER_EMAIL",
@@ -75,33 +94,53 @@ app.use(
 
 // IMPORTANT: Stripe webhook route must come BEFORE express.json()
 // to receive the raw request body for signature verification.
-app.use(`${ROOT_URL}/webhooks`, webhookRoutes);
+app.use(`${ROOT_URL}/webhooks`, webhookRoute);
 
 app.use(express.json());
 app.use(cookieParser());
 
 app.use(`${ROOT_URL}/auth`, authRoute);
+
 app.use(`${ROOT_URL}/users`, userRoute);
+app.use(`${ROOT_URL}/user-carts`, userCartRoute);
+app.use(`${ROOT_URL}/user-addresses`, userAddressRoute);
+app.use(`${ROOT_URL}/user-bank-accounts`, userBankAccountRoute);
+app.use(`${ROOT_URL}/user-balance-history`, userBalanceHistoryRoute);
+app.use(`${ROOT_URL}/user-payment-methods`, userPaymentMethodRoute);
+
 app.use(`${ROOT_URL}/roles`, roleRoute);
-app.use(`${ROOT_URL}/products/brands`, productBrandRoute);
-app.use(`${ROOT_URL}/products/categories`, productCategoryRoute);
-app.use(`${ROOT_URL}/products/os`, productOsRoute);
+app.use(`${ROOT_URL}/providers`, providerRoute);
+app.use(`${ROOT_URL}/withdrawal-requests`, withdrawalRequestRoute);
+app.use(`${ROOT_URL}/withdrawal-states`, withdrawalStateRoute);
+
 app.use(`${ROOT_URL}/products`, productRoute);
-app.use(`${ROOT_URL}/orders`, orderRoutes);
-app.use(`${ROOT_URL}/payment-methods`, paymentMethodRoutes);
-app.use(`${ROOT_URL}/payment-states`, paymentStateRoutes);
-app.use(`${ROOT_URL}/delivery-states`, deliveryStateRoutes);
-app.use(`${ROOT_URL}/order-states`, orderStateRoutes);
-app.use(`${ROOT_URL}/pickup-states`, pickupStateRoutes);
-app.use(`${ROOT_URL}/return-states`, returnStateRoutes);
-app.use(`${ROOT_URL}/return-reasons`, returnReasonRoutes);
-app.use(`${ROOT_URL}/refund-states`, refundStateRoutes);
-app.use(`${ROOT_URL}/providers`, providerRoutes);
+app.use(`${ROOT_URL}/product-os`, productOsRoute);
+app.use(`${ROOT_URL}/product-brands`, productBrandRoute);
+app.use(`${ROOT_URL}/product-categories`, productCategoryRoute);
+app.use(`${ROOT_URL}/product-models`, productModelRoute);
+app.use(`${ROOT_URL}/model-variations`, modelVariationRoute);
+app.use(`${ROOT_URL}/variation-instances`, variationInstanceRoute);
+
+app.use(`${ROOT_URL}/orders`, orderRoute);
+app.use(`${ROOT_URL}/order-states`, orderStateRoute);
+app.use(`${ROOT_URL}/payment-states`, paymentStateRoute);
+app.use(`${ROOT_URL}/delivery-states`, deliveryStateRoute);
+app.use(`${ROOT_URL}/payment-methods`, paymentMethodRoute);
+
+app.use(`${ROOT_URL}/returns`, orderReturnRoute);
+app.use(`${ROOT_URL}/pickup-states`, pickupStateRoute);
+app.use(`${ROOT_URL}/return-states`, returnStateRoute);
+app.use(`${ROOT_URL}/return-reasons`, returnReasonRoute);
+app.use(`${ROOT_URL}/refund-states`, refundStateRoute);
 
 app.use((req, res, next) => {
-  next(new HttpError(404, `Request not found: ${req.originalUrl} with method ${req.method}.`));
+  next(
+    new HttpError(
+      404,
+      `Request not found: ${req.originalUrl} with ${req.method} method.`
+    )
+  );
 });
-
 app.use((err: any, req: Request, res: Response, next: NextFunction) =>
   errorHandlerMiddleware(err, req, res, next)
 );

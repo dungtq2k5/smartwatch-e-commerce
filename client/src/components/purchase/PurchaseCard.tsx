@@ -131,17 +131,17 @@ const PurchaseCard = memo(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const orderStateDisplay = !orderState
-      ? "N/A"
-      : ORDER_LOOKUPID_STATE_LEGEND[
+    const orderStateDisplay = orderState
+      ? ORDER_LOOKUPID_STATE_LEGEND[
           orderState.lookupId as keyof typeof ORDER_LOOKUPID_STATE_LEGEND
-        ] || "unknown";
+        ] || "unknown"
+      : "N/A";
 
-    const orderMsgDisplay = !orderState
-      ? ""
-      : ORDER_LOOKUPID_MSG_LEGEND[
+    const orderMsgDisplay = orderState
+      ? ORDER_LOOKUPID_MSG_LEGEND[
           orderState.lookupId as keyof typeof ORDER_LOOKUPID_MSG_LEGEND
-        ] || "";
+        ] || ""
+      : "";
 
     /*
       Business logic for displaying buttons:
@@ -173,6 +173,7 @@ const PurchaseCard = memo(
     }, [orderState, canBuyAgainOrder, order]);
 
     const notPaidYet = useMemo(() => {
+      console.log("Recalculating notPaidYet...");
       if (!orderState || !paymentMethod) return false;
       return canPay(orderState.lookupId, paymentMethod.lookupId);
     }, [orderState, paymentMethod, canPay]);
@@ -246,7 +247,7 @@ const PurchaseCard = memo(
 
       try {
         const checkout = await createCheckoutSession(order.id);
-        window.location.href = checkout.url;
+        globalThis.location.href = checkout.url;
       } catch (error) {
         toast.error(formatError(error));
       }
@@ -383,7 +384,7 @@ const PurchaseCard = memo(
                       )}
                     </button>
                   )}
-                  {!notPaidYet && (
+                  {notPaidYet && (
                     <button
                       type="button"
                       className="btn btn-primary"

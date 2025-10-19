@@ -23,10 +23,10 @@ router.post(
   create
 );
 
-router.get("/:id", verifyPermission("r_provider_inventory"), get);
+router.get("/:providerId", verifyPermission("r_provider_inventory"), get);
 
 router.patch(
-  "/:id",
+  "/:providerId",
   verifyPermission("u_provider_inventory"),
   verifyEmptyBody,
   sanitizeProviderInput,
@@ -34,6 +34,6 @@ router.patch(
   update
 );
 
-router.delete("/:id", verifyPermission("d_provider_inventory"), remove);
+router.delete("/:providerId", verifyPermission("d_provider_inventory"), remove);
 
 export default router;

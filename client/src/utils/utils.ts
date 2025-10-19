@@ -17,7 +17,22 @@ import {
   AVATAR_MAX_WIDTH,
   AVATAR_MAX_HEIGHT,
 } from "../../../common/configs.common";
-import { readFileAsDataUrl } from "../../../common/utils.common";
+import { formatError, readFileAsDataUrl } from "../../../common/utils.common";
+import { REFRESH_TOKEN_URL } from "../configs";
+
+let isRefreshingToken = false; // Prevent "thundering herd" problem where multiple failed requests would all try to refresh the token simultaneously
+let failedReqQueue: {
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}[] = [];
+
+const processFailedReqQueue = (error: Error | null) => {
+  for (const prom of failedReqQueue) {
+    if (error) prom.reject(error);
+    else prom.resolve(undefined);
+  }
+  failedReqQueue = [];
+};
 
 async function request(
   url: string,
@@ -26,7 +41,7 @@ async function request(
   headers: Record<string, string> = {},
   signal?: AbortSignal
 ): Promise<Response> {
-  try {
+  const makeRequest = async (): Promise<globalThis.Response> => {
     let body: BodyInit | null = null;
 
     if (data) {
@@ -38,12 +53,50 @@ async function request(
       }
     }
 
-    const res = await fetch(url, {
+    return await fetch(url, {
       method,
       headers,
       body,
       signal,
     });
+  };
+
+  try {
+    let res = await makeRequest();
+
+    // Handle refresh-token rotation
+    if (res.status === 401 && url !== REFRESH_TOKEN_URL) {
+      if (isRefreshingToken) {
+        // Push to queue and wait for the refresh-token request to finish
+        return new Promise((resolve, reject) => {
+          failedReqQueue.push({ resolve, reject });
+        })
+          .then(() => makeRequest())
+          .then((retryRes) => retryRes.json());
+      }
+
+      isRefreshingToken = true;
+
+      try {
+        const refreshRes = await fetch(REFRESH_TOKEN_URL, { method: "POST" });
+        if (!refreshRes.ok) {
+          const error = new Error("Session expired. Please log in again.");
+          processFailedReqQueue(error);
+
+          // Force logout
+          const { useAuthStore } = await import("../store/authStore");
+          useAuthStore.getState().logout();
+          throw error;
+        }
+
+        processFailedReqQueue(null);
+        res = await makeRequest(); // Retry original request
+      } catch (error) {
+        throw new Error(formatError(error));
+      } finally {
+        isRefreshingToken = false;
+      }
+    }
 
     return (await res.json()) as Response;
   } catch (error) {
@@ -75,8 +128,8 @@ export async function remove(
 
 export async function patch(
   url: string,
-  id: string | number | undefined,
-  data: object
+  id?: string | number,
+  data?: object
 ): Promise<Response> {
   let method = "PATCH";
   const headers: Record<string, string> = {};
@@ -191,7 +244,9 @@ export function createFileList(files: File[] | FileList): FileList {
   if (files instanceof FileList) return files;
 
   const dataTransfer = new DataTransfer();
-  files.forEach((file) => dataTransfer.items.add(file));
+  for (const file of files) {
+    dataTransfer.items.add(file);
+  }
 
   return dataTransfer.files;
 }

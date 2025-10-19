@@ -31,6 +31,7 @@ interface IUserBase extends Document<Types.ObjectId> {
   isEmailVerified: boolean;
   isPhoneNumberVerified: boolean;
   password: string;
+  refreshToken: string | null;
   birth: Date;
   gender: (typeof USER_GENDER_OPTIONS)[number];
   stripeCustomerId: string | null;
@@ -109,6 +110,12 @@ const userSchema: Schema<IUser> = new Schema(
     password: {
       type: String,
       required: true,
+    },
+    refreshToken: {
+      type: String,
+      required: false,
+      default: null,
+      select: false, // Exclude from query results by default, still accessible via select()
     },
     birth: {
       type: Date,
@@ -211,7 +218,10 @@ userSchema.pre("save", function (next) {
 });
 
 const preventBaseUserMod = function (action: "deletes" | "updates") {
-  return async function (next: mongoose.CallbackWithoutResultAndOptionalError) {
+  return async function (
+    this: mongoose.Query<any, any>,
+    next: mongoose.CallbackWithoutResultAndOptionalError
+  ) {
     const filter = this.getFilter();
 
     const isModifyingImmutableUser = await this.model.exists({
@@ -240,8 +250,14 @@ const preventBaseUserMod = function (action: "deletes" | "updates") {
     if (!update) return next();
 
     const updatedFields = Object.keys(update).reduce((acc: string[], key) => {
-      if (key.startsWith("$")) {
-        return acc.concat(Object.keys(update[key]));
+      if (
+        key.startsWith("$") &&
+        typeof update === "object" &&
+        update !== null &&
+        Object.hasOwn(update, key) &&
+        typeof (update as Record<string, any>)[key] === "object"
+      ) {
+        return acc.concat(Object.keys((update as Record<string, any>)[key]));
       }
       acc.push(key);
       return acc;

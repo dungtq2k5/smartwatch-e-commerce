@@ -9,7 +9,7 @@ import {
   AdminUserAddressResponse,
   SuccessResponse,
   UserAddressCreate,
-  UserAddressResponse,
+  UserSelfAddressResponse,
   UserAddressListResponse,
   UserAddressUpdate,
 } from "../../../common/types.common";
@@ -41,7 +41,7 @@ export async function getAll(
     );
   }
 
-  const userId = req.params.id;
+  const { userId } = req.params;
 
   try {
     // Check user exists
@@ -97,7 +97,7 @@ export async function create(
     );
   }
 
-  const userId = req.params.id;
+  const { userId } = req.params;
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -242,7 +242,7 @@ export async function update(
       )
     );
   }
-  const { userId: userIdFromParams, id: addressId } = req.params;
+  const { userId: userIdFromParams, addressId } = req.params;
 
   const targetUserId = userIdFromParams || reqUserId;
 
@@ -356,7 +356,7 @@ export async function update(
       success: true,
       message: "User address updated successfully",
       data: formatUserAddressResponse(address),
-    } as SuccessResponse<UserAddressResponse>);
+    } as SuccessResponse<UserSelfAddressResponse>);
     console.log("✅", "User self address updated successfully.");
   } catch (error) {
     await session.abortTransaction();
@@ -385,7 +385,7 @@ export async function remove(
       )
     );
   }
-  const { userId: userIdFromParams, id: addressId } = req.params;
+  const { userId: userIdFromParams, addressId } = req.params;
 
   const targetUserId = userIdFromParams || reqUserId;
 
@@ -500,7 +500,7 @@ export async function createSelf(
       success: true,
       message: "User address created successfully",
       data: formatUserAddressResponse(address),
-    } as SuccessResponse<UserAddressResponse>);
+    } as SuccessResponse<UserSelfAddressResponse>);
     console.log("✅", "User address created successfully.");
   } catch (error) {
     await session.abortTransaction();
@@ -526,7 +526,7 @@ export async function getSelf(
       )
     );
   }
-  const { id: addressId } = req.params;
+  const { addressId } = req.params;
 
   try {
     // Check address exists
@@ -545,7 +545,7 @@ export async function getSelf(
       success: true,
       message: "User address retrieved successfully",
       data: formatUserAddressResponse(address),
-    } as SuccessResponse<UserAddressResponse>);
+    } as SuccessResponse<UserSelfAddressResponse>);
     console.log("✅", "User address retrieved successfully.");
   } catch (error) {
     next(error);
@@ -579,7 +579,7 @@ export async function getSelfDefault(
       success: true,
       message: "User default address retrieved successfully",
       data: address ? formatUserAddressResponse(address) : undefined,
-    } as SuccessResponse<UserAddressResponse | undefined>);
+    } as SuccessResponse<UserSelfAddressResponse | undefined>);
     console.log("✅", "User default address retrieved successfully.");
   } catch (error) {
     next(error);

@@ -315,8 +315,8 @@ const orderReturnSchema: Schema<IOrderReturn> = new Schema(
   { timestamps: true }
 );
 
-const OrderReturnSchema: Model<IOrderReturn> = mongoose.model<IOrderReturn>(
+const OrderReturn: Model<IOrderReturn> = mongoose.model<IOrderReturn>(
   "OrderReturn",
   orderReturnSchema
 );
-export default OrderReturnSchema;
+export default OrderReturn;

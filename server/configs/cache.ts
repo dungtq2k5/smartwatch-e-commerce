@@ -12,6 +12,7 @@ import ReturnState from "../models/returnRefund/returnState.model";
 import type { LookupIdObjectId } from "../utils/types";
 import PickupState from "../models/returnRefund/pickupState.model";
 import OrderState from "../models/order/orderState.model";
+import WithdrawalState from "../models/withdrawal/withdrawalState.model";
 
 type LookupIdObjectIdWithLevel = {
   [lookupId: string]: {
@@ -36,6 +37,8 @@ type AppCache = {
 
   refundStates?: LookupIdObjectId;
   returnStates?: LookupIdObjectIdWithLevel;
+
+  withdrawalStates?: LookupIdObjectIdWithLevel;
 };
 
 export const appCache: AppCache = {};
@@ -157,7 +160,7 @@ async function deliveryStatesCache(): Promise<void> {
   }
 }
 
-async function paymentStateCache(): Promise<void> {
+async function paymentStatesCache(): Promise<void> {
   console.log("🗂️ ", "Initializing payment state cache...");
   try {
     const states = await paymentState.find().select("_id lookupId").lean();
@@ -175,7 +178,7 @@ async function paymentStateCache(): Promise<void> {
   }
 }
 
-async function orderStateCache(): Promise<void> {
+async function orderStatesCache(): Promise<void> {
   console.log("🗂️ ", "Initializing order state cache...");
   try {
     const states = await OrderState.find().select("_id lookupId level").lean();
@@ -195,7 +198,7 @@ async function orderStateCache(): Promise<void> {
   }
 }
 
-async function paymentMethodCache(): Promise<void> {
+async function paymentMethodsCache(): Promise<void> {
   console.log("🗂️ ", "Initializing payment method cache...");
   try {
     const methods = await paymentMethod.find().select("_id lookupId").lean();
@@ -213,7 +216,7 @@ async function paymentMethodCache(): Promise<void> {
   }
 }
 
-async function refundStateCache(): Promise<void> {
+async function refundStatesCache(): Promise<void> {
   console.log("🗂️ ", "Initializing refund state cache...");
   try {
     const states = await RefundState.find().select("_id lookupId").lean();
@@ -231,7 +234,7 @@ async function refundStateCache(): Promise<void> {
   }
 }
 
-async function returnStateCache(): Promise<void> {
+async function returnStatesCache(): Promise<void> {
   console.log("🗂️ ", "Initializing return state cache...");
   try {
     const states = await ReturnState.find().select("_id lookupId level").lean();
@@ -273,6 +276,27 @@ async function pickupStatesCache(): Promise<void> {
   }
 }
 
+async function withdrawalStateCache(): Promise<void> {
+  console.log("🗂️ ", "Initializing withdrawal state cache...");
+  try {
+    const states = await WithdrawalState.find().select("_id lookupId level").lean();
+    if (!states || states.length === 0) {
+      throw new Error("No pickup states found in the database.");
+    }
+
+    appCache.withdrawalStates = states.reduce((acc, state) => {
+      acc[state.lookupId] = {
+        id: state._id,
+        level: state.level,
+      };
+      return acc;
+    }, {} as LookupIdObjectIdWithLevel);
+    console.log("✅ ", "Withdrawal state cache initialized successfully.");
+  } catch (error) {
+    throw new Error(`Error initializing withdrawal state cache: ${error}`);
+  }
+}
+
 export async function initAppCache(): Promise<void> {
   console.log("🗂️ ", "Initializing application cache...");
 
@@ -286,14 +310,16 @@ export async function initAppCache(): Promise<void> {
       inventoryMovementTypesCache(),
 
       deliveryStatesCache(),
-      paymentStateCache(),
-      orderStateCache(),
+      paymentStatesCache(),
+      orderStatesCache(),
       pickupStatesCache(),
 
-      paymentMethodCache(),
+      paymentMethodsCache(),
 
-      refundStateCache(),
-      returnStateCache(),
+      refundStatesCache(),
+      returnStatesCache(),
+
+      withdrawalStateCache(),
     ]);
 
     console.log("✅ ", "Application cache initialized successfully.");

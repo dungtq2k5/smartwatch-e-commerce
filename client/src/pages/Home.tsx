@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import ProductCard from "../components/product/ProductCard";
 import { useProductStore } from "../store/product/productStore";
 import type {
@@ -57,8 +57,6 @@ export default function Home() {
   const renderCount = useRef(0);
   renderCount.current += 1;
   console.log("Home render count:", renderCount.current);
-
-  const location = useLocation();
 
   const { fetchProducts } = useProductStore();
   const { categories, fetchCategories } = useProductCategoryStore();
@@ -213,7 +211,7 @@ export default function Home() {
 
     handleFetchSetSearchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
+  }, [searchParams]);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {

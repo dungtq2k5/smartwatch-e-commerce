@@ -38,10 +38,10 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️ ", "Fetching return state...");
-  const { id } = req.params;
+  const { stateId } = req.params;
 
   try {
-    const returnState = await ReturnState.findById(id).lean();
+    const returnState = await ReturnState.findById(stateId).lean();
     if (!returnState) {
       throw new HttpError(404, "Return state not found.");
     }

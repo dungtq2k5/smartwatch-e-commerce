@@ -119,13 +119,14 @@ const SelectAddressModal = memo(
                   <div className="d-flex flex-column gap-3">
                     {addresses.addresses.map((addr) => {
                       const htmlFor = `addr-${addr.id}`;
+
                       return (
                         <div className="form-check" key={addr.id}>
                           <input
-                            className="form-check-input"
                             type="radio"
                             name="address-select"
                             id={htmlFor}
+                            className="form-check-input"
                             value={addr.id}
                             checked={selectedAddressId === addr.id}
                             onChange={(e) =>
@@ -133,8 +134,8 @@ const SelectAddressModal = memo(
                             }
                           />
                           <label
-                            className="form-check-label w-100 address-select-label--g"
                             htmlFor={htmlFor}
+                            className="form-check-label w-100 address-select-label--g"
                           >
                             <div className="d-flex justify-content-between align-items-center">
                               <p className="fw-bold mb-1">

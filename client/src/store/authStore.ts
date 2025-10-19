@@ -63,6 +63,8 @@ type AuthState = {
   deleteAccount: () => Promise<void>;
 
   resetUserBalanceCache: () => void;
+
+  updateUserBalanceCli: (amountCents: number) => void;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -82,7 +84,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log("User authenticated:", user); // DEV temp for testing
       return isAuth;
     } catch {
-      set({ user: undefined, isAuth: false });
+      set({ user: null, isAuth: false });
     }
 
     return false;
@@ -154,7 +156,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(res.message);
       }
 
-      set({ user: undefined, isAuth: false });
+      set({ user: null, isAuth: false });
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -308,7 +310,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(res.message);
       }
 
-      set({ user: undefined, isAuth: false });
+      set({ user: null, isAuth: false });
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -319,5 +321,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!user) return;
 
     set({ user: { ...user, userBalanceCents: 0 } });
+  },
+
+  updateUserBalanceCli(amountCents: number): void {
+    const { user } = get();
+    if (!user) return;
+    set({ user: { ...user, userBalanceCents: amountCents } });
   },
 }));

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { getJWTPayload } from "../utils";
+import { getJwtPayload } from "../utils";
 import { JWT_NAME } from "../../configs/configs";
 import { HttpError } from "../errorHandler";
 import { PermissionCode } from "../../../common/types.common";
@@ -13,7 +13,7 @@ export function verifyReauthentication(
   res: Response,
   next: NextFunction
 ): void {
-  const payload = getJWTPayload(req.cookies[JWT_NAME]);
+  const payload = getJwtPayload(req.cookies[JWT_NAME]);
   if (payload) {
     if (payload.isVerified) {
       throw new HttpError(409, "You are already authenticated.");
@@ -25,12 +25,12 @@ export function verifyReauthentication(
   next();
 }
 
-export function verifyJWTHasUserId(
+export function verifyJwtHasUserId(
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
-  const payload = getJWTPayload(req.cookies[JWT_NAME]);
+  const payload = getJwtPayload(req.cookies[JWT_NAME]);
   if (!payload || !payload.userId) {
     throw new HttpError(401, "You are not authenticated.");
   }
@@ -45,7 +45,7 @@ export function verifyAuthentication(
   res: Response,
   next: NextFunction
 ): void {
-  const payload = getJWTPayload(req.cookies[JWT_NAME]);
+  const payload = getJwtPayload(req.cookies[JWT_NAME]);
   if (!payload || !payload.isVerified) {
     throw new HttpError(401, "You are not authenticated.");
   }
@@ -68,7 +68,7 @@ export function verifyPermission(permissionCode: PermissionCode) {
   ): Promise<void> => {
     try {
       // Check JWT
-      const payload = getJWTPayload(req.cookies[JWT_NAME]);
+      const payload = getJwtPayload(req.cookies[JWT_NAME]);
       if (!payload || !payload.isVerified) {
         throw new HttpError(401, "You are not authenticated.");
       }

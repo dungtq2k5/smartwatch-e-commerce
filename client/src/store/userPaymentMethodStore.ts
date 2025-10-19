@@ -7,27 +7,33 @@ import type {
 } from "../../../common/types.common";
 import { formatError } from "../../../common/utils.common";
 import { SELF_PAYMENT_METHOD_URL } from "../configs";
-import { post, remove, retrieve } from "../utils/utils";
+import { patch, post, remove, retrieve } from "../utils/utils";
 
 type UserPaymentMethodState = {
   paymentMethods: UserSelfPaymentMethodListResponse | null;
 
-  fetchPaymentMethods: () => Promise<UserSelfPaymentMethodListResponse>;
+  fetchPaymentMethods: (
+    oblige?: boolean
+  ) => Promise<UserSelfPaymentMethodListResponse>;
   createPaymentMethod: (
     data: UserPaymentMethodCreate
   ) => Promise<UserPaymentMethodResponse>;
   createStripeSetupIntent: () => Promise<StripeSetupIntentResponse>;
-  deletePaymentMethod: (id: string) => Promise<void>;
   setDefaultPaymentMethod: (id: string) => Promise<void>;
+  deletePaymentMethod: (id: string) => Promise<void>;
 };
 
 export const useUserPaymentMethodStore = create<UserPaymentMethodState>(
   (set, get) => ({
     paymentMethods: null,
 
-    async fetchPaymentMethods(): Promise<UserSelfPaymentMethodListResponse> {
-      const { paymentMethods } = get();
-      if (paymentMethods) return paymentMethods;
+    async fetchPaymentMethods(
+      oblige?: boolean
+    ): Promise<UserSelfPaymentMethodListResponse> {
+      if (!oblige) {
+        const { paymentMethods } = get();
+        if (paymentMethods) return paymentMethods;
+      }
 
       try {
         const res = await retrieve(SELF_PAYMENT_METHOD_URL);
@@ -78,36 +84,9 @@ export const useUserPaymentMethodStore = create<UserPaymentMethodState>(
       }
     },
 
-    async deletePaymentMethod(id: string): Promise<void> {
-      try {
-        const res = await remove(`${SELF_PAYMENT_METHOD_URL}/${id}`);
-        if (!res.success) throw new Error(res.message);
-
-        const { paymentMethods } = get();
-        if (paymentMethods) {
-          const updatedMethods = paymentMethods.methods;
-          const methodIdxToRemove = updatedMethods.findIndex(
-            (method) => method.id === id
-          );
-          if (methodIdxToRemove !== -1) {
-            updatedMethods.splice(methodIdxToRemove, 1);
-            set({
-              paymentMethods: {
-                ...paymentMethods,
-                total: updatedMethods.length,
-                methods: updatedMethods,
-              },
-            });
-          }
-        }
-      } catch (error) {
-        throw new Error(formatError(error));
-      }
-    },
-
     async setDefaultPaymentMethod(id: string): Promise<void> {
       try {
-        const res = await post(`${SELF_PAYMENT_METHOD_URL}/${id}/set-default`);
+        const res = await patch(`${SELF_PAYMENT_METHOD_URL}/${id}/set-default`);
         if (!res.success) throw new Error(res.message);
 
         const updatedMethod = res.data as UserPaymentMethodResponse;
@@ -125,6 +104,42 @@ export const useUserPaymentMethodStore = create<UserPaymentMethodState>(
               methods: updatedMethods,
             },
           });
+        }
+      } catch (error) {
+        throw new Error(formatError(error));
+      }
+    },
+
+    async deletePaymentMethod(id: string): Promise<void> {
+      try {
+        const res = await remove(`${SELF_PAYMENT_METHOD_URL}/${id}`);
+        if (!res.success) throw new Error(res.message);
+
+        const { paymentMethods } = get();
+        if (paymentMethods) {
+          const updatedMethods = paymentMethods.methods;
+          const methodIdxToRemove = updatedMethods.findIndex(
+            (method) => method.id === id
+          );
+
+          if (methodIdxToRemove !== -1) {
+            if (
+              updatedMethods.length > 1 &&
+              updatedMethods[methodIdxToRemove].isDefault
+            ) {
+              await get().fetchPaymentMethods(true);
+              return;
+            }
+
+            updatedMethods.splice(methodIdxToRemove, 1);
+            set({
+              paymentMethods: {
+                ...paymentMethods,
+                total: updatedMethods.length,
+                methods: updatedMethods,
+              },
+            });
+          }
         }
       } catch (error) {
         throw new Error(formatError(error));

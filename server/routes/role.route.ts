@@ -24,11 +24,11 @@ router.post(
   create
 );
 
-router.get("/:id", verifyPermission("r_usr_role"), get);
+router.get("/:roleId", verifyPermission("r_usr_role"), get);
 router.get("/", verifyPermission("r_usr_role"), getAll);
 
 router.patch(
-  "/:id",
+  "/:roleId",
   verifyPermission("u_usr_role"),
   verifyEmptyBody,
   sanitizeRoleInput,
@@ -36,6 +36,6 @@ router.patch(
   update
 );
 
-router.delete("/:id", verifyPermission("d_usr_role"), remove);
+router.delete("/:roleId", verifyPermission("d_usr_role"), remove);
 
 export default router;

@@ -287,3 +287,24 @@ export const ORDER_RETURN_IMG_HINT_MESSAGE = `Each image must be a valid image f
 export const BUYER_RETURN_REASON_MIN_LENGTH = 10;
 export const BUYER_RETURN_REASON_MAX_LENGTH = 500;
 export const BUYER_RETURN_REASON_HINT_MESSAGE = `Return reason must be between ${BUYER_RETURN_REASON_MIN_LENGTH} and ${BUYER_RETURN_REASON_MAX_LENGTH} characters long.`;
+
+export const USER_BALANCE_HISTORY_SEARCH_CATEGORY_OPTIONS = [
+  "money_in", // money_in(refund)
+  "money_out", // money_out(withdraw, payment to)
+] as const;
+
+export const WITHDRAWAL_METHODS = ["bank_transfer", "card"] as const;
+
+export const BANK_ACCOUNT_TYPES = ["checking", "savings"] as const;
+export const STRIPE_BANK_ACCOUNT_STATUS = [
+  "pending",
+  "enabled",
+  "restricted",
+  "rejected",
+] as const;
+
+export const  DEFAULT_BANK_ACCOUNT_COUNTRY = "VN"; // ISO 3166-1 alpha-2 country code
+
+export const DEFAULT_CURRENCY = "usd";
+
+export const MIN_WITHDRAWAL_AMOUNT_CENTS = 1000; // $10.00

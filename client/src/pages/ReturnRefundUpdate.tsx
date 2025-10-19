@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useReturnStore } from "../store/returnRefund/returnStore";
+import { useReturnStore } from "../store/returnRefund/orderReturnStore";
 import { useUserAddressStore } from "../store/addressStore";
 import { useReturnReasonStore } from "../store/returnRefund/returnReasonStore";
 import type {
@@ -69,10 +69,10 @@ export default function ReturnRefundUpdate() {
   renderCount.current += 1;
   console.log(`ReturnRefundUpdate render count: ${renderCount.current}`);
 
-  const { orderId, returnId } = useParams();
+  const { returnId } = useParams();
   const navigate = useNavigate();
 
-  const { fetchReturn, getUserAddressIdFromReturn, updateReturn } =
+  const { getReturn, getUserAddressIdFromReturn, updateReturn } =
     useReturnStore();
   const { returnReasons, fetchReturnReasons } = useReturnReasonStore();
   const { getReturnStateByLookupId } = useReturnStateStore();
@@ -116,12 +116,12 @@ export default function ReturnRefundUpdate() {
       setApiErr(null);
 
       try {
-        if (!orderId || !returnId) {
+        if (!returnId) {
           throw new Error("Order ID or Return ID is required.");
         }
 
         const [fetchedReturn, , userAddresses] = await Promise.all([
-          fetchReturn(orderId, returnId),
+          getReturn(returnId),
           fetchReturnReasons(),
           fetchAddresses(),
         ]);
@@ -156,7 +156,7 @@ export default function ReturnRefundUpdate() {
 
     handleFetchSetInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, returnId]);
+  }, [returnId]);
 
   // Update imgPreviews when formData.imageUrls.val changes
   useEffect(() => {
@@ -500,13 +500,12 @@ export default function ReturnRefundUpdate() {
             return;
           }
 
-          const { orderId, id: returnId } = orderReturn;
-          await updateReturn(orderId, returnId, changedData);
+          const { id: returnId } = orderReturn;
+          await updateReturn(returnId, changedData);
 
-          navigate(
-            `/account/purchase/order/${orderId}/return-refund/${returnId}`,
-            { replace: true }
-          );
+          navigate(`/account/purchase/return-refund/${returnId}`, {
+            replace: true,
+          });
           toast.success("Return updated successfully.");
         } catch (error) {
           toast.error(formatError(error));
@@ -552,7 +551,7 @@ export default function ReturnRefundUpdate() {
       const cancelState = await getReturnStateByLookupId("7");
 
       const { orderId, id: returnId } = orderReturn;
-      await updateReturn(orderId, returnId, {
+      await updateReturn(returnId, {
         stateId: cancelState.id,
       });
 
@@ -577,7 +576,7 @@ export default function ReturnRefundUpdate() {
       <main className="container--g">
         <h1 className="mb-4 fw-semibold text-center">Edit Return / Refund</h1>
 
-        {!process.isInitializing ? (
+        {process.isInitializing ? (
           <ReturnUpdateSkeleton />
         ) : apiErr ? (
           <ApiError errMsg={apiErr} />
@@ -885,7 +884,7 @@ export default function ReturnRefundUpdate() {
                           onChange={handleChange}
                         >
                           {[
-                            ...Array(
+                            ...new Array(
                               MAX_ESTIMATE_PICKUP_TIME_GAP /
                                 (24 * 60 * 60 * 1000)
                             ).keys(),

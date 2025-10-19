@@ -9,7 +9,7 @@ import type {
 } from "../../../../common/types.common";
 import type { OrderReturnSearchQueryCli } from "../../utils/types";
 import { patch, post, retrieve } from "../../utils/utils";
-import { ORDER_URL, SELF_ORDER_URL } from "../../configs";
+import { ORDER_URL, RETURN_URL, SELF_RETURN_URL } from "../../configs";
 import {
   compareUserAddress,
   formatError,
@@ -23,20 +23,13 @@ type ReturnState = {
     query?: OrderReturnSearchQueryCli,
     signal?: AbortSignal
   ) => Promise<OrderReturnListResponse>;
-  fetchReturn: (
-    orderId: string,
-    returnId: string
-  ) => Promise<OrderReturnResponse>;
-  fetchReturnDetail: (
-    orderId: string,
-    returnId: string
-  ) => Promise<OrderReturnDetailResponse>;
+  getReturn: (returnId: string) => Promise<OrderReturnResponse>;
+  getReturnDetail: (returnId: string) => Promise<OrderReturnDetailResponse>;
   createReturn: (
     orderId: string,
     data: OrderReturnCreate
   ) => Promise<OrderReturnResponse>;
   updateReturn: (
-    orderId: string,
     returnId: string,
     data: OrderReturnUpdateSelf
   ) => Promise<OrderReturnResponse>;
@@ -58,13 +51,12 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
   ): Promise<OrderReturnListResponse> {
     const queryString = new URLSearchParams();
 
-    let url: string = `${ORDER_URL}/returns`;
+    let url: string = `${RETURN_URL}`;
     if (query) {
       if (query.limit) queryString.set("limit", query.limit);
       if (query.offset) queryString.set("offset", query.offset);
       if (query.userId) {
         queryString.set("userId", query.userId);
-        url = `${ORDER_URL}/returns?${queryString.toString()}`;
       } else if (query.orderId) {
         queryString.set("orderId", query.orderId);
         url = `${ORDER_URL}/${query.orderId}/returns?${queryString.toString()}`;
@@ -81,15 +73,12 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
     }
   },
 
-  async fetchReturn(
-    orderId: string,
-    returnId: string
-  ): Promise<OrderReturnResponse> {
+  async getReturn(returnId: string): Promise<OrderReturnResponse> {
     const { returnCache } = get();
     if (returnCache && returnCache.id === returnId) return returnCache;
 
     try {
-      const res = await retrieve(`${ORDER_URL}/${orderId}/returns/${returnId}`);
+      const res = await retrieve(`${RETURN_URL}/${returnId}`);
       if (!res.success) throw new Error(res.message);
 
       const returnData = res.data as OrderReturnResponse;
@@ -100,23 +89,14 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
     }
   },
 
-  async fetchReturnDetail(
-    orderId: string,
-    returnId: string
-  ): Promise<OrderReturnDetailResponse> {
+  async getReturnDetail(returnId: string): Promise<OrderReturnDetailResponse> {
     const { returnDetailCache } = get();
-    if (
-      returnDetailCache &&
-      returnDetailCache.orderId === orderId &&
-      returnDetailCache.id === returnId
-    ) {
+    if (returnDetailCache?.id === returnId) {
       return returnDetailCache;
     }
 
     try {
-      const res = await retrieve(
-        `${ORDER_URL}/${orderId}/returns/${returnId}/details`
-      );
+      const res = await retrieve(`${RETURN_URL}/${returnId}/details`);
       if (!res.success) throw new Error(res.message);
 
       const returnDetail = res.data as OrderReturnDetailResponse;
@@ -132,7 +112,7 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
     data: OrderReturnCreate
   ): Promise<OrderReturnResponse> {
     try {
-      const res = await post(`${ORDER_URL}/${orderId}/return`, data);
+      const res = await post(`${ORDER_URL}/${orderId}/returns`, data);
       if (!res.success) throw new Error(res.message);
 
       const returnData = res.data as OrderReturnResponse;
@@ -144,13 +124,12 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
   },
 
   async updateReturn(
-    orderId: string,
     returnId: string,
     data: OrderReturnUpdateSelf
   ): Promise<OrderReturnResponse> {
     try {
       const res = await patch(
-        `${SELF_ORDER_URL}/${orderId}/returns/${returnId}`,
+        `${SELF_RETURN_URL}/${returnId}`,
         undefined,
         data
       );
@@ -160,11 +139,7 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
       set({ returnCache: updatedReturn });
 
       const { returnDetailCache } = get();
-      if (
-        returnDetailCache &&
-        returnDetailCache.id === returnId &&
-        returnDetailCache.orderId === orderId
-      ) {
+      if (returnDetailCache?.id === returnId) {
         set({ returnDetailCache: null });
       }
 

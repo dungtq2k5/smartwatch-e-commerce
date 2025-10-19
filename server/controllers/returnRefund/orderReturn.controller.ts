@@ -19,6 +19,7 @@ import {
   formatOrderReturnResponse,
   getDeliveryStateLevel,
   getInstanceConditionId,
+  getLatestStateId,
   getMovementTypeId,
   getOrderStateLevel,
   getPaymentStateLookupId,
@@ -34,7 +35,6 @@ import {
   isPresent,
 } from "../../utils/utils";
 import {
-  getLatestStateId,
   populationPath,
   populationPath as variationPopulationPath,
 } from "../order/order.controller";
@@ -72,7 +72,7 @@ export async function create(
       )
     );
   }
-  const { id: orderId } = req.params;
+  const { orderId } = req.params;
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -283,9 +283,9 @@ export async function create(
 
       // Now, perform calculations and data structuring using only the validated instances.
       totalRefundCents += instancePrice * validatedInstances.length;
-      validatedInstances.forEach((inst) =>
-        allInstanceIdsToUpdate.push(inst.id)
-      );
+      for (const inst of validatedInstances) {
+        allInstanceIdsToUpdate.push(inst.id);
+      }
 
       returnItems.push({
         variationId: new Types.ObjectId(variationId),
@@ -370,25 +370,24 @@ export async function get(
       )
     );
   }
-  const { id: orderId, returnId } = req.params;
+  const { returnId } = req.params;
 
   try {
-    // Check order exists
-    if (!Types.ObjectId.isValid(orderId)) {
-      throw new HttpError(404, "Order not found.");
-    }
-    const order = await Order.findById(orderId).select("_id userId").lean();
-    if (!order) {
-      throw new HttpError(404, "Order not found.");
-    }
-
     // Check return order exists
     if (!Types.ObjectId.isValid(returnId)) {
       throw new HttpError(404, "Return order not found.");
     }
     const orderReturn = await OrderReturn.findById(returnId);
-    if (!orderReturn || !orderReturn.orderId.equals(order._id)) {
+    if (!orderReturn) {
       throw new HttpError(404, "Return order not found.");
+    }
+
+    // Get order to check permission
+    const order = await Order.findById(orderReturn.orderId)
+      .select("userId")
+      .lean();
+    if (!order) {
+      throw new HttpError(500, "Order for this return not found.");
     }
 
     // Check permission
@@ -425,18 +424,9 @@ export async function getDetails(
       )
     );
   }
-  const { id: orderId, returnId } = req.params;
+  const { returnId } = req.params;
 
   try {
-    // Check order exists
-    if (!Types.ObjectId.isValid(orderId)) {
-      throw new HttpError(404, "Order not found.");
-    }
-    const order = await Order.findById(orderId).select("_id userId").lean();
-    if (!order) {
-      throw new HttpError(404, "Order not found");
-    }
-
     // Check orderReturn exists
     if (!Types.ObjectId.isValid(returnId)) {
       throw new HttpError(404, "Return order not found.");
@@ -448,9 +438,16 @@ export async function getDetails(
       .populate("states.id", "lookupId name level")
       .populate("reasonId", "name description")
       .lean();
-
-    if (!orderReturn || !orderReturn.orderId.equals(order._id)) {
+    if (!orderReturn) {
       throw new HttpError(404, "Return order not found.");
+    }
+
+    // Get order to check permission
+    const order = await Order.findById(orderReturn.orderId)
+      .select("userId")
+      .lean();
+    if (!order) {
+      throw new HttpError(500, "Order for this return not found.");
     }
 
     // Check permission
@@ -486,11 +483,11 @@ export async function search(
       )
     );
   }
-  const { id: orderId } = req.params;
+  const { orderId } = req.params;
   const reqQuery = req["sanitizedQuery"] as OrderReturnSearchQuery;
 
-  const limit = reqQuery.limit ? parseInt(reqQuery.limit, 10) : 9;
-  const offset = reqQuery.offset ? parseInt(reqQuery.offset, 10) : 0;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
 
   try {
     // Check order exists
@@ -554,8 +551,8 @@ export async function searchAll(
   }
   const reqQuery = req["sanitizedQuery"] as OrderReturnSearchQuery;
 
-  const limit = reqQuery.limit ? parseInt(reqQuery.limit, 10) : 9;
-  const offset = reqQuery.offset ? parseInt(reqQuery.offset, 10) : 0;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
   const query: any = {};
 
   try {
@@ -617,28 +614,27 @@ export async function updateSelf(
       )
     );
   }
-  const { id: orderId, returnId } = req.params;
+  const { returnId } = req.params;
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // Check order exist
-    if (!Types.ObjectId.isValid(orderId)) {
-      throw new HttpError(404, "Order not found.");
-    }
-    const order = await Order.findById(orderId).lean().session(session);
-    if (!order) {
-      throw new HttpError(404, "Order not found.");
-    }
-
     // Check return order exist
     if (!Types.ObjectId.isValid(returnId)) {
       throw new HttpError(404, "Return order not found.");
     }
     const orderReturn = await OrderReturn.findById(returnId).session(session);
-    if (!orderReturn || !orderReturn.orderId.equals(order._id)) {
+    if (!orderReturn) {
       throw new HttpError(404, "Return order not found.");
+    }
+
+    // Get order to check permission
+    const order = await Order.findById(orderReturn.orderId)
+      .select("_id userId")
+      .lean();
+    if (!order) {
+      throw new HttpError(500, "Order for this return not found.");
     }
 
     // Check permission
@@ -760,11 +756,14 @@ export async function updateSelf(
 
       // Update items back to "ordered" state
       const allInstanceIdsToUpdate: (Types.ObjectId | string)[] = [];
-      orderReturn.items.forEach((item) =>
-        item.instances.forEach((inst) => allInstanceIdsToUpdate.push(inst.id))
-      );
+      for (const item of orderReturn.items) {
+        for (const inst of item.instances) {
+          allInstanceIdsToUpdate.push(inst.id);
+        }
+      }
+
       await Order.updateOne(
-        { _id: orderId },
+        { _id: order._id },
         { $set: { "items.$[].instances.$[inst].state": "ordered" } },
         {
           arrayFilters: [{ "inst.id": { $in: allInstanceIdsToUpdate } }],
@@ -820,23 +819,18 @@ export async function updateState(
       )
     );
   }
-  const { id: orderId, returnId } = req.params;
+  const { returnId } = req.params;
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // Check order exist
-    if (!Types.ObjectId.isValid(orderId)) {
-      throw new HttpError(404, "Order not found.");
-    }
-
     // Check return order exist
     if (!Types.ObjectId.isValid(returnId)) {
       throw new HttpError(404, "Return order not found.");
     }
     const orderReturn = await OrderReturn.findById(returnId).session(session);
-    if (!orderReturn || !orderReturn.orderId.equals(orderId)) {
+    if (!orderReturn) {
       throw new HttpError(404, "Return order not found.");
     }
 
@@ -912,11 +906,14 @@ export async function updateState(
 
         // Update items to "return declined" state
         const allInstanceIdsToUpdate: (Types.ObjectId | string)[] = [];
-        orderReturn.items.forEach((item) =>
-          item.instances.forEach((inst) => allInstanceIdsToUpdate.push(inst.id))
-        );
+        for (const item of orderReturn.items) {
+          for (const inst of item.instances) {
+            allInstanceIdsToUpdate.push(inst.id);
+          }
+        }
+
         await Order.updateOne(
-          { _id: orderId },
+          { _id: orderReturn.orderId },
           { $set: { "items.$[].instances.$[inst].state": "return declined" } },
           {
             arrayFilters: [{ "inst.id": { $in: allInstanceIdsToUpdate } }],
@@ -984,23 +981,18 @@ export async function updatePickupState(
       )
     );
   }
-  const { id: orderId, returnId } = req.params;
+  const { returnId } = req.params;
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // Check order exist
-    if (!Types.ObjectId.isValid(orderId)) {
-      throw new HttpError(404, "Order not found.");
-    }
-
     // Check return order exist
     if (!Types.ObjectId.isValid(returnId)) {
       throw new HttpError(404, "Return order not found.");
     }
     const orderReturn = await OrderReturn.findById(returnId).session(session);
-    if (!orderReturn || !orderReturn.orderId.equals(orderId)) {
+    if (!orderReturn) {
       throw new HttpError(404, "Return order not found.");
     }
 

@@ -9,17 +9,18 @@ import {
   signup,
   validatePassword,
   verifyUser,
+  refreshToken,
 } from "../controllers/auth.controller";
 import {
   verifyAuthentication,
-  verifyJWTHasUserId,
-  verifyReauthentication
+  verifyJwtHasUserId,
+  verifyReauthentication,
 } from "../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../utils/middlewares/general.middleware";
 import {
-  inputSanitizer,
+  sanitizeUserInput,
   verifyUserInput,
-} from "../utils/middlewares/user.middleware";
+} from "../utils/middlewares/user/user.middleware";
 import rateLimit from "express-rate-limit";
 
 const router = express.Router();
@@ -43,7 +44,7 @@ router.post(
   "/signup",
   verifyReauthentication,
   verifyEmptyBody,
-  inputSanitizer("user"),
+  sanitizeUserInput,
   verifyUserInput("signup"),
   signup
 );
@@ -53,7 +54,7 @@ router.post(
   authLimiter,
   verifyReauthentication,
   verifyEmptyBody,
-  inputSanitizer("user"),
+  sanitizeUserInput,
   verifyUserInput("login"),
   login
 );
@@ -62,9 +63,9 @@ router.post("/logout", verifyAuthentication, logout);
 
 router.post(
   "/verify-user",
-  verifyJWTHasUserId,
+  verifyJwtHasUserId,
   verifyEmptyBody,
-  inputSanitizer("user"),
+  sanitizeUserInput,
   verifyUserInput("verify user"),
   verifyUser
 );
@@ -82,7 +83,7 @@ router.post(
   authLimiter,
   verifyReauthentication,
   verifyEmptyBody,
-  inputSanitizer("user"),
+  sanitizeUserInput,
   verifyUserInput("forgot password"),
   forgotPassword
 );
@@ -92,16 +93,14 @@ router.post(
   authLimiter,
   verifyReauthentication,
   verifyEmptyBody,
-  inputSanitizer("user"),
+  sanitizeUserInput,
   verifyUserInput("reset password"),
   resetPassword
 );
 
-router.get(
-  "/check-auth",
-  verifyJWTHasUserId,
-  checkAuth
-);
+router.post("/refresh-token", refreshToken);
+
+router.get("/check-auth", verifyJwtHasUserId, checkAuth);
 
 router.post(
   "/validate-password",

@@ -2,12 +2,13 @@ import { Request, Response, NextFunction } from "express";
 import User from "../models/user/user.model";
 import { HttpError } from "../utils/errorHandler";
 import bcrypt from "bcryptjs";
-import { HASH_SALT, JWT_NAME } from "../configs/configs";
+import { HASH_SALT, JWT_NAME, REFRESH_JWT_NAME } from "../configs/configs";
 import {
   formatUserResponse,
-  genJWTAndSetCookie,
+  genJwtAndSetCookie,
   genVerificationCode,
   getBuyerRoleId,
+  getJwtPayload,
   getSysUserId,
   isPresent,
 } from "../utils/utils";
@@ -128,7 +129,7 @@ export async function signup(
     await session.commitTransaction();
 
     // Set JWT and send cookie
-    genJWTAndSetCookie(res, user._id.toString(), false);
+    genJwtAndSetCookie(res, { userId: user._id.toString(), isVerified: false });
 
     res.status(201).json({
       success: true,
@@ -189,12 +190,14 @@ export async function login(
       throw new HttpError(401, "Invalid credentials.");
     }
 
-    // Update last login time
+    // Update last login time and refresh token, set cookie
     user.lastLogin = new Date();
+    const { refreshToken } = genJwtAndSetCookie(res, {
+      userId: user._id.toString(),
+      isVerified: true,
+    });
+    user.refreshToken = await bcrypt.hash(refreshToken, HASH_SALT);
     await user.save();
-
-    // Set JWT and send cookie
-    genJWTAndSetCookie(res, user._id.toString(), true);
 
     res.status(200).json({
       success: true,
@@ -214,9 +217,23 @@ export async function logout(
 ): Promise<void> {
   console.log("▶️", "Processing logout request...");
 
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled by middlewares."
+      )
+    );
+  }
+
   try {
+    // Clear refresh token in database
+    await User.findByIdAndUpdate(userId, { $set: { refreshToken: null } });
+
     res
       .clearCookie(JWT_NAME)
+      .clearCookie(REFRESH_JWT_NAME)
       .status(200)
       .json({
         success: true,
@@ -313,12 +330,16 @@ export async function verifyUser(
       user.lastLogin = new Date();
     }
 
+    // Refresh JWT and set cookie with isVerified is true
+    const { refreshToken } = genJwtAndSetCookie(res, {
+      userId: user._id.toString(),
+      isVerified: true,
+    });
+    user.refreshToken = await bcrypt.hash(refreshToken, HASH_SALT);
+
     await user.save({ session });
 
     await session.commitTransaction();
-
-    // Refresh JWT and set cookie with isVerified is true
-    genJWTAndSetCookie(res, user._id.toString(), true);
 
     res.status(200).json({
       success: true,
@@ -438,13 +459,17 @@ export async function authByGoogle(
         ],
       });
 
+      const { refreshToken } = genJwtAndSetCookie(res, {
+        userId: newUser._id.toString(),
+        isVerified: true,
+      });
+      newUser.refreshToken = await bcrypt.hash(refreshToken, HASH_SALT);
+
       await newUser.save({ session });
 
       await sendWelcomeEmail(email, fullName);
 
       await session.commitTransaction();
-
-      genJWTAndSetCookie(res, newUser._id.toString(), true);
 
       res.status(201).json({
         success: true,
@@ -467,11 +492,15 @@ export async function authByGoogle(
     // Login user
     user.isEmailVerified = true; // Make sure email is verified for Google users
     user.lastLogin = new Date();
+    const { refreshToken } = genJwtAndSetCookie(res, {
+      userId: user._id.toString(),
+      isVerified: true,
+    });
+    user.refreshToken = await bcrypt.hash(refreshToken, HASH_SALT);
+
     await user.save({ session });
 
     await session.commitTransaction();
-
-    genJWTAndSetCookie(res, user._id.toString(), true);
 
     res.status(200).json({
       success: true,
@@ -484,6 +513,66 @@ export async function authByGoogle(
     next(error);
   } finally {
     session.endSession();
+  }
+}
+
+export async function refreshToken(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing refresh token request...");
+
+  const tokenFromCookie = req.cookies[REFRESH_JWT_NAME];
+  if (!tokenFromCookie) {
+    return next(new HttpError(401, "Refresh token not found."));
+  }
+
+  try {
+    const payload = getJwtPayload(
+      tokenFromCookie,
+      process.env.REFRESH_JWT_SECRET_KEY!
+    );
+    if (!payload) {
+      throw new HttpError(403, "Invalid refresh token.");
+    }
+
+    const user = await User.findById(payload.userId).select(
+      "_id refreshToken isEmailVerified isPhoneNumberVerified"
+    );
+    if (!user || !user.refreshToken) {
+      throw new HttpError(403, "Invalid refresh token.");
+    }
+    if (user.isLocked) {
+      throw new HttpError(403, "User account is locked.");
+    }
+
+    const isTokenMatch = await bcrypt.compare(
+      tokenFromCookie,
+      user.refreshToken
+    );
+    if (!isTokenMatch) {
+      // Token theft detected, clear token from DB for security
+      user.refreshToken = null;
+      await user.save();
+      throw new HttpError(403, "Refresh token mismatch.");
+    }
+
+    // --- Token rotation ---
+    const { refreshToken: newRefreshToken } = genJwtAndSetCookie(res, {
+      userId: user._id.toString(),
+      isVerified: user.isEmailVerified || user.isPhoneNumberVerified,
+    });
+    user.refreshToken = await bcrypt.hash(newRefreshToken, HASH_SALT);
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Token refreshed successfully.",
+    } as SuccessResponse);
+    console.log("✅ ", "Token refresh process completed successfully.");
+  } catch (error) {
+    next(error);
   }
 }
 
@@ -553,7 +642,9 @@ export async function resetPassword(
   next: NextFunction
 ): Promise<void> {
   console.log("▶️", "Processing reset password request...");
+
   const resetToken = req.params.token;
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -586,6 +677,7 @@ export async function resetPassword(
     // Update user password
     const hashedResetPassword = await bcrypt.hash(req.body.password, HASH_SALT);
     user.password = hashedResetPassword;
+    user.refreshToken = null;
     await user.save({ session });
 
     // Mark ALL reset tokens as used

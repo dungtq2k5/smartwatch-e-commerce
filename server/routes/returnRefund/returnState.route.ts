@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.get("/", getAll);
 
-router.get("/:id", get);
+router.get("/:stateId", get);
 
 export default router;

@@ -42,7 +42,7 @@ import {
 } from "../../../common/utils.common";
 import type { FormInput } from "../utils/types";
 import toast from "react-hot-toast";
-import { useReturnStore } from "../store/returnRefund/returnStore";
+import { useReturnStore } from "../store/returnRefund/orderReturnStore";
 import { WAITING_EMOJI } from "../configs";
 import ReturnCreateSkeleton from "../components/skeleton/ReturnCreateSkeleton";
 
@@ -80,7 +80,7 @@ export default function ReturnRefundCreate() {
   const { orderId } = useParams();
   const navigate = useNavigate();
 
-  const { fetchOrder } = useOrderStore();
+  const { getOrder } = useOrderStore();
   const { returnReasons, fetchReturnReasons } = useReturnReasonStore();
   const { addresses, fetchAddresses } = useUserAddressStore();
   const { createReturn } = useReturnStore();
@@ -127,7 +127,7 @@ export default function ReturnRefundCreate() {
 
         const [fetchedOrder, fetchedReasons, fetchedAddresses] =
           await Promise.all([
-            fetchOrder(orderId),
+            getOrder(orderId),
             fetchReturnReasons(),
             fetchAddresses(),
           ]);
@@ -230,7 +230,7 @@ export default function ReturnRefundCreate() {
           return;
         }
 
-        const variationId = e.target.getAttribute("data-variation-id");
+        const variationId = e.target.dataset.variationId;
         if (!variationId) return;
 
         setFormData((prev) => {
@@ -977,7 +977,7 @@ export default function ReturnRefundCreate() {
                         onChange={handleChange}
                       >
                         {[
-                          ...Array(
+                          ...new Array(
                             MAX_ESTIMATE_PICKUP_TIME_GAP / (24 * 60 * 60 * 1000)
                           ).keys(),
                         ].map((day) => {
