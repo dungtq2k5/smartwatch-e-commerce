@@ -12,6 +12,7 @@ import {
   STRIPE_BANK_ACCOUNT_STATUS,
   BANK_ACCOUNT_TYPES,
   WITHDRAWAL_METHODS,
+  USER_SEARCH_SORT_OPTIONS,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -63,11 +64,23 @@ export type CheckAuthResponse = {
   user: UserResponse;
   isAuth: boolean;
 };
+export type CheckAdminAuthResponse = {
+  admin: AdminUserResponse;
+};
 
 export type AdminUserResponse = UserResponse & {
   isLocked: boolean;
+  roles: {
+    id: string;
+    assignedBy: string;
+    assignedAt: string;
+  }[];
 };
-
+export type AdminUserDetailResponse = AdminUserResponse & {
+  addresses: UserAddressListResponse;
+  paymentMethods: UserSelfPaymentMethodListResponse;
+  bankAccounts: UserBankAccountListResponse;
+};
 export type AdminUserListResponse = {
   total: number;
   users: {
@@ -98,6 +111,10 @@ export type UserSignup = {
 export type UserLogin = {
   password: string;
 } & EmailOrPhoneNumberCreate;
+export type AdminUserLogin = {
+  email: string;
+  password: string;
+};
 
 export type VerifyType = "email" | "phoneNumber";
 
@@ -113,12 +130,12 @@ export type UserAuthByGoogle = {
 
 export type UserForgotPassword = EmailOrPhoneNumberCreate;
 
-export type UserUpdateEmail = Partial<{
+export type UserEmailUpdate = Partial<{
   email: string | null;
   isEmailVerified: boolean;
 }>;
 
-export type UserUpdatePhoneNumber = Partial<{
+export type UserPhoneNumberUpdate = Partial<{
   phoneNumber: string | null;
   isPhoneNumberVerified: boolean;
 }>;
@@ -134,18 +151,18 @@ export type UserUpdate = Partial<{
   roleIds: string[] | null;
 }>;
 
-export type UserUpdateSelfGeneralInfo = Omit<
+export type UserSelfGeneralInfoUpdate = Omit<
   UserUpdate,
   "password" | "userBalanceCents" | "isLocked" | "roleIds"
 >;
 
-export type UserUpdateSelfPassword = {
+export type UserSelfPasswordUpdate = {
   currentPassword: string;
   newPassword: string;
 };
 
 // For user who auth by provider like Google, Facebook, etc.
-export type UserSetSelfPassword = {
+export type UserSelfPasswordSet = {
   password: string;
 };
 
@@ -213,6 +230,10 @@ export type UserAddressUpdate = Partial<UserAddressCreate>;
 
 export type AdminUserAddressResponse = UserSelfAddressResponse & {
   userId: string;
+};
+export type AdminUserAddressListResponse = {
+  total: number;
+  addresses: AdminUserAddressResponse[];
 };
 
 export type BaseUserCart = {
@@ -291,21 +312,31 @@ export type UserCartListResponse = {
   items: UserCartResponse[];
 };
 
-export type CreateOtp = {
+export type OtpCreate = {
   type: VerifyType;
   userId: string;
 };
 
-export type UserUpdateContactInfo = {
+export type UserContactInfoUpdate = {
   type: VerifyType;
   value: string;
 };
 
 export type PermissionCode = (typeof PERMISSION_LIST)[number]["code"];
 
+export type PermissionResponse = {
+  id: string;
+  name: string;
+  code: PermissionCode;
+};
+export type PermissionListResponse = {
+  total: number;
+  permissions: PermissionResponse[];
+};
+
 export type UserCreate = {
   fullName: string;
-  avatarUrl: string;
+  avatarUrl?: string | null;
   email?: string | null;
   isEmailVerified?: boolean;
   phoneNumber?: string | null;
@@ -313,10 +344,23 @@ export type UserCreate = {
   password: string;
   birth: string;
   gender: (typeof USER_GENDER_OPTIONS)[number];
-  userBalanceCents?: number;
   isLocked?: boolean;
-  roleIds?: string[];
+  roleIds?: string[] | null;
 };
+
+export type UserBulkDelete = {
+  userIds: string[];
+};
+
+export type UserSearchQuery = Partial<{
+  limit: string;
+  offset: string;
+  searchTerm: string;
+  isEmailVerified: "true" | "false";
+  isPhoneNumberVerified: "true" | "false";
+  isLocked: "true" | "false";
+  sortBy: (typeof USER_SEARCH_SORT_OPTIONS)[number];
+}>;
 
 export type RoleCreate = {
   name: string;
@@ -680,26 +724,26 @@ export type OrderCreate = {
   paymentMethodId: string;
   applyUserBalance?: boolean; // If true, use user's balance to discount the order
 };
-export type OrderUpdateFulfillItem = {
+export type OrderFulfillItemUpdate = {
   items: {
     variationId: string;
     instanceIds: string[];
   }[];
 };
-export type OrderUpdateBase = Partial<{
+export type OrderBaseUpdate = Partial<{
   deliveryStateId: string;
   deliveryAddressId: string;
   estimateReceivedDate: string;
   stateId: string;
 }>;
-export type OrderUpdateSelf = Pick<
-  OrderUpdateBase,
+export type OrderSelfUpdate = Pick<
+  OrderBaseUpdate,
   "stateId" | "deliveryAddressId"
 > & {
   buyerCancelReasonId?: string | null; // Must be provided when stateId is "canceled by buyer"
 };
 export type OrderUpdate = Pick<
-  OrderUpdateBase,
+  OrderBaseUpdate,
   "deliveryStateId" | "estimateReceivedDate"
 > & {
   notes: string | null; // For admin to note reason for update
@@ -902,7 +946,7 @@ export type OrderReturnCreate = {
       }[]
     | "all"; // "all" means return whole order
 };
-export type OrderReturnUpdateBase = Partial<{
+export type OrderReturnBaseUpdate = Partial<{
   reasonId: string;
   imageUrls: string[] | null;
   buyerReason: string | null;
@@ -911,8 +955,8 @@ export type OrderReturnUpdateBase = Partial<{
   pickupStateId: string;
   stateId: string;
 }>;
-export type OrderReturnUpdateSelf = Pick<
-  OrderReturnUpdateBase,
+export type OrderReturnSelfUpdate = Pick<
+  OrderReturnBaseUpdate,
   | "reasonId"
   | "imageUrls"
   | "buyerReason"
@@ -920,11 +964,11 @@ export type OrderReturnUpdateSelf = Pick<
   | "estimatePickupDate"
   | "stateId"
 >;
-export type OrderReturnUpdateState = {
+export type OrderReturnStateUpdate = {
   returnStateId: string;
   notes: string | null;
 };
-export type OrderReturnUpdatePickupState = Partial<{
+export type OrderReturnPickupStateUpdate = Partial<{
   pickupStateId: string;
   estimatePickupDate: string; // Only for "pickup rescheduled" state
 }> & {
@@ -1047,7 +1091,7 @@ export type UserBalanceHistoryListResponse = {
 export type UserBankAccountSetupResponse = {
   bankAccountId: string;
   setupUrl: string; // onboardingUrl
-  accountStatus: typeof STRIPE_BANK_ACCOUNT_STATUS[number],
+  accountStatus: (typeof STRIPE_BANK_ACCOUNT_STATUS)[number];
 };
 
 export type UserSelfBankAccountResponse = {
@@ -1056,19 +1100,27 @@ export type UserSelfBankAccountResponse = {
   last4: string;
   bankName: string;
   routingNumber: string | null;
-  accountType: typeof BANK_ACCOUNT_TYPES[number],
+  accountType: (typeof BANK_ACCOUNT_TYPES)[number];
   currency: string;
   country: string;
   isVerified: boolean;
   isDefault: boolean;
-  accountStatus: typeof STRIPE_BANK_ACCOUNT_STATUS[number],
+  accountStatus: (typeof STRIPE_BANK_ACCOUNT_STATUS)[number];
   requiresAction: boolean;
   createdAt: string;
   updatedAt: string;
 };
+type UserBankAccountResponse = UserSelfBankAccountResponse & {
+  stripeConnectedAccountId: string;
+  stripeBankAccountFingerprint: string | null;
+}
 export type UserSelfBankAccountListResponse = {
   total: number;
   accounts: UserSelfBankAccountResponse[];
+};
+type UserBankAccountListResponse = {
+  total: number;
+  accounts: UserBankAccountResponse[];
 };
 
 export type WithdrawalRequestCreate = {
@@ -1081,7 +1133,7 @@ export type SelfWithdrawalRequestResponse = {
   amountCents: number;
   currency: string;
   states: StateResponse[];
-  withdrawalMethod: typeof WITHDRAWAL_METHODS[number];
+  withdrawalMethod: (typeof WITHDRAWAL_METHODS)[number];
   stripeTransferGroupId: string | null;
   stripeTransferId: string | null;
   bankAccount: {
@@ -1101,7 +1153,7 @@ export type SelfWithdrawalRequestListResponse = {
   requests: {
     total: number;
     requests: SelfWithdrawalRequestResponse[];
-  }
+  };
   offset: number;
   limit: number;
 };
@@ -1111,9 +1163,11 @@ export type SelfWithdrawalRequestSearchQuery = Partial<{
   offset: string;
 }>;
 
-export type ApproveWithdrawalRequest = {
-  notes?: string | null;
-} | undefined;
+export type ApproveWithdrawalRequest =
+  | {
+      notes?: string | null;
+    }
+  | undefined;
 export type RejectWithdrawalRequest = ApproveWithdrawalRequest;
 
 export type WithdrawalStateResponse = OrderStateResponse;

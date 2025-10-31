@@ -19,6 +19,7 @@ export const ADMIN_USER = {
   gender: "other",
 } as const;
 
+// Order is matter
 export const PERMISSION_LIST = [
   // 68 permissions
 
@@ -198,3 +199,5 @@ export const RETURN_POLICY_DAYS = 14; // Return window is 14 days after receptio
 export const MAX_ITEMS_FOR_CREATE_BULK_CART = 10; // Max 10 items can be added to cart at once
 
 export const USER_PAYMENT_METHOD_TYPES = ["card"] as const;
+
+export const MAX_USERS_TO_DELETE_BULK = 10;

@@ -42,6 +42,7 @@ export const PRODUCT_IMAGE_BEST_HEIGHT = 696;
 export const PRODUCT_IMAGE_HINT_MESSAGE = `Product image must be a valid image URL or file. Recommended maximum size: 2MB. Recommended dimensions: Between 200x200 pixels and 1500x1500 pixels. Allowed formats: JPG, PNG, and WebP.`; // Added WebP and clarified "recommended" sizes/dimensions
 export const IMMUTABILITY_USER_EMAILS = [SYSTEM_USER.email] as const;
 export const PROTECTED_USER_EMAILS = [ADMIN_USER.email] as const;
+export const UNDELETABLE_USER_EMAILS = [SYSTEM_USER.email, ADMIN_USER.email] as const;
 export const MODIFIABLE_PROTECTED_USER_FIELDS = [
   "fullName",
   "avatarUrl",
@@ -51,6 +52,7 @@ export const MODIFIABLE_PROTECTED_USER_FIELDS = [
   "gender",
   "lastLogin",
   "updatedAt",
+  "refreshToken",
 ] as const;
 
 export const PROTECTED_ROLE_NAMES = ["admin", "buyer"] as const;
@@ -68,8 +70,21 @@ export const ESTIMATE_PICKUP_TIME_GAP = 1 * 24 * 60 * 60 * 1000; // 1 day
 export const MAX_ESTIMATE_PICKUP_TIME_GAP = 3 * 24 * 60 * 60 * 1000; // 3 days
 
 export const USER_GENDER_OPTIONS = ["male", "female", "other"] as const;
-
 export const USER_DEFAULT_BIRTH_GAP = 20; // Default age gap from current for user auth by google
+export const USER_SEARCH_SORT_OPTIONS = [
+  "createdAt_desc",
+  "createdAt_asc",
+  "updatedAt_desc",
+  "updatedAt_asc",
+  "fullName_desc",
+  "fullName_asc",
+  "email_desc",
+  "email_asc",
+  "lastLogin_desc",
+  "lastLogin_asc",
+  "userBalanceCents_desc",
+  "userBalanceCents_asc",
+] as const;
 
 export const VN_COUNTRY_CODE = "84"; // Vietnam's country code
 

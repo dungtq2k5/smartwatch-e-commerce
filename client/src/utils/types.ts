@@ -1,4 +1,6 @@
+import type { JSX } from "react";
 import type {
+  AdminUserResponse,
   BaseUserAddress,
   ModelVariationResponse,
   OrderReturnSearchQuery,
@@ -6,13 +8,13 @@ import type {
   UserCartResponse,
 } from "../../../common/types.common";
 
-export type FormInput = {
-  val: string;
+export type FormInput<T = string> = {
+  val: T;
   err?: string;
 };
 
 export type FormFileInput = {
-  file?: File | string | null; // File when uploading, string when first loaded from server (url string), null when want to remove image
+  file: File | string | null; // File when uploading, string when first loaded from server (url string), null when want to remove image
   err?: string | string[];
 };
 
@@ -74,7 +76,32 @@ export type PurchaseTab =
   | "return-refund";
 
 export type OrderReturnSearchQueryCli = Omit<OrderReturnSearchQuery, "userId"> &
-  (
-    | { userId?: string; orderId?: never }
-    | { userId?: never; orderId?: string }
-  );
+  ({ userId?: string; orderId?: never } | { userId?: never; orderId?: string });
+
+export type AdminUserDisplayableField =
+  | keyof Omit<
+      AdminUserResponse,
+      "avatarUrl" | "isEmailVerified" | "isPhoneNumberVerified" | "isLocked"
+    >
+  | "accountVerified"
+  | "accountStatus"
+  | "actions";
+
+export type TableColDisplay<I> = {
+  label: string; // For header display
+  isSortable?: boolean;
+  sortKey?: { asc: string; desc: string };
+  thClassName?: string; // Additional className for <th>
+  tdClassName?: string; // Additional className for <td>
+  tdContent: (item: I) => JSX.Element; // For <td> content rendering
+  getCsvVal: (item: I) => string | number | boolean | null;
+};
+
+export type UserManagementConfig = {
+  displayFields: AdminUserDisplayableField[];
+  visibleFields: AdminUserDisplayableField[];
+};
+
+export type Config = {
+  userManagementConfig: UserManagementConfig;
+};

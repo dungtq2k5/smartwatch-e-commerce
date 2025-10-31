@@ -19,7 +19,7 @@ import UserAddress from "../../models/user/userAddress.model";
 import { formatAddress, isValidAddress } from "../../../common/utils.common";
 
 // --- ADMIN FUNCTIONS ---
-export async function getAll(
+export async function getAllByUserId(
   req: Request,
   res: Response,
   next: NextFunction

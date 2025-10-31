@@ -1,35 +1,46 @@
-import { Routes, Route } from "react-router-dom";
-import { useAuthStore } from "./store/authStore.ts";
-import Home from "./pages/Home.tsx";
-import NotAuthRoute from "./components/NotAuthRoute.tsx";
-import AuthRoute from "./components/AuthRoute.tsx";
-import Header from "./components/Header.tsx";
-import Footer from "./components/Footer.tsx";
-import Signup from "./pages/Signup.tsx";
-import Login from "./pages/Login.tsx";
-import Verify from "./pages/Verify.tsx";
-import ForgotPassword from "./pages/ForgotPassword.tsx";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { useAuthStore } from "./store/user/authStore.ts";
+import { useAuthStore as useAdminAuthStore } from "./store/admin/authStore.ts";
+import Home from "./pages/user/Home.tsx";
+import NotAuthRoute from "./components/user/NotAuthRoute.tsx";
+import AuthRoute from "./components/user/AuthRoute.tsx";
+import Header from "./components/user/Header.tsx";
+import Footer from "./components/user/Footer.tsx";
+import Signup from "./pages/user/Signup.tsx";
+import Login from "./pages/user/Login.tsx";
+import Verify from "./pages/user/Verify.tsx";
+import ForgotPassword from "./pages/user/ForgotPassword.tsx";
 import { Toaster } from "react-hot-toast";
 import { useEffect, useState } from "react";
-import ResetPassword from "./pages/ResetPassword.tsx";
-import NotFound from "./pages/NotFound.tsx";
-import Account from "./pages/Account.tsx";
-import Profile from "./components/account/Profile.tsx";
-import Address from "./components/account/Address.tsx";
-import BankAndCard from "./components/account/BankAndCard.tsx";
-import Loading from "./components/Loading.tsx";
-import ProductDetail from "./pages/ProductDetail.tsx";
-import SearchProduct from "./pages/SearchProduct.tsx";
-import Cart from "./pages/Cart.tsx";
-import Checkout from "./pages/Checkout.tsx";
-import OrderStatus from "./pages/OrderStatus.tsx";
-import Purchase from "./components/account/Purchase.tsx";
-import PurchaseDetail from "./components/account/PurchaseDetail.tsx";
-import ReturnRefund from "./pages/ReturnRefundCreate.tsx";
-import ReturnRefundDetail from "./pages/ReturnRefundDetail.tsx";
-import ReturnRefundUpdate from "./pages/ReturnRefundUpdate.tsx";
-import CreateUserPaymentMethod from "./pages/CreateUserPaymentMethod.tsx";
-import Balance from "./components/account/Balance.tsx";
+import ResetPassword from "./pages/user/ResetPassword.tsx";
+import NotFound from "./pages/user/NotFound.tsx";
+import Account from "./pages/user/Account.tsx";
+import Profile from "./components/user/account/Profile.tsx";
+import Address from "./components/user/account/Address.tsx";
+import BankAndCard from "./components/user/account/BankAndCard.tsx";
+import Loading from "./components/common/Loading.tsx";
+import ProductDetail from "./pages/user/ProductDetail.tsx";
+import SearchProduct from "./pages/user/SearchProduct.tsx";
+import Cart from "./pages/user/Cart.tsx";
+import Checkout from "./pages/user/Checkout.tsx";
+import OrderStatus from "./pages/user/OrderStatus.tsx";
+import Purchase from "./components/user/account/Purchase.tsx";
+import PurchaseDetail from "./components/user/purchase/PurchaseDetail.tsx";
+import ReturnRefund from "./pages/user/CreateReturnRefund.tsx";
+import ReturnRefundDetail from "./pages/user/ReturnRefundDetail.tsx";
+import ReturnRefundUpdate from "./pages/user/UpdateReturnRefund.tsx";
+import CreateUserPaymentMethod from "./pages/user/CreateUserPaymentMethod.tsx";
+import Balance from "./components/user/account/Balance.tsx";
+
+import AdminLogin from "./pages/admin/Login.tsx";
+import AdminAuthRoute from "./components/admin/AuthRoute.tsx";
+import AdminNotAuthRoute from "./components/admin/NotAuthRoute.tsx";
+import AdminHeaderAndSidebar from "./components/admin/HeaderAndSidebar.tsx";
+import AdminDashboard from "./components/admin/Dashboard.tsx";
+import UserManagement from "./components/admin/UserManagement.tsx";
+import CreateUser from "./components/admin/CreateUser.tsx";
+import UpdateUser from "./components/admin/UpdateUser.tsx";
+import DetailUser from "./components/admin/DetailUser.tsx";
 
 export default function App() {
   // DEV for testing
@@ -37,13 +48,22 @@ export default function App() {
   // renderCount.current += 1;
   // console.log("App render count:", renderCount.current);
 
+  const location = useLocation();
+
+  const isAdminPage = location.pathname.startsWith("/admin");
+
+  const { checkAuth: checkAdminAuth } = useAdminAuthStore();
   const { checkAuth } = useAuthStore();
+
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
 
   useEffect(() => {
     const handleCheckAuth = async (): Promise<void> => {
       setIsCheckingAuth(true);
-      await checkAuth();
+
+      if (isAdminPage) await checkAdminAuth();
+      else await checkAuth();
+
       setIsCheckingAuth(false);
     };
 
@@ -57,64 +77,93 @@ export default function App() {
     </main>
   ) : (
     <>
-      <Header />
+      {isAdminPage ? (
+        <Routes>
+          <Route path="/admin">
+            {/* TODO: dashboard, product management, order management, role management, inventory management */}
+            <Route element={<AdminNotAuthRoute />}>
+              <Route path="login" element={<AdminLogin />} />
+            </Route>
 
-      <Routes>
-        <Route path="/" element={<Home />}></Route>
-        <Route path="/search" element={<SearchProduct />}></Route>
-        <Route path="/products/:id" element={<ProductDetail />}></Route>
-
-        <Route element={<NotAuthRoute />}>
-          <Route path="/signup" element={<Signup />}></Route>
-          <Route path="/login" element={<Login />}></Route>
-          <Route path="/verify" element={<Verify />}></Route>
-          <Route path="/forgot-password" element={<ForgotPassword />}></Route>
-          <Route
-            path="/reset-password/:token"
-            element={<ResetPassword />}
-          ></Route>
-        </Route>
-
-        <Route element={<AuthRoute />}>
-          <Route path="/account" element={<Account />}>
-            <Route index element={<Profile />}></Route>
-            <Route path="profile" element={<Profile />}></Route>
-            <Route path="bank-card" element={<BankAndCard />}></Route>
-            <Route path="address" element={<Address />}></Route>
-            <Route path="balance" element={<Balance />}></Route>
-
-            <Route path="purchase">
-              <Route index element={<Purchase />}></Route>
-              <Route path="order/:id" element={<PurchaseDetail />}></Route>
-              <Route
-                path="return-refund/:returnId"
-                element={<ReturnRefundDetail />}
-              ></Route>
+            <Route element={<AdminAuthRoute />}>
+              <Route element={<AdminHeaderAndSidebar />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="users">
+                  <Route index element={<UserManagement />} />
+                  <Route path="create" element={<CreateUser />} />
+                  <Route path=":id">
+                    <Route index element={<DetailUser />} />
+                    <Route path="update" element={<UpdateUser />} />
+                  </Route>
+                </Route>
+              </Route>
             </Route>
           </Route>
+        </Routes>
+      ) : (
+        <>
+          <Header />
 
-          <Route path="/cart" element={<Cart />}></Route>
-          <Route path="/checkout" element={<Checkout />}></Route>
-          <Route path="/order-status" element={<OrderStatus />}></Route>
+          <Routes>
+            <Route path="/">
+              <Route index element={<Home />} />
+              <Route path="search" element={<SearchProduct />} />
+              <Route path="products/:id" element={<ProductDetail />} />
 
-          <Route path="/return-refund">
-            <Route path="create/:orderId" element={<ReturnRefund />}></Route>
-            <Route
-              path=":returnId/update"
-              element={<ReturnRefundUpdate />}
-            ></Route>
-          </Route>
+              <Route element={<NotAuthRoute />}>
+                <Route path="signup" element={<Signup />} />
+                <Route path="login" element={<Login />} />
+                <Route path="verify" element={<Verify />} />
+                <Route path="forgot-password" element={<ForgotPassword />} />
+                <Route
+                  path="reset-password/:token"
+                  element={<ResetPassword />}
+                />
+              </Route>
 
-          <Route
-            path="/payment/create"
-            element={<CreateUserPaymentMethod />}
-          ></Route>
-        </Route>
+              <Route element={<AuthRoute />}>
+                <Route path="account" element={<Account />}>
+                  <Route index element={<Profile />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="bank-card" element={<BankAndCard />} />
+                  <Route path="address" element={<Address />} />
+                  <Route path="balance" element={<Balance />} />
 
-        <Route path="*" element={<NotFound />}></Route>
-      </Routes>
+                  <Route path="purchase">
+                    <Route index element={<Purchase />} />
+                    <Route path="order/:id" element={<PurchaseDetail />} />
+                    <Route
+                      path="return-refund/:returnId"
+                      element={<ReturnRefundDetail />}
+                    />
+                  </Route>
+                </Route>
 
-      <Footer />
+                <Route path="cart" element={<Cart />} />
+                <Route path="checkout" element={<Checkout />} />
+                <Route path="order-status" element={<OrderStatus />} />
+
+                <Route path="return-refund">
+                  <Route path="create/:orderId" element={<ReturnRefund />} />
+                  <Route
+                    path=":returnId/update"
+                    element={<ReturnRefundUpdate />}
+                  />
+                </Route>
+
+                <Route
+                  path="payment/create"
+                  element={<CreateUserPaymentMethod />}
+                />
+              </Route>
+
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+
+          <Footer />
+        </>
+      )}
 
       <Toaster
         toastOptions={{

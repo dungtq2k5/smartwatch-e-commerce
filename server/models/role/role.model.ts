@@ -96,7 +96,10 @@ roleSchema.pre("save", function (next) {
 });
 
 const preventProtectedRoleMod = function (action: "deletes" | "updates") {
-  return async function (next: mongoose.CallbackWithoutResultAndOptionalError) {
+  return async function (
+    this: mongoose.Query<any, IRole>,
+    next: mongoose.CallbackWithoutResultAndOptionalError
+  ) {
     const filter = this.getFilter();
 
     const isModifyingProtectedRole = await this.model.exists({
@@ -119,7 +122,7 @@ const preventProtectedRoleMod = function (action: "deletes" | "updates") {
     // Get all fields being modified, including those inside operators like $set or $inc
     const updatedFields = Object.keys(update).reduce((acc: string[], key) => {
       if (key.startsWith("$")) {
-        return acc.concat(Object.keys(update[key]));
+        return acc.concat(Object.keys((update as any)[key]));
       }
       acc.push(key);
       return acc;

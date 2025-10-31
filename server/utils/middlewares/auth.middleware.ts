@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { getJwtPayload } from "../utils";
+import { getBuyerRoleId, getJwtPayload } from "../utils";
 import { JWT_NAME } from "../../configs/configs";
 import { HttpError } from "../errorHandler";
 import { PermissionCode } from "../../../common/types.common";
@@ -83,6 +83,7 @@ export function verifyPermission(permissionCode: PermissionCode) {
       const user = await User.findById(userId).populate<{
         roles: {
           id: {
+            id: Types.ObjectId;
             name: string;
             permissions: {
               id: {
@@ -93,7 +94,7 @@ export function verifyPermission(permissionCode: PermissionCode) {
         }[]; // Infer TS what the return of roles field of user will be
       }>({
         path: "roles.id", // Populate the 'id' field within each element of the 'roles' array
-        select: "name permissions", // Populate the 'id' field within each element of the 'roles' array
+        select: "id name permissions", // Populate the 'id' field within each element of the 'roles' array
         populate: {
           // Nested population
           path: "permissions.id", // From the populated Role, populate the 'id' field within its 'permissions' array
@@ -119,8 +120,9 @@ export function verifyPermission(permissionCode: PermissionCode) {
         );
       }
 
-      const roleNames = user.roles.map((role) => role.id.name);
-      const isBuyerOnly = roleNames.length === 1 && roleNames[0] === "buyer";
+      const roleIds = user.roles.map((role) => role.id.id);
+      const isBuyerOnly =
+        roleIds.length === 1 && getBuyerRoleId().equals(roleIds[0]);
 
       // Depopulate to make user object look like when use findById()
       user.depopulate("roles.id");

@@ -7,7 +7,13 @@ import {
 } from "../../common/configs.common";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "./types";
-import { JWT_NAME, JWT_TTL, REFRESH_JWT_NAME, REFRESH_JWT_TTL, RETURN_POLICY_DAYS } from "../configs/configs";
+import {
+  JWT_NAME,
+  JWT_TTL,
+  REFRESH_JWT_NAME,
+  REFRESH_JWT_TTL,
+  RETURN_POLICY_DAYS,
+} from "../configs/configs";
 import * as commonType from "../../common/types.common";
 import { Types } from "mongoose";
 import ModelVariation from "../models/product/modelVariation.model";
@@ -89,21 +95,17 @@ export function genVerificationCode(
 
 export function genJwtAndSetCookie(
   res: Response,
-  payload: JwtPayload,
+  payload: JwtPayload
 ): { accessToken: string; refreshToken: string } {
   // Create Access token
-  const accessToken = jwt.sign(
-    payload,
-    process.env.JWT_SECRET_KEY!,
-    { expiresIn: JWT_TTL }
-  );
+  const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY!, {
+    expiresIn: JWT_TTL,
+  });
 
   // Create Refresh Token
-  const refreshToken = jwt.sign(
-    payload,
-    process.env.REFRESH_JWT_SECRET_KEY!,
-    { expiresIn: REFRESH_JWT_TTL }
-  );
+  const refreshToken = jwt.sign(payload, process.env.REFRESH_JWT_SECRET_KEY!, {
+    expiresIn: REFRESH_JWT_TTL,
+  });
 
   res.cookie(JWT_NAME, accessToken, {
     httpOnly: true,
@@ -286,6 +288,34 @@ export function formatAdminUserResponse(
   return {
     ...formatUserResponse(user),
     isLocked: user.isLocked,
+    roles: user.roles,
+  };
+}
+
+export function formatAdminUserDetailResponse(
+  user: any
+): commonType.AdminUserDetailResponse {
+  return {
+    ...formatAdminUserResponse(user),
+    roles: user.roles,
+    addresses: {
+      total: user.addresses.length,
+      addresses: user.addresses.map((addr: any) =>
+        formatUserAddressResponse(addr)
+      ),
+    },
+    paymentMethods: {
+      total: user.paymentMethods.length,
+      methods: user.paymentMethods.map((pm: any) =>
+        formatUserSelfPaymentMethodResponse(pm)
+      ),
+    },
+    bankAccounts: {
+      total: user.bankAccounts.length,
+      accounts: user.bankAccounts.map((ba: any) =>
+        formatUserSelfBankAccountResponse(ba)
+      ),
+    },
   };
 }
 
@@ -302,6 +332,16 @@ export function formatRoleResponse(role: any): commonType.RoleResponse {
     createdBy: role.createdBy,
     createdAt: role.createdAt,
     updatedAt: role.updatedAt,
+  };
+}
+
+export function formatPermissionResponse(
+  permission: any
+): commonType.PermissionResponse {
+  return {
+    id: permission._id,
+    name: permission.name,
+    code: permission.code,
   };
 }
 

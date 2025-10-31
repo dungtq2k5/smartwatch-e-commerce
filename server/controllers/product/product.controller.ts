@@ -258,8 +258,8 @@ export async function search(
   console.log("▶️ ", "Searching products...");
   const reqQuery = req["sanitizedQuery"] as ProductSearchQuery;
 
-  const limit = reqQuery.limit ? parseInt(reqQuery.limit, 10) : 9;
-  const offset = reqQuery.offset ? parseInt(reqQuery.offset, 10) : 0;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
   const query: any = {};
 
   if (reqQuery.searchTerm) {

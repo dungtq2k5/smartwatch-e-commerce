@@ -502,3 +502,113 @@ body {
 .balance-history-item--g:hover {
   background-color: #f8f9fa;
 }
+
+/* Admin Layout Styles */
+.admin-header--g {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  /* Bootstrap's standard for sticky headers */
+}
+
+.admin-sidebar--g {
+  background-color: white;
+  transition: width 0.3s ease;
+  overflow-x: hidden;
+}
+
+.admin-sidebar--g.open {
+  width: 15rem;
+}
+
+.admin-sidebar--g.closed {
+  width: 0;
+}
+
+.admin-sidebar--g .list-group-item {
+  border-radius: 0;
+  border: none;
+  border-left: 4px solid transparent;
+  white-space: nowrap;
+}
+
+.admin-sidebar--g .list-group-item.active {
+  background-color: #e9ecef;
+  border-left-color: var(--primary-color);
+  color: var(--dark-color);
+  font-weight: 600;
+}
+
+.admin-main-content--g {
+  flex-grow: 1;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  min-width: 0; /* Fix for flexbox overflow */
+}
+
+.table-nowrap th,
+.table-nowrap td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* react-hot-toast style for selection toast */
+.rh-toast-selected {
+  background: #fff;
+  color: var(--dark-color);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid #e9ecef;
+  font-size: 0.9rem;
+}
+
+/* enter / leave animations for smooth appearance */
+.rh-toast-selected.rt-enter {
+  animation: toast-enter 220ms ease-out;
+}
+
+.rh-toast-selected.rt-leave {
+  animation: toast-leave 150ms ease-in forwards;
+}
+
+@keyframes toast-enter {
+  from {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-leave {
+  to {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar--g.open {
+    position: absolute;
+    z-index: 1010;
+    height: calc(100vh - 56px);
+    /* Adjust based on header height */
+  }
+
+  .admin-sidebar--g.closed {
+    width: 0;
+  }
+}

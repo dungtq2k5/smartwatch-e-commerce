@@ -13,7 +13,8 @@ import userBankAccountRoute from "./routes/user/userBankAccount.route";
 import userBalanceHistoryRoute from "./routes/user/userBalanceHistory.route";
 import userPaymentMethodRoute from "./routes/user/userPaymentMethod.route";
 
-import roleRoute from "./routes/role.route";
+import roleRoute from "./routes/role/role.route";
+import permissionRoute from "./routes/role/permission.route";
 import webhookRoute from "./routes/webhook.route";
 import providerRoute from "./routes/provider.route";
 import withdrawalRequestRoute from "./routes/withdrawalRequest/withdrawalRequest.route";
@@ -109,6 +110,7 @@ app.use(`${ROOT_URL}/user-balance-history`, userBalanceHistoryRoute);
 app.use(`${ROOT_URL}/user-payment-methods`, userPaymentMethodRoute);
 
 app.use(`${ROOT_URL}/roles`, roleRoute);
+app.use(`${ROOT_URL}/permissions`, permissionRoute);
 app.use(`${ROOT_URL}/providers`, providerRoute);
 app.use(`${ROOT_URL}/withdrawal-requests`, withdrawalRequestRoute);
 app.use(`${ROOT_URL}/withdrawal-states`, withdrawalStateRoute);

@@ -117,7 +117,9 @@ function sanitizeOrderFulfillItemInput(
       if (item?.variationId && Array.isArray(item.instanceIds)) {
         const existingInstanceIds =
           accumulatedItems.get(item.variationId) || new Set<string>();
-        item.instanceIds.forEach((id: string) => existingInstanceIds.add(id)); // Because using Set -> no duplicate when adding
+        for (const id of item.instanceIds) {
+          existingInstanceIds.add(id);
+        } // Because using Set -> no duplicate when adding
         accumulatedItems.set(item.variationId, existingInstanceIds);
       }
     }
@@ -173,28 +175,28 @@ export function verifyOrderInput(
           } else if (!Array.isArray(items) || items.length === 0) {
             errors.push("Items must be a non-empty array.");
           } else {
-            items.forEach((item, index) => {
+            for (const [idx, item] of items.entries()) {
               if (!item.variationId) {
-                errors.push(`Item at index ${index} is missing variation ID.`);
+                errors.push(`Item at index ${idx} is missing variation ID.`);
               } else if (
                 typeof item.variationId !== "string" ||
                 !item.variationId
               ) {
                 errors.push(
-                  `Item at index ${index} variation ID must be a non-empty string.`
+                  `Item at index ${idx} variation ID must be a non-empty string.`
                 );
               }
               if (!item.quantity) {
-                errors.push(`Item at index ${index} is missing quantity.`);
+                errors.push(`Item at index ${idx} is missing quantity.`);
               } else if (
                 typeof item.quantity !== "number" ||
                 item.quantity <= 0
               ) {
                 errors.push(
-                  `Item at index ${index} quantity must be a positive number.`
+                  `Item at index ${idx} quantity must be a positive number.`
                 );
               }
-            });
+            }
           }
           if (!isPresent(paymentMethodId)) {
             errors.push("Payment method ID is required");
@@ -316,7 +318,7 @@ export function verifyOrderInput(
           } else if (!Array.isArray(items) || items.length === 0) {
             errors.push("Items must be a non-empty array.");
           } else {
-            items.forEach((item, idx) => {
+            for (const [idx, item] of items.entries()) {
               if (!item.variationId) {
                 errors.push(`Item at index ${idx} is missing variation ID.`);
               } else if (
@@ -341,7 +343,7 @@ export function verifyOrderInput(
                   `Item at index ${idx} instance IDs must be an array of strings.`
                 );
               }
-            });
+            }
           }
           break;
         }

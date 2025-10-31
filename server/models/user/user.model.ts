@@ -177,10 +177,30 @@ const userSchema: Schema<IUser> = new Schema(
       default: [],
     },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
+// --- VIRTUALS ---
+userSchema.virtual("addresses", {
+  ref: "UserAddress",
+  localField: "_id",
+  foreignField: "userId",
+});
+
+userSchema.virtual("paymentMethods", {
+  ref: "UserPaymentMethod",
+  localField: "_id",
+  foreignField: "userId",
+});
+
+userSchema.virtual("bankAccounts", {
+  ref: "UserBankAccount",
+  localField: "_id",
+  foreignField: "userId",
+});
+
 // --- IMMUTABILITY MIDDLEWARE FOR PROTECTED USERS ---
+
 // 1. PREVENT MODIFICATION via 'doc.save()'
 userSchema.pre("save", function (next) {
   // 'this' refers to the document being saved
@@ -219,7 +239,7 @@ userSchema.pre("save", function (next) {
 
 const preventBaseUserMod = function (action: "deletes" | "updates") {
   return async function (
-    this: mongoose.Query<any, any>,
+    this: mongoose.Query<any, IUser>,
     next: mongoose.CallbackWithoutResultAndOptionalError
   ) {
     const filter = this.getFilter();
@@ -249,29 +269,19 @@ const preventBaseUserMod = function (action: "deletes" | "updates") {
     const update = this.getUpdate();
     if (!update) return next();
 
-    const updatedFields = Object.keys(update).reduce((acc: string[], key) => {
-      if (
-        key.startsWith("$") &&
-        typeof update === "object" &&
-        update !== null &&
-        Object.hasOwn(update, key) &&
-        typeof (update as Record<string, any>)[key] === "object"
-      ) {
-        return acc.concat(Object.keys((update as Record<string, any>)[key]));
-      }
-      acc.push(key);
-      return acc;
-    }, []);
+    const updatedFields = Object.keys(
+      (update as Record<string, any>).$set || {}
+    ).concat(Object.keys(update).filter((key) => !key.startsWith("$")));
 
-    const modifiable = updatedFields.every((field: any) =>
-      MODIFIABLE_PROTECTED_USER_FIELDS.includes(field)
-    );
+    const modifiable = updatedFields.every((field: any) => {
+      console.log("Checking field:", field);
+      return MODIFIABLE_PROTECTED_USER_FIELDS.includes(field);
+    });
 
     if (!modifiable) {
       return next(
         new Error(
-          `Protected user(s) cannot be modified.
-          Only the ${MODIFIABLE_PROTECTED_USER_FIELDS.join(
+          `Protected user(s) cannot be modified. Only the ${MODIFIABLE_PROTECTED_USER_FIELDS.join(
             ", "
           )} field(s) can be modified.`
         )

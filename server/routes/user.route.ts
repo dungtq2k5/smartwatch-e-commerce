@@ -2,29 +2,15 @@ import express from "express";
 import { verifyPermission } from "../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../utils/middlewares/general.middleware";
 import {
-  sanitizeUserInput,
+  inputSanitizer,
   verifyUserInput,
 } from "../utils/middlewares/user/user.middleware";
-import {
-  sanitizeCartInput,
-  verifyCartInput,
-} from "../utils/middlewares/cart.middleware";
 import {
   sanitizeAddressInput,
   verifyAddressInput,
 } from "../utils/middlewares/user/address.middleware";
-import {
-  sanitizeBalanceHistorySearchInput,
-  verifyBalanceHistorySearchInput,
-} from "../utils/middlewares/user/balanceHistory.middleware";
-import { verifyPaymentMethodInput } from "../utils/middlewares/user/paymentMethod.middleware";
 import * as userController from "../controllers/user/user.controller";
-import * as cartController from "../controllers/user/cart.controller";
 import * as addressController from "../controllers/user/address.controller";
-import * as paymentMethodController from "../controllers/user/paymentMethod.controller";
-import * as bankAccountController from "../controllers/user/bankAccount.controller";
-import * as balanceHistoryController from "../controllers/user/balanceHistory.controller";
-import { createSetupIntent } from "../controllers/stripe.controller";
 import rateLimit from "express-rate-limit";
 
 const router = express.Router();
@@ -63,7 +49,7 @@ router.patch(
   updateSelfContactInfoLimiter,
   verifyPermission("u_usr"),
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("update contact-info"),
   verifyUserInput("update contact info"),
   userController.updateSelfContactInfo
 );
@@ -73,7 +59,7 @@ router.patch(
   updateSelfGeneralInfoLimiter,
   verifyPermission("u_usr"),
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("update general-info"),
   verifyUserInput("update"),
   userController.updateSelfGeneralInfo
 );
@@ -103,28 +89,38 @@ router.post(
   "/",
   verifyPermission("c_usr"),
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("create user"),
   verifyUserInput("create"),
   userController.create
 );
 
+router.get(
+  "/sys-user-id",
+  verifyPermission("r_usr"),
+  userController.getSystemUserId
+);
+
 router.get("/:userId", verifyPermission("r_usr"), userController.get);
 
-/*
-  limit, offset,
-  searchTerm,
-  isEmailVerified, isPhoneNumberVerified,
-  isLocked,
-  sortBy: createdAt, updatedAt, fullName, email, lastLogin, userBalanceCents
-  ...
-*/
-router.get("/", verifyPermission("r_usr"), userController.search);
+router.get(
+  "/:userId/details",
+  verifyPermission("r_usr"),
+  userController.getDetails
+);
+
+router.get(
+  "/",
+  verifyPermission("r_usr"),
+  inputSanitizer("user search"),
+  verifyUserInput("search"),
+  userController.search
+);
 
 router.patch(
   "/:userId/email",
   verifyPermission("u_usr"),
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("update email"),
   verifyUserInput("update email"),
   userController.updateEmail
 );
@@ -141,12 +137,20 @@ router.patch(
   "/:userId",
   verifyPermission("u_usr"),
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("update general-info"),
   verifyUserInput("update"),
   userController.updateGeneralInfo
 );
 
 router.delete("/:userId", verifyPermission("d_usr"), userController.remove);
+
+router.delete(
+  "/many",
+  verifyPermission("d_usr"),
+  inputSanitizer("delete many"),
+  verifyUserInput("delete many"),
+  userController.removeBulk
+);
 
 // -- routes for address
 router.post(
@@ -161,7 +165,7 @@ router.post(
 router.get(
   "/:userId/addresses",
   verifyPermission("r_usr_addr"),
-  addressController.getAll
+  addressController.getAllByUserId
 );
 
 router.patch(

@@ -1027,7 +1027,7 @@ async function mockCompleteOrder(
       {
         variationId: variations[0]._id,
         quantity: 1,
-        totalCents: randNum(100_00, 200_00),
+        totalCents: randNum(10_000, 20_000),
         instances: [
           {
             id: instances1[0]._id,
@@ -1039,7 +1039,7 @@ async function mockCompleteOrder(
       {
         variationId: variations[1]._id,
         quantity: 2,
-        totalCents: randNum(200_00, 400_00),
+        totalCents: randNum(20_000, 40_000),
         instances: instances2.map((inst) => ({
           id: inst._id,
           sku: inst.sku,
@@ -1048,14 +1048,14 @@ async function mockCompleteOrder(
       },
     ];
 
-    const finalAmountCents = randNum(300_00, 600_00);
+    const finalAmountCents = randNum(30_000, 6000);
     const completeOrder = {
       userId,
       items,
       deliveryAddress: userAddress,
       paymentSummary: {
-        subtotalCents: finalAmountCents - 30_00,
-        appliedBalanceCents: 30_00,
+        subtotalCents: finalAmountCents - 3000,
+        appliedBalanceCents: 3000,
         finalAmountCents,
       },
       paymentMethodId,
@@ -1196,7 +1196,7 @@ export async function mockPendingOrder(
       {
         variationId: variations[0]._id,
         quantity: 1,
-        totalCents: randNum(100_00, 200_00),
+        totalCents: randNum(10_000, 20_000),
         instances: [
           {
             id: instances1[0]._id,
@@ -1208,7 +1208,7 @@ export async function mockPendingOrder(
       {
         variationId: variations[1]._id,
         quantity: 1,
-        totalCents: randNum(100_00, 200_00),
+        totalCents: randNum(10_000, 20_000),
         instances: [
           {
             id: instances2[0]._id,
@@ -1218,7 +1218,7 @@ export async function mockPendingOrder(
         ],
       },
     ];
-    const finalAmountCents = randNum(200_00, 400_00);
+    const finalAmountCents = randNum(20_000, 40_000);
     const pendingOrder = {
       userId,
       items,
@@ -1311,9 +1311,9 @@ async function mockOrderReturn(
       items: itemsToReturn,
       pickupAddress: order.deliveryAddress,
       refundSummary: {
-        toCardCents: 99_00,
+        toCardCents: 9900,
         toBalanceCents: 0,
-        finalRefundAmountCents: 99_00,
+        finalRefundAmountCents: 9900,
       },
       refundStates: [
         {

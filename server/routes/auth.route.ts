@@ -4,12 +4,14 @@ import {
   checkAuth,
   forgotPassword,
   login,
+  loginAdmin,
   logout,
   resetPassword,
   signup,
   validatePassword,
   verifyUser,
   refreshToken,
+  checkAdminAuth,
 } from "../controllers/auth.controller";
 import {
   verifyAuthentication,
@@ -18,7 +20,7 @@ import {
 } from "../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../utils/middlewares/general.middleware";
 import {
-  sanitizeUserInput,
+  inputSanitizer,
   verifyUserInput,
 } from "../utils/middlewares/user/user.middleware";
 import rateLimit from "express-rate-limit";
@@ -44,7 +46,7 @@ router.post(
   "/signup",
   verifyReauthentication,
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("signup"),
   verifyUserInput("signup"),
   signup
 );
@@ -54,9 +56,19 @@ router.post(
   authLimiter,
   verifyReauthentication,
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("login"),
   verifyUserInput("login"),
   login
+);
+
+router.post(
+  "/admin-login",
+  authLimiter,
+  verifyReauthentication,
+  verifyEmptyBody,
+  inputSanitizer("admin login"),
+  verifyUserInput("admin login"),
+  loginAdmin
 );
 
 router.post("/logout", verifyAuthentication, logout);
@@ -65,7 +77,7 @@ router.post(
   "/verify-user",
   verifyJwtHasUserId,
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("verify user"),
   verifyUserInput("verify user"),
   verifyUser
 );
@@ -83,7 +95,7 @@ router.post(
   authLimiter,
   verifyReauthentication,
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("forgot password"),
   verifyUserInput("forgot password"),
   forgotPassword
 );
@@ -93,7 +105,7 @@ router.post(
   authLimiter,
   verifyReauthentication,
   verifyEmptyBody,
-  sanitizeUserInput,
+  inputSanitizer("reset password"),
   verifyUserInput("reset password"),
   resetPassword
 );
@@ -101,6 +113,7 @@ router.post(
 router.post("/refresh-token", refreshToken);
 
 router.get("/check-auth", verifyJwtHasUserId, checkAuth);
+router.get("/check-admin-auth", verifyJwtHasUserId, checkAdminAuth);
 
 router.post(
   "/validate-password",

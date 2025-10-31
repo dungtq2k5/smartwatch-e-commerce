@@ -84,7 +84,9 @@ export function getLocalDateString(utcIsoString: string): string {
   return `${year}-${month}-${day}`;
 }
 
-export function readFileAsDataUrl(file: File) {
+export function readFileAsDataUrl(
+  file: File
+): Promise<string | ArrayBuffer | null> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -266,7 +268,10 @@ export function formatError(
   if (typeof err === "string") return err;
   if (err instanceof Error) return err.message;
 
-  return String(err) || exceptionMsg;
+  let errMsg = String(err) || exceptionMsg;
+  if ([".", "!", "?"].includes(errMsg[0])) errMsg += "!";
+
+  return errMsg;
 }
 
 export function compareUserAddress(
@@ -295,7 +300,17 @@ export function getClosestPreMonday(): Date {
   return today;
 }
 
+export function compareList<T>(a: T[], b: T[]): boolean {
+  if (a.length !== b.length) return false;
+
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+
+  return sortedA.toString() === sortedB.toString();
+}
+
 // --- VALIDATION UTILS ---
+
 export function isValidUserFullName(fullName: any): boolean {
   if (typeof fullName !== "string") return false;
 
@@ -474,7 +489,13 @@ export function isValidNumString(numString: any): boolean {
   return numString === String(num);
 }
 
+export function isValidBooleanString(boolString: any): boolean {
+  if (typeof boolString !== "string") return false;
+  return boolString === "true" || boolString === "false";
+}
+
 // --- ADDRESS UTILS ---
+
 export function formatAddress(address: UserAddressFormat): string {
   const ward = getWard(address.wardCode);
   const district = getDistrict(address.districtCode);

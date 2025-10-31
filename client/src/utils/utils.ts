@@ -39,7 +39,7 @@ async function request(
   method: string = "GET",
   data: object | null = null,
   headers: Record<string, string> = {},
-  signal?: AbortSignal
+  signal: AbortSignal | null = null
 ): Promise<Response> {
   const makeRequest = async (): Promise<globalThis.Response> => {
     let body: BodyInit | null = null;
@@ -83,9 +83,13 @@ async function request(
           const error = new Error("Session expired. Please log in again.");
           processFailedReqQueue(error);
 
-          // Force logout
-          const { useAuthStore } = await import("../store/authStore");
+          // Force logout both user and admin
+          const { useAuthStore } = await import("../store/user/authStore");
+          const { useAuthStore: useAdminAuthStore } = await import(
+            "../store/admin/authStore"
+          );
           useAuthStore.getState().logout();
+          useAdminAuthStore.getState().logout();
           throw error;
         }
 
@@ -107,7 +111,7 @@ async function request(
 
 export async function retrieve(
   url: string,
-  signal?: AbortSignal
+  signal: AbortSignal | null = null
 ): Promise<Response> {
   return await request(url, "GET", null, {}, signal);
 }
@@ -121,15 +125,16 @@ export async function post(
 
 export async function remove(
   url: string,
-  id?: string | number
+  id: string | number | null = null,
+  data: object | null = null
 ): Promise<Response> {
-  return await request(id ? `${url}/${id}` : url, "DELETE");
+  return await request(id ? `${url}/${id}` : url, "DELETE", data);
 }
 
 export async function patch(
   url: string,
-  id?: string | number,
-  data?: object
+  id: string | number | null = null,
+  data: object | null = null
 ): Promise<Response> {
   let method = "PATCH";
   const headers: Record<string, string> = {};
@@ -249,4 +254,42 @@ export function createFileList(files: File[] | FileList): FileList {
   }
 
   return dataTransfer.files;
+}
+
+/**
+ * Generates and downloads a CSV file from an array of objects.
+ * @param filename - The desired filename for the downloaded file (e.g., "users.csv").
+ * @param headers - An array of strings representing the column headers.
+ * @param data - An array of objects to be written as rows.
+ * @param getRow - A function that takes a data object and returns an array of value for that row.
+ */
+export function exportToCsv<T>(
+  filename: string,
+  headers: string[],
+  data: T[],
+  getVals: (item: T) => (string | number | boolean | null)[]
+): void {
+  const csvRows = [headers.join(",")];
+
+  for (const item of data) {
+    const vals = getVals(item).map((val) => {
+      const stringVal = String(val || "N/A");
+      const escapedVal = stringVal.replaceAll('"', '""'); // Escape double quotes by doubling them and wrap the whole value in double quotes
+      return `"${escapedVal}"`;
+    });
+    csvRows.push(vals.join(","));
+  }
+
+  const csvContent = csvRows.join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset-utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }

@@ -36,7 +36,9 @@ function sanitizeOrderReturnInput(
         if (item?.variationId && Array.isArray(item.instanceIds)) {
           const existingInstanceIds =
             accumulatedItems.get(item.variationId) || new Set<string>();
-          item.instanceIds.forEach((id: string) => existingInstanceIds.add(id)); // Because using Set -> no duplicate when adding
+          for (const id of item.instanceIds) {
+            existingInstanceIds.add(id); // Because using Set -> no duplicate when adding
+          }
           accumulatedItems.set(item.variationId, existingInstanceIds);
         }
       }
@@ -156,7 +158,7 @@ export function verifyOrderReturnInput(
           ) {
             errors.push('Items must be "all" or a non-empty array.');
           } else if (Array.isArray(items)) {
-            items.forEach((item, idx) => {
+            for (const [idx, item] of items.entries()) {
               if (!item.variationId) {
                 errors.push(`Item at index ${idx} is missing variation ID.`);
               } else if (
@@ -177,15 +179,15 @@ export function verifyOrderReturnInput(
                   `Item at index ${idx} instance IDs must be a non-empty array.`
                 );
               } else {
-                item.instanceIds.forEach((id: any, idIdx: number) => {
+                for (const [idIdx, id] of item.instanceIds.entries()) {
                   if (typeof id !== "string" || !id) {
                     errors.push(
                       `Item at index ${idx} instance ID at index ${idIdx} must be a non-empty string.`
                     );
                   }
-                });
+                }
               }
-            });
+            }
           }
           break;
         }

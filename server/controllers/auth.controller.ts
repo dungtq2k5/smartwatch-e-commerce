@@ -4,6 +4,7 @@ import { HttpError } from "../utils/errorHandler";
 import bcrypt from "bcryptjs";
 import { HASH_SALT, JWT_NAME, REFRESH_JWT_NAME } from "../configs/configs";
 import {
+  formatAdminUserResponse,
   formatUserResponse,
   genJwtAndSetCookie,
   genVerificationCode,
@@ -31,6 +32,9 @@ import {
   sendVerificationSms,
 } from "../utils/twilio";
 import {
+  AdminUserLogin,
+  AdminUserResponse,
+  CheckAdminAuthResponse,
   CheckAuthResponse,
   SuccessResponse,
   UserAuthByGoogle,
@@ -185,12 +189,12 @@ export async function login(
       );
     }
 
-    // Check password or user is locked
-    if (!bcrypt.compareSync(password, user.password) || user.isLocked) {
+    // Check password
+    if (!bcrypt.compareSync(password, user.password)) {
       throw new HttpError(401, "Invalid credentials.");
     }
 
-    // Update last login time and refresh token, set cookie
+    // Update last login time + refresh token + set cookie
     user.lastLogin = new Date();
     const { refreshToken } = genJwtAndSetCookie(res, {
       userId: user._id.toString(),
@@ -205,6 +209,48 @@ export async function login(
       data: formatUserResponse(user),
     } as SuccessResponse<UserResponse>);
     console.log("✅", "Login process completed successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function loginAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️", "Processing login admin request...");
+  const { email, password } = req.body as AdminUserLogin;
+
+  try {
+    // Check user exists
+    const user = await User.findOne({ isDeleted: false, email });
+
+    if (
+      !user ||
+      (user.roles.length === 1 && getBuyerRoleId().equals(user.roles[0].id)) || // isBuyerOnly
+      user.isLocked ||
+      !user.isEmailVerified ||
+      !bcrypt.compareSync(password, user.password)
+    ) {
+      throw new HttpError(401, "Invalid credentials.");
+    }
+
+    // Update last login time + refresh token + set cookie
+    user.lastLogin = new Date();
+    const { refreshToken } = genJwtAndSetCookie(res, {
+      userId: user._id.toString(),
+      isVerified: true,
+    });
+    user.refreshToken = await bcrypt.hash(refreshToken, HASH_SALT);
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful.",
+      data: formatAdminUserResponse(user),
+    } as SuccessResponse<AdminUserResponse>);
+    console.log("✅", "Login admin process completed successfully.");
   } catch (error) {
     next(error);
   }
@@ -752,6 +798,53 @@ export async function checkAuth(
       },
     } as SuccessResponse<CheckAuthResponse>);
     console.log("✅", "Authentication check completed successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function checkAdminAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️", "Checking admin authentication status...");
+
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled by middlewares."
+      )
+    );
+  }
+
+  try {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    const user = await User.findById(userId).lean();
+    if (
+      !user ||
+      user.isDeleted ||
+      (user.roles.length === 1 && getBuyerRoleId().equals(user.roles[0].id)) // isBuyerOnly
+    ) {
+      throw new HttpError(404, "User not found.");
+    }
+    if (user.isLocked) {
+      throw new HttpError(403, "User account is locked.");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Admin user is authenticated.",
+      data: {
+        admin: formatAdminUserResponse(user),
+      },
+    } as SuccessResponse<CheckAdminAuthResponse>);
+    console.log("✅", "Admin authentication check completed successfully.");
   } catch (error) {
     next(error);
   }

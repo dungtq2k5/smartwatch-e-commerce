@@ -86,9 +86,8 @@ export function verifyCartInput(
 
           if (!Array.isArray(items) || items.length === 0) {
             errors.push("Request body must be a non-empty array.");
-            console.log("here");
           } else {
-            items.forEach((item, idx) => {
+            for (const [idx, item] of items.entries()) {
               if (!item.variationId) {
                 errors.push(`Item at index ${idx} is missing variationId.`);
               } else if (
@@ -107,7 +106,7 @@ export function verifyCartInput(
                   `Item at index ${idx} has invalid quantity. It must be a positive number.`
                 );
               }
-            });
+            }
           }
           break;
         }

@@ -7,15 +7,18 @@ import {
   isValidVnPhoneNumber,
   removeAllSpaces,
   isValidDateTimeString,
+  isValidNumString,
+  isValidBooleanString,
 } from "../../../../common/utils.common";
 import { isPresent, isValidIdArray, isValidImgUrl } from "../../utils";
 import {
   PASSWORD_HINT_MESSAGE,
   USER_GENDER_OPTIONS,
+  USER_SEARCH_SORT_OPTIONS,
 } from "../../../../common/configs.common";
 import { HttpError } from "../../errorHandler";
 
-export function sanitizeUserInput(
+function sanitizeUserInput(
   req: Request,
   res: Response,
   next: NextFunction
@@ -52,10 +55,94 @@ export function sanitizeUserInput(
   next();
 }
 
+function sanitizeUserSearchInput(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing user search input...");
+
+  // Since req.query can't be modifiable so we create a new query obj for the request
+  const sanitizedQuery = { ...req.query };
+  const { searchTerm, isEmailVerified, isPhoneNumberVerified, isLocked } =
+    sanitizedQuery;
+
+  if (typeof searchTerm === "string") {
+    sanitizedQuery.searchTerm = removeOddSpaces(searchTerm);
+  }
+  if (typeof isEmailVerified === "string") {
+    sanitizedQuery.isEmailVerified =
+      removeAllSpaces(isEmailVerified).toLowerCase();
+  }
+  if (typeof isPhoneNumberVerified === "string") {
+    sanitizedQuery.isPhoneNumberVerified = removeAllSpaces(
+      isPhoneNumberVerified
+    ).toLowerCase();
+  }
+  if (typeof isLocked === "string") {
+    sanitizedQuery.isLocked = removeAllSpaces(isLocked).toLowerCase();
+  }
+
+  req["sanitizedQuery"] = sanitizedQuery;
+  next();
+}
+
+function sanitizeDeleteManyInput(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing delete many input...");
+  const { userIds } = req.body;
+
+  // Auto remove duplicates
+  if (userIds && Array.isArray(userIds)) {
+    const uniqueUserIds = Array.from(new Set(userIds));
+    req.body.userIds = uniqueUserIds;
+  }
+
+  next();
+}
+
+export function inputSanitizer(
+  type:
+    | "signup"
+    | "login"
+    | "admin login"
+    | "verify user"
+    | "forgot password"
+    | "reset password"
+    | "update contact-info"
+    | "update general-info"
+    | "update email"
+    | "create user"
+    | "user search"
+    | "delete many"
+): (req: Request, res: Response, next: NextFunction) => void {
+  switch (type) {
+    case "signup":
+    case "login":
+    case "admin login":
+    case "verify user":
+    case "forgot password":
+    case "reset password":
+    case "update contact-info":
+    case "update general-info":
+    case "update email":
+    case "create user":
+      return sanitizeUserInput;
+    case "user search":
+      return sanitizeUserSearchInput;
+    case "delete many":
+      return sanitizeDeleteManyInput;
+  }
+}
+
 export function verifyUserInput(
   type:
     | "signup"
     | "login"
+    | "admin login"
     | "update"
     | "auth by google"
     | "verify user"
@@ -68,6 +155,8 @@ export function verifyUserInput(
     | "validate password"
     | "update password"
     | "set password"
+    | "search"
+    | "delete many"
 ): (req: Request, res: Response, next: NextFunction) => Promise<void> {
   return async (
     req: Request,
@@ -138,6 +227,23 @@ export function verifyUserInput(
           } else if (!isValidPassword(password)) {
             errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
           }
+          break;
+        }
+        case "admin login": {
+          console.log("Validating admin login input...");
+          const { email, password } = req.body;
+
+          if (!email) {
+            errors.push("email is required.");
+          } else if (!isValidEmail(email)) {
+            errors.push("email is invalid.");
+          }
+          if (!password) {
+            errors.push("password is required.");
+          } else if (!isValidPassword(password)) {
+            errors.push(`password is invalid.`);
+          }
+
           break;
         }
         case "update": {
@@ -312,7 +418,6 @@ export function verifyUserInput(
             password,
             birth,
             gender,
-            userBalanceCents,
             isLocked,
             roleIds,
           } = req.body;
@@ -367,12 +472,6 @@ export function verifyUserInput(
                 USER_GENDER_OPTIONS.join(", ")
             );
           }
-          if (
-            userBalanceCents !== undefined &&
-            (typeof userBalanceCents !== "number" || userBalanceCents < 0)
-          ) {
-            errors.push("userBalanceCents must be a non-negative number.");
-          }
           if (isLocked !== undefined && typeof isLocked !== "boolean") {
             errors.push("isLocked must be a boolean.");
           }
@@ -407,6 +506,78 @@ export function verifyUserInput(
           } else if (!isValidPassword(newPassword)) {
             errors.push(`password is invalid (${PASSWORD_HINT_MESSAGE}).`);
           }
+
+          break;
+        }
+        case "search": {
+          console.log("Validating user search input...");
+          const {
+            limit,
+            offset,
+            searchTerm,
+            isEmailVerified,
+            isPhoneNumberVerified,
+            isLocked,
+            sortBy,
+          } = req["sanitizedQuery"] || req.query;
+
+          if (limit !== undefined && !isValidNumString(limit)) {
+            errors.push("limit must be a valid number string.");
+          }
+          if (offset !== undefined && !isValidNumString(offset)) {
+            errors.push("offset must be a valid number string.");
+          }
+          if (
+            searchTerm !== undefined &&
+            (typeof searchTerm !== "string" || !searchTerm)
+          ) {
+            errors.push("searchTerm must be a non-empty string.");
+          }
+          if (
+            isEmailVerified !== undefined &&
+            !isValidBooleanString(isEmailVerified)
+          ) {
+            errors.push("isEmailVerified must be a boolean string.");
+          }
+          if (
+            isPhoneNumberVerified !== undefined &&
+            !isValidBooleanString(isPhoneNumberVerified)
+          ) {
+            errors.push("isPhoneNumberVerified must be a boolean string.");
+          }
+          if (isLocked !== undefined && !isValidBooleanString(isLocked)) {
+            errors.push("isLocked must be a boolean string.");
+          }
+          if (
+            sortBy !== undefined &&
+            !USER_SEARCH_SORT_OPTIONS.includes(sortBy)
+          ) {
+            errors.push(
+              `sortBy is invalid. Must be one of: ${USER_SEARCH_SORT_OPTIONS.join(
+                ", "
+              )}.`
+            );
+          }
+
+          break;
+        }
+        case "delete many": {
+          console.log("Validating delete many users input...");
+          const { userIds } = req.body;
+
+          if (!Array.isArray(userIds) || userIds.length === 0) {
+            errors.push("userIds must be a non-empty array.");
+          } else {
+            for (const [idx, id] of userIds.entries()) {
+              if (typeof id !== "string" || !id) {
+                errors.push(
+                  `userIds[${idx}] is invalid. Each userId must be a non-empty string.`
+                );
+              }
+            }
+          }
+
+          break;
         }
       }
 

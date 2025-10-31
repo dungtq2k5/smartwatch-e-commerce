@@ -9,6 +9,7 @@ import {
   isValidListOfColorObj,
   isNoneArrObj,
   isEmptyObj,
+  isValidBooleanString,
 } from "../../../common/utils.common";
 import {
   PRODUCT_NAME_MAX_LENGTH,
@@ -467,7 +468,7 @@ export function verifyProductInput(
           ) {
             errors.push("search term must be a non-empty string.");
           }
-          if (type !== undefined && !PRODUCT_TYPES.includes(type as any)) {
+          if (type !== undefined && !PRODUCT_TYPES.includes(type)) {
             errors.push(
               `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`
             );
@@ -486,7 +487,7 @@ export function verifyProductInput(
           }
           if (
             stopSelling !== undefined &&
-            !["true", "false"].includes(stopSelling as any)
+            !isValidBooleanString(stopSelling)
           ) {
             errors.push("stopSelling must be a boolean string.");
           }
@@ -507,14 +508,14 @@ export function verifyProductInput(
           if (
             priceCentsMin !== undefined &&
             priceCentsMax !== undefined &&
-            parseInt(priceCentsMin as string, 10) >
-              parseInt(priceCentsMax as string, 10)
+            Number.parseInt(priceCentsMin as string, 10) >
+              Number.parseInt(priceCentsMax as string, 10)
           ) {
             errors.push("priceCentsMin cannot be greater than priceCentsMax.");
           }
           if (
             sortBy !== undefined &&
-            !PRODUCT_SEARCH_SORT_OPTIONS.includes(sortBy as any)
+            !PRODUCT_SEARCH_SORT_OPTIONS.includes(sortBy)
           ) {
             errors.push(
               `sortBy must be one of the following: ${PRODUCT_SEARCH_SORT_OPTIONS.join(
@@ -531,13 +532,13 @@ export function verifyProductInput(
 
           if (
             modelStopSelling !== undefined &&
-            !["true", "false"].includes(modelStopSelling as any)
+            !["true", "false"].includes(modelStopSelling)
           ) {
             errors.push("modelStopSelling must be a boolean string.");
           }
           if (
             variationStopSelling !== undefined &&
-            !["true", "false"].includes(variationStopSelling as any)
+            !["true", "false"].includes(variationStopSelling)
           ) {
             errors.push("variationStopSelling must be a boolean string.");
           }

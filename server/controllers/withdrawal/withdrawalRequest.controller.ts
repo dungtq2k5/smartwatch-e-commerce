@@ -156,10 +156,8 @@ export async function searchSelf(
   }
 
   const reqQuery = req.query as SelfWithdrawalRequestSearchQuery;
-  const limit = reqQuery.limit ? parseInt(reqQuery.limit as string, 10) : 9;
-  const offset = reqQuery.offset
-    ? parseInt(reqQuery.offset as string, 10)
-    : 0;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
 
   try {
     const withdrawalRequests = await WithdrawalRequest.find({ userId })
@@ -372,16 +370,18 @@ export async function approveRequest(
     }
 
     const sysUserId = getSysUserId();
-    withdrawalRequest.states.push({
-      id: getWithdrawalStateId("2"), // approved
-      notes: notes || null,
-      createdBy: new Types.ObjectId(reqUserId),
-    });
-    withdrawalRequest.states.push({
-      id: getWithdrawalStateId("3"), // processing
-      notes: "Processing withdrawal via Stripe",
-      createdBy: sysUserId,
-    });
+    withdrawalRequest.states.push(
+      {
+        id: getWithdrawalStateId("2"), // approved
+        notes: notes || null,
+        createdBy: new Types.ObjectId(reqUserId),
+      },
+      {
+        id: getWithdrawalStateId("3"), // processing
+        notes: "Processing withdrawal via Stripe",
+        createdBy: sysUserId,
+      }
+    );
 
     let resMsg: string = "";
     try {

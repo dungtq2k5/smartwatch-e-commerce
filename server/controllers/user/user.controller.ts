@@ -1,28 +1,37 @@
 import { Request, Response, NextFunction } from "express";
 import User, { IUser } from "../../models/user/user.model";
 import {
+  formatAdminUserDetailResponse,
   formatAdminUserResponse,
   formatUserResponse,
   genVerificationCode,
+  getSysUserId,
   isPresent,
 } from "../../utils/utils";
 import type {
+  AdminUserDetailResponse,
   AdminUserListResponse,
   AdminUserResponse,
   SuccessResponse,
   UserCreate,
   UserResponse,
-  UserSetSelfPassword,
+  UserSearchQuery,
+  UserSelfPasswordSet,
   UserUpdate,
-  UserUpdateContactInfo,
-  UserUpdateEmail,
-  UserUpdatePhoneNumber,
-  UserUpdateSelfGeneralInfo,
-  UserUpdateSelfPassword,
+  UserContactInfoUpdate,
+  UserEmailUpdate,
+  UserPhoneNumberUpdate,
+  UserSelfGeneralInfoUpdate,
+  UserSelfPasswordUpdate,
+  UserBulkDelete,
 } from "../../../common/types.common";
 import { HttpError } from "../../utils/errorHandler";
 import bcrypt from "bcryptjs";
-import { HASH_SALT, JWT_NAME } from "../../configs/configs";
+import {
+  HASH_SALT,
+  JWT_NAME,
+  MAX_USERS_TO_DELETE_BULK,
+} from "../../configs/configs";
 import {
   sendEmailChangeEmail,
   sendEmailVerifiedEmail,
@@ -76,21 +85,24 @@ export async function create(
       )
     );
   }
+  const {
+    fullName,
+    avatarUrl,
+    email,
+    isEmailVerified,
+    phoneNumber,
+    isPhoneNumberVerified,
+    password,
+    birth,
+    gender,
+    isLocked,
+    roleIds,
+  } = req.body as UserCreate;
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const {
-      email,
-      isEmailVerified,
-      phoneNumber,
-      isPhoneNumberVerified,
-      password,
-      birth,
-      gender,
-      roleIds,
-    } = req.body as UserCreate;
-
     // Business logic
     if (new Date(birth) > new Date()) {
       throw new HttpError(400, "Birth date cannot be in the future.");
@@ -113,11 +125,13 @@ export async function create(
     const orConditions: ({ email: string } | { phoneNumber: string })[] = [];
     if (email) orConditions.push({ email });
     if (phoneNumber) orConditions.push({ phoneNumber });
-    const userExists = await User.exists({
+    const existingUser = await User.exists({
       isDeleted: false,
       $or: orConditions,
-    }).session(session);
-    if (userExists) {
+    })
+      .lean()
+      .session(session);
+    if (existingUser) {
       throw new HttpError(409, "Email or phone number already exists.");
     }
 
@@ -146,6 +160,8 @@ export async function create(
 
     const hashedPassword = await bcrypt.hash(password, HASH_SALT);
     const user = new User({
+      fullName,
+      avatarUrl: avatarUrl || null,
       email,
       isEmailVerified,
       phoneNumber,
@@ -153,6 +169,7 @@ export async function create(
       password: hashedPassword,
       birth,
       gender,
+      isLocked: isLocked !== undefined ? isLocked : false,
       roles,
     });
 
@@ -207,6 +224,10 @@ export async function get(
     if (!user || user.isDeleted) {
       throw new HttpError(404, "User not found.");
     }
+    // Prevent from retrieving system user
+    if (getSysUserId().equals(user._id)) {
+      throw new HttpError(404, "User not found.");
+    }
 
     res.status(200).json({
       success: true,
@@ -214,6 +235,93 @@ export async function get(
       data: formatAdminUserResponse(user),
     } as SuccessResponse<AdminUserResponse>);
     console.log("✅", "User retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getSystemUserId(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing get system user ID request...");
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  try {
+    res.status(200).json({
+      success: true,
+      message: "System user ID retrieved successfully",
+      data: { sysUserId: getSysUserId().toString() },
+    } as SuccessResponse<{ sysUserId: string }>);
+    console.log("✅", "System user ID retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getDetails(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing get user details request...");
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const { userId } = req.params;
+
+  try {
+    // Check user exists
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new HttpError(404, "User not found.");
+    }
+    const user = await User.findById(userId)
+      .populate("addresses")
+      .populate("paymentMethods")
+      .populate("bankAccounts")
+      .lean({ virtuals: true }); // Also apply POJO with virtuals
+    if (!user || user.isDeleted) {
+      throw new HttpError(404, "User not found.");
+    }
+    // Prevent from retrieving system user
+    if (getSysUserId().equals(user._id)) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User details retrieved successfully",
+      data: formatAdminUserDetailResponse(user),
+    } as SuccessResponse<AdminUserDetailResponse>);
+    console.log("✅", "User details retrieved successfully.");
   } catch (error) {
     next(error);
   }
@@ -240,30 +348,34 @@ export async function search(
     );
   }
 
-  const limit = req.query.limit ? parseInt(req.query.limit as string) : 9;
-  const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
-  const query: any = {};
+  const reqQuery = req["sanitizedQuery"] as UserSearchQuery;
 
-  const searchTerm = req.query.searchTerm as string;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const query: any = {
+    _id: { $ne: getSysUserId() }, // Prevent system user from being retrieved
+  };
+
+  const searchTerm = reqQuery.searchTerm;
   if (searchTerm) {
     query.$or = [
       { fullName: { $regex: searchTerm, $options: "i" } },
       { email: { $regex: searchTerm, $options: "i" } },
-      { phoneNumber: { $regex: `^${searchTerm}`, $option: "i" } },
+      { phoneNumber: { $regex: `^${searchTerm}`, $options: "i" } },
     ];
   }
 
-  if (req.query.isEmailVerified) {
-    query.isEmailVerified = req.query.isEmailVerified === "true";
+  if (reqQuery.isEmailVerified !== undefined) {
+    query.isEmailVerified = reqQuery.isEmailVerified === "true";
   }
-  if (req.query.isPhoneNumberVerified) {
-    query.isPhoneNumberVerified = req.query.isPhoneNumberVerified === "true";
+  if (reqQuery.isPhoneNumberVerified !== undefined) {
+    query.isPhoneNumberVerified = reqQuery.isPhoneNumberVerified === "true";
   }
-  if (req.query.isLocked) {
-    query.isLocked = req.query.isLocked === "true";
+  if (reqQuery.isLocked !== undefined) {
+    query.isLocked = reqQuery.isLocked === "true";
   }
 
-  const sort = ((req.query.sortBy as string) || "createdAt").split("_");
+  const sort = (reqQuery.sortBy || "createdAt").split("_");
   const sortField = sort[0];
   const sortBy = sort[1] === "desc" ? -1 : 1;
   const sortStage: any = { [sortField]: sortBy, _id: 1 };
@@ -329,6 +441,12 @@ export async function updateGeneralInfo(
   }
 
   const { userId } = req.params;
+  if (userId === reqUserId) {
+    return next(
+      new HttpError(400, "You cannot update your own account as an admin.")
+    );
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -474,12 +592,15 @@ export async function updateEmail(
 ): Promise<void> {
   console.log("▶️ ", "Processing update user email request...");
 
-  const isBuyerOnly = req["auth"]?.isBuyerOnly;
-  if (!isPresent(isBuyerOnly)) {
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
     return next(
       new HttpError(
         500,
-        "isBuyerOnly not found, this should be handled in middlewares."
+        "reqUserId or isBuyerOnly not found, this should be handled in middlewares."
       )
     );
   }
@@ -490,6 +611,12 @@ export async function updateEmail(
   }
 
   const { userId } = req.params;
+  if (userId === reqUserId) {
+    return next(
+      new HttpError(400, "You cannot update your own email as an admin.")
+    );
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -504,7 +631,7 @@ export async function updateEmail(
     }
 
     // Business logic
-    const { email, isEmailVerified } = req.body as UserUpdateEmail;
+    const { email, isEmailVerified } = req.body as UserEmailUpdate;
     const updatedEmail = email || user.email;
     const updatedIsEmailVerified =
       isEmailVerified ?? (user.isEmailVerified as boolean);
@@ -605,12 +732,15 @@ export async function updatePhoneNumber(
 ): Promise<void> {
   console.log("▶️ ", "Processing update user phone number request...");
 
-  const isBuyerOnly = req["auth"]?.isBuyerOnly;
-  if (!isPresent(isBuyerOnly)) {
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
     return next(
       new HttpError(
         500,
-        "isBuyerOnly not found, this should be handled in middlewares."
+        "reqUserId or isBuyerOnly not found, this should be handled in middlewares."
       )
     );
   }
@@ -621,6 +751,12 @@ export async function updatePhoneNumber(
   }
 
   const { userId } = req.params;
+  if (userId === reqUserId) {
+    return next(
+      new HttpError(400, "You cannot update your own phone number as an admin.")
+    );
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -636,7 +772,7 @@ export async function updatePhoneNumber(
 
     // Business logic
     const { phoneNumber, isPhoneNumberVerified } =
-      req.body as UserUpdatePhoneNumber;
+      req.body as UserPhoneNumberUpdate;
 
     const updatedPhoneNumber =
       phoneNumber === null ? null : phoneNumber || user.phoneNumber;
@@ -810,6 +946,77 @@ export async function remove(
   }
 }
 
+export async function removeBulk(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Processing bulk delete users request...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const { userIds: userIdsToDelete } = req.body as UserBulkDelete;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (userIdsToDelete.length > MAX_USERS_TO_DELETE_BULK) {
+      throw new HttpError(
+        400,
+        `Cannot delete more than ${MAX_USERS_TO_DELETE_BULK} users at once.`
+      );
+    }
+
+    // Cannot delete self
+    if (userIdsToDelete.includes(reqUserId)) {
+      throw new HttpError(
+        400,
+        "You cannot delete your own account as an admin."
+      );
+    }
+
+    // Delete users, if user not found -> skip and continue
+    for (const id of userIdsToDelete) {
+      const user = Types.ObjectId.isValid(id)
+        ? await User.findById(id).session(session)
+        : null;
+      if (user && !user.isDeleted) {
+        await executeDeletion(user, new Types.ObjectId(reqUserId), session);
+      }
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "Users deleted successfully",
+    } as SuccessResponse);
+    console.log("✅", "Users deleted successfully.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
 // --- BUYER FUNCTIONS ---
 export async function updateSelfContactInfo(
   req: Request,
@@ -835,7 +1042,7 @@ export async function updateSelfContactInfo(
     );
   }
 
-  const { value, type } = req.body as UserUpdateContactInfo;
+  const { value, type } = req.body as UserContactInfoUpdate;
   const user = req["user"];
   if (!user) {
     return next(
@@ -1043,7 +1250,7 @@ export async function updateSelfGeneralInfo(
   }
 
   const { fullName, avatarUrl, birth, gender } =
-    req.body as UserUpdateSelfGeneralInfo;
+    req.body as UserSelfGeneralInfoUpdate;
 
   try {
     // Business logic
@@ -1094,7 +1301,7 @@ export async function updateSelfPassword(
     );
   }
 
-  const { currentPassword, newPassword } = req.body as UserUpdateSelfPassword;
+  const { currentPassword, newPassword } = req.body as UserSelfPasswordUpdate;
 
   try {
     // Only for user who auth by local
@@ -1148,7 +1355,7 @@ export async function setSelfPassword(
     );
   }
 
-  const { password } = req.body as UserSetSelfPassword;
+  const { password } = req.body as UserSelfPasswordSet;
 
   try {
     // Only for user who auth by provider
@@ -1257,6 +1464,8 @@ async function executeDeletion(
   session: mongoose.ClientSession
 ): Promise<void> {
   try {
+    if (userToDelete.isDeleted) return;
+
     // Recalculate userAssigned from Roles
     const roleIds = userToDelete.roles.map((role: any) => role.id as string);
     await Role.updateMany(
@@ -1320,26 +1529,20 @@ async function executeDeletion(
     }
 
     // Hard delete (and cleanup)
-    if (userToDelete.avatarUrl) {
-      await deleteFileFromFirebaseStorage(
-        userToDelete.avatarUrl,
-        "user-avatar"
-      );
-    }
-    // The pre-delete hook on the User model is a better place for this,
-    // but keeping it here is also valid within the transaction.
-    await Otp.deleteMany({ userId: userToDelete._id }, { session });
-    await PasswordResetToken.deleteMany(
-      { userId: userToDelete._id },
-      { session }
-    );
-    await Cart.deleteMany({ userId: userToDelete._id }, { session });
-    await UserPaymentMethod.deleteMany(
-      { userId: userToDelete._id },
-      { session }
-    );
-    await UserAddress.deleteMany({ userId: userToDelete._id }, { session });
-    await User.findByIdAndDelete(userToDelete._id, { session });
+    await Promise.all([
+      userToDelete.avatarUrl
+        ? deleteFileFromFirebaseStorage(userToDelete.avatarUrl, "user-avatar")
+        : Promise.resolve(),
+
+      // The pre-delete hook on the User model is a better place for this,
+      // but keeping it here is also valid within the transaction.
+      Otp.deleteMany({ userId: userToDelete._id }, { session }),
+      PasswordResetToken.deleteMany({ userId: userToDelete._id }, { session }),
+      Cart.deleteMany({ userId: userToDelete._id }, { session }),
+      UserPaymentMethod.deleteMany({ userId: userToDelete._id }, { session }),
+      UserAddress.deleteMany({ userId: userToDelete._id }, { session }),
+      User.findByIdAndDelete(userToDelete._id, { session }),
+    ]);
   } catch (error) {
     throw new Error(formatError(error));
   }
