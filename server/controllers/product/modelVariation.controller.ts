@@ -34,18 +34,19 @@ export async function create(
       )
     );
   }
-  const { productId, modelId } = req.params;
+
+  const {
+    productModelId: modelId,
+    name,
+    color,
+    imageUrls,
+    additionalPriceCents,
+    stockAdditionalPriceCents,
+    band,
+    stopSelling,
+  } = req.body as ModelVariationCreate;
 
   try {
-    // Check product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      throw new HttpError(404, "Product not found.");
-    }
-    const product = await Product.findById(productId).lean();
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product not found.");
-    }
-
     // Check model exists
     if (!Types.ObjectId.isValid(modelId)) {
       throw new HttpError(404, "Product model not found.");
@@ -53,15 +54,12 @@ export async function create(
     const model = await ProductModel.findOne({
       isDeleted: false,
       _id: modelId,
-      productId,
     }).lean();
     if (!model) {
       throw new HttpError(404, "Product model not found.");
     }
 
     // Business logic
-    const { name, color, imageUrls, additionalPriceCents, band, stopSelling } =
-      req.body as ModelVariationCreate;
 
     // Check variation exists with unique color.hex or color.name
     const existingVariation = await ModelVariation.findOne({
@@ -80,6 +78,7 @@ export async function create(
       imageUrls,
       stopSelling,
       additionalPriceCents,
+      stockAdditionalPriceCents,
       band,
       createdBy: reqUserId,
     });
@@ -303,6 +302,9 @@ export async function update(
       imageUrls === null ? [] : imageUrls || variation.imageUrls;
     variation.additionalPriceCents =
       updateData.additionalPriceCents ?? variation.additionalPriceCents;
+    variation.stockAdditionalPriceCents =
+      updateData.stockAdditionalPriceCents ??
+      variation.stockAdditionalPriceCents;
     if (updateData.band && !isEmptyObj(updateData.band)) {
       variation.band.widthMm =
         updateData.band.widthMm || variation.band.widthMm;
@@ -359,8 +361,8 @@ export async function remove(
       )
     );
   }
-  const { variationId } = req.params;
 
+  const { variationId } = req.params;
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -375,22 +377,6 @@ export async function remove(
     }).session(session);
     if (!variation) {
       throw new HttpError(404, "Product model variation not found.");
-    }
-
-    // Check model exists
-    const model = await ProductModel.findById(variation.productModelId)
-      .select("productId isDeleted")
-      .lean();
-    if (!model || model.isDeleted) {
-      throw new HttpError(404, "Model of this variation not found.");
-    }
-
-    // Check product exists
-    const product = await Product.findById(model.productId)
-      .select("isDeleted")
-      .lean();
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product of this variation not found.");
     }
 
     await executeDeletion(variation, new Types.ObjectId(reqUserId), session);
@@ -411,41 +397,46 @@ export async function remove(
 }
 
 // --- HELPER FUNCTIONS ---
-// Auto handle delete in cart
 async function executeDeletion(
   variationToDelete: IModelVariation,
   deletedBy: Types.ObjectId,
   session: mongoose.ClientSession
 ): Promise<void> {
   try {
-    // Delete all data in cart that has variationId
-    await Cart.deleteMany({ variationId: variationToDelete._id }, { session });
-    console.log(
-      "✅ ",
-      `Removed cart items for variation: ${variationToDelete._id}`
-    );
+    /*
+      Business logic:
+        - Hard delete (stockQuantity = 0): delete users' carts -> delete variation -> delete imgUrls.
+        - Soft delete (stockQuantity > 0): soft delete variation.
+    */
+
+    const variationId = variationToDelete._id;
 
     if (variationToDelete.stockQuantity > 0) {
-      // Soft delete
-      await ModelVariation.findByIdAndUpdate(
-        variationToDelete._id,
-        {
-          isDeleted: true,
-          deletedAt: new Date(),
-          deletedBy,
-        },
-        { session }
-      );
+      // -- Soft delete
+      console.log(`▶️ `, `Soft deleting variation ${variationId}...`);
+
+      await ModelVariation.findByIdAndUpdate(variationId, {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy,
+      }).session(session);
       return;
     }
 
-    // Handle remove imageUrls on Firebase Storage
-    await deleteManyFileFromFirebaseStorage(
-      variationToDelete.imageUrls,
-      "product-image"
-    );
+    // -- Hard delete
+    console.log(`▶️ `, `Hard deleting variation ${variationId}...`);
 
-    await ModelVariation.findByIdAndDelete(variationToDelete._id, { session });
+    // Delete variation and carts
+    await Cart.deleteMany({ variationId }).session(session);
+    await ModelVariation.findByIdAndDelete(variationId).session(session);
+
+    // Delete imageUrls from Firebase Storage
+    if (variationToDelete.imageUrls.length > 0) {
+      await deleteManyFileFromFirebaseStorage(
+        variationToDelete.imageUrls,
+        "product-image"
+      );
+    }
   } catch (error) {
     console.error("❌ ", "Error deleting product model variation:", error);
     throw error;

@@ -59,7 +59,15 @@ router.get(
   verifyPermission("r_order"),
   inputSanitizer("order search"),
   verifyOrderInput("search"),
-  order.search
+  order.search("admin search")
+);
+
+router.get(
+  "/me",
+  verifyPermission("r_order"),
+  inputSanitizer("order search"),
+  verifyOrderInput("search"),
+  order.search("self search")
 );
 
 router.get("/:orderId/details", verifyPermission("r_order"), order.getDetails);

@@ -26,6 +26,7 @@ export interface IModelVariation extends Document<Types.ObjectId> {
   color: IColor;
   imageUrls: string[];
   additionalPriceCents: number;
+  stockAdditionalPriceCents: number;
   band: IVariationBand;
   stockQuantity: number;
   createdBy: Types.ObjectId;
@@ -143,6 +144,12 @@ const modelVariationSchema: Schema<IModelVariation> = new Schema(
       default: [],
     },
     additionalPriceCents: {
+      type: Number,
+      required: false,
+      default: 0,
+      min: 0,
+    },
+    stockAdditionalPriceCents: {
       type: Number,
       required: false,
       default: 0,

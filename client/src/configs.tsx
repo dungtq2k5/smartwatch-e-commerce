@@ -13,7 +13,15 @@ import {
   faWarehouse,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
-import type { AdminUserDisplayableField, Config } from "./utils/types";
+import type {
+  AdminConfig,
+  AdminProductDisplayableField,
+  AdminProductModelDisplayableField,
+  AdminUserDisplayableField,
+  ProductDisplayField,
+  ProductModelDisplayField,
+  UserDisplayField,
+} from "./utils/types";
 import type { JSX } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -56,9 +64,14 @@ export const SELF_PAYMENT_METHOD_URL = `${ROOT_URL}/user-payment-methods/me`;
 
 export const PRODUCT_URL = `${ROOT_URL}/products`;
 export const PRODUCT_SEARCH_URL = PRODUCT_URL;
+export const PRODUCT_ADMIN_SEARCH_URL = `${ROOT_URL}/products/admin`;
 export const PRODUCT_CATEGORIES_URL = `${ROOT_URL}/product-categories`;
 export const PRODUCT_BRANDS_URL = `${ROOT_URL}/product-brands`;
 export const PRODUCT_OS_URL = `${ROOT_URL}/product-os`;
+
+export const PRODUCT_MODEL_URL = `${ROOT_URL}/product-models`;
+
+export const PRODUCT_VARIATION_URL = `${ROOT_URL}/product-variations`;
 
 export const ORDER_URL = `${ROOT_URL}/orders`;
 export const SELF_ORDER_URL = `${ORDER_URL}/me`;
@@ -223,39 +236,10 @@ export const WITHDRAWAL_STATE_LOOKUPID_MSG_LEGEND = {
   "7": "Your withdrawal request has been rejected by admin because of some reasons. Please contact support for more info.", // rejected
 } as const;
 
-// --- DATA TABLE CONFIGURATIONS ---
-export const DATA_DISPLAY_ROWS_PER_PAGE = [5, 10, 25, 50] as const;
+// --- ADMIN DATA TABLE CONFIGURATIONS ---
 
-export const ADMIN_USER_DISPLAY_FIELDS: AdminUserDisplayableField[] = [
-  "id",
-  "fullName",
-  "birth",
-  "gender",
-  "stripeCustomerId",
-  "userBalanceCents",
-  "lastLogin",
-  "createdAt",
-  "updatedAt",
-  "email",
-  "phoneNumber",
-  "authProvider",
-  "accountVerified",
-  "accountStatus", // isLocked
-  "roles",
-  "actions", // Action buttons
-] as const;
-export const DEFAULT_ADMIN_USER_VISIBLE_FIELDS: AdminUserDisplayableField[] = [
-  "fullName",
-  "birth",
-  "gender",
-  "userBalanceCents",
-  "lastLogin",
-  "email",
-  "phoneNumber",
-  "accountVerified",
-  "accountStatus",
-  "actions",
-] as const;
+export const DATA_DISPLAY_ROWS_PER_PAGE = [5, 10, 25, 50] as const;
+export const DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE = DATA_DISPLAY_ROWS_PER_PAGE[0];
 
 export const USER_FIELD_LABEL_LEGEND: Readonly<
   Record<AdminUserDisplayableField, string>
@@ -271,12 +255,106 @@ export const USER_FIELD_LABEL_LEGEND: Readonly<
   updatedAt: "Updated at",
   email: "Email",
   phoneNumber: "Phone number",
-  authProvider: "Auth provider",
+  authProvider: "Auth type",
   accountVerified: "Account verified",
   accountStatus: "Account status",
   roles: "Roles",
   actions: "Actions",
 };
+
+export const PRODUCT_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminProductDisplayableField, string>
+> = {
+  id: "ID",
+  name: "Name",
+  type: "Type",
+  categoryId: "Category",
+  brandId: "Brand",
+  description: "Description",
+  basePriceCents: "Base price",
+  totalModels: "Related models",
+  totalVariations: "Related variations",
+  createdBy: "Created by",
+  createdAt: "Created at",
+  updatedAt: "Updated at",
+  stopSelling: "Stop selling",
+  actions: "Actions",
+};
+
+export const PRODUCT_MODEL_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminProductModelDisplayableField, string>
+> = {
+  id: "ID",
+  productId: "Product ID",
+  name: "Name",
+  priceCents: "Selling price",
+  stockPriceCents: "Stock price",
+  totalVariations: "Total variations",
+  caseMaterial: "Case material",
+  watchWeightMg: "Weight (mg)",
+  compatibleBandLugWidthMm: "Band lug width (mm)",
+  releaseDate: "Release date",
+  stopSelling: "Stop selling",
+  createdBy: "Created by",
+  createdAt: "Created at",
+  updatedAt: "Updated at",
+  actions: "Actions",
+};
+
+export const DEFAULT_ADMIN_USER_DISPLAY_FIELDS: UserDisplayField[] = [
+  { name: "id", visible: false, exportable: true },
+  { name: "fullName", visible: true, exportable: true },
+  { name: "birth", visible: true, exportable: true },
+  { name: "gender", visible: true, exportable: true },
+  { name: "stripeCustomerId", visible: false, exportable: true },
+  { name: "userBalanceCents", visible: true, exportable: true },
+  { name: "lastLogin", visible: true, exportable: true },
+  { name: "createdAt", visible: false, exportable: true },
+  { name: "updatedAt", visible: false, exportable: true },
+  { name: "email", visible: true, exportable: true },
+  { name: "phoneNumber", visible: true, exportable: true },
+  { name: "authProvider", visible: false, exportable: true },
+  { name: "accountVerified", visible: true, exportable: true },
+  { name: "accountStatus", visible: true, exportable: true },
+  { name: "roles", visible: false, exportable: true },
+  { name: "actions", visible: true, exportable: false },
+];
+
+export const DEFAULT_ADMIN_PRODUCT_DISPLAY_FIELDS: ProductDisplayField[] = [
+  { name: "id", visible: false, exportable: true },
+  { name: "name", visible: true, exportable: true },
+  { name: "type", visible: true, exportable: true },
+  { name: "categoryId", visible: true, exportable: true },
+  { name: "brandId", visible: true, exportable: true },
+  { name: "description", visible: false, exportable: true },
+  { name: "basePriceCents", visible: true, exportable: true },
+  { name: "totalModels", visible: true, exportable: true },
+  { name: "totalVariations", visible: true, exportable: true },
+  { name: "createdBy", visible: false, exportable: true },
+  { name: "createdAt", visible: false, exportable: true },
+  { name: "updatedAt", visible: false, exportable: true },
+  { name: "stopSelling", visible: true, exportable: true },
+  { name: "actions", visible: true, exportable: false },
+];
+
+export const DEFAULT_ADMIN_PRODUCT_MODEL_DISPLAY_FIELDS: ProductModelDisplayField[] =
+  [
+    { name: "id", visible: true, exportable: true },
+    { name: "productId", visible: false, exportable: true },
+    { name: "name", visible: true, exportable: true },
+    { name: "priceCents", visible: true, exportable: true },
+    { name: "stockPriceCents", visible: false, exportable: true },
+    { name: "totalVariations", visible: true, exportable: true },
+    { name: "caseMaterial", visible: false, exportable: true },
+    { name: "watchWeightMg", visible: false, exportable: true },
+    { name: "compatibleBandLugWidthMm", visible: false, exportable: true },
+    { name: "releaseDate", visible: true, exportable: true },
+    { name: "createdBy", visible: false, exportable: true },
+    { name: "createdAt", visible: false, exportable: true },
+    { name: "updatedAt", visible: false, exportable: true },
+    { name: "stopSelling", visible: true, exportable: true },
+    { name: "actions", visible: true, exportable: false },
+  ];
 
 export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   visa: (
@@ -302,11 +380,11 @@ export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   amex: <FontAwesomeIcon icon={faCcAmex} size="2x" className="text-info" />,
 };
 
-export const CONFIG_STORAGE_KEY = `${PROJECT_NAME}-admin-ui-configs`;
+export const CONFIG_STORAGE_KEY = `${PROJECT_NAME.toLowerCase()}-admin-ui-configs`;
 
-export const DEFAULT_ADMIN_CONFIG: Config = {
-  userManagementConfig: {
-    displayFields: ADMIN_USER_DISPLAY_FIELDS,
-    visibleFields: DEFAULT_ADMIN_USER_VISIBLE_FIELDS,
-  },
+export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
+  userManagementDisplayFields: DEFAULT_ADMIN_USER_DISPLAY_FIELDS,
+  productManagementDisplayFields: DEFAULT_ADMIN_PRODUCT_DISPLAY_FIELDS,
+  productModelManagementDisplayFields:
+    DEFAULT_ADMIN_PRODUCT_MODEL_DISPLAY_FIELDS,
 };

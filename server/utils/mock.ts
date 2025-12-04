@@ -561,6 +561,9 @@ async function mockProductModels(
               }
             : null,
           shape: isCircular ? "round" : "rectangular",
+          refreshRateHz: faker.helpers.arrayElement(
+            PRODUCT_MOCK_OPTIONS.MODEL_SCREEN_REFRESH_RATE_OPTIONS
+          ),
         };
 
         const model = {
@@ -686,6 +689,7 @@ async function mockModelVariations(
           }, // unique
           imageUrls: genRandImgUrls(randNum(1, 5), imgSpecs),
           additionalPriceCents: faker.number.int({ min: 0, max: 100_00 }),
+          stockAdditionalPriceCents: faker.number.int({ min: 0, max: 50_00 }),
           band,
           stockQuantity: faker.number.int({ min: 1, max: 20 }),
           createdBy: sysUserId,

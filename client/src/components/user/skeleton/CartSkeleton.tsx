@@ -1,5 +1,6 @@
 import { memo } from "react";
 import HorizontalDivider from "../HorizontalDivider";
+import { Placeholder } from "react-bootstrap";
 
 const CartSkeleton = memo(() => {
   const cartItemSkeletonIds = Array.from(
@@ -10,64 +11,69 @@ const CartSkeleton = memo(() => {
   return (
     <div className="container py-4 w-100">
       {/* Title skeleton */}
-      <div className="mb-4 placeholder-glow text-center">
-        <span className="placeholder col-4 h1"></span>
-      </div>
+      <Placeholder as="div" animation="glow" className="mb-4 text-center">
+        <Placeholder as="span" className="h1" xs={4} />
+      </Placeholder>
 
       <div className="row g-4">
         {/* Left column: Cart items skeleton */}
         <div className="col-lg-8">
-          <div className="d-flex flex-column gap-3 placeholder-glow">
+          <Placeholder
+            as="div"
+            animation="glow"
+            className="d-flex flex-column gap-3"
+          >
             {cartItemSkeletonIds.map((id) => (
               <div className="card shadow-sm" key={id}>
                 <div className="card-body">
                   <div className="row g-3">
                     {/* Image skeleton */}
                     <div className="col-md-3">
-                      <div className="placeholder cart-item-img--g img-fluid rounded"></div>
+                      <Placeholder className="cart-item-img--g img-fluid rounded" />
                     </div>
                     {/* Info skeleton */}
                     <div className="col-md-9">
                       <div className="d-flex justify-content-between">
                         <div className="w-100">
-                          <p className="card-title h5 mb-1">
-                            <span className="placeholder col-8"></span>
-                          </p>
-                          <p className="card-text small text-muted mb-2 d-flex align-items-center">
-                            <span
-                              className="placeholder me-1"
+                          <Placeholder as="p" className="card-title h5 mb-1">
+                            <Placeholder xs={8} />
+                          </Placeholder>
+                          <Placeholder
+                            as="p"
+                            className="card-text small text-muted mb-2 d-flex align-items-center"
+                          >
+                            <Placeholder
+                              className="me-1"
                               style={{ width: "1.5rem", height: "1.5rem" }}
-                            ></span>
-                            <span className="placeholder col-6"></span>
-                          </p>
-                          <p className="card-text fw-bold">
-                            <span className="placeholder col-4"></span>
-                          </p>
+                            />
+                            <Placeholder xs={6} />
+                          </Placeholder>
+                          <Placeholder as="p" className="card-text fw-bold">
+                            <Placeholder xs={4} />
+                          </Placeholder>
                         </div>
                         <div>
-                          <span
-                            className="placeholder"
+                          <Placeholder
                             style={{ width: "24px", height: "24px" }}
-                          ></span>
+                          />
                         </div>
                       </div>
                       <div className="d-flex align-items-center mt-2">
-                        <span className="placeholder col-2 me-2"></span>
-                        <span
-                          className="placeholder"
+                        <Placeholder xs={2} className="me-2" />
+                        <Placeholder
                           style={{
                             width: "70px",
                             height: "31px",
                             borderRadius: "0.25rem",
                           }}
-                        ></span>
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             ))}
-          </div>
+          </Placeholder>
         </div>
 
         {/* Right column: Summary card skeleton */}
@@ -76,40 +82,37 @@ const CartSkeleton = memo(() => {
             className="card shadow-sm position-sticky"
             style={{ top: "1rem" }}
           >
-            <div className="card-body placeholder-glow">
-              <h2 className="h4 card-title mb-3">
-                <span className="placeholder col-6"></span>
-              </h2>
+            <Placeholder as="div" animation="glow" className="card-body">
+              <Placeholder as="h2" className="h4 card-title mb-3">
+                <Placeholder xs={6} />
+              </Placeholder>
               <div className="d-flex justify-content-between mb-2">
                 <span className="w-100">
-                  <span className="placeholder col-4"></span>
+                  <Placeholder xs={4} />
                 </span>
                 <span className="w-100">
-                  <span className="placeholder col-4"></span>
+                  <Placeholder xs={4} />
                 </span>
               </div>
               <div className="d-flex justify-content-between mb-3">
                 <span className="fw-bold w-100">
-                  <span className="placeholder col-5"></span>
+                  <Placeholder xs={5} />
                 </span>
                 <span className="fw-bold w-100">
-                  <span className="placeholder col-4"></span>
+                  <Placeholder xs={4} />
                 </span>
               </div>
-              <p className="small text-muted mb-3">
-                <span className="placeholder col-12"></span>
-              </p>
+              <Placeholder as="p" className="small text-muted mb-3">
+                <Placeholder xs={12} />
+              </Placeholder>
               <div className="d-grid gap-2">
-                <span
-                  className="placeholder"
-                  style={{ height: "2rem", borderRadius: "18px" }}
-                ></span>
+                <Placeholder style={{ height: "2rem", borderRadius: "18px" }} />
                 <HorizontalDivider text="or" />
                 <div className="text-center">
-                  <span className="placeholder col-5"></span>
+                  <Placeholder xs={5} />
                 </div>
               </div>
-            </div>
+            </Placeholder>
           </div>
         </div>
       </div>

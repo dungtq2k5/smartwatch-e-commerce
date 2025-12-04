@@ -13,8 +13,8 @@ import {
 } from "../../configs";
 import ApiError from "../../components/common/ApiError";
 import defaultProductImg from "../../assets/default-product.webp";
-import { useProductCategoryStore } from "../../store/user/product/categoryStore";
-import { useProductBrandStore } from "../../store/user/product/brandStore";
+import { useProductCategoryStore } from "../../store/common/product/categoryStore";
+import { useProductBrandStore } from "../../store/common/product/brandStore";
 import { centsToUSD, formatError } from "../../../../common/utils.common";
 import HorizontalDivider from "../../components/user/HorizontalDivider";
 import ProductCardSkeleton from "../../components/user/skeleton/ProductCardSkeleton";
@@ -155,8 +155,8 @@ export default function Home() {
           urlLimit,
         ] = [
           searchParams.get("type"),
-          searchParams.get("brandId"),
-          searchParams.get("categoryId"),
+          searchParams.get("brandId"), // Since filter by single brand only in UI -> just get the first one
+          searchParams.get("categoryId"), // Since filter by single category only in UI -> just get the first one
           searchParams.get("priceCentsMin"),
           searchParams.get("priceCentsMax"),
           searchParams.get("sortBy"),
@@ -172,8 +172,8 @@ export default function Home() {
             PRODUCT_TYPES.includes(urlType as (typeof PRODUCT_TYPES)[number])
               ? (urlType as ProductSearchQuery["type"])
               : undefined,
-          brandId: urlBrandId || undefined,
-          categoryId: urlCategoryId || undefined,
+          brandIds: urlBrandId ? [urlBrandId] : undefined,
+          categoryIds: urlCategoryId ? [urlCategoryId] : undefined,
           priceCentsMin: urlPriceCentsMin || undefined,
           priceCentsMax: urlPriceCentsMax || undefined,
           sortBy:
@@ -192,7 +192,7 @@ export default function Home() {
         const searchProducts = await fetchProducts({
           ...newSearchForm,
           stopSelling: "false", // Always query products that are not stopped selling
-        });
+        } as ProductSearchQuery);
 
         setProducts((prev) => ({
           ...prev,
@@ -218,7 +218,14 @@ export default function Home() {
       if (process.isProcessing) return;
 
       const { name, value } = e.target;
-      setSearchForm((prev) => ({ ...prev, [name]: value }));
+      setSearchForm((prev) => ({
+        ...prev,
+        [name]: ["brandIds", "categoryIds"].includes(name)
+          ? value
+            ? [value]
+            : undefined
+          : value,
+      }));
     },
     [process.isProcessing]
   );
@@ -235,8 +242,8 @@ export default function Home() {
 
       const {
         type,
-        brandId,
-        categoryId,
+        brandIds,
+        categoryIds,
         priceCentsMin,
         priceCentsMax,
         searchTerm,
@@ -245,18 +252,25 @@ export default function Home() {
       setSearchParams((prev) => {
         prev.set("offset", "0"); // Reset offset to 0 when searching
         prev.set("limit", MAX_PRODUCTS_PER_PAGE.toString());
+
         if (type) prev.set("type", type);
         else prev.delete("type");
-        if (brandId) prev.set("brandId", brandId);
+
+        if (brandIds?.length) prev.set("brandId", brandIds[0]);
         else prev.delete("brandId");
-        if (categoryId) prev.set("categoryId", categoryId);
+
+        if (categoryIds?.length) prev.set("categoryId", categoryIds[0]);
         else prev.delete("categoryId");
+
         if (priceCentsMin) prev.set("priceCentsMin", priceCentsMin);
         else prev.delete("priceCentsMin");
+
         if (priceCentsMax) prev.set("priceCentsMax", priceCentsMax);
         else prev.delete("priceCentsMax");
+
         if (searchTerm) prev.set("searchTerm", searchTerm);
         else prev.delete("searchTerm");
+
         return prev;
       });
     },
@@ -399,19 +413,19 @@ export default function Home() {
                   </div>
                   {/* Filter by brands */}
                   <div className="mb-3">
-                    <label htmlFor="brandId" className="form-label">
+                    <label htmlFor="brandIds" className="form-label">
                       Brand
                     </label>
                     <select
-                      id="brandId"
-                      name="brandId"
+                      id="brandIds"
+                      name="brandIds"
                       className="form-select"
-                      value={searchForm.brandId || ""}
+                      value={searchForm.brandIds?.[0] || ""}
                       onChange={handleSearchChange}
                     >
                       {!brands ? (
                         <option value="" disabled>
-                          No brands available
+                          Brands data not found
                         </option>
                       ) : !brands.brands.total ? (
                         <option value="" disabled>
@@ -431,19 +445,19 @@ export default function Home() {
                   </div>
                   {/* Filter by categories */}
                   <div className="mb-3">
-                    <label htmlFor="categoryId" className="form-label">
+                    <label htmlFor="categoryIds" className="form-label">
                       Category
                     </label>
                     <select
-                      id="categoryId"
-                      name="categoryId"
+                      id="categoryIds"
+                      name="categoryIds"
                       className="form-select"
-                      value={searchForm.categoryId || ""}
+                      value={searchForm.categoryIds?.[0] || ""}
                       onChange={handleSearchChange}
                     >
                       {!categories ? (
                         <option value="" disabled>
-                          No categories available
+                          Categories data not found
                         </option>
                       ) : !categories.categories.total ? (
                         <option value="" disabled>

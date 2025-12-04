@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import mongoose, { Types } from "mongoose";
 import { HttpError } from "../../utils/errorHandler";
-import Product from "../../models/product/product.model";
-import ProductModel from "../../models/product/productModel.model";
 import ModelVariation from "../../models/product/modelVariation.model";
 import VariationInstance from "../../models/product/variationInstance.model";
 import type {
@@ -37,36 +35,19 @@ export async function create(
       )
     );
   }
-  const { productId, modelId, variationId } = req.params;
+
+  const {
+    modelVariationId: variationId,
+    supplierSerialNumber,
+    supplierImeiNumber,
+    conditionId,
+    isActive,
+  } = req.body as VariationInstanceCreate;
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // Check product exists
-    if (!Types.ObjectId.isValid(productId)) {
-      throw new HttpError(404, "Product not found.");
-    }
-    const product = await Product.findById(productId).lean().session(session);
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product not found.");
-    }
-
-    // Check model exists
-    if (!Types.ObjectId.isValid(modelId)) {
-      throw new HttpError(404, "Model not found.");
-    }
-    const model = await ProductModel.findOne({
-      isDeleted: false,
-      _id: modelId,
-      productId,
-    })
-      .lean()
-      .session(session);
-    if (!model) {
-      throw new HttpError(404, "Model not found.");
-    }
-
     // Check variation exists
     if (!Types.ObjectId.isValid(variationId)) {
       throw new HttpError(404, "Variation not found.");
@@ -74,15 +55,12 @@ export async function create(
     const variation = await ModelVariation.findOne({
       isDeleted: false,
       _id: variationId,
-      productModelId: modelId,
     }).session(session);
     if (!variation) {
       throw new HttpError(404, "Variation not found.");
     }
 
     // Business logic
-    const { supplierSerialNumber, supplierImeiNumber, conditionId, isActive } =
-      req.body as VariationInstanceCreate;
 
     // Check supplier serial number is unique
     const orConditions: (

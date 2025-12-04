@@ -47,20 +47,11 @@ import ReturnCreateSkeleton from "../../components/user/skeleton/ReturnCreateSke
 
 type FormData = {
   reasonId: string;
-  imageUrls: {
-    val: File[];
-    err?: string;
-  };
+  imageUrls: FormInput<File[]>;
   buyerReason: FormInput;
-  userAddressIdToPickup: {
-    val: string;
-    err?: string;
-  };
+  userAddressIdToPickup: FormInput;
   estimatePickupDate: string;
-  items: {
-    val: "all" | { variationId: string; instanceId: string }[];
-    err?: string;
-  };
+  items: FormInput<"all" | { variationId: string; instanceId: string }[]>;
 };
 
 type Process = {

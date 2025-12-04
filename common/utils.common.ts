@@ -13,11 +13,11 @@ import type { DeepPartial, UserAddressCompare } from "./types.common.ts";
 import { districts, wards, provinces } from "./vnAddresses.ts";
 
 export function removeOddSpaces(val: string): string {
-  return val.replace(/\s+/g, " ").trim();
+  return val.replaceAll(/\s+/g, " ").trim();
 }
 
 export function removeAllSpaces(val: string): string {
-  return val.replace(/\s/g, "");
+  return val.replaceAll(/\s/g, "");
 }
 
 export function genRandomPassword(): string {
@@ -241,7 +241,7 @@ export function bytesToMB(bytes: number): string {
   return mb.toFixed(2); // Return as a string with 2 decimal places
 }
 
-export function formatTime(min: number | null): string {
+export function formatMinTime(min: number | null): string {
   if (min === null || min < 0) return "N/A";
   if (min < 60) return `${min} min`;
 
@@ -468,30 +468,30 @@ export function isValidBirthDate(birthDate: any): boolean {
   }
 
   // Check if the date is valid
-  if (isNaN(birthDate.getTime())) return false;
+  if (Number.isNaN(birthDate.getTime())) return false;
 
   // Check if the date is in the past
   const today = new Date();
   return birthDate < today;
 }
 
-export function isValidNumString(numString: any): boolean {
+export function isValidNumString(numString: any): numString is string {
   if (typeof numString !== "string") return false;
 
   // Check if the string is a valid number
   const num = Number(numString);
-  if (isNaN(num)) return false;
+  if (Number.isNaN(num)) return false;
 
   // Check if the number is finite
-  if (!isFinite(num)) return false;
+  if (!Number.isFinite(num)) return false;
 
   // Check if the string representation matches the number
   return numString === String(num);
 }
 
-export function isValidBooleanString(boolString: any): boolean {
+export function isValidBooleanString(boolString: any): boolString is "true" | "false" {
   if (typeof boolString !== "string") return false;
-  return boolString === "true" || boolString === "false";
+  return ["true", "false"].includes(boolString);
 }
 
 // --- ADDRESS UTILS ---

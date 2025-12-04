@@ -113,7 +113,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
     try {
       const res = await retrieve(
-        `${ORDER_URL}?${queryString.toString()}`,
+        `${SELF_ORDER_URL}?${queryString.toString()}`,
         signal
       );
       if (!res.success) throw new Error(res.message);

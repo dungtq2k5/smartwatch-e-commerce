@@ -3,17 +3,44 @@ import { verifyPermission } from "../../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../../utils/middlewares/general.middleware";
 import {
   inputSanitizer,
-  verifyProductModelInput,
-} from "../../utils/middlewares/product.middleware";
+  verifyModelInput,
+} from "../../utils/middlewares/product/model.middleware";
 import {
+  create,
+  adminGetDetails,
   get,
   update,
   remove,
+  adminSearch,
+  removeBulk,
 } from "../../controllers/product/productModel.controller";
 
 const router = express.Router();
 
-// Some routes in product.route.ts
+router.post(
+  "/",
+  verifyPermission("c_product_model"),
+  verifyEmptyBody,
+  inputSanitizer("model"),
+  verifyModelInput("create"),
+  create
+);
+
+router.get(
+  "/admin",
+  verifyPermission("r_product_model"),
+  inputSanitizer("admin model search"),
+  verifyModelInput("admin search"),
+  adminSearch,
+);
+
+router.get(
+  "/:modelId/details/admin",
+  verifyPermission("r_product_model"),
+  inputSanitizer("admin model details"),
+  verifyModelInput("admin details"),
+  adminGetDetails
+);
 
 router.get("/:modelId", get);
 
@@ -22,8 +49,17 @@ router.patch(
   verifyPermission("u_product_model"),
   verifyEmptyBody,
   inputSanitizer("model"),
-  verifyProductModelInput("update"),
+  verifyModelInput("update"),
   update
+);
+
+router.delete(
+  "/many",
+  verifyPermission("d_product_model"),
+  verifyEmptyBody,
+  inputSanitizer("delete many"),
+  verifyModelInput("delete many"),
+  removeBulk
 );
 
 router.delete("/:modelId", verifyPermission("d_product_model"), remove);

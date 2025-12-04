@@ -37,10 +37,14 @@ import AdminAuthRoute from "./components/admin/AuthRoute.tsx";
 import AdminNotAuthRoute from "./components/admin/NotAuthRoute.tsx";
 import AdminHeaderAndSidebar from "./components/admin/HeaderAndSidebar.tsx";
 import AdminDashboard from "./components/admin/Dashboard.tsx";
-import UserManagement from "./components/admin/UserManagement.tsx";
-import CreateUser from "./components/admin/CreateUser.tsx";
-import UpdateUser from "./components/admin/UpdateUser.tsx";
-import DetailUser from "./components/admin/DetailUser.tsx";
+import UserManagement from "./components/admin/user/UserManagement.tsx";
+import CreateUser from "./components/admin/user/CreateUser.tsx";
+import EditUser from "./components/admin/user/EditUser.tsx";
+import DetailUser from "./components/admin/user/DetailUser.tsx";
+import ProductManagement from "./components/admin/product/ProductManagement.tsx";
+import DetailProduct from "./components/admin/product/DetailProduct.tsx";
+import ModelManagement from "./components/admin/product/ModelManagement.tsx";
+import { EditProduct } from "./components/admin/product/EditProduct.tsx";
 
 export default function App() {
   // DEV for testing
@@ -80,7 +84,15 @@ export default function App() {
       {isAdminPage ? (
         <Routes>
           <Route path="/admin">
-            {/* TODO: dashboard, product management, order management, role management, inventory management */}
+            {/* TODO:CRUD
+              - dashboard
+              - product/model/variation management (read, create, edit)
+              - brand management
+              - category management
+              - order management
+              - role management
+              - inventory management
+            */}
             <Route element={<AdminNotAuthRoute />}>
               <Route path="login" element={<AdminLogin />} />
             </Route>
@@ -88,13 +100,27 @@ export default function App() {
             <Route element={<AdminAuthRoute />}>
               <Route element={<AdminHeaderAndSidebar />}>
                 <Route index element={<AdminDashboard />} />
+
                 <Route path="users">
                   <Route index element={<UserManagement />} />
                   <Route path="create" element={<CreateUser />} />
                   <Route path=":id">
                     <Route index element={<DetailUser />} />
-                    <Route path="update" element={<UpdateUser />} />
+                    <Route path="edit" element={<EditUser />} />
                   </Route>
+                </Route>
+
+                <Route path="products">
+                  <Route index element={<ProductManagement />} />
+                  <Route path="create" element={<div>Create product</div>} />
+                  <Route path=":id">
+                    <Route index element={<DetailProduct />} />
+                    <Route path="edit" element={<EditProduct />} />
+                  </Route>
+                </Route>
+
+                <Route path="product-models">
+                  <Route index element={<ModelManagement />} />
                 </Route>
               </Route>
             </Route>

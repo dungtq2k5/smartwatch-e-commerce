@@ -1,26 +1,22 @@
 import {
   faFileExport,
-  faPen,
   faPlus,
   faSearch,
   faSliders,
-  faSortDown,
-  faSortUp,
-  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type {
   AdminUserListResponse,
   AdminUserResponse,
   UserSearchQuery,
-} from "../../../../common/types.common";
-import Pagination from "../common/Pagination";
+} from "../../../../../common/types.common";
+import Pagination from "../../common/Pagination";
 import {
   centsToUSD,
   formatError,
   isValidBooleanString,
   removeOddSpaces,
-} from "../../../../common/utils.common";
+} from "../../../../../common/utils.common";
 import {
   Fragment,
   useCallback,
@@ -30,31 +26,39 @@ import {
   useState,
   type JSX,
 } from "react";
-import { useUserStore } from "../../store/admin/userStore";
+import { useUserStore } from "../../../store/admin/userStore";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   DATA_DISPLAY_ROWS_PER_PAGE,
   WAITING_EMOJI,
-  USER_FIELD_LABEL_LEGEND,
   WARNING_EMOJI,
-} from "../../configs";
-import { USER_SEARCH_SORT_OPTIONS } from "../../../../common/configs.common";
-import Loading from "../common/Loading";
-import ApiError from "../common/ApiError";
+  DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE,
+  USER_FIELD_LABEL_LEGEND,
+} from "../../../configs";
+import {
+  PROJECT_NAME,
+  USER_SEARCH_SORT_OPTIONS,
+} from "../../../../../common/configs.common";
+import Loading from "../../common/Loading";
+import ApiError from "../../common/ApiError";
 import toast from "react-hot-toast";
 import type {
   AdminUserDisplayableField,
   TableColDisplay as GeneralTableColDisplay,
-} from "../../utils/types";
-import ConfigDisplayModal from "./modal/ConfigDisplayModal";
-import { exportToCsv } from "../../utils/utils";
-import defaultAvatar from "../../assets/default-avatar.webp";
-import { useRoleStore } from "../../store/admin/roleStore";
-import ConfirmSubmitModal from "../user/modal/ConfirmSubmitModal";
-import { useConfigStore } from "../../store/admin/configStore";
-import { useAuthStore } from "../../store/admin/authStore";
-import { useHasPermission } from "../../hooks/admin/useHasPermission";
-import { useRefreshStore } from "../../store/admin/refreshStore";
+  UserDisplayField,
+} from "../../../utils/types";
+import ConfigDisplayModal from "../modal/ConfigDisplayModal";
+import { exportToCsv } from "../../../utils/utils";
+import defaultAvatar from "../../../assets/default-avatar.webp";
+import { useRoleStore } from "../../../store/admin/roleStore";
+import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
+import { useConfigStore } from "../../../store/admin/configStore";
+import { useAuthStore } from "../../../store/admin/authStore";
+import { useHasPermission } from "../../../hooks/admin/useHasPermission";
+import { useRefreshStore } from "../../../store/admin/refreshStore";
+import EditBtnLink from "../EditBtnLink";
+import DeleteBtn from "../DeleteBtn";
+import TableHeadSortBtn from "../TableHeadSortBtn";
 
 type Process = {
   isProcessing: boolean;
@@ -69,15 +73,22 @@ type SearchForm = Omit<UserSearchQuery, "searchTerm" | "limit" | "offset"> & {
 };
 
 type Modal = {
-  configDisplayModal: boolean;
+  configDisplay: boolean;
   userIdToDelete: string | null;
   userIdsToDelete: string[] | null;
 };
 
 type TableColDisplay = {
   [key in AdminUserDisplayableField]: GeneralTableColDisplay<
-    AdminUserListResponse["users"]["users"][0]
+    AdminUserResponse,
+    (typeof USER_SEARCH_SORT_OPTIONS)[number]
   >;
+};
+
+const DEFAULT_SEARCH_FORM: SearchForm = {
+  limit: DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE.toString(),
+  offset: "0",
+  searchTerm: "",
 };
 
 const SELECTION_TOAST_ID = "selected-users-toast";
@@ -89,24 +100,22 @@ export default function UserManagement() {
   console.log(`UserManagement render count: ${renderCount.current}`);
 
   const { admin } = useAuthStore();
-  const refreshSignal = useRefreshStore((state) => state.signals.admin);
   const { fetchUsers, deleteUser, deleteUserBulk } = useUserStore();
   const { fetchRoles, getRoleSync } = useRoleStore();
+  const refreshSignal = useRefreshStore((state) => state.signals.admin);
   const {
-    config: { userManagementConfig },
-    resetUserManagementConfig,
-    setUserManagementConfig,
+    config: { userManagementDisplayFields: displayFields },
+    resetUserManagementDisplayFields,
+    setUserManagementDisplayFields,
   } = useConfigStore();
 
-  const [canUpdateUser, canDeleteUser] = [
+  const [canEditUser, canDeleteUser] = [
     useHasPermission("u_usr"),
     useHasPermission("d_usr"),
-  ]; // canReadUser is handled ApiError
+  ]; // canReadUser is handled by ApiError
 
-  const { displayFields, visibleFields } = userManagementConfig;
-
-  const TABLE_COL_DISPLAY: TableColDisplay = useMemo(
-    () => ({
+  const TABLE_COL_DISPLAY = useMemo(
+    (): TableColDisplay => ({
       id: {
         label: USER_FIELD_LABEL_LEGEND["id"] || "ID",
         tdContent: (user) => <>{user.id}</>,
@@ -123,7 +132,7 @@ export default function UserManagement() {
               alt={`${user.fullName}'s avatar`}
               className="avatar--g avatar--sm--g me-2"
             />
-            <Link to={`${user.id}`} title="View detail user">
+            <Link to={user.id} title="View detail user">
               {user.fullName}
             </Link>
           </div>
@@ -194,7 +203,7 @@ export default function UserManagement() {
         getCsvVal: (user) => user.authProvider,
       },
       accountVerified: {
-        label: USER_FIELD_LABEL_LEGEND["accountVerified"] || "Verified",
+        label: USER_FIELD_LABEL_LEGEND["accountVerified"] || "Account verified",
         tdContent: (user) => (
           <>
             {user.isEmailVerified && (
@@ -267,33 +276,23 @@ export default function UserManagement() {
             <>None</>
           ) : (
             <div className="d-flex gap-2">
-              {canUpdateUser && (
-                <Link
-                  to={`${user.id}/update`}
-                  className="btn btn-link text-white bg-primary"
-                  title="edit"
-                >
-                  <FontAwesomeIcon icon={faPen} size="sm" />
-                </Link>
+              {canEditUser && (
+                <EditBtnLink linkTo={`${user.id}/edit`} title="edit user" />
               )}
               {canDeleteUser && (
-                <button
-                  type="button"
-                  className="btn btn-link text-white bg-danger"
-                  title="delete"
+                <DeleteBtn
+                  title="delete user"
                   onClick={() =>
                     setModal((prev) => ({ ...prev, userIdToDelete: user.id }))
                   }
-                >
-                  <FontAwesomeIcon icon={faTrash} size="sm" />
-                </button>
+                />
               )}
             </div>
           ),
         getCsvVal: () => null,
       },
     }),
-    [admin?.id, canDeleteUser, canUpdateUser, getRoleSync]
+    [admin?.id, canDeleteUser, canEditUser, getRoleSync]
   );
 
   const [process, setProcess] = useState<Process>({
@@ -306,11 +305,9 @@ export default function UserManagement() {
   const [users, setUsers] = useState<AdminUserListResponse | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchForm, setSearchForm] = useState<SearchForm>({
-    limit: DATA_DISPLAY_ROWS_PER_PAGE[0].toString(),
-    offset: "0",
-    searchTerm: "",
-  });
+  const [searchForm, setSearchForm] = useState<SearchForm>(
+    DEFAULT_SEARCH_FORM
+  );
 
   const [selectedUserIds, setSelectedUserIds] = useState<string[] | "all">([]);
   const [selectionToastId, setSelectionToastId] = useState<
@@ -318,14 +315,14 @@ export default function UserManagement() {
   >(null);
 
   const [modal, setModal] = useState<Modal>({
-    configDisplayModal: false,
+    configDisplay: false,
     userIdToDelete: null,
     userIdsToDelete: null,
   });
 
   const tableRef = useRef<HTMLTableElement | null>(null);
 
-  // Fetch set initial when first load or search params change or refresh signal
+  // Fetch set initial when first load or searchParams change or refreshSignal
   useEffect(() => {
     const handleFetchSetInitialData = async () => {
       setProcess((prev) => ({ ...prev, isProcessing: true, isFetching: true }));
@@ -354,25 +351,27 @@ export default function UserManagement() {
 
         const newSearchForm: SearchForm = {
           ...searchForm,
-          limit: urlLimit || DATA_DISPLAY_ROWS_PER_PAGE[0].toString(),
+          limit: urlLimit || DEFAULT_SEARCH_FORM.limit,
           offset: urlOffset || "0",
           searchTerm: urlSearchTerm || "",
-          isEmailVerified: isValidBooleanString(urlIsEmailVerified)
-            ? (urlIsEmailVerified as "true" | "false")
-            : undefined,
-          isPhoneNumberVerified: isValidBooleanString(urlIsPhoneNumberVerified)
-            ? (urlIsPhoneNumberVerified as "true" | "false")
-            : undefined,
-          isLocked: isValidBooleanString(urlIsLocked)
-            ? (urlIsLocked as "true" | "false")
-            : undefined,
-          sortBy:
-            urlSortBy &&
-            USER_SEARCH_SORT_OPTIONS.includes(
-              urlSortBy as (typeof USER_SEARCH_SORT_OPTIONS)[number]
-            )
-              ? (urlSortBy as SearchForm["sortBy"])
+          isEmailVerified:
+            urlIsEmailVerified && isValidBooleanString(urlIsEmailVerified)
+              ? urlIsEmailVerified
               : undefined,
+          isPhoneNumberVerified:
+            urlIsPhoneNumberVerified &&
+            isValidBooleanString(urlIsPhoneNumberVerified)
+              ? urlIsPhoneNumberVerified
+              : undefined,
+          isLocked:
+            urlIsLocked && isValidBooleanString(urlIsLocked)
+              ? urlIsLocked
+              : undefined,
+          sortBy: USER_SEARCH_SORT_OPTIONS.includes(
+            urlSortBy as (typeof USER_SEARCH_SORT_OPTIONS)[number]
+          )
+            ? (urlSortBy as SearchForm["sortBy"])
+            : undefined,
         };
 
         setSelectedUserIds([]);
@@ -476,9 +475,18 @@ export default function UserManagement() {
         return;
       }
 
-      setSearchForm((prev) => ({ ...prev, [name]: value }));
+      setSearchForm((prev) => ({
+        ...prev,
+        [name]: [
+          "isEmailVerified",
+          "isPhoneNumberVerified",
+          "isLocked",
+        ].includes(name)
+          ? value || undefined
+          : value,
+      }));
     },
-    [process.isProcessing, setSearchParams, setSearchForm]
+    [process.isProcessing, setSearchParams]
   );
 
   const handleSearchSubmit = useCallback(
@@ -486,34 +494,37 @@ export default function UserManagement() {
       e.preventDefault();
       if (process.isProcessing) return;
 
+      const {
+        limit,
+        searchTerm,
+        isEmailVerified,
+        isPhoneNumberVerified,
+        isLocked,
+        sortBy,
+      } = searchForm;
+
       setSearchParams((prev) => {
-        prev.set("limit", searchForm.limit);
+        prev.set("limit", limit);
         prev.set("offset", "0");
-        if (searchForm.searchTerm && removeOddSpaces(searchForm.searchTerm)) {
-          prev.set("searchTerm", searchForm.searchTerm);
-        } else {
-          prev.delete("searchTerm");
-        }
-        if (searchForm.isEmailVerified !== undefined) {
-          prev.set("isEmailVerified", searchForm.isEmailVerified);
-        } else {
-          prev.delete("isEmailVerified");
-        }
-        if (searchForm.isPhoneNumberVerified !== undefined) {
-          prev.set("isPhoneNumberVerified", searchForm.isPhoneNumberVerified);
-        } else {
-          prev.delete("isPhoneNumberVerified");
-        }
-        if (searchForm.isLocked !== undefined) {
-          prev.set("isLocked", searchForm.isLocked);
-        } else {
-          prev.delete("isLocked");
-        }
-        if (searchForm.sortBy) {
-          prev.set("sortBy", searchForm.sortBy);
-        } else {
-          prev.delete("sortBy");
-        }
+
+        const formattedSearchTerm = removeOddSpaces(searchTerm);
+        if (formattedSearchTerm) prev.set("searchTerm", formattedSearchTerm);
+        else prev.delete("searchTerm");
+
+        if (isEmailVerified !== undefined)
+          prev.set("isEmailVerified", isEmailVerified);
+        else prev.delete("isEmailVerified");
+
+        if (isPhoneNumberVerified !== undefined)
+          prev.set("isPhoneNumberVerified", isPhoneNumberVerified);
+        else prev.delete("isPhoneNumberVerified");
+
+        if (isLocked !== undefined) prev.set("isLocked", isLocked);
+        else prev.delete("isLocked");
+
+        if (sortBy) prev.set("sortBy", sortBy);
+        else prev.delete("sortBy");
+
         return prev;
       });
     },
@@ -523,21 +534,23 @@ export default function UserManagement() {
   const handleClearFilters = useCallback((): void => {
     if (process.isProcessing) return;
 
-    // Case when url hasn't changed but user wants to clear filters -> clear form state
-    setSearchForm((prev) => ({
-      ...prev,
-      searchTerm: "",
-      isEmailVerified: undefined,
-      isPhoneNumberVerified: undefined,
-      isLocked: undefined,
-    }));
+    // Case when url hasn't changed but user wants to clear filters -> reset form state
+    setSearchForm(DEFAULT_SEARCH_FORM);
 
-    setSearchParams((prev) => {
-      prev.delete("searchTerm");
-      prev.delete("isEmailVerified");
-      prev.delete("isPhoneNumberVerified");
-      prev.delete("isLocked");
-      return prev;
+    // setSearchParams((prev) => {
+    //   prev.delete("searchTerm");
+    //   prev.delete("isEmailVerified");
+    //   prev.delete("isPhoneNumberVerified");
+    //   prev.delete("isLocked");
+
+    //   prev.set("limit", DEFAULT_SEARCH_FORM.limit);
+    //   prev.set("offset", "0");
+
+    //   return prev;
+    // });
+    setSearchParams({
+      limit: DEFAULT_SEARCH_FORM.limit,
+      offset: "0",
     });
   }, [process.isProcessing, setSearchParams]);
 
@@ -572,7 +585,7 @@ export default function UserManagement() {
   );
 
   const handleSelectUser = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement>): void => {
       if (process.isProcessing || !users) return;
 
       const { checked, name } = e.target;
@@ -641,46 +654,27 @@ export default function UserManagement() {
         />
       </th>,
       ...displayFields.map((field) => {
-        if (!visibleFields.includes(field)) {
-          return <Fragment key={`th-${field}`}></Fragment>;
+        if (!field.visible) {
+          return <Fragment key={`th-${field.name}`} />;
         }
 
-        const colDisplay = TABLE_COL_DISPLAY[field];
+        const colDisplay = TABLE_COL_DISPLAY[field.name];
         const isAsc = searchForm.sortBy === colDisplay.sortKey?.asc;
         const isDesc = searchForm.sortBy === colDisplay.sortKey?.desc;
 
         return (
-          <th key={`th-${field}`} className={colDisplay.thClassName}>
-            {colDisplay.isSortable && colDisplay.sortKey ? (
-              <button
-                type="button"
-                className="btn border-0 p-0 fw-bold"
-                title={
-                  isAsc
-                    ? "ascending"
-                    : isDesc
-                    ? "descending"
-                    : `sort by ${colDisplay.label.toLowerCase()}`
-                }
-                onClick={() =>
+          <th key={`th-${field.name}`} className={colDisplay.thClassName}>
+            {colDisplay.isSortable ? (
+              <TableHeadSortBtn
+                label={colDisplay.label}
+                isAsc={isAsc}
+                isDesc={isDesc}
+                onClick={() => {
                   handleSort(
-                    (isAsc
-                      ? colDisplay.sortKey!.desc
-                      : colDisplay.sortKey!.asc) as SearchForm["sortBy"]
-                  )
-                }
-              >
-                {colDisplay.label}
-                {isAsc ? (
-                  <FontAwesomeIcon icon={faSortUp} size="sm" className="ms-2" />
-                ) : isDesc ? (
-                  <FontAwesomeIcon
-                    icon={faSortDown}
-                    size="sm"
-                    className="ms-2"
-                  />
-                ) : null}
-              </button>
+                    isAsc ? colDisplay.sortKey.desc : colDisplay.sortKey.asc
+                  );
+                }}
+              />
             ) : (
               colDisplay.label
             )}
@@ -746,14 +740,14 @@ export default function UserManagement() {
               />
             </td>
             {displayFields.map((field, idx) => {
-              if (!visibleFields.includes(field)) {
-                return <Fragment key={`td-${idx}-${field}`}></Fragment>;
+              if (!field.visible) {
+                return <Fragment key={`td-${idx}-${field.name}`} />;
               }
 
-              const colDisplay = TABLE_COL_DISPLAY[field];
+              const colDisplay = TABLE_COL_DISPLAY[field.name];
               return (
                 <td
-                  key={`td-${idx}-${field}`}
+                  key={`td-${idx}-${field.name}`}
                   className={colDisplay.tdClassName}
                 >
                   {colDisplay.tdContent(user)}
@@ -785,25 +779,24 @@ export default function UserManagement() {
     searchForm.sortBy,
     selectedUserIds,
     users,
-    visibleFields,
   ]);
 
   const handleApplyConfigDisplay = useCallback(
-    (
-      displayFields: AdminUserDisplayableField[],
-      visibleFields: AdminUserDisplayableField[]
-    ): void => {
-      setUserManagementConfig({
-        displayFields,
-        visibleFields,
-      });
+    (fields: UserDisplayField[]): void => {
+      setUserManagementDisplayFields(fields);
+      toast.success("Config display has been updated.");
     },
-    [setUserManagementConfig]
+    [setUserManagementDisplayFields]
   );
+
+  const handleResetConfigDisplay = useCallback((): void => {
+    resetUserManagementDisplayFields();
+    toast.success("Config display has been reset to default.");
+  }, [resetUserManagementDisplayFields]);
 
   const closeModal = useCallback((): void => {
     setModal({
-      configDisplayModal: false,
+      configDisplay: false,
       userIdToDelete: null,
       userIdsToDelete: null,
     });
@@ -814,6 +807,10 @@ export default function UserManagement() {
       toast("Another action is in progress. Please wait.", {
         icon: WAITING_EMOJI,
       });
+      return;
+    }
+    if (!users || users.total === 0) {
+      toast("No users available to export.", { icon: WARNING_EMOJI });
       return;
     }
 
@@ -827,36 +824,41 @@ export default function UserManagement() {
       // Fetch all users matching the current filters, ignoring pagination
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { limit, offset, ...exportQuery } = searchForm;
-      const usersToExport = await fetchUsers(exportQuery);
+      const usersToExport = (
+        await fetchUsers({
+          ...exportQuery,
+          limit: users.total.toString(), // By default limit will be set to 9 at the BackEnd if not provided
+        })
+      ).users;
 
       if (usersToExport.total === 0) {
         toast("No users found to export.", { icon: WARNING_EMOJI });
         return;
       }
 
-      // Use the current visible fields and their order for the CSV
+      // Use the current exportable + visible fields and their order for the CSV
       const exportableFields = displayFields.filter(
-        (field) => visibleFields.includes(field) && field !== "actions"
+        (field) => field.exportable && field.visible
       );
       const headers = exportableFields.map(
-        (field) => USER_FIELD_LABEL_LEGEND[field] || field
+        (field) => TABLE_COL_DISPLAY[field.name].label
       );
       const getVals = (
         user: AdminUserResponse
       ): (string | number | boolean | null)[] => {
         return exportableFields.map((field) =>
-          TABLE_COL_DISPLAY[field].getCsvVal(user)
+          TABLE_COL_DISPLAY[field.name].getCsvVal(user)
         );
       };
 
       exportToCsv<AdminUserResponse>(
-        `users-exports-${new Date().toISOString()}.csv`,
+        `${PROJECT_NAME.toLowerCase()}-users-exports-${new Date().toISOString()}.csv`,
         headers,
-        usersToExport.users.users,
+        usersToExport.users,
         getVals
       );
 
-      toast.success(`Exported ${usersToExport.total} users successfully.`);
+      toast.success(`Exported ${usersToExport.users.length} users successfully.`);
     } catch (error) {
       toast.error(formatError(error));
     } finally {
@@ -872,7 +874,7 @@ export default function UserManagement() {
     fetchUsers,
     process.isProcessing,
     searchForm,
-    visibleFields,
+    users,
   ]);
 
   const handleSubmitDeleteUser = useCallback(async (): Promise<void> => {
@@ -962,7 +964,7 @@ export default function UserManagement() {
             type="button"
             className="border-0 p-0 bg-transparent text-primary"
             onClick={() =>
-              setModal((prev) => ({ ...prev, configDisplayModal: true }))
+              setModal((prev) => ({ ...prev, configDisplay: true }))
             }
           >
             <FontAwesomeIcon icon={faSliders} size="sm" className="me-2" />
@@ -971,7 +973,7 @@ export default function UserManagement() {
           <button
             type="button"
             className="border-0 p-0 bg-transparent text-primary"
-            title="Export current list to CSV with current filters"
+            title="Export current list to CSV file"
             onClick={handleExportList}
             disabled={process.isProcessing}
           >
@@ -1006,14 +1008,14 @@ export default function UserManagement() {
               <div className="col-lg-3 col-md-6">
                 <div className="input-group">
                   <label htmlFor="searchTerm" hidden aria-hidden>
-                    Search
+                    Search users
                   </label>
                   <input
                     type="text"
                     id="searchTerm"
                     name="searchTerm"
                     className="form-control rounded"
-                    placeholder="Search by name, email..."
+                    placeholder="Search by name, email, ID..."
                     value={searchForm.searchTerm}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
@@ -1033,11 +1035,11 @@ export default function UserManagement() {
                     id="isEmailVerified"
                     name="isEmailVerified"
                     className="form-select"
-                    value={searchForm.isEmailVerified}
+                    value={searchForm.isEmailVerified || ""}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
                   >
-                    <option value={undefined}>All</option>
+                    <option value="">All</option>
                     <option value="true">Verified</option>
                     <option value="false">Not verified</option>
                   </select>
@@ -1055,11 +1057,11 @@ export default function UserManagement() {
                     id="isPhoneNumberVerified"
                     name="isPhoneNumberVerified"
                     className="form-select"
-                    value={searchForm.isPhoneNumberVerified}
+                    value={searchForm.isPhoneNumberVerified || ""}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
                   >
-                    <option value={undefined}>All</option>
+                    <option value="">All</option>
                     <option value="true">Verified</option>
                     <option value="false">Not verified</option>
                   </select>
@@ -1074,11 +1076,11 @@ export default function UserManagement() {
                     id="isLocked"
                     name="isLocked"
                     className="form-select"
-                    value={searchForm.isLocked}
+                    value={searchForm.isLocked || ""}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
                   >
-                    <option value={undefined}>All</option>
+                    <option value="">All</option>
                     <option value="false">Active</option>
                     <option value="true">Locked</option>
                   </select>
@@ -1123,11 +1125,15 @@ export default function UserManagement() {
                 onChange={handleSearchChange}
                 disabled={process.isProcessing || !users}
               >
-                {DATA_DISPLAY_ROWS_PER_PAGE.map((rowOption) => (
-                  <option key={rowOption} value={rowOption}>
-                    {rowOption}
-                  </option>
-                ))}
+                {DATA_DISPLAY_ROWS_PER_PAGE.map((rowOption) => {
+                  if (users && users.total < rowOption) return null;
+
+                  return (
+                    <option key={rowOption} value={rowOption}>
+                      {rowOption}
+                    </option>
+                  );
+                })}
               </select>
             </div>
             <p className="mb-0 text-muted">
@@ -1151,12 +1157,11 @@ export default function UserManagement() {
 
       {/* Modals */}
       <ConfigDisplayModal
-        show={modal.configDisplayModal}
-        displayFields={displayFields}
-        visibleFields={visibleFields}
-        fieldLabelLegend={USER_FIELD_LABEL_LEGEND}
+        show={modal.configDisplay}
+        fields={displayFields}
+        legend={USER_FIELD_LABEL_LEGEND}
         onClose={closeModal}
-        onReset={resetUserManagementConfig}
+        onReset={handleResetConfigDisplay}
         onApply={handleApplyConfigDisplay}
       />
 

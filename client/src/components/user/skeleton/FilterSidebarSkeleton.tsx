@@ -1,40 +1,56 @@
 import { memo } from "react";
 import HorizontalDivider from "../HorizontalDivider";
+import { Placeholder } from "react-bootstrap";
 
 const FilterSidebarSkeleton = memo(() => {
   return (
-    <div className="border rounded-3 shadow-sm p-4" aria-hidden="true">
+    <Placeholder
+      as="div"
+      animation="glow"
+      className="border rounded-3 shadow-sm p-4"
+      aria-hidden="true"
+    >
       <h3 className="h5 mb-4">Filters</h3>
       <form>
         {/* Search input skeleton */}
-        <div className="mb-3 placeholder-glow">
+        <div className="mb-3">
           <p className="form-label">Search</p>
           <div className="input-group">
-            <span className="form-control placeholder col-12"></span>
+            <Placeholder as="span" className="form-control" xs={12} />
           </div>
         </div>
         {/* Brand filter skeleton */}
-        <div className="mb-3 placeholder-glow">
+        <div className="mb-3">
           <p className="form-label">Brand</p>
-          <span className="form-select placeholder col-12"></span>
+          <Placeholder
+            as="span"
+            className="form-select"
+            style={{ height: "38px" }}
+            xs={12}
+          />
         </div>
         {/* Category filter skeleton */}
-        <div className="mb-3 placeholder-glow">
+        <div className="mb-3">
           <p className="form-label">Category</p>
-          <span className="form-select placeholder col-12"></span>
+          <Placeholder
+            as="span"
+            className="form-select"
+            style={{ height: "38px" }}
+            xs={12}
+          />
         </div>
         {/* Price range skeleton */}
-        <div className="mb-3 placeholder-glow">
+        <div className="mb-3">
           <p className="form-label">Price Range</p>
-          <span className="form-range placeholder col-12"></span>
+          <Placeholder as="span" className="form-range" xs={12} />
         </div>
-        <span className="btn btn-primary w-100 disabled placeholder col-12"></span>
+        <Placeholder.Button variant="primary" className="w-100" xs={12} />
         <div className="my-3">
           <HorizontalDivider />
         </div>
-        <span className="btn btn-danger w-100 disabled placeholder col-12"></span>
+        <Placeholder.Button variant="danger" className="w-100" xs={12} />
       </form>
-    </div>
+    </Placeholder>
   );
 });
 

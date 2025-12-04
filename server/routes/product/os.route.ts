@@ -4,7 +4,7 @@ import { verifyEmptyBody } from "../../utils/middlewares/general.middleware";
 import {
   inputSanitizer,
   verifyOsInput,
-} from "../../utils/middlewares/product.middleware";
+} from "../../utils/middlewares/product/product.middleware";
 import {
   create,
   get,

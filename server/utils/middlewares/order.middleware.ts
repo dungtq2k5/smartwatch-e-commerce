@@ -65,8 +65,8 @@ function sanitizeOrderSearchInput(
 
   const {
     searchTerm,
-    deliveryStateId: deliveryStateIds,
-    paymentStateId: paymentStateIds,
+    deliveryStateId: deliveryStateIds, // In url: deliveryStateId=1&deliveryStateId=2
+    paymentStateId: paymentStateIds, // In url: paymentStateId=1&paymentStateId=2
     stateId: stateIds,
   } = sanitizedQuery;
 

@@ -3,6 +3,7 @@ import {
   faGauge,
   faRotateRight,
   faUser,
+  faBox,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { memo, useCallback, useRef, useState } from "react";
@@ -22,7 +23,11 @@ const HeaderAndSidebar = memo(() => {
   const { admin } = useAuthStore();
   const { refresh } = useRefreshStore();
 
-  const [canReadUser] = [useHasPermission("r_usr")];
+  const [canReadUser, canReadProduct, canReadModel] = [
+    useHasPermission("r_usr"),
+    useHasPermission("r_product"),
+    useHasPermission("r_product_model"),
+  ];
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
   const toggleSidebar = useCallback((): void => {
@@ -97,6 +102,24 @@ const HeaderAndSidebar = memo(() => {
               >
                 <FontAwesomeIcon icon={faUser} className="me-2" />
                 User Management
+              </NavLink>
+            )}
+            {canReadProduct && (
+              <NavLink
+                to="/admin/products"
+                className="list-group-item list-group-item-action"
+              >
+                <FontAwesomeIcon icon={faBox} className="me-2" />
+                Product Management
+              </NavLink>
+            )}
+            {canReadModel && (
+              <NavLink
+                to="/admin/product-models"
+                className="list-group-item list-group-item-action"
+              >
+                <FontAwesomeIcon icon={faBox} className="me-2" />
+                Product Model Management
               </NavLink>
             )}
           </div>

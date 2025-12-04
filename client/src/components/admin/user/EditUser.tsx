@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useRoleStore } from "../../store/admin/roleStore";
-import { useUserStore } from "../../store/admin/userStore";
-import type { FormFileInput, FormInput } from "../../utils/types";
+import { useRoleStore } from "../../../store/admin/roleStore";
+import { useUserStore } from "../../../store/admin/userStore";
+import type { FormFileInput, FormInput } from "../../../utils/types";
 import {
   AVATAR_ALLOWED_TYPES,
   PASSWORD_HINT_MESSAGE,
   USER_GENDER_OPTIONS,
-} from "../../../../common/configs.common";
+} from "../../../../../common/configs.common";
 import {
+  capFirstLetter,
   compareList,
   formatError,
   getLocalDateString,
@@ -18,27 +19,27 @@ import {
   isValidUserFullName,
   isValidVnPhoneNumber,
   readFileAsDataUrl,
-} from "../../../../common/utils.common";
-import ApiError from "../common/ApiError";
+} from "../../../../../common/utils.common";
+import ApiError from "../../common/ApiError";
 import type {
   AdminUserResponse,
   UserEmailUpdate,
   UserPhoneNumberUpdate,
   UserUpdate,
-} from "../../../../common/types.common";
-import defaultAvatar from "../../assets/default-avatar.webp";
+} from "../../../../../common/types.common";
+import defaultAvatar from "../../../assets/default-avatar.webp";
 import toast from "react-hot-toast";
-import { AVATAR_HINT_MESSAGE, WAITING_EMOJI } from "../../configs";
-import InvalidInputMsg from "../common/InvalidInputMsg";
-import { getImgFileErrs, uploadFile } from "../../utils/utils";
+import { AVATAR_HINT_MESSAGE, WAITING_EMOJI } from "../../../configs";
+import InvalidInputMsg from "../../common/InvalidInputMsg";
+import { getImgFileErrs, uploadFile } from "../../../utils/utils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleExclamation,
   faCircleQuestion,
 } from "@fortawesome/free-solid-svg-icons";
-import { useHasPermission } from "../../hooks/admin/useHasPermission";
-import { useRefreshStore } from "../../store/admin/refreshStore";
-import UpdateUserSkeleton from "./skeleton/UpdateUserSkeleton";
+import { useHasPermission } from "../../../hooks/admin/useHasPermission";
+import { useRefreshStore } from "../../../store/admin/refreshStore";
+import EditUserSkeleton from "../skeleton/EditUserSkeleton";
 
 type FormData = {
   fullName: FormInput;
@@ -63,11 +64,11 @@ type Process = {
   isUpdatingContactInfo: boolean;
 };
 
-export default function UpdateUser() {
+export default function EditUser() {
   // DEV temp for testing
   const renderCount = useRef(0);
   renderCount.current += 1;
-  console.log(`UpdateUser render count: ${renderCount.current}`);
+  console.log(`EditUser render count: ${renderCount.current}`);
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -77,12 +78,12 @@ export default function UpdateUser() {
     useUserStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
-  const canUpdateUser = useHasPermission("u_usr");
+  const canEditUser = useHasPermission("u_usr");
 
   const [user, setUser] = useState<AdminUserResponse | null>(null);
   const [formData, setFormData] = useState<FormData>({
     fullName: { val: "" },
-    avatar: { file: null },
+    avatar: { val: null },
     password: { val: "" },
     birth: { val: "" },
     gender: "other",
@@ -127,7 +128,7 @@ export default function UpdateUser() {
         setUser(fetchedUser);
         setFormData({
           fullName: { val: fetchedUser.fullName },
-          avatar: { file: fetchedUser.avatarUrl },
+          avatar: { val: fetchedUser.avatarUrl },
           password: { val: "" },
           birth: { val: fetchedUser.birth },
           gender: fetchedUser.gender,
@@ -166,7 +167,7 @@ export default function UpdateUser() {
     changeAvatarRef.current!.value = "";
     setFormData((prev) => ({
       ...prev,
-      avatar: { file: null },
+      avatar: { val: null },
     }));
     setAvatarPreviewUrl(defaultAvatar);
   }, [process.isProcessing]);
@@ -197,7 +198,7 @@ export default function UpdateUser() {
           setFormData((prev) => ({
             ...prev,
             avatar: {
-              file,
+              val: file,
               err: `Avatar file is invalid: ${imgFileErrs.join(", ")}`,
             },
           }));
@@ -276,7 +277,7 @@ export default function UpdateUser() {
       // Other inputs
       let err = "";
       if (!val && ["email", "phoneNumber", "password"].includes(name)) {
-        err = `${name} is required`;
+        err = `${capFirstLetter(name)} is required`;
       } else if (name === "fullName" && !isValidUserFullName(val)) {
         err = "Full name is invalid";
       } else if (name === "email" && !isValidEmail(val)) {
@@ -305,11 +306,11 @@ export default function UpdateUser() {
         });
         return;
       }
-      if (!id) {
-        toast.error("User ID is missing.");
+      if (!user) {
+        toast.error("User data is not available.");
         return;
       }
-      if (!canUpdateUser) {
+      if (!canEditUser) {
         toast.error("You do not have permission to update user information.");
         return;
       }
@@ -325,9 +326,9 @@ export default function UpdateUser() {
           newFormData.fullName.err = "Full name is invalid";
           allValid = false;
         }
-        if (formData.avatar.file instanceof File) {
+        if (formData.avatar.val instanceof File) {
           const imgFileErrs = await getImgFileErrs(
-            formData.avatar.file,
+            formData.avatar.val,
             "avatar"
           );
           if (imgFileErrs.length) {
@@ -360,22 +361,16 @@ export default function UpdateUser() {
       }));
       if (await validateForm()) {
         const getChangedData = async (): Promise<UserUpdate> => {
-          if (!user) {
-            throw new Error("User data is not available.");
-          }
           const changedData: UserUpdate = {};
 
           if (formData.fullName.val !== user.fullName) {
             changedData.fullName = formData.fullName.val;
           }
-          if (formData.avatar.file instanceof File) {
-            const downloadUrl = await uploadFile(
-              formData.avatar.file,
-              "avatar"
-            );
+          if (formData.avatar.val instanceof File) {
+            const downloadUrl = await uploadFile(formData.avatar.val, "avatar");
             if (!downloadUrl) throw new Error("Failed to upload avatar image.");
             changedData.avatarUrl = downloadUrl;
-          } else if (formData.avatar.file === null && user.avatarUrl) {
+          } else if (formData.avatar.val === null && user.avatarUrl) {
             changedData.avatarUrl = null; // Remove avatar
           }
           if (formData.password.val) {
@@ -409,7 +404,7 @@ export default function UpdateUser() {
             return;
           }
 
-          await updateUser(id, changedData);
+          await updateUser(user.id, changedData);
           toast.success("User general information updated successfully!");
         } catch (error) {
           toast.error(formatError(error));
@@ -421,7 +416,7 @@ export default function UpdateUser() {
         isUpdatingGeneralInfo: false,
       }));
     },
-    [canUpdateUser, formData, id, process.isProcessing, updateUser, user]
+    [canEditUser, formData, process.isProcessing, updateUser, user]
   );
 
   const handleSubmitContactInfo = useCallback(
@@ -433,11 +428,11 @@ export default function UpdateUser() {
         });
         return;
       }
-      if (!id) {
-        toast.error("User ID is missing.");
+      if (!user) {
+        toast.error("User data is not available.");
         return;
       }
-      if (!canUpdateUser) {
+      if (!canEditUser) {
         toast.error("You do not have permission to update user information.");
         return;
       }
@@ -482,9 +477,6 @@ export default function UpdateUser() {
           emailData: UserEmailUpdate;
           phoneData: UserPhoneNumberUpdate;
         } => {
-          if (!user) {
-            throw new Error("User data is not available.");
-          }
           const emailData: UserEmailUpdate = {};
           const phoneData: UserPhoneNumberUpdate = {};
 
@@ -520,9 +512,11 @@ export default function UpdateUser() {
           }
 
           await Promise.all([
-            emailChanged ? updateUserEmail(id, emailData) : Promise.resolve(),
+            emailChanged
+              ? updateUserEmail(user.id, emailData)
+              : Promise.resolve(),
             phoneChanged
-              ? updateUserPhoneNumber(id, phoneData)
+              ? updateUserPhoneNumber(user.id, phoneData)
               : Promise.resolve(),
           ]);
 
@@ -539,9 +533,8 @@ export default function UpdateUser() {
       }
     },
     [
-      canUpdateUser,
+      canEditUser,
       formData,
-      id,
       process.isProcessing,
       updateUserEmail,
       updateUserPhoneNumber,
@@ -563,7 +556,7 @@ export default function UpdateUser() {
   return (
     <>
       {process.isInitializing ? (
-        <UpdateUserSkeleton />
+        <EditUserSkeleton />
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
       ) : !roles ? (
@@ -582,7 +575,7 @@ export default function UpdateUser() {
                 User Management
               </Link>
               <p className="mb-0 fw-light">/</p>
-              Update User
+              Update User #ID {user.id}
             </h1>
           </div>
 
@@ -758,7 +751,7 @@ export default function UpdateUser() {
                         {AVATAR_HINT_MESSAGE}
                       </div>
 
-                      {formData.avatar.file && (
+                      {formData.avatar.val && (
                         <button
                           type="button"
                           className="btn btn-link text-danger p-0 me-2"
@@ -773,7 +766,7 @@ export default function UpdateUser() {
                         onClick={() => changeAvatarRef.current?.click()}
                         disabled={process.isProcessing}
                       >
-                        {formData.avatar.file ? "change" : "upload"}
+                        {formData.avatar.val ? "change" : "upload"}
                       </button>
                       {formData.avatar.err && (
                         <InvalidInputMsg msg={formData.avatar.err} />

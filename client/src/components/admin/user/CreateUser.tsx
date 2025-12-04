@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import defaultAvatar from "../../assets/default-avatar.webp";
+import defaultAvatar from "../../../assets/default-avatar.webp";
 import {
   AVATAR_ALLOWED_TYPES,
   PASSWORD_HINT_MESSAGE,
   USER_GENDER_OPTIONS,
-} from "../../../../common/configs.common";
-import { AVATAR_HINT_MESSAGE, WAITING_EMOJI } from "../../configs";
+} from "../../../../../common/configs.common";
+import { AVATAR_HINT_MESSAGE, WAITING_EMOJI } from "../../../configs";
 import { Link, useNavigate } from "react-router-dom";
-import type { FormFileInput, FormInput } from "../../utils/types";
-import { useRoleStore } from "../../store/admin/roleStore";
+import type { FormFileInput, FormInput } from "../../../utils/types";
+import { useRoleStore } from "../../../store/admin/roleStore";
 import {
   formatError,
   getLocalDateString,
@@ -18,14 +18,14 @@ import {
   isValidVnPhoneNumber,
   isValidUserFullName,
   readFileAsDataUrl,
-} from "../../../../common/utils.common";
+} from "../../../../../common/utils.common";
 import toast from "react-hot-toast";
-import ApiError from "../common/ApiError";
-import { getImgFileErrs, uploadFile } from "../../utils/utils";
-import InvalidInputMsg from "../common/InvalidInputMsg";
-import { useUserStore } from "../../store/admin/userStore";
-import type { UserCreate } from "../../../../common/types.common";
-import CreateUserSkeleton from "./skeleton/CreateUserSkeleton";
+import ApiError from "../../common/ApiError";
+import { getImgFileErrs, uploadFile } from "../../../utils/utils";
+import InvalidInputMsg from "../../common/InvalidInputMsg";
+import { useUserStore } from "../../../store/admin/userStore";
+import type { UserCreate } from "../../../../../common/types.common";
+import CreateUserSkeleton from "../skeleton/CreateUserSkeleton";
 
 type FormData = {
   fullName: FormInput;

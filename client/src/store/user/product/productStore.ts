@@ -7,12 +7,15 @@ import type {
 } from "../../../../../common/types.common";
 import { retrieve } from "../../../utils/utils";
 import { PRODUCT_SEARCH_URL, PRODUCT_URL } from "../../../configs";
-import { formatError, removeOddSpaces } from "../../../../../common/utils.common";
+import {
+  formatError,
+  removeOddSpaces,
+} from "../../../../../common/utils.common";
 
 type ProductState = {
   fetchProducts: (query?: ProductSearchQuery) => Promise<ProductListResponse>;
 
-  fetchProductDetail: (
+  getProductDetail: (
     productId: string,
     query?: ProductDetailQuery
   ) => Promise<ProductDetailResponse>;
@@ -29,8 +32,16 @@ export const useProductStore = create<ProductState>(() => ({
       if (query.searchTerm && removeOddSpaces(query.searchTerm)) {
         queryString.set("searchTerm", query.searchTerm);
       }
-      if (query.brandId) queryString.set("brandId", query.brandId);
-      if (query.categoryId) queryString.set("categoryId", query.categoryId);
+      if (query.brandIds?.length) {
+        for (const id of query.brandIds) {
+          queryString.append("brandId", id);
+        }
+      }
+      if (query.categoryIds?.length) {
+        for (const id of query.categoryIds) {
+          queryString.append("categoryId", id);
+        }
+      }
       if (query.stopSelling) queryString.set("stopSelling", query.stopSelling);
       if (query.priceCentsMin) {
         queryString.set("priceCentsMin", query.priceCentsMin);
@@ -53,7 +64,7 @@ export const useProductStore = create<ProductState>(() => ({
     }
   },
 
-  async fetchProductDetail(
+  async getProductDetail(
     productId: string,
     query?: ProductDetailQuery
   ): Promise<ProductDetailResponse> {

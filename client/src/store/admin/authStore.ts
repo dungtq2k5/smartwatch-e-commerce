@@ -18,8 +18,6 @@ type AuthState = {
   checkAuth: () => Promise<boolean>;
   login: (data: AdminUserLogin) => Promise<AdminUserResponse>;
   logout: () => Promise<void>;
-
-  
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({

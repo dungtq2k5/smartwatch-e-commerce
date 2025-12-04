@@ -20,7 +20,7 @@ import {
 } from "@dnd-kit/core";
 import { Button, Modal } from "react-bootstrap";
 import { removeOddSpaces } from "../../../../../common/utils.common";
-import toast from "react-hot-toast";
+import type { DisplayField } from "../../../utils/types";
 
 const DraggableItem = memo(
   ({
@@ -76,27 +76,20 @@ const DraggableItem = memo(
   }
 );
 
-type Field<T extends string> = {
-  name: T;
-  visible: boolean;
-};
-
-const ConfigDisplayModal = <TField extends string>({
+const ConfigDisplayModal = <F extends string>({
   show,
-  displayFields, // All displayable fields
-  visibleFields, // Currently visible fields
-  fieldLabelLegend, // field -> label
+  fields,
+  legend,
   onClose,
   onReset,
   onApply,
 }: Readonly<{
   show: boolean;
-  displayFields: TField[];
-  visibleFields: TField[];
-  fieldLabelLegend: Record<TField, string>;
+  fields: DisplayField<F>[];
+  legend: Record<F, string>;
   onClose: () => void;
   onReset: () => void;
-  onApply: (displayFields: TField[], visibleFields: TField[]) => void;
+  onApply: (fields: DisplayField<F>[]) => void;
 }>) => {
   // DEV temp for testing
   const renderCount = useRef(0);
@@ -104,7 +97,7 @@ const ConfigDisplayModal = <TField extends string>({
   console.log(`ConfigDisplayModal render count: ${renderCount.current}`);
 
   // This state will hold the order of ALL fields shown in the list
-  const [orderedFields, setOrderedFields] = useState<Field<TField>[]>([]);
+  const [orderedFields, setOrderedFields] = useState<DisplayField<F>[]>(fields);
 
   const [searchTerm, setSearchTerm] = useState<string>("");
 
@@ -118,19 +111,14 @@ const ConfigDisplayModal = <TField extends string>({
   // Init or re-calculate orderedFields every time show changes
   useEffect(() => {
     if (show) {
-      setOrderedFields(
-        displayFields.map((field) => ({
-          name: field,
-          visible: visibleFields.includes(field),
-        }))
-      );
+      setOrderedFields(fields);
       setSearchTerm("");
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);
 
-  const filteredFields = useMemo((): Field<TField>[] => {
+  const filteredFields = useMemo((): DisplayField<F>[] => {
     const optimizedSearchTerm = removeOddSpaces(searchTerm);
     if (!optimizedSearchTerm) return orderedFields;
 
@@ -159,17 +147,12 @@ const ConfigDisplayModal = <TField extends string>({
   const handleReset = useCallback(() => {
     onReset();
     onClose();
-    toast.success("Display columns have been reset to default.");
   }, [onClose, onReset]);
 
   const handleApply = useCallback(() => {
-    onApply(
-      orderedFields.map((f) => f.name),
-      orderedFields.filter((f) => f.visible).map((f) => f.name)
-    );
+    onApply(orderedFields);
     onClose();
-    toast.success("Display columns have been updated.");
-  }, [orderedFields, onApply, onClose]);
+  }, [onApply, orderedFields, onClose]);
 
   return (
     <Modal show={show} onHide={onClose} centered>
@@ -216,7 +199,7 @@ const ConfigDisplayModal = <TField extends string>({
                   <DraggableItem
                     key={field.name}
                     id={field.name}
-                    label={fieldLabelLegend[field.name] || field.name}
+                    label={legend[field.name]}
                     isActive={field.visible}
                     onToggle={() => handleToggleField(field.name)}
                   />

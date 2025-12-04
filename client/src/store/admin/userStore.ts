@@ -13,12 +13,10 @@ import type {
 import { formatError, removeOddSpaces } from "../../../../common/utils.common";
 import { patch, post, remove, retrieve } from "../../utils/utils";
 import { USER_URL } from "../../configs";
-import { MAX_USERS_TO_DELETE_BULK } from "../../../../server/configs/configs";
+import { MAX_USERS_TO_DELETE_BULK } from "../../../../common/configs.common";
 
 type UserState = {
   sysUserId: string | null;
-  userCache: AdminUserResponse | null;
-  userDetailCache: AdminUserDetailResponse | null;
 
   fetchUsers: (query?: UserSearchQuery) => Promise<AdminUserListResponse>;
   createUser: (userData: UserCreate) => Promise<AdminUserResponse>;
@@ -46,8 +44,6 @@ type UserState = {
 
 export const useUserStore = create<UserState>((set, get) => ({
   sysUserId: null,
-  userCache: null,
-  userDetailCache: null,
 
   async fetchUsers(query?: UserSearchQuery): Promise<AdminUserListResponse> {
     const queryString = new URLSearchParams();
@@ -85,7 +81,6 @@ export const useUserStore = create<UserState>((set, get) => ({
       if (!res.success) throw new Error(res.message);
 
       const user = res.data as AdminUserResponse;
-      set({ userCache: user });
       return user;
     } catch (error) {
       throw new Error(formatError(error));
@@ -100,18 +95,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       const res = await patch(USER_URL, userId, userData);
       if (!res.success) throw new Error(res.message);
 
-      const user = res.data as AdminUserResponse;
-
-      const { userDetailCache } = get();
-      set({
-        userCache: user,
-        userDetailCache:
-          userDetailCache?.id === userId
-            ? { ...userDetailCache, ...user }
-            : userDetailCache,
-      });
-
-      return user;
+      return res.data as AdminUserResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -129,18 +113,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       );
       if (!res.success) throw new Error(res.message);
 
-      const user = res.data as AdminUserResponse;
-
-      const { userDetailCache } = get();
-      set({
-        userCache: user,
-        userDetailCache:
-          userDetailCache?.id === userId
-            ? { ...userDetailCache, ...user }
-            : userDetailCache,
-      });
-
-      return user;
+      return res.data as AdminUserResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -158,18 +131,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       );
       if (!res.success) throw new Error(res.message);
 
-      const user = res.data as AdminUserResponse;
-
-      const { userDetailCache } = get();
-      set({
-        userCache: user,
-        userDetailCache:
-          userDetailCache?.id === userId
-            ? { ...userDetailCache, ...user }
-            : userDetailCache,
-      });
-
-      return user;
+      return res.data as AdminUserResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -192,32 +154,22 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   async getUser(userId: string): Promise<AdminUserResponse> {
-    const { userCache } = get();
-    if (userCache?.id === userId) return userCache;
-
     try {
       const res = await retrieve(`${USER_URL}/${userId}`);
       if (!res.success) throw new Error(res.message);
 
-      const user = res.data as AdminUserResponse;
-      set({ userCache: user });
-      return user;
+      return res.data as AdminUserResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
 
   async getUserDetail(userId: string): Promise<AdminUserDetailResponse> {
-    const { userDetailCache } = get();
-    if (userDetailCache?.id === userId) return userDetailCache;
-
     try {
       const res = await retrieve(`${USER_URL}/${userId}/details`);
       if (!res.success) throw new Error(res.message);
 
-      const userDetail = res.data as AdminUserDetailResponse;
-      set({ userDetailCache: userDetail });
-      return userDetail;
+      return res.data as AdminUserDetailResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -232,13 +184,6 @@ export const useUserStore = create<UserState>((set, get) => ({
 
       const res = await remove(`${USER_URL}/${userId}`);
       if (!res.success) throw new Error(res.message);
-
-      const { userCache, userDetailCache } = get();
-      set({
-        userCache: userCache?.id === userId ? null : userCache,
-        userDetailCache:
-          userDetailCache?.id === userId ? null : userDetailCache,
-      });
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -246,6 +191,9 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   async deleteUserBulk(data: UserBulkDelete): Promise<void> {
     try {
+      if (data.userIds.length === 0) {
+        throw new Error("No users selected for deletion");
+      }
       if (data.userIds.length > MAX_USERS_TO_DELETE_BULK) {
         throw new Error(
           `Cannot delete more than ${MAX_USERS_TO_DELETE_BULK} users at once.`
@@ -259,16 +207,6 @@ export const useUserStore = create<UserState>((set, get) => ({
 
       const res = await remove(`${USER_URL}/many`, null, data);
       if (!res.success) throw new Error(res.message);
-
-      const { userCache, userDetailCache } = get();
-      set({
-        userCache:
-          userCache && data.userIds.includes(userCache.id) ? null : userCache,
-        userDetailCache:
-          userDetailCache && data.userIds.includes(userDetailCache.id)
-            ? null
-            : userDetailCache,
-      });
     } catch (error) {
       throw new Error(formatError(error));
     }

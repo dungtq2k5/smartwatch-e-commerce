@@ -1,5 +1,8 @@
 import { create } from "zustand";
-import type { ProductBrandListResponse } from "../../../../../common/types.common";
+import type {
+  ProductBrandListResponse,
+  ProductBrandResponse,
+} from "../../../../../common/types.common";
 import { PRODUCT_BRANDS_URL } from "../../../configs";
 import { retrieve } from "../../../utils/utils";
 import { formatError } from "../../../../../common/utils.common";
@@ -8,6 +11,8 @@ type ProductBrandState = {
   brands: ProductBrandListResponse | null;
 
   fetchBrands: () => Promise<ProductBrandListResponse>;
+
+  getBrandSync: (id: string) => ProductBrandResponse | undefined;
 };
 
 export const useProductBrandStore = create<ProductBrandState>((set, get) => ({
@@ -27,5 +32,9 @@ export const useProductBrandStore = create<ProductBrandState>((set, get) => ({
     } catch (error) {
       throw new Error(formatError(error));
     }
+  },
+
+  getBrandSync(id: string): ProductBrandResponse | undefined {
+    return get().brands?.brands.brands.find((brand) => brand.id === id);
   },
 }));

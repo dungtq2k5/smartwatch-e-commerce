@@ -54,6 +54,7 @@ const requiredEnvVars = [
   "JWT_SECRET_KEY",
   "REFRESH_JWT_SECRET_KEY",
   "MONGO_URI",
+  "MONGO_DB_NAME",
   "MAILTRAP_TOKEN",
   "MAILTRAP_SENDER_EMAIL",
   "MAILTRAP_SENDER_NAME",
@@ -100,6 +101,7 @@ app.use(`${ROOT_URL}/webhooks`, webhookRoute);
 app.use(express.json());
 app.use(cookieParser());
 
+// Routing conventions: static first ("/", "/me"), then long dynamic ("/:userId/orders"), then short dynamic ("/:userId").
 app.use(`${ROOT_URL}/auth`, authRoute);
 
 app.use(`${ROOT_URL}/users`, userRoute);
@@ -165,7 +167,7 @@ app.listen(port, async () => {
   //   console.log("✅", "Mock pending order created");
   // } catch (error) {
   //   await session.abortTransaction();
-  //   console.log("❌", "Mock pending order failed:", error);
+  //   console.log("❌ ", "Mock pending order failed:", error);
   //   process.exit(1);
   // } finally {
   //   await session.endSession();

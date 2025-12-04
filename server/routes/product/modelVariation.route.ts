@@ -3,9 +3,10 @@ import { verifyPermission } from "../../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../../utils/middlewares/general.middleware";
 import {
   inputSanitizer,
-  verifyModelVariationInput,
-} from "../../utils/middlewares/product.middleware";
+  verifyVariationInput,
+} from "../../utils/middlewares/product/variation.middleware";
 import {
+  create,
   get,
   update,
   remove,
@@ -13,18 +14,25 @@ import {
 
 const router = express.Router();
 
-// Some routes in product.route.ts
+router.post(
+  "/",
+  verifyPermission("c_model_variation"),
+  verifyEmptyBody,
+  inputSanitizer("variation"),
+  verifyVariationInput("create"),
+  create
+);
+
+router.get("/:variationId", get);
 
 router.patch(
   "/:variationId",
   verifyPermission("u_model_variation"),
   verifyEmptyBody,
   inputSanitizer("variation"),
-  verifyModelVariationInput("update"),
+  verifyVariationInput("update"),
   update
 );
-
-router.get("/:variationId", get);
 
 router.delete("/:variationId", verifyPermission("d_model_variation"), remove);
 

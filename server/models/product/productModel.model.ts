@@ -75,6 +75,7 @@ interface IModelScreenBase {
   glassMaterial: string;
   bezelMaterial: string;
   shape: string;
+  refreshRateHz: number | null;
 }
 export type IModelScreen = (ICircularScreen | INonCircularScreen) &
   IModelScreenBase;

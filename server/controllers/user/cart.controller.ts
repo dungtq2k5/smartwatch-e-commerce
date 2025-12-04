@@ -11,7 +11,7 @@ import { HttpError } from "../../utils/errorHandler";
 import mongoose, { Types } from "mongoose";
 import Cart from "../../models/user/cart.model";
 import ModelVariation from "../../models/product/modelVariation.model";
-import { MAX_ITEMS_FOR_CREATE_BULK_CART } from "../../configs/configs";
+import { MAX_ITEMS_FOR_CREATE_BULK_CART } from "../../../common/configs.common";
 
 // --- BOTH ADMIN AND BUYER FUNCTIONS ---
 // Only fetch data needed for the UI, can be adjusted in the future

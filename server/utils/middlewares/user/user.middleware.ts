@@ -48,7 +48,7 @@ function sanitizeUserInput(
   if (typeof value === "string") {
     req.body.value = removeOddSpaces(value).toLocaleLowerCase();
   }
-  if (roleIds !== undefined && Array.isArray(roleIds)) {
+  if (roleIds && Array.isArray(roleIds)) {
     req.body.roleIds = [...new Set(roleIds)]; // Remove duplicates
   }
 

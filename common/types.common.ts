@@ -13,6 +13,7 @@ import {
   BANK_ACCOUNT_TYPES,
   WITHDRAWAL_METHODS,
   USER_SEARCH_SORT_OPTIONS,
+  PRODUCT_MODEL_SEARCH_SORT_OPTIONS,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -404,6 +405,10 @@ export type ProductCreate = {
 
 export type ProductUpdate = Partial<ProductCreate>;
 
+export type ProductBulkDelete = {
+  productIds: string[];
+};
+
 export type ProductResponse = {
   id: string;
   name: string;
@@ -417,6 +422,19 @@ export type ProductResponse = {
   updatedAt: string;
   stopSelling: boolean;
   basePriceCents: number;
+};
+export type AdminProductResponse = Omit<
+  ProductResponse,
+  "brand" | "category" | "createdBy"
+> & {
+  brandId: string;
+  categoryId: string;
+  createdBy: {
+    id: string;
+    fullName: string;
+  };
+  totalModels: number;
+  totalVariations: number;
 };
 
 /**
@@ -444,14 +462,39 @@ export type ProductDetailResponse = ProductResponse & {
   };
 };
 
+export type AdminProductDetailResponse = Omit<
+  AdminProductResponse,
+  "brandId" | "categoryId"
+> &
+  Pick<ProductResponse, "brand" | "category"> & {
+    models: {
+      total: number;
+      models: (AdminProductModelResponse & {
+        variations: {
+          total: number;
+          variations: AdminModelVariationResponse[];
+        };
+      })[];
+    };
+  };
+
 export type ProductListResponse = {
+  total: number; // Total filter match but exclude offset or limit
   products: {
     total: number;
     products: ProductResponse[];
   };
   offset: number;
   limit: number;
-  total: number; // Total filter match but exclude offset or limit
+};
+export type AdminProductListResponse = {
+  total: number;
+  products: {
+    total: number;
+    products: AdminProductResponse[];
+  };
+  offset: number;
+  limit: number;
 };
 
 export type ProductBrandCreate = {
@@ -570,6 +613,7 @@ export type ProductModelCreate = {
     glassMaterial: string;
     bezelMaterial: string;
     shape: string;
+    refreshRateHz?: number | null;
   } & (
     | {
         isCircular: true;
@@ -593,9 +637,15 @@ export type ProductModelCreate = {
   stopSelling?: boolean;
 };
 
-export type ProductModelUpdate = DeepPartial<ProductModelCreate>;
+export type ProductModelUpdate = DeepPartial<
+  Omit<ProductModelCreate, "productId">
+>;
+
 export type ProductModelResponse = DeepNoneOptional<
-  Omit<ProductModelCreate, "config"> & {
+  Omit<
+    ProductModelCreate,
+    "imageUrls" | "config" | "stockPriceCents" | "stopSelling"
+  > & {
     config: Omit<ProductModelCreate["config"], "osId"> & {
       os: ProductOsResponse;
     };
@@ -603,10 +653,50 @@ export type ProductModelResponse = DeepNoneOptional<
 > & {
   id: string;
   productId: string;
+  imageUrls: string[];
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  stopSelling: boolean;
 };
+
+export type AdminProductModelResponse = Omit<
+  ProductModelResponse,
+  "createdBy"
+> &
+  Pick<AdminProductResponse, "createdBy"> & {
+    stockPriceCents: number;
+    totalVariations: number;
+  };
+
+// With list we replace config.os by osId only to reduce payload size
+export type AdminProductModelResponseForList = Omit<
+  AdminProductModelResponse,
+  "config"
+> & {
+  config: DeepNoneOptional<ProductModelCreate["config"]>;
+};
+
+export type AdminProductModelListResponse = {
+  total: number;
+  models: {
+    total: number;
+    models: AdminProductModelResponseForList[];
+  };
+  offset: number;
+  limit: number;
+};
+
+export type AdminProductModelDetailResponse = Omit<
+  AdminProductModelResponse,
+  "totalVariations"
+> & {
+  variations: {
+    total: number;
+    variations: AdminModelVariationResponse[];
+  };
+};
+
 export type ProductModelListResponse = {
   models: {
     total: number;
@@ -617,7 +707,31 @@ export type ProductModelListResponse = {
   total: number;
 };
 
+export type ProductModelSearchQuery = Partial<{
+  limit: string;
+  offset: string;
+  searchTerm: string;
+  priceCentsMin: string;
+  priceCentsMax: string;
+  stockPriceCentsMin: string;
+  stockPriceCentsMax: string;
+  releaseDateFrom: string;
+  releaseDateTo: string;
+  stopSelling: "true" | "false";
+  sortBy: (typeof PRODUCT_MODEL_SEARCH_SORT_OPTIONS)[number];
+}>;
+
+export type ProductModelDetailQuery = Pick<
+  ProductDetailQuery,
+  "variationStopSelling"
+>;
+
+export type ProductModelBulkDelete = {
+  modelIds: string[];
+};
+
 export type ModelVariationCreate = {
+  productModelId: string;
   name: string;
   color: {
     hex: string;
@@ -625,6 +739,7 @@ export type ModelVariationCreate = {
   };
   imageUrls?: string[] | null;
   additionalPriceCents?: number | null;
+  stockAdditionalPriceCents?: number | null;
   band: {
     widthMm: number;
     lugWidthMm: number;
@@ -646,8 +761,15 @@ export type ModelVariationCreate = {
   };
   stopSelling?: boolean;
 };
+
 export type ModelVariationResponse = DeepNoneOptional<
-  Omit<ModelVariationCreate, "imageUrls" | "additionalPriceCents">
+  Omit<
+    ModelVariationCreate,
+    | "imageUrls"
+    | "additionalPriceCents"
+    | "stockAdditionalPriceCents"
+    | "stopSelling"
+  >
 > & {
   id: string;
   productModelId: string;
@@ -659,7 +781,16 @@ export type ModelVariationResponse = DeepNoneOptional<
   updatedAt: string;
   stopSelling: boolean;
 };
-export type ModelVariationUpdate = DeepPartial<ModelVariationCreate>;
+export type AdminModelVariationResponse = Omit<
+  ModelVariationResponse,
+  "createdBy"
+> &
+  Pick<AdminProductResponse, "createdBy"> & {
+    stockAdditionalPriceCents: number;
+  };
+export type ModelVariationUpdate = DeepPartial<
+  Omit<ModelVariationCreate, "productModelId">
+>;
 export type ModelVariationListResponse = {
   variations: {
     total: number;
@@ -671,6 +802,7 @@ export type ModelVariationListResponse = {
 };
 
 export type VariationInstanceCreate = {
+  modelVariationId: string;
   supplierSerialNumber: string;
   supplierImeiNumber?: string | null;
   conditionId?: string | null;
@@ -688,7 +820,9 @@ export type VariationInstanceResponse = {
   createdAt: string;
   updatedAt: string;
 };
-export type VariationInstanceUpdate = Partial<VariationInstanceCreate>;
+export type VariationInstanceUpdate = Partial<
+  Omit<VariationInstanceCreate, "modelVariationId">
+>;
 
 export type ProviderCreate = {
   fullName: string;
@@ -861,10 +995,10 @@ export type UserValidatePassword = {
 export type ProductSearchQuery = Partial<{
   limit: string;
   offset: string;
-  searchTerm: string;
+  searchTerm: string; // Name, description, ID
   type: (typeof PRODUCT_TYPES)[number];
-  brandId: string;
-  categoryId: string;
+  brandIds: string[];
+  categoryIds: string[];
   stopSelling: "true" | "false";
   priceCentsMin: string;
   priceCentsMax: string;
@@ -1113,7 +1247,7 @@ export type UserSelfBankAccountResponse = {
 type UserBankAccountResponse = UserSelfBankAccountResponse & {
   stripeConnectedAccountId: string;
   stripeBankAccountFingerprint: string | null;
-}
+};
 export type UserSelfBankAccountListResponse = {
   total: number;
   accounts: UserSelfBankAccountResponse[];

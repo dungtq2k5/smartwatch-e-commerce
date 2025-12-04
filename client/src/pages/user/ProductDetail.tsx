@@ -1,12 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
+  ModelVariationResponse,
   ProductDetailResponse,
   ProductListResponse,
+  ProductModelResponse,
   UserCartCreate,
 } from "../../../../common/types.common";
 import { centsToUSD, formatError } from "../../../../common/utils.common";
 import { useProductStore } from "../../store/user/product/productStore";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import ApiError from "../../components/common/ApiError";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -16,7 +23,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import ProductDetailSpecsModal from "../../components/user/modal/ProductDetailSpecsModal";
 import ProductDetailSkeleton from "../../components/user/skeleton/ProductDetailSkeleton";
-import type { BuyNowItem, ModelPicked, VariationPicked } from "../../utils/types";
+import type { BuyNowItem, ItemPicked } from "../../utils/types";
 import toast from "react-hot-toast";
 import { useUserCartStore } from "../../store/user/cartStore";
 import ProductCardSkeleton from "../../components/user/skeleton/ProductCardSkeleton";
@@ -38,8 +45,8 @@ type ApiErr = {
 };
 
 type Product = {
-  productDetail?: ProductDetailResponse;
-  productsSuggest?: ProductListResponse;
+  productDetail: ProductDetailResponse | null;
+  productsSuggest: ProductListResponse | null;
 };
 
 export default function ProductDetail() {
@@ -49,9 +56,8 @@ export default function ProductDetail() {
   console.log(`ProductDetail rendered ${count.current} times`);
 
   const { id } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
-  const { fetchProducts, fetchProductDetail } = useProductStore();
+  const { fetchProducts, getProductDetail } = useProductStore();
   const { createCart } = useUserCartStore();
 
   const [process, setProcess] = useState<process>({
@@ -64,10 +70,16 @@ export default function ProductDetail() {
     productDetail: null,
     productsSuggest: null,
   });
-  const [products, setProducts] = useState<Product>({});
-  const [modelPicked, setModelPicked] = useState<ModelPicked>(undefined);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [products, setProducts] = useState<Product>({
+    productDetail: null,
+    productsSuggest: null,
+  });
+  const [modelPicked, setModelPicked] =
+    useState<ItemPicked<ProductModelResponse>>(null);
   const [variationPicked, setVariationPicked] =
-    useState<VariationPicked>(undefined);
+    useState<ItemPicked<ModelVariationResponse>>(null);
 
   const [mainImgIdx, setMainImgIdx] = useState<number>(0);
 
@@ -76,15 +88,6 @@ export default function ProductDetail() {
   // Fetch initial when first loaded or params.id changes: product detail, products suggest, reset states
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
-      // If modelId and variationId are in URL, select them
-      const urlParams = new URLSearchParams(location.search);
-      const urlModelId = urlParams.get("modelId");
-      const urlVariationId = urlParams.get("variationId");
-      // Remove search params from URL if they exist to avoid confusion
-      if (urlModelId || urlVariationId) {
-        navigate(location.pathname, { replace: true });
-      }
-
       // Fetch product detail
       setProcess((prev) => ({
         ...prev,
@@ -96,14 +99,24 @@ export default function ProductDetail() {
         productDetail: null,
       }));
 
-      let productDetail: ProductDetailResponse | undefined;
+      // Reset data states
+      setProducts((prev) => ({
+        ...prev,
+        productDetail: null,
+      }));
+      setModelPicked(null);
+      setVariationPicked(null);
+      setMainImgIdx(0);
+      setModalSpecs(false);
+
+      let productDetail: ProductDetailResponse | null = null;
 
       try {
         if (!id) {
           throw new Error("Product ID is required");
         }
 
-        productDetail = await fetchProductDetail(id, {
+        productDetail = await getProductDetail(id, {
           modelStopSelling: "false",
           variationStopSelling: "false",
         });
@@ -121,39 +134,6 @@ export default function ProductDetail() {
           ...prev,
           productDetail,
         }));
-
-        let modelIdx = 0;
-        let variationIdx = 0;
-        let modelPicked = productDetail.models.models[modelIdx];
-        let variationPicked = modelPicked.variations.variations[variationIdx];
-
-        if (urlModelId) {
-          const foundModel = productDetail.models.models.findIndex(
-            (model) => model.id === urlModelId
-          );
-          if (foundModel !== -1) {
-            modelIdx = foundModel;
-            modelPicked = productDetail.models.models[modelIdx];
-          }
-        }
-        if (urlVariationId) {
-          const foundVariation = modelPicked.variations.variations.findIndex(
-            (variation) => variation.id === urlVariationId
-          );
-          if (foundVariation !== -1) {
-            variationIdx = foundVariation;
-            variationPicked = modelPicked.variations.variations[variationIdx];
-          }
-        }
-
-        setModelPicked({
-          idx: modelIdx,
-          model: modelPicked,
-        });
-        setVariationPicked({
-          idx: variationIdx,
-          variation: variationPicked,
-        });
       } catch (error) {
         setApiErr((prev) => ({
           ...prev,
@@ -177,10 +157,11 @@ export default function ProductDetail() {
         ...prev,
         productsSuggest: null,
       }));
+
       try {
         if (productDetail) {
           const productsSuggest = await fetchProducts({
-            brandId: productDetail.brand.id,
+            brandIds: [productDetail.brand.id],
             limit: MAX_PRODUCTS_SUGGEST_DISPLAY.toString(),
             stopSelling: "false",
           });
@@ -204,15 +185,76 @@ export default function ProductDetail() {
       }
     };
 
-    // Reset data states
-    setModelPicked(undefined);
-    setVariationPicked(undefined);
-    setMainImgIdx(0);
-    setModalSpecs(false);
-
     handleFetchSetInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Handle select model or variation from URL search params
+  useEffect(() => {
+    const handleSelectFromUrlParams = (): void => {
+      if (!products.productDetail) return; // Wait until product detail is loaded
+
+      const [urlModelId, urlVariationId] = [
+        searchParams.get("modelId"),
+        searchParams.get("variationId"),
+      ];
+
+      let modelIdx = 0;
+      let variationIdx = 0;
+      let modelPicked = products.productDetail.models.models[modelIdx];
+      let variationPicked = modelPicked.variations.variations[variationIdx];
+
+      if (urlModelId) {
+        const foundModel = products.productDetail.models.models.findIndex(
+          (model) => model.id === urlModelId
+        );
+        if (foundModel !== -1) {
+          modelIdx = foundModel;
+          modelPicked = products.productDetail.models.models[modelIdx];
+        }
+      }
+      if (urlVariationId) {
+        const foundVariation = modelPicked.variations.variations.findIndex(
+          (variation) => variation.id === urlVariationId
+        );
+        if (foundVariation !== -1) {
+          variationIdx = foundVariation;
+          variationPicked = modelPicked.variations.variations[variationIdx];
+        }
+      }
+
+      setModelPicked({
+        idx: modelIdx,
+        data: modelPicked,
+      });
+      setVariationPicked({
+        idx: variationIdx,
+        data: variationPicked,
+      });
+
+      // Update URL search params to reflect the current states
+      setSearchParams(
+        (prev) => {
+          const currModelId = prev.get("modelId");
+          const currVariationId = prev.get("variationId");
+
+          if (
+            currModelId !== modelPicked.id ||
+            currVariationId !== variationPicked.id
+          ) {
+            prev.set("modelId", modelPicked.id);
+            prev.set("variationId", variationPicked.id);
+          }
+
+          return prev;
+        },
+        { replace: true }
+      );
+    };
+
+    handleSelectFromUrlParams();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products.productDetail, searchParams]);
 
   const handleAddToCart = useCallback(async () => {
     if (!variationPicked) {
@@ -227,7 +269,7 @@ export default function ProductDetail() {
     }
 
     const data: UserCartCreate = {
-      variationId: variationPicked.variation.id,
+      variationId: variationPicked.data.id,
       quantity: 1,
     };
 
@@ -236,6 +278,7 @@ export default function ProductDetail() {
       isProcessing: true,
       isCreatingCart: true,
     }));
+
     try {
       await createCart(data);
       toast.success("Product added to cart successfully!");
@@ -267,9 +310,9 @@ export default function ProductDetail() {
 
     const buyNowItem: BuyNowItem = {
       variation: {
-        ...variationPicked.variation,
+        ...variationPicked.data,
         productModel: {
-          ...modelPicked.model,
+          ...modelPicked.data,
           product: {
             id: product.id,
             name: product.name,
@@ -280,8 +323,7 @@ export default function ProductDetail() {
         },
       },
       totalCents:
-        variationPicked.variation.additionalPriceCents +
-        modelPicked.model.priceCents,
+        variationPicked.data.additionalPriceCents + modelPicked.data.priceCents,
       quantity: 1,
     };
 
@@ -312,9 +354,9 @@ export default function ProductDetail() {
                 {/* Vertical image selector */}
                 <div className="col-12 col-md-2 order-2 order-md-1">
                   <div className="d-flex flex-row flex-md-column gap-2">
-                    {variationPicked.variation.imageUrls.map((url, i) => (
+                    {variationPicked.data.imageUrls.map((url, i) => (
                       <button
-                        key={i+1}
+                        key={i + 1}
                         type="button"
                         tabIndex={0}
                         className="border-0 bg-transparent p-0"
@@ -337,7 +379,7 @@ export default function ProductDetail() {
                 <div className="col-12 col-md-10 order-1 order-md-2">
                   <img
                     src={
-                      variationPicked.variation.imageUrls[mainImgIdx] ||
+                      variationPicked.data.imageUrls[mainImgIdx] ||
                       defaultProductImg
                     }
                     alt="product"
@@ -353,28 +395,25 @@ export default function ProductDetail() {
                 <h1 className="h1 fw-bold mb-0">
                   {products.productDetail.name}
                 </h1>
-                <div className="product-detail-brand-category--g mb-2">
+                <div className="product-detail-brand-category--g d-flex align-items-center gap-2 mb-2">
                   <span className="fw-medium d-inline-flex align-items-center">
                     {products.productDetail.brand.logoUrl && (
                       <img
                         src={products.productDetail.brand.logoUrl}
                         alt={`${products.productDetail.brand.name} logo`}
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          marginRight: "8px",
-                        }}
+                        className="brand-logo--g me-2"
                         loading="lazy"
                       />
                     )}
                     {products.productDetail.brand.name}
-                  </span>{" "}
-                  &middot; <span>{products.productDetail.category.name}</span>
+                  </span>
+                  <span>&middot;</span>
+                  <span>{products.productDetail.category.name}</span>
                 </div>
                 <div className="product-detail-price--g mb-2">
                   {centsToUSD(
-                    modelPicked.model.priceCents +
-                      variationPicked.variation.additionalPriceCents
+                    modelPicked.data.priceCents +
+                      variationPicked.data.additionalPriceCents
                   )}
                 </div>
                 <div className="text-muted mb-4">
@@ -393,11 +432,15 @@ export default function ProductDetail() {
                         }`}
                         onClick={() => {
                           if (modelPicked.idx !== idx) {
-                            setModelPicked({ idx, model });
-                            setVariationPicked({
-                              idx: 0,
-                              variation: model.variations.variations[0],
+                            setSearchParams((prev) => {
+                              prev.set("modelId", model.id);
+                              prev.set(
+                                "variationId",
+                                model.variations.variations[0].id
+                              );
+                              return prev;
                             });
+                            setMainImgIdx(0);
                           }
                         }}
                       >
@@ -418,13 +461,17 @@ export default function ProductDetail() {
                         <button
                           key={variation.id}
                           type="button"
-                          className={`product-detail-variation-btn--g d-flex align-items-center ${
+                          className={`product-detail-variation-btn--g d-flex align-items-center gap-2 ${
                             isActive ? "active" : ""
                           }`}
                           aria-pressed={isActive}
                           onClick={() => {
                             if (variationPicked.idx !== idx) {
-                              setVariationPicked({ idx, variation });
+                              setSearchParams((prev) => {
+                                prev.set("variationId", variation.id);
+                                return prev;
+                              });
+                              setMainImgIdx(0);
                             }
                           }}
                         >
@@ -449,7 +496,7 @@ export default function ProductDetail() {
                   </button>
                 </div>
                 {/* Purchase Actions */}
-                {variationPicked.variation.stockQuantity > 0 ? (
+                {variationPicked.data.stockQuantity > 0 ? (
                   <div className="d-grid gap-3">
                     <button
                       type="button"
@@ -505,7 +552,7 @@ export default function ProductDetail() {
               <div className="row g-2">
                 {Array.from({ length: MAX_PRODUCTS_SUGGEST_DISPLAY }).map(
                   (_, i) => (
-                    <div className="col-md-6 col-lg-3" key={i+1}>
+                    <div className="col-md-6 col-lg-3" key={i + 1}>
                       <ProductCardSkeleton />
                     </div>
                   )

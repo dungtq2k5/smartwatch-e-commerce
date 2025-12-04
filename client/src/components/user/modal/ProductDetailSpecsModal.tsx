@@ -1,10 +1,13 @@
 import { Button, Modal } from "react-bootstrap";
-import type { ProductDetailResponse } from "../../../../../common/types.common";
+import type {
+  ModelVariationResponse,
+  ProductDetailResponse,
+  ProductModelResponse,
+} from "../../../../../common/types.common";
 import { useRef } from "react";
-import type { ModelPicked, VariationPicked } from "../../../utils/types";
 import {
   bytesToMB,
-  formatTime,
+  formatMinTime,
   safeString,
 } from "../../../../../common/utils.common";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -20,6 +23,7 @@ import {
   faClock,
   faCalendarAlt,
 } from "@fortawesome/free-solid-svg-icons";
+import type { ItemPicked } from "../../../utils/types";
 
 export default function ProductDetailSpecsModal({
   productDetail,
@@ -29,8 +33,8 @@ export default function ProductDetailSpecsModal({
   onHide,
 }: Readonly<{
   productDetail: ProductDetailResponse;
-  modelPicked: ModelPicked;
-  variationPicked: VariationPicked;
+  modelPicked: ItemPicked<ProductModelResponse>;
+  variationPicked: ItemPicked<ModelVariationResponse>;
   show: boolean;
   onHide: () => void;
 }>) {
@@ -58,7 +62,7 @@ export default function ProductDetailSpecsModal({
                 <h3 className="h5 fw-semibold mb-3">{productDetail.name}</h3>
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <strong>Model:</strong> {modelPicked.model.name}
+                    <strong>Model:</strong> {modelPicked.data.name}
                   </div>
                   <div className="col-md-6">
                     <strong>Color:</strong>{" "}
@@ -66,10 +70,10 @@ export default function ProductDetailSpecsModal({
                       <span
                         className="product-detail-color-circle--g"
                         style={{
-                          backgroundColor: variationPicked.variation.color.hex,
+                          backgroundColor: variationPicked.data.color.hex,
                         }}
                       ></span>
-                      {variationPicked.variation.color.name}
+                      {variationPicked.data.color.name}
                     </span>
                   </div>
                   <div className="col-md-6">
@@ -86,8 +90,8 @@ export default function ProductDetailSpecsModal({
                     <strong>Total Price:</strong>{" "}
                     {centsToUSD(
                       productDetail.basePriceCents +
-                        modelPicked.model.priceCents +
-                        variationPicked.variation.additionalPriceCents
+                        modelPicked.data.priceCents +
+                        variationPicked.data.additionalPriceCents
                     )}
                   </div> */}
                 </div>
@@ -112,46 +116,46 @@ export default function ProductDetailSpecsModal({
                     </tr>
                     <tr>
                       <td>Display Type</td>
-                      <td>{modelPicked.model.screen.display.displayType}</td>
+                      <td>{modelPicked.data.screen.display.displayType}</td>
                     </tr>
                     <tr>
                       <td>Screen Size</td>
                       <td>
-                        {modelPicked.model.screen.display.diagonalSizeInch}"
+                        {modelPicked.data.screen.display.diagonalSizeInch}"
                         diagonal
                       </td>
                     </tr>
                     <tr>
                       <td>Resolution</td>
                       <td>
-                        {modelPicked.model.screen.resolution.wPx} x{" "}
-                        {modelPicked.model.screen.resolution.hPx} pixels
+                        {modelPicked.data.screen.resolution.wPx} x{" "}
+                        {modelPicked.data.screen.resolution.hPx} pixels
                       </td>
                     </tr>
                     <tr>
                       <td>Brightness</td>
                       <td>
-                        {modelPicked.model.screen.brightness.minNits} -{" "}
-                        {modelPicked.model.screen.brightness.maxNits} nits
+                        {modelPicked.data.screen.brightness.minNits} -{" "}
+                        {modelPicked.data.screen.brightness.maxNits} nits
                       </td>
                     </tr>
                     <tr>
                       <td>Glass Material</td>
                       <td>
-                        {safeString(modelPicked.model.screen.glassMaterial)}
+                        {safeString(modelPicked.data.screen.glassMaterial)}
                       </td>
                     </tr>
                     <tr>
                       <td>Bezel Material</td>
                       <td>
-                        {safeString(modelPicked.model.screen.bezelMaterial)}
+                        {safeString(modelPicked.data.screen.bezelMaterial)}
                       </td>
                     </tr>
                     <tr>
                       <td>Shape</td>
                       <td>
-                        {modelPicked.model.screen.shape}
-                        {modelPicked.model.screen.isCircular
+                        {modelPicked.data.screen.shape}
+                        {modelPicked.data.screen.isCircular
                           ? " (Circular)"
                           : " (Rectangular)"}
                       </td>
@@ -159,9 +163,17 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Screen Dimensions</td>
                       <td>
-                        {modelPicked.model.screen.isCircular
-                          ? `Ø ${modelPicked.model.screen.diameterMm}mm`
-                          : `${modelPicked.model.screen.dimension.wMm}mm x ${modelPicked.model.screen.dimension.hMm}mm x ${modelPicked.model.screen.dimension.thicknessMm}mm`}
+                        {modelPicked.data.screen.isCircular
+                          ? `Ø ${modelPicked.data.screen.diameterMm}mm`
+                          : `${modelPicked.data.screen.dimension.wMm}mm x ${modelPicked.data.screen.dimension.hMm}mm x ${modelPicked.data.screen.dimension.thicknessMm}mm`}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Refresh Rate</td>
+                      <td>
+                        {modelPicked.data.screen.refreshRateHz
+                          ? modelPicked.data.screen.refreshRateHz + " Hz"
+                          : "N/A"}
                       </td>
                     </tr>
 
@@ -174,39 +186,33 @@ export default function ProductDetailSpecsModal({
                     </tr>
                     <tr>
                       <td>Chipset</td>
-                      <td>{safeString(modelPicked.model.config.chipset)}</td>
+                      <td>{safeString(modelPicked.data.config.chipset)}</td>
                     </tr>
                     <tr>
                       <td>Operating System</td>
                       <td>
                         <span className="d-inline-flex align-items-center">
-                          {modelPicked.model.config.os.logoUrl && (
+                          {modelPicked.data.config.os.logoUrl && (
                             <img
-                              src={modelPicked.model.config.os.logoUrl}
-                              alt={`${modelPicked.model.config.os.name} logo`}
-                              style={{
-                                width: "20px",
-                                height: "20px",
-                                marginRight: "8px",
-                              }}
+                              src={modelPicked.data.config.os.logoUrl}
+                              alt={`${modelPicked.data.config.os.name} logo`}
+                              className="os-logo--g me-2"
                             />
                           )}
-                          {modelPicked.model.config.os.name}
+                          {modelPicked.data.config.os.name}
                         </span>
                       </td>
                     </tr>
                     <tr>
                       <td>Memory (RAM)</td>
                       <td>
-                        {bytesToMB(modelPicked.model.config.memory.ramBytes)}MB
+                        {bytesToMB(modelPicked.data.config.memory.ramBytes)}MB
                       </td>
                     </tr>
                     <tr>
                       <td>Storage</td>
                       <td>
-                        {bytesToMB(
-                          modelPicked.model.config.memory.storageBytes
-                        )}
+                        {bytesToMB(modelPicked.data.config.memory.storageBytes)}
                         MB
                       </td>
                     </tr>
@@ -223,51 +229,51 @@ export default function ProductDetailSpecsModal({
                     </tr>
                     <tr>
                       <td>Capacity</td>
-                      <td>{modelPicked.model.battery.capacityMah} mAh</td>
+                      <td>{modelPicked.data.battery.capacityMah} mAh</td>
                     </tr>
                     <tr>
                       <td>Charging Type</td>
                       <td>
-                        {safeString(modelPicked.model.battery.chargingType)}
+                        {safeString(modelPicked.data.battery.chargingType)}
                       </td>
                     </tr>
                     <tr>
                       <td>Full Charge Time</td>
                       <td>
-                        {formatTime(
-                          modelPicked.model.battery.timeFullChargeMin
+                        {formatMinTime(
+                          modelPicked.data.battery.timeFullChargeMin
                         )}
                       </td>
                     </tr>
                     <tr>
                       <td>Battery Life (AOD On)</td>
                       <td>
-                        {formatTime(
-                          modelPicked.model.battery.timeOnline.aodOnMin
+                        {formatMinTime(
+                          modelPicked.data.battery.timeOnline.aodOnMin
                         )}
                       </td>
                     </tr>
                     <tr>
                       <td>Battery Life (AOD Off)</td>
                       <td>
-                        {formatTime(
-                          modelPicked.model.battery.timeOnline.aodOffMin
+                        {formatMinTime(
+                          modelPicked.data.battery.timeOnline.aodOffMin
                         )}
                       </td>
                     </tr>
                     <tr>
                       <td>Typical Usage</td>
                       <td>
-                        {formatTime(
-                          modelPicked.model.battery.timeOnline.typicalUsageMin
+                        {formatMinTime(
+                          modelPicked.data.battery.timeOnline.typicalUsageMin
                         )}
                       </td>
                     </tr>
                     <tr>
                       <td>Standby Time</td>
                       <td>
-                        {formatTime(
-                          modelPicked.model.battery.timeOnline.standByMin
+                        {formatMinTime(
+                          modelPicked.data.battery.timeOnline.standByMin
                         )}
                       </td>
                     </tr>
@@ -281,15 +287,15 @@ export default function ProductDetailSpecsModal({
                     </tr>
                     <tr>
                       <td>Case Material</td>
-                      <td>{safeString(modelPicked.model.caseMaterial)}</td>
+                      <td>{safeString(modelPicked.data.caseMaterial)}</td>
                     </tr>
                     <tr>
                       <td>Weight</td>
-                      <td>{modelPicked.model.watchWeightMg}g</td>
+                      <td>{modelPicked.data.watchWeightMg}g</td>
                     </tr>
                     <tr>
                       <td>Compatible Band Width</td>
-                      <td>{modelPicked.model.compatibleBandLugWidthMm}mm</td>
+                      <td>{modelPicked.data.compatibleBandLugWidthMm}mm</td>
                     </tr>
 
                     {/* Connectivity */}
@@ -302,9 +308,9 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Connectivity Options</td>
                       <td>
-                        {modelPicked.model.config.connectivities &&
-                        modelPicked.model.config.connectivities.length > 0
-                          ? modelPicked.model.config.connectivities.map(
+                        {modelPicked.data.config.connectivities &&
+                        modelPicked.data.config.connectivities.length > 0
+                          ? modelPicked.data.config.connectivities.map(
                               (conn) => (
                                 <span
                                   key={conn}
@@ -320,9 +326,9 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Compatible Phone OS</td>
                       <td>
-                        {modelPicked.model.config.compatiblePhoneOs &&
-                        modelPicked.model.config.compatiblePhoneOs.length > 0
-                          ? modelPicked.model.config.compatiblePhoneOs.map(
+                        {modelPicked.data.config.compatiblePhoneOs &&
+                        modelPicked.data.config.compatiblePhoneOs.length > 0
+                          ? modelPicked.data.config.compatiblePhoneOs.map(
                               (os) => (
                                 <span
                                   key={os}
@@ -338,9 +344,9 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Compatible Apps</td>
                       <td>
-                        {modelPicked.model.config.appsConnect &&
-                        modelPicked.model.config.appsConnect.length > 0
-                          ? modelPicked.model.config.appsConnect.map((app) => (
+                        {modelPicked.data.config.appsConnect &&
+                        modelPicked.data.config.appsConnect.length > 0
+                          ? modelPicked.data.config.appsConnect.map((app) => (
                               <span
                                 key={app}
                                 className="badge bg-success text-light product-detail-specs-badge--g"
@@ -362,9 +368,9 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Built-in Sensors</td>
                       <td>
-                        {modelPicked.model.config.sensors &&
-                        modelPicked.model.config.sensors.length > 0
-                          ? modelPicked.model.config.sensors.map((sensor) => (
+                        {modelPicked.data.config.sensors &&
+                        modelPicked.data.config.sensors.length > 0
+                          ? modelPicked.data.config.sensors.map((sensor) => (
                               <span
                                 key={sensor}
                                 className="badge bg-info text-dark product-detail-specs-badge--g"
@@ -386,17 +392,17 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Resolution</td>
                       <td>
-                        {modelPicked.model.config.camera
-                          ? `${modelPicked.model.config.camera.resolutionMp} MP`
+                        {modelPicked.data.config.camera
+                          ? `${modelPicked.data.config.camera.resolutionMp} MP`
                           : "None"}
                       </td>
                     </tr>
                     <tr>
                       <td>Features</td>
                       <td>
-                        {modelPicked.model.config.camera?.features &&
-                        modelPicked.model.config.camera.features.length > 0
-                          ? modelPicked.model.config.camera.features.map(
+                        {modelPicked.data.config.camera?.features &&
+                        modelPicked.data.config.camera.features.length > 0
+                          ? modelPicked.data.config.camera.features.map(
                               (feature) => (
                                 <span
                                   key={feature}
@@ -420,7 +426,7 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Speaker & Microphone</td>
                       <td>
-                        {modelPicked.model.feature?.speakerAndMicrophone
+                        {modelPicked.data.feature?.speakerAndMicrophone
                           ? "Yes"
                           : "No"}
                       </td>
@@ -428,17 +434,17 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Water Resistance</td>
                       <td>
-                        {modelPicked.model.feature?.waterResistance
-                          ? modelPicked.model.feature.waterResistance.rating
+                        {modelPicked.data.feature?.waterResistance
+                          ? modelPicked.data.feature.waterResistance.rating
                           : "No"}
                       </td>
                     </tr>
                     <tr>
                       <td>Health Features</td>
                       <td>
-                        {modelPicked.model.feature?.utilities?.healths &&
-                        modelPicked.model.feature.utilities.healths.length > 0
-                          ? modelPicked.model.feature.utilities.healths.map(
+                        {modelPicked.data.feature?.utilities?.healths &&
+                        modelPicked.data.feature.utilities.healths.length > 0
+                          ? modelPicked.data.feature.utilities.healths.map(
                               (health) => (
                                 <span
                                   key={health}
@@ -454,9 +460,9 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Sports Features</td>
                       <td>
-                        {modelPicked.model.feature?.utilities?.sports &&
-                        modelPicked.model.feature.utilities.sports.length > 0
-                          ? modelPicked.model.feature.utilities.sports.map(
+                        {modelPicked.data.feature?.utilities?.sports &&
+                        modelPicked.data.feature.utilities.sports.length > 0
+                          ? modelPicked.data.feature.utilities.sports.map(
                               (sport) => (
                                 <span
                                   key={sport}
@@ -472,9 +478,9 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Special Features</td>
                       <td>
-                        {modelPicked.model.feature?.utilities?.specials &&
-                        modelPicked.model.feature.utilities.specials.length > 0
-                          ? modelPicked.model.feature.utilities.specials.map(
+                        {modelPicked.data.feature?.utilities?.specials &&
+                        modelPicked.data.feature.utilities.specials.length > 0
+                          ? modelPicked.data.feature.utilities.specials.map(
                               (special) => (
                                 <span
                                   key={special}
@@ -490,11 +496,11 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Notification Support</td>
                       <td>
-                        {modelPicked.model.feature
+                        {modelPicked.data.feature
                           ?.supportedAppsForNotifications &&
-                        modelPicked.model.feature.supportedAppsForNotifications
+                        modelPicked.data.feature.supportedAppsForNotifications
                           .length > 0
-                          ? modelPicked.model.feature.supportedAppsForNotifications.map(
+                          ? modelPicked.data.feature.supportedAppsForNotifications.map(
                               (app) => (
                                 <span
                                   key={app}
@@ -517,54 +523,46 @@ export default function ProductDetailSpecsModal({
                     </tr>
                     <tr>
                       <td>Band Width</td>
-                      <td>{variationPicked.variation.band.widthMm}mm</td>
+                      <td>{variationPicked.data.band.widthMm}mm</td>
                     </tr>
                     <tr>
                       <td>Lug Width</td>
-                      <td>{variationPicked.variation.band.lugWidthMm}mm</td>
+                      <td>{variationPicked.data.band.lugWidthMm}mm</td>
                     </tr>
                     <tr>
                       <td>Material</td>
-                      <td>
-                        {safeString(variationPicked.variation.band.material)}
-                      </td>
+                      <td>{safeString(variationPicked.data.band.material)}</td>
                     </tr>
                     <tr>
                       <td>Clasp Type</td>
-                      <td>
-                        {safeString(variationPicked.variation.band.claspType)}
-                      </td>
+                      <td>{safeString(variationPicked.data.band.claspType)}</td>
                     </tr>
                     <tr>
                       <td>Style</td>
-                      <td>
-                        {safeString(variationPicked.variation.band.style)}
-                      </td>
+                      <td>{safeString(variationPicked.data.band.style)}</td>
                     </tr>
                     <tr>
                       <td>Adjustable Range</td>
                       <td>
-                        {variationPicked.variation.band.adjustableRange.minMm}mm
-                        - {variationPicked.variation.band.adjustableRange.maxMm}
+                        {variationPicked.data.band.adjustableRange.minMm}mm -{" "}
+                        {variationPicked.data.band.adjustableRange.maxMm}
                         mm
                       </td>
                     </tr>
                     <tr>
                       <td>Weight</td>
-                      <td>{variationPicked.variation.band.weightMg}g</td>
+                      <td>{variationPicked.data.band.weightMg}g</td>
                     </tr>
                     <tr>
                       <td>Quick Release</td>
                       <td>
-                        {variationPicked.variation.band.quickRelease
-                          ? "Yes"
-                          : "No"}
+                        {variationPicked.data.band.quickRelease ? "Yes" : "No"}
                       </td>
                     </tr>
                     <tr>
                       <td>Water Resistant</td>
                       <td>
-                        {variationPicked.variation.band.waterResistance
+                        {variationPicked.data.band.waterResistance
                           ? "Yes"
                           : "No"}
                       </td>
@@ -572,7 +570,7 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Hypoallergenic</td>
                       <td>
-                        {variationPicked.variation.band.hypoallergenic
+                        {variationPicked.data.band.hypoallergenic
                           ? "Yes"
                           : "No"}
                       </td>
@@ -580,25 +578,23 @@ export default function ProductDetailSpecsModal({
                     <tr>
                       <td>Band Colors</td>
                       <td>
-                        {variationPicked.variation.band.colors.map(
-                          (color, idx) => (
+                        {variationPicked.data.band.colors.map((color, idx) => (
+                          <span
+                            key={`${color.hex}-${color.name}-${idx}`}
+                            className="d-inline-flex align-items-center me-2"
+                          >
                             <span
-                              key={`${color.hex}-${color.name}-${idx}`}
-                              className="d-inline-flex align-items-center me-2"
-                            >
-                              <span
-                                className="rounded-circle me-1"
-                                style={{
-                                  width: "12px",
-                                  height: "12px",
-                                  backgroundColor: color.hex,
-                                  border: "1px solid #dee2e6",
-                                }}
-                              ></span>
-                              {color.name}
-                            </span>
-                          )
-                        )}
+                              className="rounded-circle me-1"
+                              style={{
+                                width: ".75em",
+                                height: ".75em",
+                                backgroundColor: color.hex,
+                                border: "1px solid #dee2e6",
+                              }}
+                            ></span>
+                            {color.name}
+                          </span>
+                        ))}
                       </td>
                     </tr>
 
@@ -616,13 +612,13 @@ export default function ProductDetailSpecsModal({
                       <td>Release Date</td>
                       <td>
                         {new Date(
-                          modelPicked.model.releaseDate
+                          modelPicked.data.releaseDate
                         ).toLocaleDateString()}
                       </td>
                     </tr>
                     {/* <tr>
                       <td>Stock Quantity</td>
-                      <td>{variationPicked.variation.stockQuantity} units</td>
+                      <td>{variationPicked.data.stockQuantity} units</td>
                     </tr> */}
                   </tbody>
                 </table>

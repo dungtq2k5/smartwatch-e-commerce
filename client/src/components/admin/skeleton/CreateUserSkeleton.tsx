@@ -1,13 +1,16 @@
-export default function CreateUserSkeleton() {
+import { memo } from "react";
+import { Placeholder } from "react-bootstrap";
+
+const CreateUserSkeleton = memo(() => {
   return (
-    <div className="placeholder-glow">
+    <Placeholder as="div" animation="glow">
       {/* Heading */}
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="fs-2 mb-0 d-flex gap-2 w-100">
-          <span className="placeholder col-4" style={{ height: "38px" }}></span>
-          <span className="placeholder col-1" style={{ height: "38px" }}></span>
-          <span className="placeholder col-3" style={{ height: "38px" }}></span>
-        </h1>
+        <Placeholder as="h1" className="fs-2 mb-0 d-flex gap-2 w-100">
+          <Placeholder xs={4} style={{ height: "38px" }} />
+          <Placeholder xs={1} style={{ height: "38px" }} />
+          <Placeholder xs={3} style={{ height: "38px" }} />
+        </Placeholder>
       </div>
 
       {/* Form */}
@@ -18,75 +21,75 @@ export default function CreateUserSkeleton() {
             <div className="col-lg-8">
               {/* Full name */}
               <div className="mb-3">
-                <label className="form-label">
-                  <span className="placeholder col-2"></span>
-                </label>
-                <div className="placeholder col-12" style={{ height: "38px" }}></div>
+                <Placeholder as="label" className="form-label">
+                  <Placeholder xs={2} />
+                </Placeholder>
+                <Placeholder xs={12} style={{ height: "38px" }} />
               </div>
               {/* Email */}
               <div className="mb-3">
-                <label className="form-label">
-                  <span className="placeholder col-2"></span>
-                </label>
-                <div className="placeholder col-12" style={{ height: "38px" }}></div>
+                <Placeholder as="label" className="form-label">
+                  <Placeholder xs={2} />
+                </Placeholder>
+                <Placeholder xs={12} style={{ height: "38px" }} />
               </div>
               {/* Phone */}
               <div className="mb-3">
-                <label className="form-label">
-                  <span className="placeholder col-2"></span>
-                </label>
-                <div className="placeholder col-12" style={{ height: "38px" }}></div>
+                <Placeholder as="label" className="form-label">
+                  <Placeholder xs={2} />
+                </Placeholder>
+                <Placeholder xs={12} style={{ height: "38px" }} />
               </div>
               {/* Password */}
               <div className="mb-3">
-                <label className="form-label">
-                  <span className="placeholder col-3"></span>
-                </label>
-                <div className="placeholder col-12" style={{ height: "38px" }}></div>
+                <Placeholder as="label" className="form-label">
+                  <Placeholder xs={3} />
+                </Placeholder>
+                <Placeholder xs={12} style={{ height: "38px" }} />
               </div>
               <div className="row">
                 {/* Birth */}
                 <div className="col-md-6 mb-3">
-                  <label className="form-label">
-                    <span className="placeholder col-4"></span>
-                  </label>
-                  <div className="placeholder col-12" style={{ height: "38px" }}></div>
+                  <Placeholder as="label" className="form-label">
+                    <Placeholder xs={4} />
+                  </Placeholder>
+                  <Placeholder xs={12} style={{ height: "38px" }} />
                 </div>
                 {/* Gender */}
                 <div className="col-md-6 mb-3">
-                  <label className="form-label">
-                    <span className="placeholder col-3"></span>
-                  </label>
-                  <div className="placeholder col-12" style={{ height: "38px" }}></div>
+                  <Placeholder as="label" className="form-label">
+                    <Placeholder xs={3} />
+                  </Placeholder>
+                  <Placeholder xs={12} style={{ height: "38px" }} />
                 </div>
               </div>
               {/* Locked */}
               <div className="mb-3">
-                <span className="placeholder col-4" style={{ height: "24px" }}></span>
+                <Placeholder xs={4} style={{ height: "24px" }} />
               </div>
               {/* Roles */}
               <div>
-                <p className="form-label">
-                  <span className="placeholder col-1"></span>
-                </p>
+                <Placeholder as="p" className="form-label">
+                  <Placeholder xs={1} />
+                </Placeholder>
                 <div className="d-flex gap-3">
-                  <span className="placeholder col-2" style={{ height: "24px" }}></span>
-                  <span className="placeholder col-2" style={{ height: "24px" }}></span>
+                  <Placeholder xs={2} style={{ height: "24px" }} />
+                  <Placeholder xs={2} style={{ height: "24px" }} />
                 </div>
               </div>
             </div>
             {/* Right column */}
             <div className="col-lg-4">
               <div className="text-center">
-                <p className="fs-5 mb-3">
-                  <span className="placeholder col-4"></span>
-                </p>
-                <span
-                  className="placeholder rounded-circle mx-auto d-block"
+                <Placeholder as="p" className="fs-5 mb-3">
+                  <Placeholder xs={4} />
+                </Placeholder>
+                <Placeholder
+                  className="rounded-circle mx-auto d-block"
                   style={{ width: "128px", height: "128px" }}
-                ></span>
+                />
                 <div className="mt-3">
-                  <span className="placeholder col-5"></span>
+                  <Placeholder xs={5} />
                 </div>
               </div>
             </div>
@@ -94,11 +97,13 @@ export default function CreateUserSkeleton() {
         </div>
         <div className="card-footer text-end">
           <div className="d-flex justify-content-end gap-2">
-            <span className="placeholder" style={{ width: "90px", height: "38px" }}></span>
-            <span className="placeholder" style={{ width: "120px", height: "38px" }}></span>
+            <Placeholder.Button variant="secondary" style={{ width: "90px" }} />
+            <Placeholder.Button variant="primary" style={{ width: "120px" }} />
           </div>
         </div>
       </div>
-    </div>
+    </Placeholder>
   );
-}
+});
+
+export default CreateUserSkeleton;

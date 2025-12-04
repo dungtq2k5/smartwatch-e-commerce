@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useRoleStore } from "../../store/admin/roleStore";
-import type { AdminUserDetailResponse } from "../../../../common/types.common";
-import { formatError } from "../../../../common/utils.common";
-import ApiError from "../common/ApiError";
-import { useUserStore } from "../../store/admin/userStore";
-import defaultAvatar from "../../assets/default-avatar.webp";
+import { useRoleStore } from "../../../store/admin/roleStore";
+import type { AdminUserDetailResponse } from "../../../../../common/types.common";
+import { centsToUSD, formatError } from "../../../../../common/utils.common";
+import ApiError from "../../common/ApiError";
+import { useUserStore } from "../../../store/admin/userStore";
+import defaultAvatar from "../../../assets/default-avatar.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBank, faCreditCard } from "@fortawesome/free-solid-svg-icons";
-import { CARD_BRAND_ICONS } from "../../configs";
-import { useRefreshStore } from "../../store/admin/refreshStore";
-import DetailUserSkeleton from "./skeleton/DetailUserSkeleton";
+import { CARD_BRAND_ICONS } from "../../../configs";
+import { useRefreshStore } from "../../../store/admin/refreshStore";
+import DetailUserSkeleton from "../skeleton/DetailUserSkeleton";
 
 export default function DetailUser() {
   // DEV temp for testing
@@ -29,12 +29,12 @@ export default function DetailUser() {
     null
   );
 
-  const [isInitializing, setIsInitializing] = useState(false);
+  const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [apiErr, setApiErr] = useState<string | null>(null);
 
   // Fetch and set initial data: roles, userDetail
   useEffect(() => {
-    const handleFetchSetInitial = async (): Promise<void> => {
+    const handleFetchSetInitialData = async (): Promise<void> => {
       setIsInitializing(true);
       setApiErr(null);
 
@@ -55,7 +55,7 @@ export default function DetailUser() {
       }
     };
 
-    handleFetchSetInitial();
+    handleFetchSetInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, refreshSignal]);
 
@@ -74,12 +74,20 @@ export default function DetailUser() {
       ) : (
         <>
           {/* Heading */}
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h1 className="h3">User Details</h1>
-            <Link
-              to={`./update`}
-              className="btn btn-primary"
-            >
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="d-flex justify-content-between align-items-center">
+              <h1 className="fs-2 mb-0 d-flex gap-2">
+                <Link
+                  to={"/admin/users"}
+                  className="text-decoration-none text-black"
+                >
+                  User Management
+                </Link>
+                <p className="mb-0 fw-light">/</p>
+                User #ID {userDetail.id}
+              </h1>
+            </div>
+            <Link to={`./edit`} className="btn btn-primary">
               Edit this User
             </Link>
           </div>
@@ -145,6 +153,14 @@ export default function DetailUser() {
                       {userDetail.id}
                     </dd>
 
+                    <dt className="col-sm-5">Stripe Account ID</dt>
+                    <dd
+                      className="col-sm-7 text-truncate"
+                      title={userDetail.stripeCustomerId || "N/A"}
+                    >
+                      {userDetail.stripeCustomerId || "N/A"}
+                    </dd>
+
                     <dt className="col-sm-5">Gender</dt>
                     <dd className="col-sm-7 text-capitalize">
                       {userDetail.gender}
@@ -159,14 +175,7 @@ export default function DetailUser() {
 
                     <dt className="col-sm-5">Balance</dt>
                     <dd className="col-sm-7">
-                      $
-                      {(userDetail.userBalanceCents / 100).toLocaleString(
-                        "en-US",
-                        {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        }
-                      )}
+                      {centsToUSD(userDetail.userBalanceCents)}
                     </dd>
 
                     <dt className="col-sm-5">Auth Provider</dt>
@@ -194,9 +203,14 @@ export default function DetailUser() {
                         : "Never"}
                     </dd>
 
-                    <dt className="col-sm-5">Joined</dt>
+                    <dt className="col-sm-5">Joined(Created At)</dt>
                     <dd className="col-sm-7">
-                      {new Date(userDetail.createdAt).toLocaleDateString()}
+                      {new Date(userDetail.createdAt).toLocaleString()}
+                    </dd>
+
+                    <dt className="col-sm-5">Last Updated</dt>
+                    <dd className="col-sm-7">
+                      {new Date(userDetail.updatedAt).toLocaleString()}
                     </dd>
                   </dl>
                 </div>

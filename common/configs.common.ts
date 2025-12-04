@@ -98,8 +98,26 @@ export const PRODUCT_SEARCH_SORT_OPTIONS = [
   "model_asc",
   "createdAt_desc",
   "createdAt_asc",
+  "updatedAt_desc",
+  "updatedAt_asc",
   "basePriceCents_desc",
   "basePriceCents_asc",
+] as const;
+
+export const PRODUCT_MODEL_SEARCH_SORT_OPTIONS = [
+  // Must match the field names in the backend
+  "name_desc",
+  "name_asc",
+  "priceCents_desc",
+  "priceCents_asc",
+  "stockPriceCents_desc",
+  "stockPriceCents_asc",
+  "releaseDate_desc",
+  "releaseDate_asc",
+  "createdAt_desc",
+  "createdAt_asc",
+  "updatedAt_desc",
+  "updatedAt_asc",
 ] as const;
 
 export const PRODUCT_MOCK_OPTIONS = {
@@ -253,6 +271,8 @@ export const PRODUCT_MOCK_OPTIONS = {
     "Plastic",
   ] as const,
 
+  MODEL_SCREEN_REFRESH_RATE_OPTIONS: [30, 60, 90, 120] as const,
+
   MODEL_BEZEL_MATERIAL_OPTIONS: [
     "stainless steel",
     "aluminum",
@@ -323,3 +343,13 @@ export const  DEFAULT_BANK_ACCOUNT_COUNTRY = "VN"; // ISO 3166-1 alpha-2 country
 export const DEFAULT_CURRENCY = "usd";
 
 export const MIN_WITHDRAWAL_AMOUNT_CENTS = 1000; // $10.00
+
+export const MAX_ITEMS_FOR_CREATE_BULK_CART = 10; // Max 10 items can be added to cart at once
+
+export const MAX_USERS_TO_DELETE_BULK = 10;
+
+export const MAX_PRODUCTS_TO_DELETE_BULK = 5;
+
+export const MAX_PRODUCT_MODELS_TO_DELETE_BULK = 5;
+
+export const MAX_PRODUCT_IMG_UPLOAD = 8; // Max 8 images per product

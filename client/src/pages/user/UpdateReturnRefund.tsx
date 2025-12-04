@@ -37,21 +37,14 @@ import { WAITING_EMOJI } from "../../configs";
 import { useReturnStateStore } from "../../store/common/returnRefund/returnStateStore";
 import ConfirmSubmitModal from "../../components/user/modal/ConfirmSubmitModal";
 import ReturnUpdateSkeleton from "../../components/user/skeleton/ReturnUpdateSkeleton";
+import InvalidInputMsg from "../../components/common/InvalidInputMsg";
 
 type FormData = {
   reasonId: string;
-  imageUrls: {
-    val: File[];
-    err?: string;
-  };
-  currImageUrls: {
-    val: string[];
-  };
+  imageUrls: FormInput<File[]>;
+  currImageUrls: FormInput<string[], undefined>;
   buyerReason: FormInput;
-  userAddressIdToPickup: {
-    val: string;
-    err?: string;
-  };
+  userAddressIdToPickup: FormInput;
   estimatePickupDate: string;
 };
 
@@ -104,7 +97,7 @@ export default function ReturnRefundUpdate() {
 
   const [cancelReturnModal, setCancelReturnModal] = useState<boolean>(false);
 
-  // Fetch on initial or deps changes: orderReturn, returnReasons, addresses, setFormData
+  // Fetch set on initial or deps changes: orderReturn, returnReasons, addresses, setFormData
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       setProcess((prev) => ({
@@ -116,13 +109,13 @@ export default function ReturnRefundUpdate() {
 
       try {
         if (!returnId) {
-          throw new Error("Order ID or Return ID is required.");
+          throw new Error("Order ID or Return ID is missing.");
         }
 
-        const [fetchedReturn, , userAddresses] = await Promise.all([
+        const [fetchedReturn, userAddresses] = await Promise.all([
           getReturn(returnId),
-          fetchReturnReasons(),
           fetchAddresses(),
+          fetchReturnReasons(),
         ]);
 
         setOrderReturn(fetchedReturn);
@@ -329,8 +322,8 @@ export default function ReturnRefundUpdate() {
   );
 
   const genImgPreviews = useCallback(
-    (list: string[], type: "current" | "new"): JSX.Element[] => {
-      return list.map((src, idx) => (
+    (imgUrls: string[], type: "current" | "new"): JSX.Element[] => {
+      return imgUrls.map((src, idx) => (
         <li
           key={`${src} - ${idx}`}
           className="position-relative d-inline-block me-2 mb-2"
@@ -517,6 +510,7 @@ export default function ReturnRefundUpdate() {
         }
         return;
       }
+
       setProcess((prev) => ({
         ...prev,
         isProcessing: false,
@@ -706,6 +700,7 @@ export default function ReturnRefundUpdate() {
                             accept={ORDER_RETURN_IMG_ALLOWED_TYPES.join(",")}
                             aria-describedby="imgHelp"
                             multiple
+                            disabled={process.isProcessing}
                           />
                           <button
                             type="button"
@@ -734,13 +729,7 @@ export default function ReturnRefundUpdate() {
                           </button>
                         </div>
                         {formData.imageUrls.err && (
-                          <div className="text-danger small mt-1 ms-1">
-                            <FontAwesomeIcon
-                              icon={faTriangleExclamation}
-                              className="me-2"
-                            />
-                            {formData.imageUrls.err}
-                          </div>
+                          <InvalidInputMsg msg={formData.imageUrls.err} />
                         )}
                         <div id="imgHelp" className="form-text">
                           {ORDER_RETURN_IMG_HINT_MESSAGE}

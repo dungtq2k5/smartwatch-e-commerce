@@ -3,125 +3,26 @@ import {
   removeOddSpaces,
   isValidProductName,
   isValidDateTimeString,
-  isValidColorHex,
   isValidNumString,
   removeAllSpaces,
-  isValidListOfColorObj,
   isNoneArrObj,
   isEmptyObj,
   isValidBooleanString,
-} from "../../../common/utils.common";
+} from "../../../../common/utils.common";
 import {
+  PRODUCT_MODEL_SEARCH_SORT_OPTIONS,
   PRODUCT_NAME_MAX_LENGTH,
   PRODUCT_NAME_MIN_LENGTH,
-  PRODUCT_SEARCH_SORT_OPTIONS,
-  PRODUCT_TYPES,
-} from "../../../common/configs.common";
-import { HttpError } from "../errorHandler";
+} from "../../../../common/configs.common";
+import { HttpError } from "../../errorHandler";
 import {
   isArrayOfNonEmptyStrings,
   isPresent,
   isValidImgUrls,
-} from "../../utils/utils";
+} from "../../utils";
+import { isValidObjectId } from "mongoose";
 
-function sanitizeProductInput(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  console.log("▶️ ", "Sanitizing product input...");
-  const { name, type, description } = req.body;
-
-  if (typeof name === "string") {
-    req.body.name = removeOddSpaces(name);
-  }
-  if (typeof type === "string") {
-    req.body.type = removeOddSpaces(type).toLowerCase();
-  }
-  if (typeof description === "string") {
-    req.body.description = removeOddSpaces(description);
-  }
-
-  next();
-}
-
-function sanitizeModelVariationInput(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  console.log("▶️ ", "Sanitizing model input...");
-  const { name, color, band } = req.body;
-
-  if (typeof name === "string") {
-    req.body.name = removeOddSpaces(name);
-  }
-  if (isNoneArrObj(color) && !isEmptyObj(color)) {
-    if (typeof color.name === "string") {
-      req.body.color.name = removeOddSpaces(color.name);
-    }
-    if (typeof color.hex === "string") {
-      req.body.color.hex = removeOddSpaces(color.hex);
-    }
-  }
-  if (band) {
-    const { material, colors, claspType, style } = band;
-
-    if (typeof material === "string") {
-      req.body.band.material = removeOddSpaces(material);
-    }
-    if (
-      Array.isArray(colors) &&
-      colors.every(
-        (c: any) => typeof c.hex === "string" && typeof c.name === "string"
-      )
-    ) {
-      req.body.band.colors = colors.map((c: any) => ({
-        hex: removeOddSpaces(c.hex),
-        name: removeOddSpaces(c.name),
-      }));
-    }
-    if (typeof claspType === "string") {
-      req.body.band.claspType = removeOddSpaces(claspType);
-    }
-    if (typeof style === "string") {
-      req.body.band.style = removeOddSpaces(style);
-    }
-  }
-
-  next();
-}
-
-function sanitizeProductSearchInput(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  console.log("▶️ ", "Sanitizing product search input...");
-
-  // Since req.query can't be modifiable so we create a new query obj for the request
-  const sanitizedQuery = { ...req.query };
-  const { searchTerm, type, stopSelling } = sanitizedQuery;
-
-  if (typeof searchTerm === "string") {
-    sanitizedQuery.searchTerm = removeOddSpaces(searchTerm);
-  }
-  if (typeof type === "string") {
-    sanitizedQuery.type = removeOddSpaces(type).toLowerCase();
-  }
-  if (typeof stopSelling === "string") {
-    sanitizedQuery.stopSelling = removeAllSpaces(stopSelling.toLowerCase());
-  }
-
-  req["sanitizedQuery"] = sanitizedQuery;
-  next();
-}
-
-const sanitizeBrandInput = sanitizeProductInput;
-const sanitizeCategoryInput = sanitizeProductInput;
-const sanitizeOsInput = sanitizeProductInput;
-
-function sanitizeProductModelInput(
+function sanitizeModelInput(
   req: Request,
   res: Response,
   next: NextFunction
@@ -258,21 +159,36 @@ function sanitizeProductModelInput(
   next();
 }
 
-function sanitizeProductDetailQuery(
+function sanitizeModelSearchInput(
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
-  console.log("▶️ ", "Sanitizing product detail query input...");
-
+  console.log("▶️ ", "Sanitizing product model search input...");
+  // Since req.query can't be modifiable so we create a new query obj for the request
   const sanitizedQuery = { ...req.query };
-  const { modelStopSelling, variationStopSelling } = sanitizedQuery;
+  const { searchTerm, stopSelling } = sanitizedQuery;
 
-  if (typeof modelStopSelling === "string") {
-    sanitizedQuery.modelStopSelling = removeAllSpaces(
-      modelStopSelling.toLowerCase()
-    );
+  if (typeof searchTerm === "string") {
+    sanitizedQuery.searchTerm = removeOddSpaces(searchTerm);
   }
+  if (typeof stopSelling === "string") {
+    sanitizedQuery.stopSelling = removeAllSpaces(stopSelling.toLowerCase());
+  }
+
+  req["sanitizedQuery"] = sanitizedQuery;
+  next();
+}
+
+function sanitizeModelDetailQuery(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing product model detail query input...");
+  const sanitizedQuery = { ...req.query };
+  const { variationStopSelling } = sanitizedQuery;
+
   if (typeof variationStopSelling === "string") {
     sanitizedQuery.variationStopSelling = removeAllSpaces(
       variationStopSelling.toLowerCase()
@@ -283,467 +199,54 @@ function sanitizeProductDetailQuery(
   next();
 }
 
+function sanitizeModelDeleteManyInput(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing product model delete many input...");
+  const { modelIds } = req.body;
+
+  // Auto remove duplicates
+  if (modelIds && Array.isArray(modelIds)) {
+    req.body.modelIds = Array.from(new Set(modelIds));
+  }
+
+  next();
+}
+
 export function inputSanitizer(
   type:
-    | "product"
-    | "brand"
-    | "category"
-    | "os"
     | "model"
-    | "variation"
-    | "product search"
-    | "product details"
+    | "model search"
+    | "admin model search"
+    | "model details"
+    | "admin model details"
+    | "delete many"
 ): (req: Request, res: Response, next: NextFunction) => void {
   switch (type) {
-    case "product":
-      return sanitizeProductInput;
-    case "brand":
-      return sanitizeBrandInput;
-    case "category":
-      return sanitizeCategoryInput;
-    case "os":
-      return sanitizeOsInput;
     case "model":
-      return sanitizeProductModelInput;
-    case "variation":
-      return sanitizeModelVariationInput;
-    case "product search":
-      return sanitizeProductSearchInput;
-    case "product details":
-      return sanitizeProductDetailQuery;
+      return sanitizeModelInput;
+    case "model search":
+    case "admin model search":
+      return sanitizeModelSearchInput;
+    case "model details":
+    case "admin model details":
+      return sanitizeModelDetailQuery;
+    case "delete many":
+      return sanitizeModelDeleteManyInput;
   }
 }
 
-export function verifyProductInput(
-  type: "create" | "update" | "search" | "details"
-): (req: Request, res: Response, next: NextFunction) => void {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    console.log("▶️ ", "Validating product input...");
-
-    let errors: string[] = [];
-    try {
-      switch (type) {
-        case "create": {
-          console.log("Validating product creation input...");
-          const {
-            name,
-            type,
-            brandId,
-            categoryId,
-            imageUrls,
-            description,
-            stopSelling,
-            basePriceCents,
-          } = req.body;
-
-          if (!name) {
-            errors.push("name is required.");
-          } else if (!isValidProductName(name)) {
-            errors.push(
-              `name must be between
-              ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
-              and cannot contain special characters.`
-            );
-          }
-          if (!type) {
-            errors.push("type is required.");
-          } else if (!PRODUCT_TYPES.includes(type)) {
-            errors.push(
-              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`
-            );
-          }
-          if (!brandId) {
-            errors.push("ID is required.");
-          }
-          if (!categoryId) {
-            errors.push("ID is required.");
-          }
-          if (
-            isPresent(imageUrls) &&
-            !(await isValidImgUrls(imageUrls, "product"))
-          ) {
-            errors.push("image URLs must be an array of valid image URLs.");
-          }
-          if (typeof description !== "string" || !description) {
-            errors.push("description is required.");
-          }
-          if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
-            errors.push("stopSelling must be a boolean.");
-          }
-          if (basePriceCents === undefined) {
-            errors.push("base price is required.");
-          } else if (typeof basePriceCents !== "number" || basePriceCents < 0) {
-            errors.push("base price must be a non-negative number.");
-          }
-          break;
-        }
-        case "update": {
-          console.log("Validating product update input...");
-          const {
-            name,
-            type,
-            brandId,
-            categoryId,
-            imageUrls,
-            description,
-            stopSelling,
-            basePriceCents,
-          } = req.body;
-
-          if (name !== undefined && !isValidProductName(name)) {
-            errors.push(
-              `name must be between
-              ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
-              and cannot contain special characters.`
-            );
-          }
-          if (type !== undefined && !PRODUCT_TYPES.includes(type)) {
-            errors.push(
-              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`
-            );
-          }
-          if (
-            brandId !== undefined &&
-            (typeof brandId !== "string" || !brandId)
-          ) {
-            errors.push("ID must be a non-empty string.");
-          }
-          if (
-            categoryId !== undefined &&
-            (typeof categoryId !== "string" || !categoryId)
-          ) {
-            errors.push("ID must be a non-empty string.");
-          }
-          if (
-            isPresent(imageUrls) &&
-            !(await isValidImgUrls(imageUrls, "product"))
-          ) {
-            errors.push("image URLs must be an array of valid image URLs.");
-          }
-          if (
-            description !== undefined &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string.");
-          }
-          if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
-            errors.push("stopSelling must be a boolean.");
-          }
-          if (
-            basePriceCents !== undefined &&
-            (typeof basePriceCents !== "number" || basePriceCents < 0)
-          ) {
-            errors.push("base price must be a non-negative number.");
-          }
-          break;
-        }
-        case "search": {
-          console.log("Validating product search input...");
-          const {
-            limit,
-            offset,
-            searchTerm,
-            type,
-            brandId,
-            categoryId,
-            stopSelling,
-            priceCentsMin,
-            priceCentsMax,
-            sortBy,
-          } = req["sanitizedQuery"] || req.query;
-
-          if (limit !== undefined && !isValidNumString(limit)) {
-            errors.push("limit must be a valid number string.");
-          }
-          if (offset !== undefined && !isValidNumString(offset)) {
-            errors.push("offset must be a valid number string.");
-          }
-          if (
-            searchTerm !== undefined &&
-            (typeof searchTerm !== "string" || !searchTerm)
-          ) {
-            errors.push("search term must be a non-empty string.");
-          }
-          if (type !== undefined && !PRODUCT_TYPES.includes(type)) {
-            errors.push(
-              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`
-            );
-          }
-          if (
-            brandId !== undefined &&
-            (typeof brandId !== "string" || !brandId)
-          ) {
-            errors.push("ID must be a non-empty string.");
-          }
-          if (
-            categoryId !== undefined &&
-            (typeof categoryId !== "string" || !categoryId)
-          ) {
-            errors.push("ID must be a non-empty string.");
-          }
-          if (
-            stopSelling !== undefined &&
-            !isValidBooleanString(stopSelling)
-          ) {
-            errors.push("stopSelling must be a boolean string.");
-          }
-          if (priceCentsMin !== undefined) {
-            if (!isValidNumString(priceCentsMin)) {
-              errors.push("priceCentsMin must be a valid number string.");
-            } else if (parseInt(priceCentsMin as string, 10) < 0) {
-              errors.push("priceCentsMin must be a non-negative number.");
-            }
-          }
-          if (priceCentsMax !== undefined) {
-            if (!isValidNumString(priceCentsMax)) {
-              errors.push("priceCentsMax must be a valid number string.");
-            } else if (parseInt(priceCentsMax as string, 10) < 0) {
-              errors.push("priceCentsMax must be a non-negative number.");
-            }
-          }
-          if (
-            priceCentsMin !== undefined &&
-            priceCentsMax !== undefined &&
-            Number.parseInt(priceCentsMin as string, 10) >
-              Number.parseInt(priceCentsMax as string, 10)
-          ) {
-            errors.push("priceCentsMin cannot be greater than priceCentsMax.");
-          }
-          if (
-            sortBy !== undefined &&
-            !PRODUCT_SEARCH_SORT_OPTIONS.includes(sortBy)
-          ) {
-            errors.push(
-              `sortBy must be one of the following: ${PRODUCT_SEARCH_SORT_OPTIONS.join(
-                ", "
-              )}`
-            );
-          }
-          break;
-        }
-        case "details": {
-          console.log("Validating product details input...");
-          const { modelStopSelling, variationStopSelling } =
-            req["sanitizedQuery"] || req.query;
-
-          if (
-            modelStopSelling !== undefined &&
-            !["true", "false"].includes(modelStopSelling)
-          ) {
-            errors.push("modelStopSelling must be a boolean string.");
-          }
-          if (
-            variationStopSelling !== undefined &&
-            !["true", "false"].includes(variationStopSelling)
-          ) {
-            errors.push("variationStopSelling must be a boolean string.");
-          }
-          break;
-        }
-      }
-
-      if (errors.length > 0) {
-        throw new HttpError(400, errors);
-      }
-
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-}
-
-export function verifyBrandInput(
-  type: "create" | "update"
-): (req: Request, res: Response, next: NextFunction) => void {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    console.log("▶️ ", "Validating product brand input...");
-
-    let errors: string[] = [];
-    try {
-      switch (type) {
-        case "create": {
-          const { name, logoUrl, description } = req.body;
-
-          if (!name) {
-            errors.push("name is required.");
-          } else if (typeof name !== "string") {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(logoUrl) &&
-            !(await isValidImgUrls(logoUrl, "product"))
-          ) {
-            errors.push("logo URL must be a valid image URL.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string.");
-          }
-          break;
-        }
-        case "update": {
-          const { name, logoUrl, description } = req.body;
-
-          if (name !== undefined && (typeof name !== "string" || !name)) {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(logoUrl) &&
-            !(await isValidImgUrls(logoUrl, "product"))
-          ) {
-            errors.push("logo URL must be a valid image URL or null.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string or null.");
-          }
-          break;
-        }
-      }
-
-      if (errors.length > 0) {
-        throw new HttpError(400, errors);
-      }
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-}
-
-export function verifyCategoryInput(
-  type: "create" | "update"
-): (req: Request, res: Response, next: NextFunction) => void {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    console.log("▶️ ", "Validating product category input...");
-
-    let errors: string[] = [];
-    try {
-      switch (type) {
-        case "create": {
-          const { name, description } = req.body;
-
-          if (!name) {
-            errors.push("name is required.");
-          } else if (typeof name !== "string") {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string.");
-          }
-          break;
-        }
-        case "update": {
-          const { name, description } = req.body;
-
-          if (name !== undefined && (typeof name !== "string" || !name)) {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string or null.");
-          }
-          break;
-        }
-      }
-
-      if (errors.length > 0) {
-        throw new HttpError(400, errors);
-      }
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-}
-
-export function verifyOsInput(
-  type: "create" | "update"
-): (req: Request, res: Response, next: NextFunction) => void {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    console.log("▶️ ", "Validating product OS input...");
-
-    let errors: string[] = [];
-    try {
-      switch (type) {
-        case "create": {
-          const { name, logoUrl, description } = req.body;
-
-          if (!name) {
-            errors.push("name is required.");
-          } else if (typeof name !== "string") {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(logoUrl) &&
-            !(await isValidImgUrls(logoUrl, "product"))
-          ) {
-            errors.push("logo URL must be a valid image URL.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string.");
-          }
-          break;
-        }
-        case "update": {
-          const { name, logoUrl, description } = req.body;
-
-          if (name !== undefined && (typeof name !== "string" || !name)) {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(logoUrl) &&
-            !(await isValidImgUrls(logoUrl, "product"))
-          ) {
-            errors.push("logo URL must be a valid image URL.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string or null.");
-          }
-          break;
-        }
-      }
-
-      if (errors.length > 0) {
-        throw new HttpError(400, errors);
-      }
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-}
-
-export function verifyProductModelInput(
-  type: "create" | "update"
+export function verifyModelInput(
+  type:
+    | "create"
+    | "update"
+    | "search"
+    | "admin search"
+    | "details"
+    | "admin details"
+    | "delete many"
 ): (req: Request, res: Response, next: NextFunction) => void {
   return async (
     req: Request,
@@ -757,6 +260,7 @@ export function verifyProductModelInput(
       switch (type) {
         case "create": {
           const {
+            productId,
             name,
             priceCents,
             stockPriceCents,
@@ -772,6 +276,11 @@ export function verifyProductModelInput(
             stopSelling,
           } = req.body;
 
+          if (!productId) {
+            errors.push("productId is required.");
+          } else if (!isValidObjectId(productId)) {
+            errors.push("productId must be a valid ObjectId string.");
+          }
           if (!name) {
             errors.push("name is required.");
           } else if (!isValidProductName(name)) {
@@ -1057,6 +566,7 @@ export function verifyProductModelInput(
               diameterMm,
               dimension,
               shape,
+              refreshRateHz,
             } = screen;
             if (!display) {
               errors.push("screen display is required.");
@@ -1189,6 +699,12 @@ export function verifyProductModelInput(
               errors.push("screen shape is required.");
             } else if (typeof shape !== "string") {
               errors.push("screen shape must be a non-empty string.");
+            }
+            if (
+              refreshRateHz !== undefined &&
+              (typeof refreshRateHz !== "number" || refreshRateHz <= 0)
+            ) {
+              errors.push("screen refresh rate must be a positive number.");
             }
           }
           if (!caseMaterial) {
@@ -1533,6 +1049,7 @@ export function verifyProductModelInput(
                 diameterMm,
                 dimension,
                 shape,
+                refreshRateHz,
               } = screen;
               if (display !== undefined) {
                 if (!isNoneArrObj(display)) {
@@ -1662,6 +1179,12 @@ export function verifyProductModelInput(
               ) {
                 errors.push("screen shape must be a non-empty string.");
               }
+              if (
+                refreshRateHz !== undefined &&
+                (typeof refreshRateHz !== "number" || refreshRateHz <= 0)
+              ) {
+                errors.push("screen refresh rate must be a positive number.");
+              }
             }
           }
           if (
@@ -1694,446 +1217,146 @@ export function verifyProductModelInput(
           }
           break;
         }
-      }
-
-      if (errors.length > 0) {
-        throw new HttpError(400, errors);
-      }
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-}
-
-export function verifyModelVariationInput(
-  type: "create" | "update"
-): (req: Request, res: Response, next: NextFunction) => void {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    console.log("▶️ ", "Validating product variation model input...");
-
-    let errors: string[] = [];
-    try {
-      switch (type) {
-        case "create": {
+        case "search":
+        case "admin search": {
           const {
-            name,
-            color,
-            imageUrls,
-            additionalPriceCents,
-            band,
+            limit,
+            offset,
+            searchTerm,
+            productId,
+            priceCentsMin,
+            priceCentsMax,
+            stockPriceCentsMin,
+            stockPriceCentsMax,
+            releaseDateFrom,
+            releaseDateTo,
             stopSelling,
-          } = req.body;
+            sortBy,
+          } = req["sanitizedQuery"] || req.query;
 
-          if (!name) {
-            errors.push("name is required.");
-          } else if (!isValidProductName(name)) {
+          if (limit !== undefined && !isValidNumString(limit)) {
+            errors.push("limit must be a valid number string.");
+          }
+          if (offset !== undefined && !isValidNumString(offset)) {
+            errors.push("offset must be a valid number string.");
+          }
+          if (
+            searchTerm !== undefined &&
+            (typeof searchTerm !== "string" || !searchTerm)
+          ) {
+            errors.push("searchTerm must be a non-empty string.");
+          }
+          if (productId !== undefined && !isValidObjectId(productId)) {
+            errors.push("productId must be a valid ObjectId string.");
+          }
+          if (priceCentsMin !== undefined) {
+            if (!isValidNumString(priceCentsMin)) {
+              errors.push("priceCentsMin must be a valid number string.");
+            } else if (Number.parseInt(priceCentsMin as string, 10) < 0) {
+              errors.push("priceCentsMin must be a non-negative number.");
+            }
+          }
+          if (priceCentsMax !== undefined) {
+            if (!isValidNumString(priceCentsMax)) {
+              errors.push("priceCentsMax must be a valid number string.");
+            } else if (Number.parseInt(priceCentsMax as string, 10) < 0) {
+              errors.push("priceCentsMax must be a non-negative number.");
+            }
+          }
+          if (
+            priceCentsMin !== undefined &&
+            priceCentsMax !== undefined &&
+            Number.parseInt(priceCentsMin as string, 10) >
+              Number.parseInt(priceCentsMax as string, 10)
+          ) {
+            errors.push("priceCentsMin cannot be greater than priceCentsMax.");
+          }
+          if (stockPriceCentsMin !== undefined) {
+            if (!isValidNumString(stockPriceCentsMin)) {
+              errors.push("stockPriceCentsMin must be a valid number string.");
+            } else if (Number.parseInt(stockPriceCentsMin as string, 10) < 0) {
+              errors.push("stockPriceCentsMin must be a non-negative number.");
+            }
+          }
+          if (stockPriceCentsMax !== undefined) {
+            if (!isValidNumString(stockPriceCentsMax)) {
+              errors.push("stockPriceCentsMax must be a valid number string.");
+            } else if (Number.parseInt(stockPriceCentsMax as string, 10) < 0) {
+              errors.push("stockPriceCentsMax must be a non-negative number.");
+            }
+          }
+          if (
+            stockPriceCentsMin !== undefined &&
+            stockPriceCentsMax !== undefined &&
+            Number.parseInt(stockPriceCentsMin as string, 10) >
+              Number.parseInt(stockPriceCentsMax as string, 10)
+          ) {
             errors.push(
-              `name must be between
-              ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
-              and cannot contain special characters.`
+              "stockPriceCentsMin cannot be greater than stockPriceCentsMax."
             );
           }
-          if (!color) {
-            errors.push("color is required.");
-          } else if (!isNoneArrObj(color)) {
-            errors.push("color must be an object.");
+          if (
+            releaseDateFrom !== undefined &&
+            !isValidDateTimeString(releaseDateFrom)
+          ) {
+            errors.push("releaseDateFrom must be a valid date time string.");
+          }
+          if (
+            releaseDateTo !== undefined &&
+            !isValidDateTimeString(releaseDateTo)
+          ) {
+            errors.push("releaseDateTo must be a valid date time string.");
+          }
+          if (
+            releaseDateFrom !== undefined &&
+            releaseDateTo !== undefined &&
+            new Date(releaseDateFrom) > new Date(releaseDateTo)
+          ) {
+            errors.push("releaseDateFrom cannot be later than releaseDateTo.");
+          }
+          if (stopSelling !== undefined && !isValidBooleanString(stopSelling)) {
+            errors.push("stopSelling must be a valid boolean string.");
+          }
+          if (
+            sortBy !== undefined &&
+            !PRODUCT_MODEL_SEARCH_SORT_OPTIONS.includes(sortBy)
+          ) {
+            errors.push(
+              `sortBy must be one of the following: ${PRODUCT_MODEL_SEARCH_SORT_OPTIONS.join(
+                ", "
+              )}.`
+            );
+          }
+          break;
+        }
+        case "details":
+        case "admin details": {
+          const { variationStopSelling } = req["sanitizedQuery"] || req.query;
+
+          if (
+            variationStopSelling !== undefined &&
+            !isValidBooleanString(variationStopSelling)
+          ) {
+            errors.push("variationStopSelling must be a valid boolean string.");
+          }
+
+          break;
+        }
+        case "delete many": {
+          const { modelIds } = req.body;
+
+          if (!Array.isArray(modelIds) || modelIds.length === 0) {
+            errors.push("modelIds must be a non-empty array.");
           } else {
-            const { hex, name } = color;
-            if (!hex) {
-              errors.push("color hex is required.");
-            } else if (!isValidColorHex(hex)) {
-              errors.push("color hex must be a valid color hex.");
-            }
-            if (!name) {
-              errors.push("color name is required.");
-            } else if (typeof name !== "string") {
-              errors.push("color name must be a non-empty string.");
-            }
-          }
-          if (
-            isPresent(imageUrls) &&
-            !(await isValidImgUrls(imageUrls, "product"))
-          ) {
-            errors.push("image URLs must be an array of valid image URLs.");
-          }
-          if (
-            isPresent(additionalPriceCents) &&
-            (typeof additionalPriceCents !== "number" ||
-              additionalPriceCents < 0)
-          ) {
-            errors.push("additional price must be a non-negative number.");
-          }
-          if (!band) {
-            errors.push("band is required.");
-          } else if (!isNoneArrObj(band)) {
-            errors.push("band must be an object.");
-          } else {
-            const {
-              widthMm,
-              lugWidthMm,
-              material,
-              colors,
-              claspType,
-              adjustableRange,
-              style,
-              quickRelease,
-              waterResistance,
-              hypoallergenic,
-              weightMg,
-            } = band;
-
-            if (widthMm === undefined) {
-              errors.push("band width is required.");
-            } else if (typeof widthMm !== "number" || widthMm <= 0) {
-              errors.push("band width must be a positive number.");
-            }
-            if (lugWidthMm === undefined) {
-              errors.push("band lug width is required.");
-            } else if (typeof lugWidthMm !== "number" || lugWidthMm <= 0) {
-              errors.push("band lug width must be a positive number.");
-            }
-            if (!material) {
-              errors.push("band material is required.");
-            } else if (typeof material !== "string") {
-              errors.push("band material must be a non-empty string.");
-            }
-            if (!colors) {
-              errors.push("band colors are required.");
-            } else if (!isValidListOfColorObj(colors)) {
-              errors.push("band colors must be a list of valid color objects.");
-            }
-            if (!claspType) {
-              errors.push("band clasp type is required.");
-            } else if (typeof claspType !== "string") {
-              errors.push("band clasp type must be a non-empty string.");
-            }
-            if (!adjustableRange) {
-              errors.push("band adjustable range is required.");
-            } else if (!isNoneArrObj(adjustableRange)) {
-              errors.push("band adjustable range must be an object.");
-            } else {
-              const { minMm, maxMm } = adjustableRange;
-              let isValidRange = true;
-              if (minMm === undefined) {
-                errors.push("band adjustable range min is required.");
-                isValidRange = false;
-              } else if (typeof minMm !== "number" || minMm <= 0) {
+            for (const [idx, id] of modelIds.entries()) {
+              if (typeof id !== "string" || !id) {
                 errors.push(
-                  "band adjustable range min must be a positive number."
-                );
-                isValidRange = false;
-              }
-              if (maxMm === undefined) {
-                errors.push("band adjustable range max is required.");
-                isValidRange = false;
-              } else if (typeof maxMm !== "number" || maxMm <= 0) {
-                errors.push(
-                  "band adjustable range max must be a positive number."
-                );
-                isValidRange = false;
-              }
-              if (isValidRange && minMm >= maxMm) {
-                errors.push("band adjustable range min must be less than max.");
-              }
-            }
-            if (!style) {
-              errors.push("band style is required.");
-            } else if (typeof style !== "string") {
-              errors.push("band style must be a non-empty string.");
-            }
-            if (
-              quickRelease !== undefined &&
-              typeof quickRelease !== "boolean"
-            ) {
-              errors.push("band quick release must be a boolean.");
-            }
-            if (
-              waterResistance !== undefined &&
-              typeof waterResistance !== "boolean"
-            ) {
-              errors.push("band water resistance must be a boolean.");
-            }
-            if (
-              hypoallergenic !== undefined &&
-              typeof hypoallergenic !== "boolean"
-            ) {
-              errors.push("band hypoallergenic must be a boolean.");
-            }
-            if (weightMg === undefined) {
-              errors.push("band weight is required.");
-            } else if (typeof weightMg !== "number" || weightMg <= 0) {
-              errors.push("band weight must be a positive number.");
-            }
-          }
-          if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
-            errors.push("stopSelling must be a boolean.");
-          }
-          break;
-        }
-        case "update": {
-          const {
-            name,
-            color,
-            imageUrls,
-            additionalPriceCents,
-            band,
-            stopSelling,
-          } = req.body;
-
-          if (name !== undefined && !isValidProductName(name)) {
-            errors.push(
-              `name must be between
-              ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
-              and cannot contain special characters.`
-            );
-          }
-          if (color !== undefined) {
-            if (!isNoneArrObj(color)) {
-              errors.push("color must be an object.");
-            } else if (!isEmptyObj(color)) {
-              const { hex, name } = color;
-              if (hex !== undefined && !isValidColorHex(hex)) {
-                errors.push("color hex must be a valid color hex.");
-              }
-              if (name !== undefined && (typeof name !== "string" || !name)) {
-                errors.push("color name must be a non-empty string.");
-              }
-            }
-          }
-          if (
-            isPresent(imageUrls) &&
-            !(await isValidImgUrls(imageUrls, "product"))
-          ) {
-            errors.push("image URLs must be an array of valid image URLs.");
-          }
-          if (
-            additionalPriceCents !== undefined &&
-            (typeof additionalPriceCents !== "number" ||
-              additionalPriceCents < 0)
-          ) {
-            errors.push("additional price must be a non-negative number.");
-          }
-          if (band !== undefined) {
-            if (!isNoneArrObj(band)) {
-              errors.push("band must be an object.");
-            } else if (!isEmptyObj(band)) {
-              const {
-                widthMm,
-                lugWidthMm,
-                material,
-                colors,
-                claspType,
-                adjustableRange,
-                style,
-                quickRelease,
-                waterResistance,
-                hypoallergenic,
-                weightMg,
-              } = band;
-
-              if (
-                widthMm !== undefined &&
-                (typeof widthMm !== "number" || widthMm <= 0)
-              ) {
-                errors.push("band width must be a positive number.");
-              }
-              if (
-                lugWidthMm !== undefined &&
-                (typeof lugWidthMm !== "number" || lugWidthMm <= 0)
-              ) {
-                errors.push("band lug width must be a positive number.");
-              }
-              if (
-                material !== undefined &&
-                (typeof material !== "string" || !material)
-              ) {
-                errors.push("band material must be a non-empty string.");
-              }
-              if (isPresent(colors) && !isValidListOfColorObj(colors)) {
-                errors.push(
-                  "band colors must be a list of valid color objects."
+                  `modelIds[${idx}] is invalid. Each modelId must be a non-empty string.`
                 );
               }
-              if (
-                claspType !== undefined &&
-                (typeof claspType !== "string" || !claspType)
-              ) {
-                errors.push("band clasp type must be a non-empty string.");
-              }
-              if (adjustableRange !== undefined) {
-                if (!isNoneArrObj(adjustableRange)) {
-                  errors.push("band adjustable range must be an object.");
-                } else if (!isEmptyObj(adjustableRange)) {
-                  const { minMm, maxMm } = adjustableRange;
-                  let isValidRange = true;
-
-                  if (
-                    minMm !== undefined &&
-                    (typeof minMm !== "number" || minMm <= 0)
-                  ) {
-                    errors.push(
-                      "band adjustable range min must be a positive number."
-                    );
-                    isValidRange = false;
-                  }
-                  if (
-                    maxMm !== undefined &&
-                    (typeof maxMm !== "number" || maxMm <= 0)
-                  ) {
-                    errors.push(
-                      "band adjustable range max must be a positive number."
-                    );
-                    isValidRange = false;
-                  }
-                  // Only check if both are defined, for partial updates check will be handled in controllers
-                  if (
-                    isValidRange &&
-                    minMm !== undefined &&
-                    maxMm !== undefined &&
-                    minMm >= maxMm
-                  ) {
-                    errors.push(
-                      "band adjustable range min must be less than max."
-                    );
-                  }
-                }
-              }
-              if (
-                style !== undefined &&
-                (typeof style !== "string" || !style)
-              ) {
-                errors.push("band style must be a non-empty string.");
-              }
-              if (
-                quickRelease !== undefined &&
-                typeof quickRelease !== "boolean"
-              ) {
-                errors.push("band quick release must be a boolean.");
-              }
-              if (
-                waterResistance !== undefined &&
-                typeof waterResistance !== "boolean"
-              ) {
-                errors.push("band water resistance must be a boolean.");
-              }
-              if (
-                hypoallergenic !== undefined &&
-                typeof hypoallergenic !== "boolean"
-              ) {
-                errors.push("band hypoallergenic must be a boolean.");
-              }
-              if (
-                weightMg !== undefined &&
-                (typeof weightMg !== "number" || weightMg <= 0)
-              ) {
-                errors.push("band weight must be a positive number.");
-              }
             }
           }
-          if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
-            errors.push("stopSelling must be a boolean.");
-          }
-          break;
-        }
-      }
 
-      if (errors.length > 0) {
-        throw new HttpError(400, errors);
-      }
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-}
-
-export function verifyVariationInstanceInput(
-  type: "create" | "update"
-): (req: Request, res: Response, next: NextFunction) => void {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    console.log("▶️ ", "Validating instance input...");
-
-    let errors: string[] = [];
-    try {
-      switch (type) {
-        case "create": {
-          const {
-            supplierSerialNumber,
-            supplierImeiNumber,
-            conditionId,
-            isActive,
-          } = req.body;
-
-          if (!supplierSerialNumber) {
-            errors.push(
-              "Variation instance supplier serial number is required."
-            );
-          } else if (typeof supplierSerialNumber !== "string") {
-            errors.push(
-              "Variation instance supplier serial number must be a none-empty string."
-            );
-          }
-          if (
-            isPresent(supplierImeiNumber) &&
-            (typeof supplierImeiNumber !== "string" || !supplierImeiNumber)
-          ) {
-            errors.push(
-              "Variation instance supplier IMEI number must be a none-empty string."
-            );
-          }
-          if (
-            isPresent(conditionId) &&
-            (typeof conditionId !== "string" || !conditionId)
-          ) {
-            errors.push(
-              "Variation instance condition ID must be a none-empty string."
-            );
-          }
-          if (isActive !== undefined && typeof isActive !== "boolean") {
-            errors.push("Variation instance isActive must be a boolean.");
-          }
-          break;
-        }
-        case "update": {
-          const {
-            supplierSerialNumber,
-            supplierImeiNumber,
-            conditionId,
-            isActive,
-          } = req.body;
-
-          if (
-            supplierSerialNumber !== undefined &&
-            (typeof supplierSerialNumber !== "string" || !supplierSerialNumber)
-          ) {
-            errors.push(
-              "Variation instance supplier serial number must be a none-empty string."
-            );
-          }
-          if (
-            isPresent(supplierImeiNumber) &&
-            (typeof supplierImeiNumber !== "string" || !supplierImeiNumber)
-          ) {
-            errors.push(
-              "Variation instance supplier IMEI number must be a none-empty string or null."
-            );
-          }
-          if (
-            isPresent(conditionId) &&
-            (typeof conditionId !== "string" || !conditionId)
-          ) {
-            errors.push(
-              "Variation instance condition ID must be a none-empty string."
-            );
-          }
-          if (isActive !== undefined && typeof isActive !== "boolean") {
-            errors.push("Variation instance isActive must be a boolean.");
-          }
           break;
         }
       }

@@ -2,18 +2,31 @@ import { Request, Response, NextFunction } from "express";
 import {
   ProductModelCreate,
   ProductModelListResponse,
+  ProductModelSearchQuery,
   ProductModelResponse,
   ProductModelUpdate,
   SuccessResponse,
+  AdminProductModelListResponse,
+  ProductModelDetailQuery,
+  AdminProductModelResponseForList,
+  AdminProductModelDetailResponse,
+  AdminModelVariationResponse,
+  ProductModelBulkDelete,
 } from "../../../common/types.common";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { HttpError } from "../../utils/errorHandler";
 import Product from "../../models/product/product.model";
 import ProductModel, {
   IProductModel,
 } from "../../models/product/productModel.model";
 import ProductOs from "../../models/product/productOs.model";
-import { formatProductModelResponse, isPresent } from "../../utils/utils";
+import {
+  formatAdminModelVariationResponse,
+  formatAdminProductModelResponse,
+  formatAdminProductModelResponseForList,
+  formatProductModelResponse,
+  isPresent,
+} from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 import ModelVariation from "../../models/product/modelVariation.model";
 import {
@@ -21,6 +34,12 @@ import {
   isEmptyObj,
   shallowMerge,
 } from "../../../common/utils.common";
+import Cart from "../../models/user/cart.model";
+import {
+  OPTIMIZE_CREATED_BY_PIPELINE,
+  OPTIMIZE_PIPELINE,
+} from "../../configs/configs";
+import { MAX_PRODUCT_MODELS_TO_DELETE_BULK } from "../../../common/configs.common";
 
 export async function create(
   req: Request,
@@ -38,7 +57,23 @@ export async function create(
       )
     );
   }
-  const { productId } = req.params;
+
+  const {
+    productId,
+    name,
+    priceCents,
+    stockPriceCents,
+    imageUrls,
+    feature,
+    config,
+    battery,
+    screen,
+    caseMaterial,
+    watchWeightMg,
+    compatibleBandLugWidthMm,
+    releaseDate,
+    stopSelling,
+  } = req.body as ProductModelCreate;
 
   try {
     // Check if product exists
@@ -49,22 +84,6 @@ export async function create(
     if (!product || product.isDeleted) {
       throw new HttpError(404, "Product not found");
     }
-
-    const {
-      name,
-      priceCents,
-      stockPriceCents,
-      imageUrls,
-      feature,
-      config,
-      battery,
-      screen,
-      caseMaterial,
-      watchWeightMg,
-      compatibleBandLugWidthMm,
-      releaseDate,
-      stopSelling,
-    } = req.body as ProductModelCreate;
 
     // Check if releaseDate is valid
     if (releaseDate && new Date(releaseDate) > new Date()) {
@@ -160,6 +179,279 @@ export async function get(
       data: formatProductModelResponse(model),
     } as SuccessResponse<ProductModelResponse>);
     console.log("✅ ", "Product model retrieved successfully");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function adminGetDetails(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Getting product model details for admin...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const { modelId } = req.params;
+  const reqQuery = req["sanitizedQuery"] as ProductModelDetailQuery;
+
+  const variationQueryMatch: any = { isDeleted: false };
+  if (reqQuery.variationStopSelling) {
+    variationQueryMatch.stopSelling = reqQuery.variationStopSelling === "true";
+  }
+
+  try {
+    // Check if model exists
+    if (!Types.ObjectId.isValid(modelId)) {
+      throw new HttpError(404, "Product model not found");
+    }
+
+    const modelDetails = await ProductModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          _id: new Types.ObjectId(modelId),
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+      {
+        $lookup: {
+          from: "productos",
+          localField: "config.osId",
+          foreignField: "_id",
+          as: "config.os",
+          pipeline: [OPTIMIZE_PIPELINE],
+        },
+      },
+      { $unwind: "$config.os" },
+      {
+        $project: { "config.osId": 0 },
+      },
+      {
+        $lookup: {
+          from: "modelvariations",
+          localField: "_id",
+          foreignField: "productModelId",
+          as: "variations",
+          pipeline: [
+            { $match: variationQueryMatch },
+            {
+              $lookup: {
+                from: "users",
+                localField: "createdBy",
+                foreignField: "_id",
+                as: "createdBy",
+                pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+              },
+            },
+            { $unwind: "$createdBy" },
+            OPTIMIZE_PIPELINE,
+          ],
+        },
+      },
+    ]);
+
+    if (modelDetails.length === 0) {
+      throw new HttpError(404, "Product model not found");
+    }
+
+    const modelDetail = modelDetails[0];
+
+    const formattedModelVariations: AdminModelVariationResponse[] =
+      modelDetail.variations.map(formatAdminModelVariationResponse);
+    const { totalVariations, ...restModelDetail } =
+      formatAdminProductModelResponse(modelDetail);
+
+    res.status(200).json({
+      success: true,
+      message: "Product model details retrieved successfully",
+      data: {
+        ...restModelDetail,
+        variations: {
+          total: formattedModelVariations.length,
+          variations: formattedModelVariations,
+        },
+      },
+    } as SuccessResponse<AdminProductModelDetailResponse>);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function adminSearch(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Searching product models...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const reqQuery = req["sanitizedQuery"] as ProductModelSearchQuery;
+
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const query: any = {};
+
+  if (reqQuery.searchTerm) {
+    query.$or = [
+      {
+        _id: Types.ObjectId.isValid(reqQuery.searchTerm)
+          ? new Types.ObjectId(reqQuery.searchTerm)
+          : undefined,
+      },
+      {
+        productId: Types.ObjectId.isValid(reqQuery.searchTerm)
+          ? new Types.ObjectId(reqQuery.searchTerm)
+          : undefined,
+      },
+      { name: { $regex: reqQuery.searchTerm, $options: "i" } },
+    ];
+  }
+
+  if (reqQuery.priceCentsMin) {
+    query.priceCents = {
+      $gte: Number.parseInt(reqQuery.priceCentsMin, 10),
+    };
+  }
+  if (reqQuery.priceCentsMax) {
+    query.priceCents = {
+      ...query.priceCents,
+      $lte: Number.parseInt(reqQuery.priceCentsMax, 10),
+    };
+  }
+
+  if (reqQuery.stockPriceCentsMin) {
+    query.stockPriceCents = {
+      $gte: Number.parseInt(reqQuery.stockPriceCentsMin, 10),
+    };
+  }
+  if (reqQuery.stockPriceCentsMax) {
+    query.stockPriceCents = {
+      ...query.stockPriceCents,
+      $lte: Number.parseInt(reqQuery.stockPriceCentsMax, 10),
+    };
+  }
+
+  if (reqQuery.releaseDateFrom) {
+    query.releaseDate = {
+      $gte: new Date(reqQuery.releaseDateFrom),
+    };
+  }
+  if (reqQuery.releaseDateTo) {
+    query.releaseDate = {
+      ...query.releaseDate,
+      $lte: new Date(reqQuery.releaseDateTo),
+    };
+  }
+
+  if (reqQuery.stopSelling !== undefined) {
+    query.stopSelling = reqQuery.stopSelling === "true";
+  }
+
+  const sort = (reqQuery.sortBy || "createdAt").split("_");
+  const sortField = sort[0];
+  const sortBy = sort[1] === "desc" ? -1 : 1;
+  const sortStage: any = { [sortField]: sortBy, _id: 1 };
+
+  try {
+    const aggregationResult = await ProductModel.aggregate([
+      { $match: { isDeleted: false, ...query } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+      {
+        $lookup: {
+          from: "modelvariations",
+          localField: "_id",
+          foreignField: "productModelId",
+          as: "variations",
+          pipeline: [{ $match: { isDeleted: false } }],
+        },
+      },
+      {
+        $addFields: {
+          totalVariations: { $size: "$variations" },
+        },
+      },
+      {
+        $project: { variations: 0 },
+      },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $sort: sortStage }, { $skip: offset }, { $limit: limit }],
+        },
+      },
+    ]);
+
+    const models: AdminProductModelResponseForList[] =
+      aggregationResult[0].data.map(formatAdminProductModelResponseForList);
+    const total: number = aggregationResult[0].metadata[0]?.total || 0;
+
+    res.status(200).json({
+      success: true,
+      message: "Product models retrieved successfully",
+      data: {
+        total,
+        models: {
+          total: models.length,
+          models,
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<AdminProductModelListResponse>);
+    console.log("✅ ", "Product models retrieved successfully");
   } catch (error) {
     next(error);
   }
@@ -441,6 +733,8 @@ export async function update(
       model.screen.diameterMm = updatedIsCircular ? updatedDiameterMm : null;
       model.screen.dimension = !updatedIsCircular ? updatedDimension : null;
       model.screen.shape = updateData.screen.shape || model.screen.shape;
+      model.screen.refreshRateHz =
+        updateData.screen.refreshRateHz ?? model.screen.refreshRateHz;
     }
     model.caseMaterial = updateData.caseMaterial || model.caseMaterial;
     model.watchWeightMg = updateData.watchWeightMg || model.watchWeightMg;
@@ -479,7 +773,10 @@ export async function remove(
       )
     );
   }
+
   const { modelId } = req.params;
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
     // Check if model exists
@@ -489,20 +786,14 @@ export async function remove(
     const model = await ProductModel.findOne({
       isDeleted: false,
       _id: modelId,
-    });
+    }).session(session);
     if (!model) {
       throw new HttpError(404, "Product model not found");
     }
 
-    // Check if product exists
-    const product = await Product.findById(model.productId)
-      .select("isDeleted")
-      .lean();
-    if (!product || product.isDeleted) {
-      throw new HttpError(404, "Product of this model not found.");
-    }
+    await executeDeletion(model, new Types.ObjectId(reqUserId), session);
 
-    await executeDeletion(model, new Types.ObjectId(reqUserId));
+    await session.commitTransaction();
 
     res.status(200).json({
       success: true,
@@ -510,7 +801,72 @@ export async function remove(
     } as SuccessResponse<null>);
     console.log("✅ ", "Product model removed successfully");
   } catch (error) {
+    await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
+export async function removeBulk(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Removing multiple product models...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const { modelIds: modelIdsToDelete } = req.body as ProductModelBulkDelete;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (modelIdsToDelete.length > MAX_PRODUCT_MODELS_TO_DELETE_BULK) {
+      throw new HttpError(
+        400,
+        `Cannot delete more than ${MAX_PRODUCT_MODELS_TO_DELETE_BULK} product models at once.`
+      );
+    }
+
+    // Delete models, if models not found -> skip and continue
+    for (const modelId of modelIdsToDelete) {
+      const model = Types.ObjectId.isValid(modelId)
+        ? await ProductModel.findById(modelId).session(session)
+        : null;
+      if (model && !model.isDeleted) {
+        await executeDeletion(model, new Types.ObjectId(reqUserId), session);
+      }
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "Product models removed successfully",
+    } as SuccessResponse<null>);
+    console.log("✅ ", "Product models removed successfully");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
   }
 }
 
@@ -519,30 +875,29 @@ async function hasConstraints(modelId: Types.ObjectId): Promise<boolean> {
   console.log("▶️ ", "Checking model constraints...");
 
   try {
-    /**
-      None-blocking constraints: none
-      Blocking constraints:
-        - ModelVariation (productModelId)
+    /*
+      None-blocking constraints: productModel -> modelVariation -> (in users' carts)
+      Blocking constraints: productModel -> modelVariation (stockQuantity > 0)
     */
-    const constraintChecks = [
-      ModelVariation.exists({ productModelId: modelId }),
-    ];
 
-    const results = await Promise.all(constraintChecks);
-    const hasConstraints = results.some((result) => result !== null);
+    const hasStock = await ModelVariation.exists({
+      productModelId: modelId,
+      stockQuantity: { $gt: 0 },
+    });
 
-    if (hasConstraints) {
+    if (hasStock) {
       console.log(
         `▶️ `,
         `Critical constraints found for model: ${modelId}. Soft delete required.`
       );
-    } else {
-      console.log(
-        `✅ `,
-        `No critical constraints found for model: ${modelId}. Hard delete allowed.`
-      );
+      return true;
     }
-    return hasConstraints;
+
+    console.log(
+      `✅ `,
+      `No critical constraints found for model: ${modelId}. Hard delete allowed.`
+    );
+    return false;
   } catch (error) {
     console.error("❌ ", "Error checking model constraints:", error);
     throw error;
@@ -551,26 +906,73 @@ async function hasConstraints(modelId: Types.ObjectId): Promise<boolean> {
 
 async function executeDeletion(
   modelToDelete: IProductModel,
-  deletedBy: Types.ObjectId
+  deletedBy: Types.ObjectId,
+  session: mongoose.ClientSession
 ): Promise<void> {
   try {
-    if (await hasConstraints(modelToDelete._id)) {
-      // Soft delete
-      await ProductModel.findByIdAndUpdate(modelToDelete._id, {
+    /*
+      Business logic:
+        - Check root constrains (stockQuantity in modelVariation) before make hard or soft delete.
+        - Hard delete: delete related variations (also in user's cart) -> delete model -> delete images from Firebase Storage.
+        - Soft delete: soft delete related variations -> soft delete model.
+    */
+
+    const modelId = modelToDelete._id;
+    const variations = await ModelVariation.find({
+      productModelId: modelToDelete._id,
+    })
+      .session(session)
+      .lean();
+    const variationIds = variations.map((variation) => variation._id);
+
+    if (await hasConstraints(modelId)) {
+      // -- Soft delete
+      console.log(`▶️ `, `Soft deleting model ${modelId} and its children...`);
+
+      const softDeleteUpdate = {
         isDeleted: true,
         deletedAt: new Date(),
         deletedBy,
-      });
+      };
+
+      // Soft delete variations
+      if (variationIds.length > 0) {
+        await ModelVariation.updateMany(
+          { _id: { $in: variationIds } },
+          softDeleteUpdate
+        ).session(session);
+      }
+
+      // Soft delete model
+      await ProductModel.findByIdAndUpdate(modelId, softDeleteUpdate).session(
+        session
+      );
       return;
     }
 
-    // Handle remove imageUrls on Firebase Storage
-    await deleteManyFileFromFirebaseStorage(
-      modelToDelete.imageUrls,
-      "product-image"
-    );
+    // -- Hard delete
+    console.log(`▶️ `, `Hard deleting model ${modelId} and its children...`);
 
-    await ProductModel.findByIdAndDelete(modelToDelete._id);
+    // Delete variations and carts
+    if (variationIds.length > 0) {
+      await Cart.deleteMany({ variationId: { $in: variationIds } }).session(
+        session
+      );
+      await ModelVariation.deleteMany({ _id: { $in: variationIds } }).session(
+        session
+      );
+    }
+
+    // Delete model
+    await ProductModel.findByIdAndDelete(modelId).session(session);
+
+    // Delete images from Firebase Storage
+    const imgUrls = modelToDelete.imageUrls;
+    for (const variation of variations) imgUrls.push(...variation.imageUrls);
+
+    if (imgUrls.length > 0) {
+      await deleteManyFileFromFirebaseStorage(imgUrls, "product-image");
+    }
   } catch (error) {
     console.error("❌ ", "Error deleting product model:", error);
     throw error;

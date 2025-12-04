@@ -1,22 +1,19 @@
 import type { JSX } from "react";
 import type {
+  AdminProductModelResponse,
+  AdminProductResponse,
   AdminUserResponse,
   BaseUserAddress,
-  ModelVariationResponse,
   OrderReturnSearchQuery,
-  ProductModelResponse,
   UserCartResponse,
 } from "../../../common/types.common";
 
-export type FormInput<T = string> = {
-  val: T;
-  err?: string;
+export type FormInput<ValT = string, ErrT = string> = {
+  val: ValT;
+  err?: ErrT;
 };
 
-export type FormFileInput = {
-  file: File | string | null; // File when uploading, string when first loaded from server (url string), null when want to remove image
-  err?: string | string[];
-};
+export type FormFileInput = FormInput<File | string | null, string | string[]>; // File when uploading, string when first loaded from server (url string), null when want to remove image
 
 export type UserAddressFormat = Pick<
   BaseUserAddress,
@@ -39,21 +36,10 @@ export type AddressFormData = {
   isDefault: boolean;
 };
 
-type Picked = {
+export type ItemPicked<ItemT> = {
   idx: number;
-};
-
-export type ModelPicked =
-  | (Picked & {
-      model: ProductModelResponse;
-    })
-  | undefined;
-
-export type VariationPicked =
-  | (Picked & {
-      variation: ModelVariationResponse;
-    })
-  | undefined;
+  data: ItemT;
+} | null;
 
 export type UserCartUpdate = {
   variationId: string;
@@ -87,21 +73,49 @@ export type AdminUserDisplayableField =
   | "accountStatus"
   | "actions";
 
-export type TableColDisplay<I> = {
+export type AdminProductDisplayableField =
+  | keyof Omit<AdminProductResponse, "imageUrls">
+  | "actions";
+
+export type AdminProductModelDisplayableField =
+  | keyof Omit<
+      AdminProductModelResponse,
+      "imageUrls" | "feature" | "config" | "battery" | "screen"
+    >
+  | "actions";
+
+export type TableColDisplay<Item, SortOption> = {
   label: string; // For header display
-  isSortable?: boolean;
-  sortKey?: { asc: string; desc: string };
   thClassName?: string; // Additional className for <th>
   tdClassName?: string; // Additional className for <td>
-  tdContent: (item: I) => JSX.Element; // For <td> content rendering
-  getCsvVal: (item: I) => string | number | boolean | null;
+  tdContent: (item: Item) => JSX.Element; // For <td> content rendering
+  getCsvVal: (item: Item) => string | number | boolean | null;
+} & (
+  | {
+      isSortable: true;
+      sortKey: { asc: SortOption; desc: SortOption };
+    }
+  | {
+      isSortable?: false;
+      sortKey?: never;
+    }
+);
+
+export type DisplayField<F extends string> = {
+  name: F;
+  visible: boolean;
+  exportable: boolean;
 };
 
-export type UserManagementConfig = {
-  displayFields: AdminUserDisplayableField[];
-  visibleFields: AdminUserDisplayableField[];
-};
+export type UserDisplayField = DisplayField<AdminUserDisplayableField>;
 
-export type Config = {
-  userManagementConfig: UserManagementConfig;
+export type ProductDisplayField = DisplayField<AdminProductDisplayableField>;
+
+export type ProductModelDisplayField =
+  DisplayField<AdminProductModelDisplayableField>;
+
+export type AdminConfig = {
+  userManagementDisplayFields: UserDisplayField[];
+  productManagementDisplayFields: ProductDisplayField[];
+  productModelManagementDisplayFields: ProductModelDisplayField[];
 };

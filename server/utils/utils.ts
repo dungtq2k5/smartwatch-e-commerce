@@ -440,6 +440,30 @@ export function formatProductResponse(
   };
 }
 
+export function formatAdminProductResponse(
+  product: any
+): commonType.AdminProductResponse {
+  return {
+    id: product._id,
+    name: product.name,
+    type: product.type,
+    brandId: product.brandId,
+    categoryId: product.categoryId,
+    imageUrls: product.imageUrls,
+    basePriceCents: product.basePriceCents,
+    description: product.description,
+    createdBy: {
+      id: product.createdBy._id,
+      fullName: product.createdBy.fullName,
+    },
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
+    stopSelling: product.stopSelling,
+    totalModels: product.totalModels,
+    totalVariations: product.totalVariations,
+  };
+}
+
 export function formatProductBrandResponse(
   brand: any
 ): commonType.ProductBrandResponse {
@@ -477,7 +501,6 @@ export function formatProductModelResponse(
     productId: model.productId,
     name: model.name,
     priceCents: model.priceCents,
-    stockPriceCents: model.stockPriceCents,
     imageUrls: model.imageUrls,
     feature: model.feature,
     config: {
@@ -497,6 +520,46 @@ export function formatProductModelResponse(
   };
 }
 
+export function formatAdminProductModelResponse(
+  model: any
+): commonType.AdminProductModelResponse {
+  return {
+    id: model._id,
+    productId: model.productId,
+    name: model.name,
+    priceCents: model.priceCents,
+    imageUrls: model.imageUrls,
+    feature: model.feature,
+    config: model.config,
+    battery: model.battery,
+    screen: model.screen,
+    caseMaterial: model.caseMaterial,
+    watchWeightMg: model.watchWeightMg,
+    compatibleBandLugWidthMm: model.compatibleBandLugWidthMm,
+    releaseDate: model.releaseDate,
+    createdBy: {
+      id: model.createdBy._id,
+      fullName: model.createdBy.fullName,
+    },
+    createdAt: model.createdAt,
+    updatedAt: model.updatedAt,
+    stopSelling: model.stopSelling,
+    stockPriceCents: model.stockPriceCents,
+    totalVariations: model.totalVariations,
+  };
+}
+
+export function formatAdminProductModelResponseForList(
+  model: any
+): commonType.AdminProductModelResponseForList {
+  const { config, ...restData } = formatAdminProductModelResponse(model);
+
+  return {
+    ...restData,
+    config: model.config,
+  };
+}
+
 export function formatModelVariationResponse(
   variation: any
 ): commonType.ModelVariationResponse {
@@ -513,6 +576,21 @@ export function formatModelVariationResponse(
     createdAt: variation.createdAt,
     updatedAt: variation.updatedAt,
     stopSelling: variation.stopSelling,
+  };
+}
+
+export function formatAdminModelVariationResponse(
+  variation: any
+): commonType.AdminModelVariationResponse {
+  const { createdBy, ...restData } = formatModelVariationResponse(variation);
+
+  return {
+    ...restData,
+    stockAdditionalPriceCents: variation.stockAdditionalPriceCents,
+    createdBy: {
+      id: variation.createdBy._id,
+      fullName: variation.createdBy.fullName,
+    },
   };
 }
 

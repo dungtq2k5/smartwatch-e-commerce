@@ -6,8 +6,8 @@ import type {
   OrderResponse,
   OrderSearchQuery,
   OrderUpdate,
-  OrderUpdateFulfillItem,
-  OrderUpdateSelf,
+  OrderFulfillItemUpdate,
+  OrderSelfUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
 import { HttpError } from "../../utils/errorHandler";
@@ -397,187 +397,193 @@ export async function getDetails(
 }
 
 // Handle both buyer and admin search
-export async function search(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  console.log("▶️ ", "Searching orders...");
+export function search(
+  type: "admin search" | "self search"
+): (req: Request, res: Response, next: NextFunction) => Promise<void> {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    console.log("▶️ ", "Searching orders...");
 
-  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
-  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
-    return next(
-      new HttpError(
-        500,
-        "User ID or role is missing, this should handled by middleware."
-      )
-    );
-  }
-  const reqQuery = req["sanitizedQuery"] as OrderSearchQuery;
-
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
-  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
-  const baseMatch: any = {};
-  const exprConditions: any[] = [];
-
-  try {
-    if (isBuyerOnly) {
-      baseMatch.userId = new Types.ObjectId(userId);
-    } else if (reqQuery.userId) {
-      if (!Types.ObjectId.isValid(reqQuery.userId)) {
-        throw new HttpError(400, "Invalid user ID.");
-      }
-      baseMatch.userId = new Types.ObjectId(reqQuery.userId);
+    const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+    if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+      return next(
+        new HttpError(
+          500,
+          "User ID or role is missing, this should handled by middleware."
+        )
+      );
+    }
+    if (type === "admin search" && isBuyerOnly) {
+      return next(
+        new HttpError(403, "You do not have permission to perform this action.")
+      );
     }
 
-    if (reqQuery.deliveryStateIds?.length) {
-      const deliveryStateObjIds = reqQuery.deliveryStateIds.map((id) => {
-        if (!Types.ObjectId.isValid(id)) {
-          throw new HttpError(400, `Invalid delivery status ID: ${id}`);
+    const reqQuery = req["sanitizedQuery"] as OrderSearchQuery;
+
+    const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+    const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+    const baseMatch: any = {};
+    const exprConditions: any[] = [];
+
+    try {
+      if (type === "self search") {
+        baseMatch.userId = new Types.ObjectId(userId);
+      } else if (reqQuery.userId) {
+        if (!Types.ObjectId.isValid(reqQuery.userId)) {
+          throw new HttpError(400, "Invalid user ID.");
         }
-        return new Types.ObjectId(id);
-      });
-      exprConditions.push({
-        $in: [
-          { $arrayElemAt: ["$deliveryStates.id", -1] },
-          deliveryStateObjIds,
-        ],
-      });
-    }
-
-    if (reqQuery.paymentStateIds?.length) {
-      const paymentStateObjIds = reqQuery.paymentStateIds.map((id) => {
-        if (!Types.ObjectId.isValid(id)) {
-          throw new HttpError(400, `Invalid payment status ID: ${id}`);
-        }
-        return new Types.ObjectId(id);
-      });
-      exprConditions.push({
-        $in: [{ $arrayElemAt: ["$paymentStates.id", -1] }, paymentStateObjIds],
-      });
-    }
-
-    if (reqQuery.stateIds?.length) {
-      const stateObjIds = reqQuery.stateIds.map((id) => {
-        if (!Types.ObjectId.isValid(id)) {
-          throw new HttpError(400, `Invalid order status ID: ${id}`);
-        }
-        return new Types.ObjectId(id);
-      });
-      exprConditions.push({
-        $in: [{ $arrayElemAt: ["$states.id", -1] }, stateObjIds],
-      });
-    }
-
-    if (exprConditions.length > 0) {
-      baseMatch.$expr = { $and: exprConditions };
-    }
-
-    let finalQuery: any = baseMatch;
-    let total: number;
-
-    if (reqQuery.searchTerm) {
-      // product/model/variation name, or order ID
-      const searchTerm = reqQuery.searchTerm;
-      const searchOrConditions: any[] = [
-        { "productDetails.name": { $regex: searchTerm, $options: "i" } },
-        { "modelDetails.name": { $regex: searchTerm, $options: "i" } },
-        { "variationDetails.name": { $regex: searchTerm, $options: "i" } },
-      ];
-
-      // If the searchTerm is a valid ObjectId, also search by order ID first
-      if (Types.ObjectId.isValid(searchTerm)) {
-        searchOrConditions.push({ _id: new Types.ObjectId(searchTerm) });
+        baseMatch.userId = new Types.ObjectId(reqQuery.userId);
       }
 
-      const matchingOrders = await Order.aggregate([
-        // 1. Initial filter for the user and other query params
-        { $match: baseMatch },
-        // 2. Unwind the items array to process each item individually
-        { $unwind: "$items" },
-        // 3. Lookup variation details
-        {
-          $lookup: {
-            from: "modelvariations",
-            localField: "items.variationId",
-            foreignField: "_id",
-            as: "variationDetails",
-          },
-        },
-        { $unwind: "$variationDetails" },
-        // 4. Lookup model details
-        {
-          $lookup: {
-            from: "productmodels",
-            localField: "variationDetails.productModelId",
-            foreignField: "_id",
-            as: "modelDetails",
-          },
-        },
-        { $unwind: "$modelDetails" },
-        // 5. Lookup product details
-        {
-          $lookup: {
-            from: "products",
-            localField: "modelDetails.productId",
-            foreignField: "_id",
-            as: "productDetails",
-          },
-        },
-        { $unwind: "$productDetails" },
-        { $match: { $or: searchOrConditions } },
-        { $group: { _id: "$_id" } },
-      ]);
-
-      const orderIds = matchingOrders.map((order) => order._id);
-
-      // If no orders match -> return early
-      if (orderIds.length === 0) {
-        res.status(200).json({
-          success: true,
-          message: "No orders found.",
-          data: {
-            total: 0,
-            orders: { total: 0, orders: [] },
-            offset,
-            limit,
-          },
-        } as SuccessResponse<OrderListResponse>);
-        return;
+      if (reqQuery.deliveryStateIds?.length) {
+        const deliveryStateObjIds = reqQuery.deliveryStateIds.map((id) => {
+          if (!Types.ObjectId.isValid(id)) {
+            throw new HttpError(400, `Invalid delivery status ID: ${id}`);
+          }
+          return new Types.ObjectId(id);
+        });
+        exprConditions.push({
+          $in: [
+            { $arrayElemAt: ["$deliveryStates.id", -1] },
+            deliveryStateObjIds,
+          ],
+        });
       }
 
-      finalQuery = { _id: { $in: orderIds } };
-      total = orderIds.length;
-    } else {
-      // If no search term, the total is a simple count
-      total = await Order.countDocuments(baseMatch);
-    }
+      if (reqQuery.paymentStateIds?.length) {
+        const paymentStateObjIds = reqQuery.paymentStateIds.map((id) => {
+          if (!Types.ObjectId.isValid(id)) {
+            throw new HttpError(400, `Invalid payment status ID: ${id}`);
+          }
+          return new Types.ObjectId(id);
+        });
+        exprConditions.push({
+          $in: [{ $arrayElemAt: ["$paymentStates.id", -1] }, paymentStateObjIds],
+        });
+      }
 
-    // Fetch the orders using the final query and populate them
-    const orders = await Order.find(finalQuery)
-      .sort({ createdAt: -1 })
-      .skip(offset)
-      .limit(limit)
-      .populate(populationPath)
-      .lean();
+      if (reqQuery.stateIds?.length) {
+        const stateObjIds = reqQuery.stateIds.map((id) => {
+          if (!Types.ObjectId.isValid(id)) {
+            throw new HttpError(400, `Invalid order status ID: ${id}`);
+          }
+          return new Types.ObjectId(id);
+        });
+        exprConditions.push({
+          $in: [{ $arrayElemAt: ["$states.id", -1] }, stateObjIds],
+        });
+      }
 
-    res.status(200).json({
-      success: true,
-      message: "Orders retrieved successfully.",
-      data: {
-        total,
-        orders: {
-          total: orders.length,
-          orders: orders.map(formatOrderResponse),
+      if (exprConditions.length > 0) {
+        baseMatch.$expr = { $and: exprConditions };
+      }
+
+      let finalQuery: any = baseMatch;
+      let total: number;
+
+      if (reqQuery.searchTerm) {
+        // product/model/variation name, or order ID
+        const searchTerm = reqQuery.searchTerm;
+        const searchOrConditions: any[] = [
+          { "productDetails.name": { $regex: searchTerm, $options: "i" } },
+          { "modelDetails.name": { $regex: searchTerm, $options: "i" } },
+          { "variationDetails.name": { $regex: searchTerm, $options: "i" } },
+        ];
+
+        // If the searchTerm is a valid ObjectId, also search by order ID first
+        if (Types.ObjectId.isValid(searchTerm)) {
+          searchOrConditions.push({ _id: new Types.ObjectId(searchTerm) });
+        }
+
+        const matchingOrders = await Order.aggregate([
+          // 1. Initial filter for the user and other query params
+          { $match: baseMatch },
+          // 2. Unwind the items array to process each item individually
+          { $unwind: "$items" },
+          // 3. Lookup variation details
+          {
+            $lookup: {
+              from: "modelvariations",
+              localField: "items.variationId",
+              foreignField: "_id",
+              as: "variationDetails",
+            },
+          },
+          { $unwind: "$variationDetails" },
+          // 4. Lookup model details
+          {
+            $lookup: {
+              from: "productmodels",
+              localField: "variationDetails.productModelId",
+              foreignField: "_id",
+              as: "modelDetails",
+            },
+          },
+          { $unwind: "$modelDetails" },
+          // 5. Lookup product details
+          {
+            $lookup: {
+              from: "products",
+              localField: "modelDetails.productId",
+              foreignField: "_id",
+              as: "productDetails",
+            },
+          },
+          { $unwind: "$productDetails" },
+          { $match: { $or: searchOrConditions } },
+          { $group: { _id: "$_id" } },
+        ]);
+
+        const orderIds = matchingOrders.map((order) => order._id);
+
+        // If no orders match -> return early
+        if (orderIds.length === 0) {
+          res.status(200).json({
+            success: true,
+            message: "No orders found.",
+            data: {
+              total: 0,
+              orders: { total: 0, orders: [] },
+              offset,
+              limit,
+            },
+          } as SuccessResponse<OrderListResponse>);
+          return;
+        }
+
+        finalQuery = { _id: { $in: orderIds } };
+        total = orderIds.length;
+      } else {
+        // If no search term, the total is a simple count
+        total = await Order.countDocuments(baseMatch);
+      }
+
+      // Fetch the orders using the final query and populate them
+      const orders = await Order.find(finalQuery)
+        .sort({ createdAt: -1 })
+        .skip(offset)
+        .limit(limit)
+        .populate(populationPath)
+        .lean();
+
+      res.status(200).json({
+        success: true,
+        message: "Orders retrieved successfully.",
+        data: {
+          total,
+          orders: {
+            total: orders.length,
+            orders: orders.map(formatOrderResponse),
+          },
+          offset,
+          limit,
         },
-        offset,
-        limit,
-      },
-    } as SuccessResponse<OrderListResponse>);
-    console.log("✅ ", "Orders retrieved successfully.");
-  } catch (error) {
-    next(error);
-  }
+      } as SuccessResponse<OrderListResponse>);
+      console.log("✅ ", "Orders retrieved successfully.");
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export async function updateSelf(
@@ -653,7 +659,7 @@ export async function updateSelf(
     }
 
     const { stateId, deliveryAddressId, buyerCancelReasonId } =
-      req.body as OrderUpdateSelf;
+      req.body as OrderSelfUpdate;
 
     // Update order state
     if (stateId && stateId !== latestOrderStateId.toString()) {
@@ -885,7 +891,7 @@ export async function fulfillItem(
       );
     }
 
-    const { items } = req.body as OrderUpdateFulfillItem;
+    const { items } = req.body as OrderFulfillItemUpdate;
 
     const systemUserId = getSysUserId();
     const saleOutMovementTypeId = getMovementTypeId("3");

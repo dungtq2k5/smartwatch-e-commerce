@@ -64,7 +64,7 @@ export default function Profile() {
     fullName: { val: user?.fullName || "Not provided" },
     gender: user?.gender || "other",
     birth: { val: user?.birth || new Date().toISOString() }, // Default to today if not set
-    avatar: { file: user?.avatarUrl || null },
+    avatar: { val: user?.avatarUrl || null },
   });
 
   const [process, setProcess] = useState<Process>({
@@ -119,7 +119,7 @@ export default function Profile() {
     changeAvatarRef.current!.value = "";
     setFormData((prev) => ({
       ...prev,
-      avatar: { file: null },
+      avatar: { val: null },
     }));
     setAvatarPreviewUrl(defaultAvatar);
   }, [process.isProcessing]);
@@ -147,7 +147,7 @@ export default function Profile() {
 
           setFormData((prev) => ({
             ...prev,
-            avatar: { file: files[0] },
+            avatar: { val: files[0] },
           }));
 
           setProcess((prev) => ({
@@ -203,9 +203,9 @@ export default function Profile() {
           newFormData.birth.err = "Date of birth is invalid";
           allValid = false;
         }
-        if (newFormData.avatar.file instanceof File) {
+        if (newFormData.avatar.val instanceof File) {
           const imgFileErrs = await getImgFileErrs(
-            newFormData.avatar.file,
+            newFormData.avatar.val,
             "avatar"
           );
           if (imgFileErrs.length) {
@@ -241,14 +241,14 @@ export default function Profile() {
           if (formData.birth.val !== user.birth) {
             changedData.birth = new Date(formData.birth.val).toISOString();
           }
-          if (formData.avatar.file instanceof File) {
+          if (formData.avatar.val instanceof File) {
             const downloadUrl = await uploadFile(
-              formData.avatar.file,
+              formData.avatar.val,
               "avatar"
             );
             if (!downloadUrl) throw new Error("Failed to upload avatar.");
             changedData.avatarUrl = downloadUrl;
-          } else if (formData.avatar.file === null && user.avatarUrl) {
+          } else if (formData.avatar.val === null && user.avatarUrl) {
             changedData.avatarUrl = null; // Remove avatar
           }
 
@@ -262,7 +262,7 @@ export default function Profile() {
             return;
           }
 
-          await updateSelfGeneralInfo(await getChangedData());
+          await updateSelfGeneralInfo(changedData);
           toast.success("Profile updated successfully!");
         } catch (error) {
           toast.error(formatError(error));
@@ -581,7 +581,7 @@ export default function Profile() {
                   {AVATAR_HINT_MESSAGE}
                 </div>
 
-                {formData.avatar.file && (
+                {formData.avatar.val && (
                   <button
                     type="button"
                     className="btn btn-link text-danger p-0 me-2"
@@ -597,7 +597,7 @@ export default function Profile() {
                   onClick={() => changeAvatarRef.current?.click()}
                   disabled={process.isProcessing}
                 >
-                  {formData.avatar.file ? "change" : "upload"}
+                  {formData.avatar.val ? "change" : "upload"}
                 </button>
                 {formData.avatar.err && (
                   <InvalidInputMsg msg={formData.avatar.err} />

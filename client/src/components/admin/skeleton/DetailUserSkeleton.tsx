@@ -1,10 +1,13 @@
-export default function DetailUserSkeleton() {
+import { memo } from "react";
+import { Placeholder } from "react-bootstrap";
+
+const DetailUserSkeleton = memo(() => {
   return (
-    <div className="placeholder-glow">
+    <Placeholder as="div" animation="glow">
       {/* Heading */}
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <span className="placeholder col-3" style={{ height: "38px" }}></span>
-        <span className="placeholder col-2" style={{ height: "38px" }}></span>
+        <Placeholder xs={3} style={{ height: "38px" }} />
+        <Placeholder xs={2} style={{ height: "38px" }} />
       </div>
 
       <div className="row">
@@ -12,38 +15,38 @@ export default function DetailUserSkeleton() {
           {/* User Profile Card */}
           <div className="card text-center mb-4">
             <div className="card-body">
-              <span
-                className="placeholder rounded-circle mx-auto d-block mb-3"
+              <Placeholder
+                className="rounded-circle mx-auto d-block mb-3"
                 style={{ width: "128px", height: "128px" }}
-              ></span>
-              <p className="card-title mb-0">
-                <span className="placeholder col-6"></span>
-              </p>
-              <p className="text-muted mb-1">
-                <span className="placeholder col-8"></span>
-              </p>
-              <p className="text-muted mb-0">
-                <span className="placeholder col-7"></span>
-              </p>
+              />
+              <Placeholder as="p" className="card-title mb-0">
+                <Placeholder xs={6} />
+              </Placeholder>
+              <Placeholder as="p" className="text-muted mb-1">
+                <Placeholder xs={8} />
+              </Placeholder>
+              <Placeholder as="p" className="text-muted mb-0">
+                <Placeholder xs={7} />
+              </Placeholder>
             </div>
           </div>
 
           {/* User Details Card */}
           <div className="card mb-4">
             <div className="card-header">
-              <h2 className="fs-6 mb-0">
-                <span className="placeholder col-4"></span>
-              </h2>
+              <Placeholder as="h2" className="fs-6 mb-0">
+                <Placeholder xs={4} />
+              </Placeholder>
             </div>
             <div className="card-body">
               <dl className="row mb-0">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="row mb-2 mx-0">
                     <dt className="col-sm-5 ps-0">
-                      <span className="placeholder col-10"></span>
+                      <Placeholder xs={10} />
                     </dt>
                     <dd className="col-sm-7 pe-0">
-                      <span className="placeholder col-10"></span>
+                      <Placeholder xs={10} />
                     </dd>
                   </div>
                 ))}
@@ -54,32 +57,32 @@ export default function DetailUserSkeleton() {
           {/* Roles Card */}
           <div className="card">
             <div className="card-header">
-              <h2 className="fs-6 mb-0">
-                <span className="placeholder col-3"></span>
-              </h2>
+              <Placeholder as="h2" className="fs-6 mb-0">
+                <Placeholder xs={3} />
+              </Placeholder>
             </div>
             <div className="list-group list-group-flush">
               <div className="list-group-item">
-                <p className="mb-1">
-                  <span className="placeholder col-5"></span>
-                </p>
-                <small className="d-block">
-                  <span className="placeholder col-8"></span>
-                </small>
-                <small className="d-block">
-                  <span className="placeholder col-6"></span>
-                </small>
+                <Placeholder as="p" className="mb-1">
+                  <Placeholder xs={5} />
+                </Placeholder>
+                <Placeholder as="small" className="d-block">
+                  <Placeholder xs={8} />
+                </Placeholder>
+                <Placeholder as="small" className="d-block">
+                  <Placeholder xs={6} />
+                </Placeholder>
               </div>
               <div className="list-group-item">
-                <p className="mb-1">
-                  <span className="placeholder col-4"></span>
-                </p>
-                <small className="d-block">
-                  <span className="placeholder col-7"></span>
-                </small>
-                <small className="d-block">
-                  <span className="placeholder col-5"></span>
-                </small>
+                <Placeholder as="p" className="mb-1">
+                  <Placeholder xs={4} />
+                </Placeholder>
+                <Placeholder as="small" className="d-block">
+                  <Placeholder xs={7} />
+                </Placeholder>
+                <Placeholder as="small" className="d-block">
+                  <Placeholder xs={5} />
+                </Placeholder>
               </div>
             </div>
           </div>
@@ -89,79 +92,75 @@ export default function DetailUserSkeleton() {
           {/* Addresses Card */}
           <div className="card mb-4">
             <div className="card-header">
-              <h2 className="fs-6 mb-0">
-                <span className="placeholder col-4"></span>
-              </h2>
+              <Placeholder as="h2" className="fs-6 mb-0">
+                <Placeholder xs={4} />
+              </Placeholder>
             </div>
             <div className="card-body">
               <div className="mb-3 pb-3 border-bottom">
-                <p className="mb-1">
-                  <span className="placeholder col-5"></span>
-                </p>
-                <p className="mb-1">
-                  <span className="placeholder col-8"></span>
-                </p>
-                <p className="mb-0">
-                  <span className="placeholder col-4"></span>
-                </p>
+                <Placeholder as="p" className="mb-1">
+                  <Placeholder xs={5} />
+                </Placeholder>
+                <Placeholder as="p" className="mb-1">
+                  <Placeholder xs={8} />
+                </Placeholder>
+                <Placeholder as="p" className="mb-0">
+                  <Placeholder xs={4} />
+                </Placeholder>
               </div>
-              <p className="mb-0">
-                <span className="placeholder col-6"></span>
-              </p>
+              <Placeholder as="p" className="mb-0">
+                <Placeholder xs={6} />
+              </Placeholder>
             </div>
           </div>
 
           {/* Payment Methods Card */}
           <div className="card mb-4">
             <div className="card-header">
-              <h2 className="fs-6 mb-0">
-                <span className="placeholder col-5"></span>
-              </h2>
+              <Placeholder as="h2" className="fs-6 mb-0">
+                <Placeholder xs={5} />
+              </Placeholder>
             </div>
             <div className="card-body">
               <div className="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
-                <span
-                  className="placeholder"
-                  style={{ width: "32px", height: "32px" }}
-                ></span>
+                <Placeholder style={{ width: "32px", height: "32px" }} />
                 <div>
-                  <p className="mb-1">
-                    <span className="placeholder col-8"></span>
-                  </p>
-                  <p className="mb-0 small">
-                    <span className="placeholder col-12"></span>
-                  </p>
+                  <Placeholder as="p" className="mb-1">
+                    <Placeholder xs={8} />
+                  </Placeholder>
+                  <Placeholder as="p" className="mb-0 small">
+                    <Placeholder xs={12} />
+                  </Placeholder>
                 </div>
               </div>
-              <p className="mb-0">
-                <span className="placeholder col-7"></span>
-              </p>
+              <Placeholder as="p" className="mb-0">
+                <Placeholder xs={7} />
+              </Placeholder>
             </div>
           </div>
 
           {/* Bank Accounts Card */}
           <div className="card mb-2">
             <div className="card-header">
-              <h2 className="fs-6 mb-0">
-                <span className="placeholder col-5"></span>
-              </h2>
+              <Placeholder as="h2" className="fs-6 mb-0">
+                <Placeholder xs={5} />
+              </Placeholder>
             </div>
             <div className="card-body">
-              <p className="mb-0">
-                <span className="placeholder col-6"></span>
-              </p>
+              <Placeholder as="p" className="mb-0">
+                <Placeholder xs={6} />
+              </Placeholder>
             </div>
           </div>
 
           {/* Buttons */}
           <div className="d-flex justify-content-end mt-3">
-            <span
-              className="placeholder"
-              style={{ width: "90px", height: "38px" }}
-            ></span>
+            <Placeholder.Button variant="primary" style={{ width: "90px" }} />
           </div>
         </div>
       </div>
-    </div>
+    </Placeholder>
   );
-}
+});
+
+export default DetailUserSkeleton;

@@ -30,7 +30,6 @@ import bcrypt from "bcryptjs";
 import {
   HASH_SALT,
   JWT_NAME,
-  MAX_USERS_TO_DELETE_BULK,
 } from "../../configs/configs";
 import {
   sendEmailChangeEmail,
@@ -50,7 +49,7 @@ import mongoose, { Types } from "mongoose";
 import { deleteFileFromFirebaseStorage } from "../../utils/firebase";
 import Otp from "../../models/user/otp.model";
 import PasswordResetToken from "../../models/user/passwordResetToken.model";
-import { VERIFICATION_CODE_TTL } from "../../../common/configs.common";
+import { MAX_USERS_TO_DELETE_BULK, VERIFICATION_CODE_TTL } from "../../../common/configs.common";
 import Role from "../../models/role/role.model";
 import Order from "../../models/order/order.model";
 import UserPaymentMethod from "../../models/user/userPaymentMethod.model";
@@ -304,9 +303,7 @@ export async function getDetails(
       throw new HttpError(404, "User not found.");
     }
     const user = await User.findById(userId)
-      .populate("addresses")
-      .populate("paymentMethods")
-      .populate("bankAccounts")
+      .populate(["addresses", "paymentMethods", "bankAccounts"])
       .lean({ virtuals: true }); // Also apply POJO with virtuals
     if (!user || user.isDeleted) {
       throw new HttpError(404, "User not found.");
@@ -359,6 +356,7 @@ export async function search(
   const searchTerm = reqQuery.searchTerm;
   if (searchTerm) {
     query.$or = [
+      { id: { $regex: searchTerm } },
       { fullName: { $regex: searchTerm, $options: "i" } },
       { email: { $regex: searchTerm, $options: "i" } },
       { phoneNumber: { $regex: `^${searchTerm}`, $options: "i" } },

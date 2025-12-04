@@ -1,0 +1,171 @@
+import { create } from "zustand";
+import type {
+  AdminProductModelDetailResponse,
+  AdminProductModelListResponse,
+  ProductModelBulkDelete,
+  ProductModelDetailQuery,
+  ProductModelSearchQuery,
+} from "../../../../../common/types.common";
+import { remove, retrieve } from "../../../utils/utils";
+import { PRODUCT_MODEL_URL } from "../../../configs";
+import {
+  formatError,
+  removeOddSpaces,
+} from "../../../../../common/utils.common";
+import { MAX_PRODUCT_MODELS_TO_DELETE_BULK } from "../../../../../common/configs.common";
+
+type ModelState = {
+  fetchModels: (
+    query?: ProductModelSearchQuery
+  ) => Promise<AdminProductModelListResponse>;
+
+  getModelDetail: (
+    modelId: string,
+    query?: ProductModelDetailQuery
+  ) => Promise<AdminProductModelDetailResponse>;
+
+  deleteModel: (modelId: string) => Promise<void>;
+  deleteModelBulk: (data: ProductModelBulkDelete) => Promise<void>;
+};
+
+export const useModelStore = create<ModelState>(() => ({
+  async fetchModels(
+    query?: ProductModelSearchQuery
+  ): Promise<AdminProductModelListResponse> {
+    const queryString = new URLSearchParams();
+    if (query) {
+      if (query.limit) queryString.set("limit", query.limit);
+      if (query.offset) queryString.set("offset", query.offset);
+      if (query.searchTerm && removeOddSpaces(query.searchTerm)) {
+        queryString.set("searchTerm", query.searchTerm);
+      }
+
+      if (query.priceCentsMin) {
+        queryString.set("priceCentsMin", query.priceCentsMin);
+      }
+      if (query.priceCentsMax) {
+        queryString.set("priceCentsMax", query.priceCentsMax);
+      }
+      if (
+        query.priceCentsMin &&
+        query.priceCentsMax &&
+        Number.parseInt(query.priceCentsMin, 10) >
+          Number.parseInt(query.priceCentsMax, 10)
+      ) {
+        throw new Error("Minimum price cannot be greater than maximum price");
+      }
+
+      if (query.stockPriceCentsMin) {
+        queryString.set("stockPriceCentsMin", query.stockPriceCentsMin);
+      }
+      if (query.stockPriceCentsMax) {
+        queryString.set("stockPriceCentsMax", query.stockPriceCentsMax);
+      }
+      if (
+        query.stockPriceCentsMin &&
+        query.stockPriceCentsMax &&
+        Number.parseInt(query.stockPriceCentsMin, 10) >
+          Number.parseInt(query.stockPriceCentsMax, 10)
+      ) {
+        throw new Error(
+          "Minimum stock price cannot be greater than maximum stock price"
+        );
+      }
+
+      if (query.stockPriceCentsMin) {
+        queryString.set("stockPriceCentsMin", query.stockPriceCentsMin);
+      }
+      if (query.stockPriceCentsMax) {
+        queryString.set("stockPriceCentsMax", query.stockPriceCentsMax);
+      }
+      if (
+        query.stockPriceCentsMin &&
+        query.stockPriceCentsMax &&
+        Number.parseInt(query.stockPriceCentsMin, 10) >
+          Number.parseInt(query.stockPriceCentsMax, 10)
+      ) {
+        throw new Error(
+          "Minimum stock price cannot be greater than maximum stock price"
+        );
+      }
+
+      if (query.releaseDateFrom) {
+        queryString.set("releaseDateFrom", query.releaseDateFrom);
+      }
+      if (query.releaseDateTo) {
+        queryString.set("releaseDateTo", query.releaseDateTo);
+      }
+      if (
+        query.releaseDateFrom &&
+        query.releaseDateTo &&
+        new Date(query.releaseDateFrom) > new Date(query.releaseDateTo)
+      ) {
+        throw new Error("Release date 'from' cannot be later than 'to'");
+      }
+
+      if (query.stopSelling) queryString.set("stopSelling", query.stopSelling);
+      if (query.sortBy) queryString.set("sortBy", query.sortBy);
+    }
+
+    try {
+      const res = await retrieve(
+        `${PRODUCT_MODEL_URL}/admin?${queryString.toString()}`
+      );
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as AdminProductModelListResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async getModelDetail(
+    modelId: string,
+    query?: ProductModelDetailQuery
+  ): Promise<AdminProductModelDetailResponse> {
+    const queryString = new URLSearchParams();
+    if (query) {
+      if (query.variationStopSelling !== undefined) {
+        queryString.set("variationStopSelling", query.variationStopSelling);
+      }
+    }
+
+    try {
+      const res = await retrieve(
+        `${PRODUCT_MODEL_URL}/${modelId}/details/admin?${queryString.toString()}`
+      );
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as AdminProductModelDetailResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async deleteModel(modelId: string): Promise<void> {
+    try {
+      const res = await remove(`${PRODUCT_MODEL_URL}/${modelId}`);
+      if (!res.success) throw new Error(res.message);
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async deleteModelBulk(data: ProductModelBulkDelete): Promise<void> {
+    try {
+      if (data.modelIds.length === 0) {
+        throw new Error("No models selected for deletion");
+      }
+      if (data.modelIds.length > MAX_PRODUCT_MODELS_TO_DELETE_BULK) {
+        throw new Error(
+          `Cannot delete more than ${MAX_PRODUCT_MODELS_TO_DELETE_BULK} models at once`
+        );
+      }
+
+      const res = await remove(`${PRODUCT_MODEL_URL}/many`, null, data);
+      if (!res.success) throw new Error(res.message);
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+}));
