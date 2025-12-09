@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   MAX_PRODUCT_IMG_UPLOAD,
   PRODUCT_IMAGE_ALLOWED_TYPES,
+  PRODUCT_IMAGE_HINT_MESSAGE,
   PRODUCT_TYPES,
 } from "../../../../../common/configs.common";
 import {
@@ -14,7 +15,7 @@ import type {
   AdminProductResponse,
   ProductUpdate,
 } from "../../../../../common/types.common";
-import { AVATAR_HINT_MESSAGE, WAITING_EMOJI } from "../../../configs";
+import { WAITING_EMOJI } from "../../../configs";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faQuestionCircle,
@@ -57,13 +58,6 @@ type FormData = {
   basePriceCents: FormInput;
 };
 
-type Process = {
-  isProcessing: boolean;
-  isInitializing: boolean;
-  isUploadingImages: boolean;
-  isUpdating: boolean;
-};
-
 export function EditProduct() {
   // DEV temp for testing
   const renderCount = useRef(0);
@@ -73,10 +67,10 @@ export function EditProduct() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { sysUserId, getSysUserId } = useUserStore();
+  const { sysUserId, fetchSysUserId } = useUserStore();
   const { brands, fetchBrands } = useProductBrandStore();
   const { categories, fetchCategories } = useProductCategoryStore();
-  const { getProduct, updateProduct } = useProductStore();
+  const { fetchProduct, updateProduct } = useProductStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
   const canEditProduct = useHasPermission("u_product");
@@ -99,12 +93,12 @@ export function EditProduct() {
     imageUrls: { val: [] },
     currImageUrls: { val: [] },
     stopSelling: false,
-    basePriceCents: { val: "0" },
+    basePriceCents: { val: "" },
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imgPreviews, setImgPreviews] = useState<string[]>([]);
 
-  // Fetch set data on initial load: product, brands, categories, formData
+  // Fetch set data on initial load: sysUserId, product, brands, categories, formData
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       setProcess((prev) => ({
@@ -118,35 +112,28 @@ export function EditProduct() {
         if (!id) throw new Error("Product ID is missing.");
 
         const [fetchedProduct, fetchedBrands, fetchedCates] = await Promise.all(
-          [getProduct(id), fetchBrands(), fetchCategories(), getSysUserId()]
+          [
+            fetchProduct(id),
+            brands ? Promise.resolve(brands) : fetchBrands(),
+            categories ? Promise.resolve(categories) : fetchCategories(),
+            sysUserId ? Promise.resolve() : fetchSysUserId(),
+          ]
         );
 
-        setProduct(fetchedProduct);
-
         // Handle case product's brand/category is soft deleted -> auto select
-        const brandId = fetchedBrands.brands.brands.some(
+        fetchedProduct.brandId = fetchedBrands.brands.brands.some(
           (b) => b.id === fetchedProduct.brandId
         )
           ? fetchedProduct.brandId
           : fetchedBrands.brands.brands[0]?.id || "";
-        const categoryId = fetchedCates.categories.categories.some(
+        fetchedProduct.categoryId = fetchedCates.categories.categories.some(
           (c) => c.id === fetchedProduct.categoryId
         )
           ? fetchedProduct.categoryId
           : fetchedCates.categories.categories[0]?.id || "";
 
-        setFormData((prev) => ({
-          ...prev,
-          name: { val: fetchedProduct.name },
-          type: { val: fetchedProduct.type },
-          brandId: { val: brandId },
-          categoryId: { val: categoryId },
-          description: { val: fetchedProduct.description },
-          imageUrls: { val: [] },
-          currImageUrls: { val: fetchedProduct.imageUrls },
-          stopSelling: fetchedProduct.stopSelling,
-          basePriceCents: { val: fetchedProduct.basePriceCents.toString() },
-        }));
+        setProduct(fetchedProduct);
+        updateFormData(fetchedProduct);
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
@@ -177,6 +164,23 @@ export function EditProduct() {
 
     updateImgPreviews();
   }, [formData.imageUrls.val]);
+
+  const updateFormData = useCallback((product: AdminProductResponse): void => {
+    const copiedProduct = structuredClone(product);
+
+    setFormData((prev) => ({
+      ...prev,
+      name: { val: copiedProduct.name },
+      type: { val: copiedProduct.type },
+      brandId: { val: copiedProduct.brandId },
+      categoryId: { val: copiedProduct.categoryId },
+      description: { val: copiedProduct.description },
+      imageUrls: { val: [] },
+      currImageUrls: { val: copiedProduct.imageUrls },
+      stopSelling: copiedProduct.stopSelling,
+      basePriceCents: { val: copiedProduct.basePriceCents.toString() },
+    }));
+  }, []);
 
   const handleChange = useCallback(
     (
@@ -357,11 +361,11 @@ export function EditProduct() {
   );
 
   const handleSubmit = useCallback(
-    async (e: React.FormEvent): Promise<void> => {
+    async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
       if (process.isProcessing) return;
       if (!product) {
-        toast.error("Product data is not available.");
+        toast.error("Product data is not found. Please refresh and try again.");
         return;
       }
       if (!canEditProduct) {
@@ -373,25 +377,25 @@ export function EditProduct() {
         let allValid = true;
         const newFormData: FormData = { ...formData };
 
-        if (!formData.name.val) {
+        if (!newFormData.name.val) {
           newFormData.name.err = "Product name is required.";
           allValid = false;
-        } else if (!isValidProductName(formData.name.val)) {
+        } else if (!isValidProductName(newFormData.name.val)) {
           newFormData.name.err = "Product name is invalid.";
           allValid = false;
         }
-        if (!formData.description.val) {
+        if (!newFormData.description.val) {
           newFormData.description.err = "Description is required.";
           allValid = false;
         }
-        if (!formData.basePriceCents.val) {
+        if (!newFormData.basePriceCents.val) {
           newFormData.basePriceCents.err = "Base price is required.";
           allValid = false;
-        } else if (Number(formData.basePriceCents.val) < 0) {
+        } else if (Number(newFormData.basePriceCents.val) < 0) {
           newFormData.basePriceCents.err = "Base price is invalid.";
           allValid = false;
         }
-        if (formData.imageUrls.val.length) {
+        if (newFormData.imageUrls.val.length) {
           if (
             newFormData.imageUrls.val.length +
               newFormData.currImageUrls.val.length >
@@ -489,21 +493,11 @@ export function EditProduct() {
           }
 
           await updateProduct(product.id, changedData);
-          const updatedProduct = await getProduct(product.id);
+          const updatedProduct = await fetchProduct(product.id);
 
           setProduct(updatedProduct);
-          setFormData((prev) => ({
-            ...prev,
-            name: { val: updatedProduct.name },
-            type: { val: updatedProduct.type },
-            brandId: { val: updatedProduct.brandId },
-            categoryId: { val: updatedProduct.categoryId },
-            description: { val: updatedProduct.description },
-            imageUrls: { val: [] },
-            currImageUrls: { val: updatedProduct.imageUrls },
-            stopSelling: updatedProduct.stopSelling,
-            basePriceCents: { val: updatedProduct.basePriceCents.toString() },
-          }));
+          updateFormData(updatedProduct);
+
           toast.success("Product updated successfully.");
         } catch (error) {
           toast.error(formatError(error));
@@ -524,12 +518,13 @@ export function EditProduct() {
       }));
     },
     [
-      canEditProduct,
-      formData,
-      getProduct,
       process.isProcessing,
       product,
+      canEditProduct,
+      formData,
       updateProduct,
+      fetchProduct,
+      updateFormData,
     ]
   );
 
@@ -561,7 +556,7 @@ export function EditProduct() {
             </h1>
           </div>
 
-          {/* Edit Form */}
+          {/* Form */}
           <form onSubmit={handleSubmit}>
             <div className="row">
               {/* Left column */}
@@ -606,7 +601,7 @@ export function EditProduct() {
                         value={formData.description.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
-                      ></textarea>
+                      />
                       {formData.description.err && (
                         <InvalidInputMsg msg={formData.description.err} />
                       )}
@@ -714,7 +709,7 @@ export function EditProduct() {
                         icon={faQuestionCircle}
                         size="sm"
                         className="text-muted ms-2"
-                        title="If enabled, this product and its models or variations won't be accessible by buyer."
+                        title="If enabled, this product and its models or variations won't be able for purchase."
                       />
                     </div>
                   </div>
@@ -873,7 +868,7 @@ export function EditProduct() {
                         <InvalidInputMsg msg={formData.imageUrls.err} />
                       )}
                       <div id="imgHelp" className="form-text">
-                        {AVATAR_HINT_MESSAGE}
+                        {PRODUCT_IMAGE_HINT_MESSAGE}
                       </div>
                     </div>
                   </div>
