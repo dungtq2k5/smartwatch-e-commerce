@@ -1143,12 +1143,12 @@ export function verifyModelInput(
                 errors.push("screen isCircular must be a boolean.");
               }
               if (
-                diameterMm !== undefined &&
+                isPresent(diameterMm) &&
                 (typeof diameterMm !== "number" || diameterMm <= 0)
               ) {
                 errors.push("screen diameter must be a positive number.");
               }
-              if (dimension !== undefined) {
+              if (isPresent(dimension)) {
                 if (!isNoneArrObj(dimension)) {
                   errors.push("screen dimension must be an object.");
                 } else if (!isEmptyObj(dimension)) {

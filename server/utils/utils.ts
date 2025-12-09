@@ -523,6 +523,22 @@ export function formatProductModelResponse(
 export function formatAdminProductModelResponse(
   model: any
 ): commonType.AdminProductModelResponse {
+  const { createdBy, ...restData } = formatProductModelResponse(model);
+
+  return {
+    ...restData,
+    createdBy: {
+      id: model.createdBy._id,
+      fullName: model.createdBy.fullName,
+    },
+    stockPriceCents: model.stockPriceCents,
+    totalVariations: model.totalVariations,
+  };
+}
+
+export function formatAdminProductModelResponseForList(
+  model: any
+): commonType.AdminProductModelResponseForList {
   return {
     id: model._id,
     productId: model.productId,
@@ -546,17 +562,6 @@ export function formatAdminProductModelResponse(
     stopSelling: model.stopSelling,
     stockPriceCents: model.stockPriceCents,
     totalVariations: model.totalVariations,
-  };
-}
-
-export function formatAdminProductModelResponseForList(
-  model: any
-): commonType.AdminProductModelResponseForList {
-  const { config, ...restData } = formatAdminProductModelResponse(model);
-
-  return {
-    ...restData,
-    config: model.config,
   };
 }
 

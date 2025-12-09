@@ -61,7 +61,7 @@ export default function CreateUser() {
 
   const [formData, setFormData] = useState<FormData>({
     fullName: { val: "" },
-    avatar: { file: null },
+    avatar: { val: null },
     email: { val: "" },
     isEmailVerified: false,
     phoneNumber: { val: "" },
@@ -123,7 +123,7 @@ export default function CreateUser() {
     changeAvatarRef.current!.value = "";
     setFormData((prev) => ({
       ...prev,
-      avatar: { file: null },
+      avatar: { val: null },
     }));
     setAvatarPreviewUrl(defaultAvatar);
   }, [process.isProcessing]);
@@ -154,7 +154,7 @@ export default function CreateUser() {
           setFormData((prev) => ({
             ...prev,
             avatar: {
-              file,
+              val: file,
               err: `Avatar file is invalid: ${imgFileErrs.join(", ")}`,
             },
           }));
@@ -274,9 +274,9 @@ export default function CreateUser() {
           newFormData.fullName.err = "Full name is invalid";
           allValid = false;
         }
-        if (newFormData.avatar.file instanceof File) {
+        if (newFormData.avatar.val instanceof File) {
           const imgFileErrs = await getImgFileErrs(
-            newFormData.avatar.file,
+            newFormData.avatar.val,
             "avatar"
           );
           if (imgFileErrs.length) {
@@ -341,11 +341,8 @@ export default function CreateUser() {
       if (await validateForm()) {
         try {
           let avatarUrl: string | null = null;
-          if (formData.avatar.file instanceof File) {
-            const downloadUrl = await uploadFile(
-              formData.avatar.file,
-              "avatar"
-            );
+          if (formData.avatar.val instanceof File) {
+            const downloadUrl = await uploadFile(formData.avatar.val, "avatar");
             if (!downloadUrl) throw new Error("Failed to upload avatar file");
             avatarUrl = downloadUrl;
           }
@@ -662,7 +659,7 @@ export default function CreateUser() {
                         {AVATAR_HINT_MESSAGE}
                       </div>
 
-                      {formData.avatar.file && (
+                      {formData.avatar.val && (
                         <button
                           type="button"
                           className="btn btn-link text-danger p-0 me-2"
@@ -677,7 +674,7 @@ export default function CreateUser() {
                         onClick={() => changeAvatarRef.current?.click()}
                         disabled={process.isProcessing}
                       >
-                        {formData.avatar.file ? "change" : "upload"}
+                        {formData.avatar.val ? "change" : "upload"}
                       </button>
                       {formData.avatar.err && (
                         <InvalidInputMsg msg={formData.avatar.err} />

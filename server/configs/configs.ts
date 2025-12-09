@@ -209,7 +209,7 @@ export const OPTIMIZE_CREATED_BY_PIPELINE: mongoose.PipelineStage.Project = {
 
 export const OPTIMIZE_PIPELINE: mongoose.PipelineStage.Project = {
   $project: {
-    _isDeleted: 0,
+    isDeleted: 0,
     deletedAt: 0,
     deletedBy: 0,
     __v: 0,

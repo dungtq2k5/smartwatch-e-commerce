@@ -12,6 +12,7 @@ import {
   AdminProductModelDetailResponse,
   AdminModelVariationResponse,
   ProductModelBulkDelete,
+  AdminProductModelResponse,
 } from "../../../common/types.common";
 import mongoose, { Types } from "mongoose";
 import { HttpError } from "../../utils/errorHandler";

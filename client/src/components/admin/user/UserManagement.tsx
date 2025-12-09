@@ -305,9 +305,7 @@ export default function UserManagement() {
   const [users, setUsers] = useState<AdminUserListResponse | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchForm, setSearchForm] = useState<SearchForm>(
-    DEFAULT_SEARCH_FORM
-  );
+  const [searchForm, setSearchForm] = useState<SearchForm>(DEFAULT_SEARCH_FORM);
 
   const [selectedUserIds, setSelectedUserIds] = useState<string[] | "all">([]);
   const [selectionToastId, setSelectionToastId] = useState<
@@ -858,7 +856,9 @@ export default function UserManagement() {
         getVals
       );
 
-      toast.success(`Exported ${usersToExport.users.length} users successfully.`);
+      toast.success(
+        `Exported ${usersToExport.users.length} users successfully.`
+      );
     } catch (error) {
       toast.error(formatError(error));
     } finally {

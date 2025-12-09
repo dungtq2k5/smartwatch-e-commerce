@@ -70,7 +70,25 @@ export function convertVnPhoneNumberToE164(phoneNumber: string): string {
   return `+84${phoneNumber.slice(1)}`; // Remove leading 0 and add +84
 }
 
-// Return string format: YYYY-MM-DD at local timezone
+/**
+ * Converts a UTC ISO date string to a local date string in YYYY-MM-DD format.
+ *
+ * This function parses a date string in UTC and then uses the local timezone
+ * of the environment where the code is running to format it.
+ *
+ * @param utcIsoString - The date string in UTC ISO format (e.g., '2023-10-27T02:00:00.000Z').
+ * @returns The local date formatted as a 'YYYY-MM-DD' string.
+ *
+ * @example
+ * // Running in a GMT-5 timezone
+ * getLocalDateString('2023-01-01T02:00:00.000Z');
+ * // returns "2022-12-31"
+ *
+ * @example
+ * // Running in a GMT+8 timezone
+ * getLocalDateString('2023-12-31T20:00:00.000Z');
+ * // returns "2024-01-01"
+ */
 export function getLocalDateString(utcIsoString: string): string {
   // Create a Date object from the UTC ISO string.
   const date = new Date(utcIsoString);
@@ -111,6 +129,7 @@ export function capEveryFirstLetter(str: string): string {
 
 export function centsToUSD(cents: number, locale: string = "en-US"): string {
   const dollars = cents / 100;
+  
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
@@ -126,7 +145,7 @@ export function randNum(min: number, max: number): number {
  * @param item - The item to check.
  * @returns True if the item is a non-array object, false otherwise.
  */
-export const isNoneArrObj = (item: any): item is Record<string, any> => {
+export function isNoneArrObj(item: any): item is Record<string, any> {
   return (
     item && typeof item === "object" && item !== null && !Array.isArray(item)
   );
@@ -300,6 +319,22 @@ export function getClosestPreMonday(): Date {
   return today;
 }
 
+/**
+ * Compares two lists to determine if they contain the same elements,
+ * regardless of their order.
+ *
+ * @remarks
+ * This function creates sorted copies of the input arrays and compares their
+ * string representations. It is best suited for arrays of primitive types
+ * (string, number, boolean). It will not perform a deep comparison on objects.
+ * Note that the default `.sort()` method is lexicographical and may not sort
+ * numbers as expected (e.g., 10 will come before 2).
+ *
+ * @template T The type of the elements in the lists.
+ * @param a The first list to compare.
+ * @param b The second list to compare.
+ * @returns `true` if the lists contain the same elements, `false` otherwise.
+ */
 export function compareList<T>(a: T[], b: T[]): boolean {
   if (a.length !== b.length) return false;
 
@@ -307,6 +342,83 @@ export function compareList<T>(a: T[], b: T[]): boolean {
   const sortedB = [...b].sort();
 
   return sortedA.toString() === sortedB.toString();
+}
+
+/**
+ * Deeply compares two values to check if they are equal.
+ * Supports primitives, arrays, objects, and Dates.
+ */
+/**
+ * Performs a deep equality check between two values to determine if they are equivalent.
+ *
+ * This function recursively compares nested objects and arrays. It handles:
+ * - Primitive types (`string`, `number`, `boolean`, `null`, `undefined`, `symbol`, `bigint`) using strict equality (`===`).
+ * - `Date` objects by comparing their millisecond timestamps.
+ * - Arrays by comparing their lengths and then recursively checking each element in order. The order of elements matters.
+ * - Plain objects by comparing their keys and recursively checking the corresponding values.
+ *
+ * @param a The first value to compare.
+ * @param b The second value to compare.
+ * @returns `true` if the values are deeply equal, `false` otherwise.
+ *
+ * @example
+ * const obj1 = { a: 1, b: { c: 2 } };
+ * const obj2 = { a: 1, b: { c: 2 } };
+ * const obj3 = { a: 1, b: { c: 3 } };
+ *
+ * deepCompare(obj1, obj2); // returns true
+ * deepCompare(obj1, obj3); // returns false
+ *
+ * const arr1 = [1, [2, 3]];
+ * const arr2 = [1, [2, 3]];
+ * const arr3 = [1, [3, 2]]; // Order matters
+ *
+ * deepCompare(arr1, arr2); // returns true
+ * deepCompare(arr1, arr3); // returns false
+ */
+export function deepCompare(a: any, b: any): boolean {
+  // 1. Strict equality check (covers primitives and same references)
+  if (a === b) return true;
+
+  // 2. Handle Date objects
+  if (a instanceof Date && b instanceof Date) {
+    return a.getTime() === b.getTime();
+  }
+
+  // 3. Check if either is null or undefined (after strict check failed)
+  if (a === null || a === undefined || b === null || b === undefined) {
+    return false;
+  }
+
+  // 4. Check if types are different
+  if (typeof a !== typeof b) return false;
+
+  // 5. Handle Arrays
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    // Sort is NOT performed here because order usually matters in UI lists.
+    // If order doesn't matter for your specific case, sort before calling this.
+    for (let i = 0; i < a.length; i++) {
+      if (!deepCompare(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  // 6. Handle Objects
+  if (typeof a === "object" && typeof b === "object") {
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+
+    if (keysA.length !== keysB.length) return false;
+
+    for (const key of keysA) {
+      if (!Object.hasOwn(b, key)) return false;
+      if (!deepCompare(a[key], b[key])) return false;
+    }
+    return true;
+  }
+
+  return false;
 }
 
 // --- VALIDATION UTILS ---
@@ -489,9 +601,30 @@ export function isValidNumString(numString: any): numString is string {
   return numString === String(num);
 }
 
-export function isValidBooleanString(boolString: any): boolString is "true" | "false" {
+export function isValidBooleanString(
+  boolString: any
+): boolString is "true" | "false" {
   if (typeof boolString !== "string") return false;
   return ["true", "false"].includes(boolString);
+}
+
+/**
+ * Checks if at least one of the provided arguments is a non-empty array.
+ *
+ * This function iterates through all provided arguments and returns `true` if it finds
+ * any argument that is both an array and has a length greater than zero.
+ *
+ * @template T - The type of elements contained within the potential arrays.
+ * @param args - A variable number of arguments to check.
+ * @returns `true` if at least one argument is a non-empty array; otherwise, `false`.
+ *
+ * @example
+ * nonEmptyList([], [1, 2], null); // returns true
+ * nonEmptyList([], []); // returns false
+ * nonEmptyList('string', 123); // returns false
+ */
+export function nonEmptyList<T>(...args: T[]): boolean {
+  return args.some((arg) => Array.isArray(arg) && arg.length > 0);
 }
 
 // --- ADDRESS UTILS ---

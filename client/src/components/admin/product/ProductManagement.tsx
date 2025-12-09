@@ -203,7 +203,7 @@ export default function ProductManagement() {
         tdClassName: "text-center",
         tdContent: (product) => (
           <Link
-            to={`product-models?searchTerm=${product.id}`}
+            to={`/admin/product-models?searchTerm=${product.id}`}
             title="View models of this product"
           >
             {product.totalModels}

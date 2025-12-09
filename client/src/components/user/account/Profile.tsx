@@ -286,6 +286,7 @@ export default function Profile() {
     });
   }, []);
 
+  // TODO enter password to confirm before deleting account
   const handleDeleteAccount = useCallback(async (): Promise<void> => {
     if (process.isProcessing) {
       toast("Another action is in progress. Please wait.", {

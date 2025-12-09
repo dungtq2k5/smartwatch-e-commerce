@@ -593,13 +593,13 @@ export default function DetailProduct() {
                           <table className="table table-striped table-sm product-detail-specs-table--g mb-0">
                             <tbody>
                               <tr>
-                                <td>Display Type</td>
+                                <th>Display Type</th>
                                 <td>
                                   {modelPicked.data.screen.display.displayType}
                                 </td>
                               </tr>
                               <tr>
-                                <td>Screen Size</td>
+                                <th>Screen Size</th>
                                 <td>
                                   {
                                     modelPicked.data.screen.display
@@ -609,14 +609,14 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Resolution</td>
+                                <th>Resolution</th>
                                 <td>
                                   {modelPicked.data.screen.resolution.wPx}px x{" "}
                                   {modelPicked.data.screen.resolution.hPx}px
                                 </td>
                               </tr>
                               <tr>
-                                <td>Brightness</td>
+                                <th>Brightness</th>
                                 <td>
                                   {modelPicked.data.screen.brightness.minNits} -{" "}
                                   {modelPicked.data.screen.brightness.maxNits}{" "}
@@ -624,19 +624,19 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Glass Material</td>
+                                <th>Glass Material</th>
                                 <td>{modelPicked.data.screen.glassMaterial}</td>
                               </tr>
                               <tr>
-                                <td>Bezel Material</td>
+                                <th>Bezel Material</th>
                                 <td>{modelPicked.data.screen.bezelMaterial}</td>
                               </tr>
                               <tr>
-                                <td>Shape</td>
+                                <th>Shape</th>
                                 <td>{modelPicked.data.screen.shape}</td>
                               </tr>
                               <tr>
-                                <td>Refresh Rate</td>
+                                <th>Refresh Rate</th>
                                 <td>
                                   {modelPicked.data.screen.refreshRateHz}Hz
                                 </td>
@@ -659,11 +659,11 @@ export default function DetailProduct() {
                           <table className="table table-striped table-sm product-detail-specs-table--g mb-0">
                             <tbody>
                               <tr>
-                                <td>Chipset</td>
+                                <th>Chipset</th>
                                 <td>{modelPicked.data.config.chipset}</td>
                               </tr>
                               <tr>
-                                <td>RAM</td>
+                                <th>RAM</th>
                                 <td>
                                   {bytesToMB(
                                     modelPicked.data.config.memory.ramBytes
@@ -672,7 +672,7 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>ROM</td>
+                                <th>ROM</th>
                                 <td>
                                   {bytesToMB(
                                     modelPicked.data.config.memory.storageBytes
@@ -695,9 +695,10 @@ export default function DetailProduct() {
                           <table className="table table-striped table-sm product-detail-specs-table--g mb-0">
                             <tbody>
                               <tr>
-                                <td>Connectivities</td>
+                                <th>Connectivities</th>
                                 <td>
                                   {modelPicked.data.config.connectivities
+                                    .length > 0
                                     ? modelPicked.data.config.connectivities.join(
                                         ", "
                                       )
@@ -705,19 +706,24 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Compatible Phone OS</td>
+                                <th>Compatible Phone OS</th>
                                 <td>
-                                  {modelPicked.data.config.compatiblePhoneOs?.join(
-                                    ", "
-                                  ) ?? "None"}
+                                  {modelPicked.data.config.compatiblePhoneOs
+                                    .length > 0
+                                    ? modelPicked.data.config.compatiblePhoneOs.join(
+                                        ", "
+                                      )
+                                    : "None"}
                                 </td>
                               </tr>
                               <tr>
-                                <td>Apps Connect</td>
+                                <th>Apps Connect</th>
                                 <td>
-                                  {modelPicked.data.config.appsConnect?.join(
-                                    ", "
-                                  ) ?? "None"}
+                                  {modelPicked.data.config.appsConnect.length
+                                    ? modelPicked.data.config.appsConnect.join(
+                                        ", "
+                                      )
+                                    : "None"}
                                 </td>
                               </tr>
                             </tbody>
@@ -738,17 +744,17 @@ export default function DetailProduct() {
                           <table className="table table-striped table-sm product-detail-specs-table--g mb-0">
                             <tbody>
                               <tr>
-                                <td>Capacity</td>
+                                <th>Capacity</th>
                                 <td>
                                   {modelPicked.data.battery.capacityMah}mAh
                                 </td>
                               </tr>
                               <tr>
-                                <td>Charging Type</td>
+                                <th>Charging Type</th>
                                 <td>{modelPicked.data.battery.chargingType}</td>
                               </tr>
                               <tr>
-                                <td>Full Charge Time</td>
+                                <th>Full Charge Time</th>
                                 <td>
                                   {formatMinTime(
                                     modelPicked.data.battery.timeFullChargeMin
@@ -756,7 +762,7 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Battery Life (AOD On)</td>
+                                <th>Battery Life (AOD On)</th>
                                 <td>
                                   {formatMinTime(
                                     modelPicked.data.battery.timeOnline.aodOnMin
@@ -764,7 +770,7 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Battery Life (AOD Off)</td>
+                                <th>Battery Life (AOD Off)</th>
                                 <td>
                                   {formatMinTime(
                                     modelPicked.data.battery.timeOnline
@@ -773,7 +779,7 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Typical Usage</td>
+                                <th>Typical Usage</th>
                                 <td>
                                   {formatMinTime(
                                     modelPicked.data.battery.timeOnline
@@ -782,7 +788,7 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Standby Time</td>
+                                <th>Standby Time</th>
                                 <td>
                                   {formatMinTime(
                                     modelPicked.data.battery.timeOnline
@@ -805,7 +811,7 @@ export default function DetailProduct() {
                           <table className="table table-striped table-sm product-detail-specs-table--g mb-0">
                             <tbody>
                               <tr>
-                                <td>Diameter</td>
+                                <th>Diameter</th>
                                 <td>
                                   {modelPicked.data.screen.diameterMm
                                     ? `${modelPicked.data.screen.diameterMm}mm`
@@ -813,7 +819,7 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Dimensions</td>
+                                <th>Dimensions</th>
                                 <td>
                                   {modelPicked.data.screen.dimension ? (
                                     <>
@@ -832,15 +838,15 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Weight</td>
+                                <th>Weight</th>
                                 <td>{modelPicked.data.watchWeightMg}mg</td>
                               </tr>
                               <tr>
-                                <td>Case Material</td>
+                                <th>Case Material</th>
                                 <td>{modelPicked.data.caseMaterial}</td>
                               </tr>
                               <tr>
-                                <td>Compatible Band Lug Width</td>
+                                <th>Compatible Band Lug Width</th>
                                 <td>
                                   {modelPicked.data.compatibleBandLugWidthMm}mm
                                 </td>
@@ -863,7 +869,7 @@ export default function DetailProduct() {
                           <table className="table table-striped table-sm product-detail-specs-table--g mb-0">
                             <tbody>
                               <tr>
-                                <td>Operating System</td>
+                                <th>Operating System</th>
                                 <td>
                                   {modelPicked.data.config.os.logoUrl ? (
                                     <img
@@ -892,7 +898,7 @@ export default function DetailProduct() {
                           <table className="table table-striped table-sm product-detail-specs-table--g mb-0">
                             <tbody>
                               <tr>
-                                <td>Speaker & Microphone</td>
+                                <th>Speaker & Microphone</th>
                                 <td>
                                   {modelPicked.data.feature.speakerAndMicrophone
                                     ? "Yes"
@@ -900,7 +906,7 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Water Resistance</td>
+                                <th>Water Resistance</th>
                                 <td>
                                   {modelPicked.data.feature.waterResistance ? (
                                     <>
@@ -926,12 +932,12 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Utilities</td>
+                                <th>Utilities</th>
                                 <td>
                                   {modelPicked.data.feature.utilities ? (
                                     <ul>
                                       {modelPicked.data.feature.utilities
-                                        .healths?.length && (
+                                        .healths.length > 0 && (
                                         <li>
                                           Healths:{" "}
                                           {modelPicked.data.feature.utilities.healths.join(
@@ -940,7 +946,7 @@ export default function DetailProduct() {
                                         </li>
                                       )}
                                       {modelPicked.data.feature.utilities.sports
-                                        ?.length && (
+                                        .length > 0 && (
                                         <li>
                                           Sports:{" "}
                                           {modelPicked.data.feature.utilities.sports.join(
@@ -949,7 +955,7 @@ export default function DetailProduct() {
                                         </li>
                                       )}
                                       {modelPicked.data.feature.utilities
-                                        .specials?.length && (
+                                        .specials.length > 0 && (
                                         <li>
                                           Specials:{" "}
                                           {modelPicked.data.feature.utilities.specials.join(
@@ -958,7 +964,7 @@ export default function DetailProduct() {
                                         </li>
                                       )}
                                       {modelPicked.data.feature.utilities.others
-                                        ?.length && (
+                                        .length > 0 && (
                                         <li>
                                           Others:{" "}
                                           {modelPicked.data.feature.utilities.others.join(
@@ -973,11 +979,14 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Supported Apps For Notifications</td>
+                                <th>Supported Apps For Notifications</th>
                                 <td>
-                                  {modelPicked.data.feature.supportedAppsForNotifications?.join(
-                                    ", "
-                                  ) ?? "None"}
+                                  {modelPicked.data.feature
+                                    .supportedAppsForNotifications.length > 0
+                                    ? modelPicked.data.feature.supportedAppsForNotifications.join(
+                                        ", "
+                                      )
+                                    : "None"}
                                 </td>
                               </tr>
                             </tbody>
@@ -995,7 +1004,7 @@ export default function DetailProduct() {
                           <table className="table table-striped table-sm product-detail-specs-table--g mb-0">
                             <tbody>
                               <tr>
-                                <td>Resolution</td>
+                                <th>Resolution</th>
                                 <td>
                                   {modelPicked.data.config.camera
                                     ? `${modelPicked.data.config.camera.resolutionMp}MP`
@@ -1003,11 +1012,15 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Features</td>
+                                <th>Features</th>
                                 <td>
-                                  {modelPicked.data.config.camera?.features?.join(
-                                    ", "
-                                  ) ?? "None"}
+                                  {modelPicked.data.config.camera &&
+                                  modelPicked.data.config.camera.features
+                                    .length > 0
+                                    ? modelPicked.data.config.camera.features.join(
+                                        ", "
+                                      )
+                                    : "None"}
                                 </td>
                               </tr>
                             </tbody>
@@ -1025,11 +1038,11 @@ export default function DetailProduct() {
                           <table className="table table-striped table-sm product-detail-specs-table--g mb-0">
                             <tbody>
                               <tr>
-                                <td colSpan={2}>
-                                  {modelPicked.data.config.sensors?.join(
-                                    ", "
-                                  ) ?? "None"}
-                                </td>
+                                <th colSpan={2}>
+                                  {modelPicked.data.config.sensors.length
+                                    ? modelPicked.data.config.sensors.join(", ")
+                                    : "None"}
+                                </th>
                               </tr>
                             </tbody>
                           </table>
@@ -1046,21 +1059,21 @@ export default function DetailProduct() {
                           <table className="table table-striped table-sm product-detail-specs-table--g mb-0">
                             <tbody>
                               <tr>
-                                <td>Band Width</td>
+                                <th>Band Width</th>
                                 <td>{variationPicked.data.band.widthMm}mm</td>
                               </tr>
                               <tr>
-                                <td>Lug Width</td>
+                                <th>Lug Width</th>
                                 <td>
                                   {variationPicked.data.band.lugWidthMm}mm
                                 </td>
                               </tr>
                               <tr>
-                                <td>Material</td>
+                                <th>Material</th>
                                 <td>{variationPicked.data.band.material}</td>
                               </tr>
                               <tr>
-                                <td>Colors</td>
+                                <th>Colors</th>
                                 <td>
                                   {variationPicked.data.band.colors.map(
                                     (color, idx) => (
@@ -1084,11 +1097,11 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Clasp Type</td>
+                                <th>Clasp Type</th>
                                 <td>{variationPicked.data.band.claspType}</td>
                               </tr>
                               <tr>
-                                <td>Adjustable Range</td>
+                                <th>Adjustable Range</th>
                                 <td>
                                   {
                                     variationPicked.data.band.adjustableRange
@@ -1103,11 +1116,11 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Style</td>
+                                <th>Style</th>
                                 <td>{variationPicked.data.band.style}</td>
                               </tr>
                               <tr>
-                                <td>Quick Release</td>
+                                <th>Quick Release</th>
                                 <td>
                                   {variationPicked.data.band.quickRelease
                                     ? "Yes"
@@ -1115,7 +1128,7 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Water Resistance</td>
+                                <th>Water Resistance</th>
                                 <td>
                                   {variationPicked.data.band.waterResistance
                                     ? "Yes"
@@ -1123,7 +1136,7 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Hypoallergenic</td>
+                                <th>Hypoallergenic</th>
                                 <td>
                                   {variationPicked.data.band.hypoallergenic
                                     ? "Yes"
@@ -1131,7 +1144,7 @@ export default function DetailProduct() {
                                 </td>
                               </tr>
                               <tr>
-                                <td>Weight</td>
+                                <th>Weight</th>
                                 <td>{variationPicked.data.band.weightMg}mg</td>
                               </tr>
                             </tbody>
@@ -1158,7 +1171,7 @@ export default function DetailProduct() {
                       <div className="d-flex flex-wrap gap-2">
                         {productDetail.imageUrls.map((url, i) => (
                           <img
-                            key={`prod-img-${i}`}
+                            key={`prod-img-${i + 1}`}
                             src={url}
                             alt="product"
                             className="product-detail-thumb-img--g"
@@ -1182,7 +1195,7 @@ export default function DetailProduct() {
                         <div className="d-flex flex-wrap gap-2">
                           {modelPicked.data.imageUrls.map((url, i) => (
                             <img
-                              key={`model-img-${i}`}
+                              key={`model-img-${i + 1}`}
                               src={url}
                               alt="model"
                               className="product-detail-thumb-img--g"
@@ -1208,7 +1221,7 @@ export default function DetailProduct() {
                         <div className="d-flex flex-wrap gap-2">
                           {variationPicked.data.imageUrls.map((url, i) => (
                             <img
-                              key={`var-img-${i}`}
+                              key={`var-img-${i + 1}`}
                               src={url}
                               alt="variation"
                               className="product-detail-thumb-img--g"
