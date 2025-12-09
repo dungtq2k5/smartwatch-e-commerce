@@ -557,7 +557,7 @@ export type ProductModelCreate = {
   stockPriceCents: number;
   imageUrls?: string[] | null;
   feature: {
-    speakerAndMicrophone?: boolean | null;
+    speakerAndMicrophone?: boolean;
     waterResistance?: {
       rating: string;
       description?: string | null;

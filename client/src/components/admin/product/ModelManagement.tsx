@@ -21,11 +21,11 @@ import {
   PRODUCT_MODEL_SEARCH_SORT_OPTIONS as MODEL_SEARCH_SORT_OPTIONS,
   PROJECT_NAME,
 } from "../../../../../common/configs.common";
-import { useUserStore } from "../../../store/admin/userStore";
-import { useModelStore } from "../../../store/admin/product/modelStore";
-import { useRefreshStore } from "../../../store/admin/refreshStore";
-import { useConfigStore } from "../../../store/admin/configStore";
-import { useHasPermission } from "../../../hooks/admin/useHasPermission";
+import useUserStore from "../../../store/admin/userStore";
+import useModelStore from "../../../store/admin/product/modelStore";
+import useRefreshStore from "../../../store/admin/refreshStore";
+import useConfigStore from "../../../store/admin/configStore";
+import useHasPermission from "../../../hooks/admin/useHasPermission";
 import {
   DATA_DISPLAY_ROWS_PER_PAGE,
   DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE,
@@ -104,7 +104,7 @@ export default function ModelManagement() {
   renderCount.current += 1;
   console.log(`ModelManagement render count: ${renderCount.current}`);
 
-  const { getSysUserId } = useUserStore();
+  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchModels, deleteModel, deleteModelBulk } = useModelStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
   const {
@@ -292,7 +292,7 @@ export default function ModelManagement() {
 
       try {
         // Pre-fetch sysUserId for getSync functions
-        await getSysUserId();
+        if (!sysUserId) await fetchSysUserId();
 
         const [
           urlLimit,

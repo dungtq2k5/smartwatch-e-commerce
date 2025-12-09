@@ -19,6 +19,10 @@ type UserState = {
   sysUserId: string | null;
 
   fetchUsers: (query?: UserSearchQuery) => Promise<AdminUserListResponse>;
+  fetchSysUserId: () => Promise<string>;
+  fetchUser: (userId: string) => Promise<AdminUserResponse>;
+  fetchUserDetail: (userId: string) => Promise<AdminUserDetailResponse>;
+
   createUser: (userData: UserCreate) => Promise<AdminUserResponse>;
 
   updateUser: (
@@ -34,15 +38,11 @@ type UserState = {
     userData: UserPhoneNumberUpdate
   ) => Promise<AdminUserResponse>;
 
-  getSysUserId: () => Promise<string>;
-  getUser: (userId: string) => Promise<AdminUserResponse>;
-  getUserDetail: (userId: string) => Promise<AdminUserDetailResponse>;
-
   deleteUser: (userId: string) => Promise<void>;
   deleteUserBulk: (data: UserBulkDelete) => Promise<void>;
 };
 
-export const useUserStore = create<UserState>((set, get) => ({
+const useUserStore = create<UserState>((set, get) => ({
   sysUserId: null,
 
   async fetchUsers(query?: UserSearchQuery): Promise<AdminUserListResponse> {
@@ -70,6 +70,44 @@ export const useUserStore = create<UserState>((set, get) => ({
       if (!res.success) throw new Error(res.message);
 
       return res.data as AdminUserListResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async fetchSysUserId(): Promise<string> {
+    const { sysUserId } = get();
+    if (sysUserId) return sysUserId;
+
+    try {
+      const res = await retrieve(`${USER_URL}/sys-user-id`);
+      if (!res.success) throw new Error(res.message);
+
+      const { sysUserId } = res.data as { sysUserId: string };
+      set({ sysUserId });
+      return sysUserId;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async fetchUser(userId: string): Promise<AdminUserResponse> {
+    try {
+      const res = await retrieve(`${USER_URL}/${userId}`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as AdminUserResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async fetchUserDetail(userId: string): Promise<AdminUserDetailResponse> {
+    try {
+      const res = await retrieve(`${USER_URL}/${userId}/details`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as AdminUserDetailResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -137,44 +175,6 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
   },
 
-  async getSysUserId(): Promise<string> {
-    const { sysUserId } = get();
-    if (sysUserId) return sysUserId;
-
-    try {
-      const res = await retrieve(`${USER_URL}/sys-user-id`);
-      if (!res.success) throw new Error(res.message);
-
-      const { sysUserId } = res.data as { sysUserId: string };
-      set({ sysUserId });
-      return sysUserId;
-    } catch (error) {
-      throw new Error(formatError(error));
-    }
-  },
-
-  async getUser(userId: string): Promise<AdminUserResponse> {
-    try {
-      const res = await retrieve(`${USER_URL}/${userId}`);
-      if (!res.success) throw new Error(res.message);
-
-      return res.data as AdminUserResponse;
-    } catch (error) {
-      throw new Error(formatError(error));
-    }
-  },
-
-  async getUserDetail(userId: string): Promise<AdminUserDetailResponse> {
-    try {
-      const res = await retrieve(`${USER_URL}/${userId}/details`);
-      if (!res.success) throw new Error(res.message);
-
-      return res.data as AdminUserDetailResponse;
-    } catch (error) {
-      throw new Error(formatError(error));
-    }
-  },
-
   async deleteUser(userId: string): Promise<void> {
     try {
       const { sysUserId } = get();
@@ -212,3 +212,5 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
   },
 }));
+
+export default useUserStore;

@@ -10,12 +10,12 @@ type ProductOsState = {
   fetchOses: () => Promise<ProductOsListResponse>;
 };
 
-export const useProductOsStore = create<ProductOsState>((set, get) => ({
+const useProductOsStore = create<ProductOsState>((set, get) => ({
   oses: null,
 
   async fetchOses(): Promise<ProductOsListResponse> {
     const { oses } = get();
-    if (oses) return oses;
+    if (oses) return structuredClone(oses);
 
     try {
       const res = await retrieve(PRODUCT_OS_URL);
@@ -23,9 +23,11 @@ export const useProductOsStore = create<ProductOsState>((set, get) => ({
 
       const oses = res.data as ProductOsListResponse;
       set({ oses });
-      return oses;
+      return structuredClone(oses);
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
 }));
+
+export default useProductOsStore;

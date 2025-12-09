@@ -10,54 +10,63 @@ import { formatError } from "../../../../../common/utils.common";
 type DeliveryStateState = {
   deliveryStates: DeliveryStateListResponse | null;
 
+  getDeliveryState: (id: string) => DeliveryStateResponse | undefined; // Should be pre-fetched first
+
   fetchDeliveryStates: () => Promise<DeliveryStateListResponse>;
-  getDeliveryState: (id: string) => Promise<DeliveryStateResponse>;
-  getDeliveryStateSync: (id: string) => DeliveryStateResponse | undefined; // Should be pre-fetched first
+  fetchDeliveryState: (id: string) => Promise<DeliveryStateResponse>;
 };
 
-export const useDeliveryStateStore = create<DeliveryStateState>((set, get) => ({
-  deliveryStates: null,
+const useDeliveryStateStore = create<DeliveryStateState>(
+  (set, get) => ({
+    deliveryStates: null,
 
-  async fetchDeliveryStates(): Promise<DeliveryStateListResponse> {
-    const { deliveryStates } = get();
-    if (deliveryStates) return deliveryStates;
+    getDeliveryState(id: string): DeliveryStateResponse | undefined {
+      return structuredClone(
+        get().deliveryStates?.states.find((state) => state.id === id)
+      );
+    },
 
-    try {
-      const res = await retrieve(DELIVERY_STATES_URL);
-      if (!res.success) throw new Error(res.message);
+    async fetchDeliveryStates(): Promise<DeliveryStateListResponse> {
+      const { deliveryStates } = get();
+      if (deliveryStates) return structuredClone(deliveryStates);
 
-      const data = res.data as DeliveryStateListResponse;
-      set({ deliveryStates: data });
-      return data;
-    } catch (error) {
-      throw new Error(formatError(error));
-    }
-  },
+      try {
+        const res = await retrieve(DELIVERY_STATES_URL);
+        if (!res.success) throw new Error(res.message);
 
-  async getDeliveryState(id: string): Promise<DeliveryStateResponse> {
-    try {
+        const states = res.data as DeliveryStateListResponse;
+        set({ deliveryStates: states });
+        return structuredClone(states);
+      } catch (error) {
+        throw new Error(formatError(error));
+      }
+    },
+
+    async fetchDeliveryState(id: string): Promise<DeliveryStateResponse> {
       const { deliveryStates } = get();
       if (deliveryStates) {
         const deliveryState = deliveryStates.states.find(
           (state) => state.id === id
         );
-        if (deliveryState) return deliveryState;
+        if (deliveryState) return structuredClone(deliveryState);
       }
 
-      const fetchedDeliveryStates = await get().fetchDeliveryStates();
+      try {
+        const fetchedDeliveryStates = await get().fetchDeliveryStates();
 
-      if (!fetchedDeliveryStates) throw new Error("Delivery states not found");
-      const deliveryState = fetchedDeliveryStates.states.find(
-        (state) => state.id === id
-      );
-      if (!deliveryState) throw new Error("Delivery state not found");
-      return deliveryState;
-    } catch (error) {
-      throw new Error(formatError(error));
-    }
-  },
+        if (!fetchedDeliveryStates)
+          throw new Error("Delivery states not found");
+        const deliveryState = fetchedDeliveryStates.states.find(
+          (state) => state.id === id
+        );
+        if (!deliveryState) throw new Error("Delivery state not found");
 
-  getDeliveryStateSync(id: string): DeliveryStateResponse | undefined {
-    return get().deliveryStates?.states.find((state) => state.id === id);
-  },
-}));
+        return deliveryState;
+      } catch (error) {
+        throw new Error(formatError(error));
+      }
+    },
+  })
+);
+
+export default useDeliveryStateStore;

@@ -33,8 +33,8 @@ import type {
   AdminProductResponse,
   ProductSearchQuery,
 } from "../../../../../common/types.common";
-import { useProductBrandStore } from "../../../store/common/product/brandStore";
-import { useProductCategoryStore } from "../../../store/common/product/categoryStore";
+import useProductBrandStore from "../../../store/common/product/brandStore";
+import useProductCategoryStore from "../../../store/common/product/categoryStore";
 import {
   DATA_DISPLAY_ROWS_PER_PAGE,
   DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE,
@@ -43,18 +43,18 @@ import {
   WARNING_EMOJI,
 } from "../../../configs";
 import Pagination from "../../common/Pagination";
-import { useUserStore } from "../../../store/admin/userStore";
+import useUserStore from "../../../store/admin/userStore";
 import type {
   AdminProductDisplayableField,
   TableColDisplay as GeneralTableColDisplay,
   ProductDisplayField,
 } from "../../../utils/types";
-import { useRefreshStore } from "../../../store/admin/refreshStore";
-import { useConfigStore } from "../../../store/admin/configStore";
-import { useHasPermission } from "../../../hooks/admin/useHasPermission";
+import useRefreshStore from "../../../store/admin/refreshStore";
+import useConfigStore from "../../../store/admin/configStore";
+import useHasPermission from "../../../hooks/admin/useHasPermission";
 import EditBtnLink from "../EditBtnLink";
 import DeleteBtn from "../DeleteBtn";
-import { useProductStore } from "../../../store/admin/product/productStore";
+import useProductStore from "../../../store/admin/product/productStore";
 import toast from "react-hot-toast";
 import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";
@@ -106,12 +106,13 @@ export default function ProductManagement() {
   renderCount.current += 1;
   console.log("ProductManagement render count:", renderCount.current);
 
-  const { sysUserId, getSysUserId } = useUserStore();
+  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchProducts, deleteProduct, deleteProductBulk } = useProductStore();
-  const { brands, fetchBrands, getBrandSync } = useProductBrandStore();
-  const { categories, fetchCategories, getCategorySync } =
+  const { brands, getBrand, fetchBrands } = useProductBrandStore();
+  const { categories, getCategory, fetchCategories } =
     useProductCategoryStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
+
   const {
     config: { productManagementDisplayFields: displayFields },
     resetProductManagementDisplayFields,
@@ -157,15 +158,15 @@ export default function ProductManagement() {
       categoryId: {
         label: PRODUCT_FIELD_LABEL_LEGEND["categoryId"] || "Category",
         tdContent: (product) => (
-          <>{getCategorySync(product.categoryId)?.name || "Unknown category"}</>
+          <>{getCategory(product.categoryId)?.name || "Unknown category"}</>
         ),
         getCsvVal: (product) =>
-          getCategorySync(product.categoryId)?.name || "Unknown category",
+          getCategory(product.categoryId)?.name || "Unknown category",
       },
       brandId: {
         label: PRODUCT_FIELD_LABEL_LEGEND["brandId"] || "Brand",
         tdContent: (product) => {
-          const brand = getBrandSync(product.brandId);
+          const brand = getBrand(product.brandId);
           return brand ? (
             brand.logoUrl ? (
               <img
@@ -182,7 +183,7 @@ export default function ProductManagement() {
           );
         },
         getCsvVal: (product) =>
-          getBrandSync(product.brandId)?.name || "Unknown brand",
+          getBrand(product.brandId)?.name || "Unknown brand",
       },
       description: {
         label: PRODUCT_FIELD_LABEL_LEGEND["description"] || "Description",
@@ -273,7 +274,7 @@ export default function ProductManagement() {
         getCsvVal: () => null,
       },
     }),
-    [canDeleteProduct, canEditProduct, getBrandSync, getCategorySync]
+    [canDeleteProduct, canEditProduct, getBrand, getCategory]
   );
 
   const [process, setProcess] = useState<Process>({
@@ -314,9 +315,9 @@ export default function ProductManagement() {
       try {
         // Pre-fetch brands and categories for filter selects, getSync functions
         await Promise.all([
-          !sysUserId ? getSysUserId() : Promise.resolve(),
-          !brands ? fetchBrands() : Promise.resolve(),
-          !categories ? fetchCategories() : Promise.resolve(),
+          sysUserId ? Promise.resolve() : fetchSysUserId(),
+          brands ? Promise.resolve() : fetchBrands(),
+          categories ? Promise.resolve() : fetchCategories(),
         ]);
 
         const [

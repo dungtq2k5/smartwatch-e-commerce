@@ -64,9 +64,9 @@ export default function ProductDetailSpecsModal({
                   <div className="col-md-6">
                     <strong>Model:</strong> {modelPicked.data.name}
                   </div>
-                  <div className="col-md-6">
+                  <div className="col-md-6 d-flex align-items-center gap-2">
                     <strong>Color:</strong>{" "}
-                    <span className="d-inline-flex align-items-center">
+                    <span className="d-inline-flex align-items-center gap-1">
                       <span
                         className="product-detail-color-circle--g"
                         style={{

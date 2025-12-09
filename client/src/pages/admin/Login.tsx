@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { useAuthStore } from "../../store/admin/authStore";
+import useAuthStore from "../../store/admin/authStore";
 import toast from "react-hot-toast";
 import { WAITING_EMOJI } from "../../configs";
 import {

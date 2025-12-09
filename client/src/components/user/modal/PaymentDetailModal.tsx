@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
-import { useOrderStore } from "../../../store/user/orderStore";
-import { useOrderStateStore } from "../../../store/common/order/orderStateStore";
+import useOrderStore from "../../../store/user/orderStore";
+import useOrderStateStore from "../../../store/common/order/orderStateStore";
 import type {
   OrderResponse,
   OrderStateResponse,
@@ -25,8 +25,8 @@ const PaymentDetailModal = memo(
     renderCount.current++;
     console.log("PaymentDetailModal render count:", renderCount.current);
 
-    const { getOrder } = useOrderStore();
-    const { getOrderState } = useOrderStateStore();
+    const { fetchOrder } = useOrderStore();
+    const { fetchOrderState } = useOrderStateStore();
 
     const [order, setOrder] = useState<OrderResponse | null>(null);
     const [orderState, setOrderState] = useState<OrderStateResponse | null>(
@@ -44,12 +44,12 @@ const PaymentDetailModal = memo(
           setApiErr(null);
 
           try {
-            const order = await getOrder(orderId);
+            const order = await fetchOrder(orderId);
             setOrder(order);
 
             const latestOrderState = order.states.at(-1);
             if (latestOrderState) {
-              const orderState = await getOrderState(latestOrderState.id);
+              const orderState = await fetchOrderState(latestOrderState.id);
               setOrderState(orderState);
             }
           } catch (error) {

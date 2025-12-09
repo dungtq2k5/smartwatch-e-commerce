@@ -1,6 +1,6 @@
 import { faPlus, faSlash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useUserAddressStore } from "../../../store/user/addressStore";
+import useUserAddressStore from "../../../store/user/addressStore";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";

@@ -5,7 +5,7 @@ import {
   faFaceSadCry,
   faFaceSmileBeam,
 } from "@fortawesome/free-solid-svg-icons";
-import { useUserCartStore } from "../../store/user/cartStore";
+import useUserCartStore from "../../store/user/cartStore";
 import { useEffect } from "react";
 
 export default function OrderStatus() {

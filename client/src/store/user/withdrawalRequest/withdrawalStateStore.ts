@@ -10,36 +10,48 @@ import { formatError } from "../../../../../common/utils.common";
 type WithdrawalRequestState = {
   withdrawalStates: WithdrawalStateListResponse | null;
 
+  getWithdrawalStates: () => WithdrawalStateListResponse | null;
+  getWithdrawalState: (id: string) => WithdrawalStateResponse | undefined;
+
   fetchWithdrawalStates: () => Promise<WithdrawalStateListResponse>;
-  getWithdrawalState: (id: string) => Promise<WithdrawalStateResponse>;
-  getWithdrawalStateSync: (id: string) => WithdrawalStateResponse | undefined;
+  fetchWithdrawalState: (id: string) => Promise<WithdrawalStateResponse>;
 };
 
-export const useWithdrawalStateStore = create<WithdrawalRequestState>(
+const useWithdrawalStateStoreInternal = create<WithdrawalRequestState>(
   (set, get) => ({
     withdrawalStates: null,
 
+    getWithdrawalStates(): WithdrawalStateListResponse | null {
+      return structuredClone(get().withdrawalStates);
+    },
+
+    getWithdrawalState(id: string): WithdrawalStateResponse | undefined {
+      return structuredClone(
+        get().withdrawalStates?.states.find((state) => state.id === id)
+      );
+    },
+
     async fetchWithdrawalStates(): Promise<WithdrawalStateListResponse> {
       const { withdrawalStates } = get();
-      if (withdrawalStates) return withdrawalStates;
+      if (withdrawalStates) return structuredClone(withdrawalStates);
 
       try {
         const res = await retrieve(WITHDRAWAL_STATES_URL);
         if (!res.success) throw new Error(res.message);
 
-        const data = res.data as WithdrawalStateListResponse;
-        set({ withdrawalStates: data });
-        return data;
+        const states = res.data as WithdrawalStateListResponse;
+        set({ withdrawalStates: states });
+        return structuredClone(states);
       } catch (error) {
         throw new Error(formatError(error));
       }
     },
 
-    async getWithdrawalState(id: string): Promise<WithdrawalStateResponse> {
+    async fetchWithdrawalState(id: string): Promise<WithdrawalStateResponse> {
       const state = get().withdrawalStates?.states.find(
         (state) => state.id === id
       );
-      if (state) return state;
+      if (state) return structuredClone(state);
 
       try {
         const fetchedStates = await get().fetchWithdrawalStates();
@@ -52,9 +64,11 @@ export const useWithdrawalStateStore = create<WithdrawalRequestState>(
         throw new Error(formatError(error));
       }
     },
-
-    getWithdrawalStateSync(id: string): WithdrawalStateResponse | undefined {
-      return get().withdrawalStates?.states.find((state) => state.id === id);
-    }
   })
 );
+
+export default function useWithdrawalStateStore() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { withdrawalStates, ...actions } = useWithdrawalStateStoreInternal();
+  return actions;
+}

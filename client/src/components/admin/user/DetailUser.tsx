@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useRoleStore } from "../../../store/admin/roleStore";
+import useRoleStore from "../../../store/admin/roleStore";
 import type { AdminUserDetailResponse } from "../../../../../common/types.common";
 import { centsToUSD, formatError } from "../../../../../common/utils.common";
 import ApiError from "../../common/ApiError";
-import { useUserStore } from "../../../store/admin/userStore";
+import useUserStore from "../../../store/admin/userStore";
 import defaultAvatar from "../../../assets/default-avatar.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBank, faCreditCard } from "@fortawesome/free-solid-svg-icons";
 import { CARD_BRAND_ICONS } from "../../../configs";
-import { useRefreshStore } from "../../../store/admin/refreshStore";
+import useRefreshStore from "../../../store/admin/refreshStore";
 import DetailUserSkeleton from "../skeleton/DetailUserSkeleton";
 
 export default function DetailUser() {
@@ -22,13 +22,12 @@ export default function DetailUser() {
   const navigate = useNavigate();
 
   const { roles, fetchRoles } = useRoleStore();
-  const { sysUserId, getSysUserId, getUserDetail } = useUserStore();
+  const { sysUserId, fetchSysUserId, fetchUserDetail } = useUserStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
   const [userDetail, setUserDetail] = useState<AdminUserDetailResponse | null>(
     null
   );
-
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [apiErr, setApiErr] = useState<string | null>(null);
 
@@ -42,9 +41,9 @@ export default function DetailUser() {
         if (!id) throw new Error("User ID is missing");
 
         const [fetchedUserDetail] = await Promise.all([
-          getUserDetail(id),
-          fetchRoles(),
-          getSysUserId(),
+          fetchUserDetail(id),
+          roles ? Promise.resolve() : fetchRoles(),
+          sysUserId ? Promise.resolve() : fetchSysUserId(),
         ]);
 
         setUserDetail(fetchedUserDetail);

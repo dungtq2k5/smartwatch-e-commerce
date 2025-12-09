@@ -10,16 +10,23 @@ import { ROLE_URL } from "../../configs";
 type RoleState = {
   roles: RoleListResponse | null;
 
+  getRole: (roleId: string) => RoleResponse | undefined;
+
   fetchRoles: () => Promise<RoleListResponse>;
-  getRoleSync: (roleId: string) => RoleResponse | undefined;
 };
 
-export const useRoleStore = create<RoleState>((set, get) => ({
+const useRoleStore = create<RoleState>((set, get) => ({
   roles: null,
+
+  getRole(roleId: string): RoleResponse | undefined {
+    return structuredClone(
+      get().roles?.roles.find((role) => role.id === roleId)
+    );
+  },
 
   async fetchRoles(): Promise<RoleListResponse> {
     const { roles } = get();
-    if (roles) return roles;
+    if (roles) return structuredClone(roles);
 
     try {
       const res = await retrieve(ROLE_URL);
@@ -27,13 +34,11 @@ export const useRoleStore = create<RoleState>((set, get) => ({
 
       const roles = res.data as RoleListResponse;
       set({ roles });
-      return roles;
+      return structuredClone(roles);
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
-
-  getRoleSync(roleId: string): RoleResponse | undefined {
-    return get().roles?.roles.find((role) => role.id === roleId);
-  },
 }));
+
+export default useRoleStore;

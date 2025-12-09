@@ -1,6 +1,6 @@
 import { Routes, Route, useLocation } from "react-router-dom";
-import { useAuthStore } from "./store/user/authStore.ts";
-import { useAuthStore as useAdminAuthStore } from "./store/admin/authStore.ts";
+import useAuthStore from "./store/user/authStore.ts";
+import useAdminAuthStore from "./store/admin/authStore.ts";
 import Home from "./pages/user/Home.tsx";
 import NotAuthRoute from "./components/user/NotAuthRoute.tsx";
 import AuthRoute from "./components/user/AuthRoute.tsx";

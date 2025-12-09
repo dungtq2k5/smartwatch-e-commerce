@@ -49,16 +49,13 @@ type AuthState = {
   // Update user data
   forgotPassword: (data: UserForgotPassword) => Promise<void>;
   resetPassword: (password: string, token: string) => Promise<void>;
+  setSelfPassword: (data: UserSelfPasswordSet) => Promise<UserResponse>;
 
   updateSelfGeneralInfo: (
     data: UserSelfGeneralInfoUpdate
   ) => Promise<UserResponse>;
-
   updateSelfContactInfo: (data: UserContactInfoUpdate) => Promise<UserResponse>;
-
   updateSelfPassword: (data: UserSelfPasswordUpdate) => Promise<UserResponse>;
-
-  setSelfPassword: (data: UserSelfPasswordSet) => Promise<UserResponse>;
 
   deleteAccount: () => Promise<void>;
 
@@ -67,7 +64,7 @@ type AuthState = {
   updateUserBalanceCli: (amountCents: number) => void;
 };
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuth: false,
 
@@ -102,7 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const user = res.data as UserResponse;
       set({ user });
-      return user;
+      return structuredClone(user);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -122,7 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const user = res.data as UserResponse;
       set({ isAuth: true, user });
-      return user;
+      return structuredClone(user);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -140,7 +137,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const user = res.data as UserResponse;
       set({ user, isAuth: true });
-      return user;
+      return structuredClone(user);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -190,6 +187,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  async updateSelfPassword(
+    data: UserSelfPasswordUpdate
+  ): Promise<UserResponse> {
+    const { isAuth, user } = get();
+    if (!isAuth) throw new Error("User not logged in");
+    if (!user || user.authProvider !== "local") {
+      throw new Error("Cannot update password when user is auth by provider");
+    }
+
+    try {
+      const res = await patch(USER_UPDATE_SELF_PASSWORD_URL, undefined, data);
+      if (!res.success) {
+        throw new Error(res.message);
+      }
+
+      const user = res.data as UserResponse;
+      set({ user });
+      return structuredClone(user);
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
   async authByGoogle(data: UserAuthByGoogle): Promise<UserResponse> {
     const { isAuth } = get();
     if (isAuth) throw new Error("User already logged in");
@@ -202,7 +222,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const user = res.data as UserResponse;
       set({ user, isAuth: true });
-      return user;
+      return structuredClone(user);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -226,7 +246,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const user = res.data as UserResponse;
       set({ user });
-      return user;
+      return structuredClone(user);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -250,30 +270,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const user = res.data as UserResponse;
       set({ user });
-      return user;
-    } catch (error) {
-      throw new Error(formatError(error));
-    }
-  },
-
-  async updateSelfPassword(
-    data: UserSelfPasswordUpdate
-  ): Promise<UserResponse> {
-    const { isAuth, user } = get();
-    if (!isAuth) throw new Error("User not logged in");
-    if (!user || user.authProvider !== "local") {
-      throw new Error("Cannot update password when user is auth by provider");
-    }
-
-    try {
-      const res = await patch(USER_UPDATE_SELF_PASSWORD_URL, undefined, data);
-      if (!res.success) {
-        throw new Error(res.message);
-      }
-
-      const user = res.data as UserResponse;
-      set({ user });
-      return user;
+      return structuredClone(user);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -294,7 +291,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const user = res.data as UserResponse;
       set({ user });
-      return user;
+      return structuredClone(user);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -329,3 +326,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: { ...user, userBalanceCents: amountCents } });
   },
 }));
+
+export default useAuthStore;

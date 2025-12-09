@@ -1,5 +1,5 @@
 import { Link, Navigate, Outlet } from "react-router-dom";
-import { useAuthStore } from "../../store/user/authStore";
+import useAuthStore from "../../store/user/authStore";
 import { memo, useRef } from "react";
 
 const AuthRoute = memo(() => {

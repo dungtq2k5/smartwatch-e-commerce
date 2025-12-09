@@ -1,12 +1,12 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
 import { centsToUSD, formatError } from "../../../../../common/utils.common";
-import { useWithdrawalStateStore } from "../../../store/common/withdrawalStateStore";
+import useWithdrawalStateStore from "../../../store/common/withdrawalStateStore";
 import type {
   SelfWithdrawalRequestResponse,
   WithdrawalStateResponse,
 } from "../../../../../common/types.common";
-import { useUserWithdrawalRequestStore } from "../../../store/user/userWithdrawalRequestStore";
+import useUserWithdrawalRequestStore from "../../../store/user/userWithdrawalRequestStore";
 import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -33,9 +33,12 @@ const WithdrawalDetailModal = memo(
     renderCount.current++;
     console.log(`Rendering WithdrawalDetailModal: ${renderCount.current}`);
 
-    const { getWithdrawalRequest, cancelWithdrawalRequest, canCancelRequest } =
-      useUserWithdrawalRequestStore();
-    const { getWithdrawalState } = useWithdrawalStateStore();
+    const {
+      fetchWithdrawalRequest,
+      cancelWithdrawalRequest,
+      canCancelRequest,
+    } = useUserWithdrawalRequestStore();
+    const { fetchWithdrawalState } = useWithdrawalStateStore();
 
     const [withdrawalRequest, setWithdrawalRequest] =
       useState<SelfWithdrawalRequestResponse | null>(null);
@@ -63,12 +66,12 @@ const WithdrawalDetailModal = memo(
           setApiErr(null);
 
           try {
-            const withdrawalRequest = await getWithdrawalRequest(requestId);
+            const withdrawalRequest = await fetchWithdrawalRequest(requestId);
             setWithdrawalRequest(withdrawalRequest);
 
             const latestState = withdrawalRequest.states.at(-1);
             if (latestState) {
-              const requestState = await getWithdrawalState(latestState.id);
+              const requestState = await fetchWithdrawalState(latestState.id);
               setRequestState(requestState);
             }
           } catch (error) {

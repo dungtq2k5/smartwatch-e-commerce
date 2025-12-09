@@ -15,7 +15,7 @@ import {
 type ProductState = {
   fetchProducts: (query?: ProductSearchQuery) => Promise<ProductListResponse>;
 
-  getProductDetail: (
+  fetchProductDetail: (
     productId: string,
     query?: ProductDetailQuery
   ) => Promise<ProductDetailResponse>;
@@ -64,7 +64,7 @@ export const useProductStore = create<ProductState>(() => ({
     }
   },
 
-  async getProductDetail(
+  async fetchProductDetail(
     productId: string,
     query?: ProductDetailQuery
   ): Promise<ProductDetailResponse> {

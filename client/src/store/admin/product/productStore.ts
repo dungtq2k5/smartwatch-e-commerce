@@ -22,8 +22,8 @@ type ProductState = {
     query?: ProductSearchQuery
   ) => Promise<AdminProductListResponse>;
 
-  getProduct: (productId: string) => Promise<AdminProductResponse>;
-  getProductDetail: (
+  fetchProduct: (productId: string) => Promise<AdminProductResponse>;
+  fetchProductDetail: (
     productId: string,
     query?: ProductDetailQuery
   ) => Promise<AdminProductDetailResponse>;
@@ -37,7 +37,7 @@ type ProductState = {
   ) => Promise<ProductResponse>;
 };
 
-export const useProductStore = create<ProductState>(() => ({
+const useProductStore = create<ProductState>(() => ({
   async fetchProducts(
     query?: ProductSearchQuery
   ): Promise<AdminProductListResponse> {
@@ -81,7 +81,7 @@ export const useProductStore = create<ProductState>(() => ({
     }
   },
 
-  async getProduct(productId: string): Promise<AdminProductResponse> {
+  async fetchProduct(productId: string): Promise<AdminProductResponse> {
     try {
       const res = await retrieve(`${PRODUCT_URL}/${productId}/admin`);
       if (!res.success) throw new Error(res.message);
@@ -93,7 +93,7 @@ export const useProductStore = create<ProductState>(() => ({
     }
   },
 
-  async getProductDetail(
+  async fetchProductDetail(
     productId: string,
     query?: ProductDetailQuery
   ): Promise<AdminProductDetailResponse> {
@@ -160,3 +160,5 @@ export const useProductStore = create<ProductState>(() => ({
     }
   },
 }));
+
+export default useProductStore;

@@ -3,8 +3,8 @@ import { Button, Modal } from "react-bootstrap";
 import { centsToUSD, formatError } from "../../../../../common/utils.common";
 import { PROJECT_NAME } from "../../../../../common/configs.common";
 import { Link } from "react-router-dom";
-import { useReturnStore } from "../../../store/user/orderReturnStore";
-import { useReturnStateStore } from "../../../store/common/returnRefund/returnStateStore";
+import useReturnStore from "../../../store/user/orderReturnStore";
+import useReturnStateStore from "../../../store/common/returnRefund/returnStateStore";
 import type {
   OrderReturnResponse,
   ReturnStateResponse,
@@ -25,8 +25,8 @@ const RefundDetailModal = memo(
     renderCount.current++;
     console.log("RefundDetailModal render count:", renderCount.current);
 
-    const { getReturn } = useReturnStore();
-    const { getReturnState } = useReturnStateStore();
+    const { fetchReturn } = useReturnStore();
+    const { fetchReturnState } = useReturnStateStore();
 
     const [orderReturn, setOrderReturn] = useState<OrderReturnResponse | null>(
       null
@@ -46,12 +46,12 @@ const RefundDetailModal = memo(
           setApiErr(null);
 
           try {
-            const orderReturn = await getReturn(orderReturnId);
+            const orderReturn = await fetchReturn(orderReturnId);
             setOrderReturn(orderReturn);
 
             const latestReturnState = orderReturn.states.at(-1);
             if (latestReturnState) {
-              const returnState = await getReturnState(latestReturnState.id);
+              const returnState = await fetchReturnState(latestReturnState.id);
               setReturnState(returnState);
             }
           } catch (error) {

@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import type { PermissionCode } from "../../../../common/types.common";
-import { useAuthStore } from "../../store/admin/authStore";
-import { usePermissionStore } from "../../store/admin/permissionStore";
-import { useRoleStore } from "../../store/admin/roleStore";
+import useAuthStore from "../../store/admin/authStore";
+import usePermissionStore from "../../store/admin/permissionStore";
+import useRoleStore from "../../store/admin/roleStore";
 
 /**
  * Custom hook to determine if the currently authenticated admin has a specific permission.
@@ -41,7 +41,7 @@ import { useRoleStore } from "../../store/admin/roleStore";
  * };
  * ```
  */
-export function useHasPermission(permissionCode: PermissionCode): boolean {
+export default function useHasPermission(permissionCode: PermissionCode): boolean {
   const { admin } = useAuthStore();
   const { roles } = useRoleStore();
   const { permissions } = usePermissionStore();

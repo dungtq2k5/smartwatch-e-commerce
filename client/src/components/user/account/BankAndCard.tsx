@@ -6,7 +6,7 @@ import {
   faPlus,
   faCircleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
-import { useUserPaymentMethodStore } from "../../../store/user/userPaymentMethodStore";
+import useUserPaymentMethodStore from "../../../store/user/userPaymentMethodStore";
 import { formatError } from "../../../../../common/utils.common";
 import ApiError from "../../common/ApiError";
 import Loading from "../../common/Loading";
@@ -19,7 +19,7 @@ import {
 } from "../../../configs";
 import toast from "react-hot-toast";
 import SmallSpinner from "../../common/SmallSpinner";
-import { useUserBankAccountStore } from "../../../store/user/userBankAccountStore";
+import useUserBankAccountStore from "../../../store/user/userBankAccountStore";
 
 type Process = {
   isProcessing: boolean;
@@ -102,7 +102,10 @@ export default function BankAndCard() {
       setApiErr(null);
 
       try {
-        await Promise.all([fetchPaymentMethods(), fetchBankAccounts()]);
+        await Promise.all([
+          paymentMethods ? Promise.resolve() : fetchPaymentMethods(),
+          bankAccounts ? Promise.resolve() : fetchBankAccounts(),
+        ]);
       } catch (error) {
         setApiErr(formatError(error));
       } finally {

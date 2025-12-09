@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
 import toast from "react-hot-toast";
 import { formatError, isValidPassword } from "../../../../../common/utils.common";
-import { useAuthStore } from "../../../store/user/authStore";
+import useAuthStore from "../../../store/user/authStore";
 import { PASSWORD_HINT_MESSAGE } from "../../../../../common/configs.common";
 import type { FormInput } from "../../../utils/types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";

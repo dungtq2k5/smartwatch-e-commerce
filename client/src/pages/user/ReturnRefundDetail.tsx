@@ -8,8 +8,8 @@ import type {
   ReturnStateListResponse,
 } from "../../../../common/types.common";
 import ApiError from "../../components/common/ApiError";
-import { useReturnStore } from "../../store/user/orderReturnStore";
-import { useReturnStateStore } from "../../store/common/returnRefund/returnStateStore";
+import useReturnStore from "../../store/user/orderReturnStore";
+import useReturnStateStore from "../../store/common/returnRefund/returnStateStore";
 import {
   RETURN_STATE_LEVEL_ICON_LEGEND,
   RETURN_STATE_LEVEL_MSG_LEGEND,
@@ -46,7 +46,7 @@ export default function ReturnRefundDetail() {
 
   const { returnId } = useParams();
   const {
-    getReturnDetail,
+    fetchReturnDetail,
     // isLoading: isCancelingReturn,
     updateReturn,
   } = useReturnStore();
@@ -55,7 +55,7 @@ export default function ReturnRefundDetail() {
     // fetchErr: fetchReturnStatesErr,
     returnStates,
     fetchReturnStates,
-    getReturnStateByLookupIdSync,
+    getReturnStateByLookupId,
   } = useReturnStateStore();
 
   const [returnDetail, setReturnDetail] = useState<
@@ -94,9 +94,9 @@ export default function ReturnRefundDetail() {
       try {
         if (!returnId) throw new Error("Order return ID is not provided.");
 
-        const [, fetchedReturnDetail] = await Promise.all([
-          fetchReturnStates(),
-          getReturnDetail(returnId),
+        const [fetchedReturnDetail] = await Promise.all([
+          fetchReturnDetail(returnId),
+          returnStates ? Promise.resolve(returnStates) : fetchReturnStates(),
         ]);
 
         setReturnDetail(fetchedReturnDetail);
@@ -228,14 +228,14 @@ export default function ReturnRefundDetail() {
 
     setProcess((prev) => ({ ...prev, isProcessing: true, isCanceling: true }));
     try {
-      const cancelState = getReturnStateByLookupIdSync("7"); // cancelled
+      const cancelState = getReturnStateByLookupId("7"); // cancelled
       if (!cancelState) throw new Error("Return state not found.");
 
       const { id: returnId } = returnDetail;
       await updateReturn(returnId, {
         stateId: cancelState.id,
       });
-      const updatedReturnDetail = await getReturnDetail(returnId);
+      const updatedReturnDetail = await fetchReturnDetail(returnId);
 
       setReturnDetail(updatedReturnDetail);
       toast.success("Return request has been cancelled.");
@@ -250,8 +250,8 @@ export default function ReturnRefundDetail() {
     }
   }, [
     canUpdate,
-    getReturnDetail,
-    getReturnStateByLookupIdSync,
+    fetchReturnDetail,
+    getReturnStateByLookupId,
     process.isProcessing,
     returnDetail,
     updateReturn,

@@ -3,7 +3,7 @@ import { centsToUSD, formatError } from "../../../../common/utils.common";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from "react-router-dom";
-import { useUserCartStore } from "../../store/user/cartStore";
+import useUserCartStore from "../../store/user/cartStore";
 import ApiError from "../../components/common/ApiError";
 import HorizontalDivider from "../../components/user/HorizontalDivider";
 import CartSkeleton from "../../components/user/skeleton/CartSkeleton";

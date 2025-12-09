@@ -23,16 +23,19 @@ type ReturnState = {
     query?: OrderReturnSearchQueryCli,
     signal?: AbortSignal
   ) => Promise<OrderReturnListResponse>;
-  getReturn: (returnId: string) => Promise<OrderReturnResponse>;
-  getReturnDetail: (returnId: string) => Promise<OrderReturnDetailResponse>;
+  fetchReturn: (returnId: string) => Promise<OrderReturnResponse>;
+  fetchReturnDetail: (returnId: string) => Promise<OrderReturnDetailResponse>;
+
   createReturn: (
     orderId: string,
     data: OrderReturnCreate
   ) => Promise<OrderReturnResponse>;
+
   updateReturn: (
     returnId: string,
     data: OrderReturnSelfUpdate
   ) => Promise<OrderReturnResponse>;
+
   canUpdateReturn: (returnStateLookupId: string) => boolean;
 
   getUserAddressIdFromReturn: (
@@ -41,7 +44,7 @@ type ReturnState = {
   ) => string | undefined;
 };
 
-export const useReturnStore = create<ReturnState>((set, get) => ({
+const useReturnStoreInternal = create<ReturnState>((set, get) => ({
   returnCache: null,
   returnDetailCache: null,
 
@@ -73,9 +76,9 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
     }
   },
 
-  async getReturn(returnId: string): Promise<OrderReturnResponse> {
+  async fetchReturn(returnId: string): Promise<OrderReturnResponse> {
     const { returnCache } = get();
-    if (returnCache && returnCache.id === returnId) return returnCache;
+    if (returnCache?.id === returnId) return structuredClone(returnCache);
 
     try {
       const res = await retrieve(`${RETURN_URL}/${returnId}`);
@@ -83,16 +86,18 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
 
       const returnData = res.data as OrderReturnResponse;
       set({ returnCache: returnData });
-      return returnData;
+      return structuredClone(returnData);
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
 
-  async getReturnDetail(returnId: string): Promise<OrderReturnDetailResponse> {
+  async fetchReturnDetail(
+    returnId: string
+  ): Promise<OrderReturnDetailResponse> {
     const { returnDetailCache } = get();
     if (returnDetailCache?.id === returnId) {
-      return returnDetailCache;
+      return structuredClone(returnDetailCache);
     }
 
     try {
@@ -101,7 +106,7 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
 
       const returnDetail = res.data as OrderReturnDetailResponse;
       set({ returnDetailCache: returnDetail });
-      return returnDetail;
+      return structuredClone(returnDetail);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -117,7 +122,7 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
 
       const returnData = res.data as OrderReturnResponse;
       set({ returnCache: returnData });
-      return returnData;
+      return structuredClone(returnData);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -143,7 +148,7 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
         set({ returnDetailCache: null });
       }
 
-      return updatedReturn;
+      return structuredClone(updatedReturn);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -157,8 +162,17 @@ export const useReturnStore = create<ReturnState>((set, get) => ({
     returnPickupAddress: OrderReturnResponse["pickupAddress"],
     userAddresses: UserAddressListResponse["addresses"]
   ): string | undefined {
-    return userAddresses.find((addr) =>
-      compareUserAddress(addr, returnPickupAddress)
-    )?.id;
+    return structuredClone(
+      userAddresses.find((addr) =>
+        compareUserAddress(addr, returnPickupAddress)
+      )?.id
+    );
   },
 }));
+
+export default function useReturnStore() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { returnCache, returnDetailCache, ...actions } =
+    useReturnStoreInternal();
+  return actions;
+}

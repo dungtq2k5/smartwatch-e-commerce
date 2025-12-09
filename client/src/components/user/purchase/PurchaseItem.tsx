@@ -4,7 +4,7 @@ import type {
   OrderReturnResponse,
 } from "../../../../../common/types.common";
 import defaultProductImg from "../../../assets/default-product.webp";
-import { useOrderStore } from "../../../store/user/orderStore";
+import useOrderStore from "../../../store/user/orderStore";
 import SlashColor from "../../common/SlashColor";
 import { centsToUSD } from "../../../../../common/utils.common";
 

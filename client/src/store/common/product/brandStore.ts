@@ -10,17 +10,23 @@ import { formatError } from "../../../../../common/utils.common";
 type ProductBrandState = {
   brands: ProductBrandListResponse | null;
 
-  fetchBrands: () => Promise<ProductBrandListResponse>;
+  getBrand: (id: string) => ProductBrandResponse | undefined;
 
-  getBrandSync: (id: string) => ProductBrandResponse | undefined;
+  fetchBrands: () => Promise<ProductBrandListResponse>;
 };
 
-export const useProductBrandStore = create<ProductBrandState>((set, get) => ({
+const useProductBrandStore = create<ProductBrandState>((set, get) => ({
   brands: null,
+
+  getBrand(id: string): ProductBrandResponse | undefined {
+    return structuredClone(
+      get().brands?.brands.brands.find((brand) => brand.id === id)
+    );
+  },
 
   async fetchBrands(): Promise<ProductBrandListResponse> {
     const { brands } = get();
-    if (brands) return brands;
+    if (brands) return structuredClone(brands);
 
     try {
       const res = await retrieve(PRODUCT_BRANDS_URL);
@@ -28,13 +34,11 @@ export const useProductBrandStore = create<ProductBrandState>((set, get) => ({
 
       const brands = res.data as ProductBrandListResponse;
       set({ brands });
-      return brands;
+      return structuredClone(brands);
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
-
-  getBrandSync(id: string): ProductBrandResponse | undefined {
-    return get().brands?.brands.brands.find((brand) => brand.id === id);
-  },
 }));
+
+export default useProductBrandStore;

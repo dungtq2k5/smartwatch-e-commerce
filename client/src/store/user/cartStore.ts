@@ -18,10 +18,14 @@ type UserCartState = {
   isAllItemAvailable: boolean;
 
   fetchCart: (oblige?: boolean) => Promise<UserCartListResponse>;
+
   createCart: (data: UserCartCreate) => Promise<UserCartResponse>;
   createManyCart: (data: UserCartBulkCreate) => Promise<void>;
+
   updateCartItem: (data: UserCartUpdate) => Promise<UserCartResponse | void>;
+
   removeCartItem: (variationId: string) => Promise<void>;
+
   clearCartCache: () => void;
 };
 
@@ -47,7 +51,7 @@ const calculateDerivedState = (
   return { totalCents, isAllItemAvailable };
 };
 
-export const useUserCartStore = create<UserCartState>((set, get) => ({
+const useUserCartStore = create<UserCartState>((set, get) => ({
   cart: null,
   totalCents: 0,
   isAllItemAvailable: true,
@@ -55,7 +59,7 @@ export const useUserCartStore = create<UserCartState>((set, get) => ({
   async fetchCart(oblige = false): Promise<UserCartListResponse> {
     if (!oblige) {
       const { cart } = get();
-      if (cart) return cart;
+      if (cart) return structuredClone(cart);
     }
 
     try {
@@ -64,7 +68,7 @@ export const useUserCartStore = create<UserCartState>((set, get) => ({
 
       const cart = res.data as UserCartListResponse;
       set({ cart, ...calculateDerivedState(cart) });
-      return cart;
+      return structuredClone(cart);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -102,7 +106,7 @@ export const useUserCartStore = create<UserCartState>((set, get) => ({
         });
       }
 
-      return newItem;
+      return structuredClone(newItem);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -155,7 +159,7 @@ export const useUserCartStore = create<UserCartState>((set, get) => ({
         }
       }
 
-      if (updatedItem) return updatedItem;
+      if (updatedItem) return structuredClone(updatedItem);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -198,3 +202,5 @@ export const useUserCartStore = create<UserCartState>((set, get) => ({
     });
   },
 }));
+
+export default useUserCartStore;

@@ -10,7 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import defaultAvatar from "../../assets/default-avatar.webp";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useCallback, useRef, useState, useEffect } from "react";
-import { useAuthStore } from "../../store/user/authStore";
+import useAuthStore from "../../store/user/authStore";
 import HorizontalDivider from "../../components/user/HorizontalDivider";
 import ApiError from "../../components/common/ApiError";
 import toast from "react-hot-toast";

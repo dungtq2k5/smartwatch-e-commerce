@@ -4,9 +4,9 @@ import {
   faLocationDot,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useAuthStore } from "../../store/user/authStore";
+import useAuthStore from "../../store/user/authStore";
 import ApiError from "../../components/common/ApiError";
-import { useUserAddressStore } from "../../store/user/addressStore";
+import useUserAddressStore from "../../store/user/addressStore";
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import type {
   OrderCreate,
@@ -19,15 +19,15 @@ import {
   centsToUSD,
   formatError,
 } from "../../../../common/utils.common";
-import { useUserCartStore } from "../../store/user/cartStore";
+import useUserCartStore from "../../store/user/cartStore";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import defaultProductImg from "../../assets/default-product.webp";
 import SlashColor from "../../components/common/SlashColor";
 import CreateAddressModal from "../../components/user/modal/CreateAddressModal";
-import { usePaymentMethodStore } from "../../store/common/order/paymentMethodStore";
+import usePaymentMethodStore from "../../store/common/order/paymentMethodStore";
 import SelectAddressModal from "../../components/user/modal/SelectAddressModal";
 import { faCcStripe } from "@fortawesome/free-brands-svg-icons";
-import { useOrderStore } from "../../store/user/orderStore";
+import useOrderStore from "../../store/user/orderStore";
 import toast from "react-hot-toast";
 import SmallSpinner from "../../components/common/SmallSpinner";
 import { WAITING_EMOJI } from "../../configs";
@@ -66,7 +66,7 @@ export default function Checkout() {
   const buyNowItem = location.state?.buyNowItem as BuyNowItem | undefined; // Get via Browser history state
 
   const { user, resetUserBalanceCache } = useAuthStore();
-  const { addresses, getDefaultAddress } = useUserAddressStore();
+  const { addresses, fetchDefaultAddress } = useUserAddressStore();
   const {
     totalCents: cartTotalCents,
     isAllItemAvailable: cartIsAllItemAvailable,
@@ -96,9 +96,8 @@ export default function Checkout() {
       : undefined
   );
 
-  const [selectedAddress, setSelectedAddress] = useState<
-    UserSelfAddressResponse | undefined
-  >(undefined);
+  const [selectedAddress, setSelectedAddress] =
+    useState<UserSelfAddressResponse | null>(null);
   const [modal, setModal] = useState<Modal>({
     addAddress: false,
     changeAddress: false,
@@ -118,8 +117,10 @@ export default function Checkout() {
       setProcess((prev) => ({ ...prev, isProcessing: true, isFetching: true }));
       try {
         const [fetchedCart, fetchedPaymentMethods] = await Promise.all([
-          !buyNowItem ? fetchCart() : Promise.resolve(),
-          fetchPaymentMethods(),
+          buyNowItem ? Promise.resolve(null) : fetchCart(),
+          paymentMethods
+            ? Promise.resolve(paymentMethods)
+            : fetchPaymentMethods(),
         ]);
 
         // If buyNowItem isn't provided, fetch the cart
@@ -155,9 +156,9 @@ export default function Checkout() {
       // If an address is already selected, find its updated version in the new list
       // to ensure its data (e.g., isDefault status) is fresh.
       if (selectedAddress && addresses) {
-        const updatedSelectedAddress = addresses.addresses.find(
-          (addr) => addr.id === selectedAddress.id
-        );
+        const updatedSelectedAddress =
+          addresses.addresses.find((addr) => addr.id === selectedAddress.id) ||
+          null;
         setSelectedAddress(updatedSelectedAddress);
         return;
       }
@@ -171,7 +172,7 @@ export default function Checkout() {
         }));
 
         try {
-          const defaultAddress = await getDefaultAddress();
+          const defaultAddress = await fetchDefaultAddress();
           setSelectedAddress(defaultAddress);
         } catch (error) {
           toast.error(formatError(error));

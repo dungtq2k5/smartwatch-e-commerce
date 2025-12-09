@@ -8,54 +8,57 @@ import { retrieve } from "../../../utils/utils";
 import { formatError } from "../../../../../common/utils.common";
 
 type PaymentMethodState = {
-  paymentMethods?: PaymentMethodListResponse;
+  paymentMethods: PaymentMethodListResponse | null;
+
+  getPaymentMethod: (id: string) => PaymentMethodResponse | undefined;
 
   fetchPaymentMethods: () => Promise<PaymentMethodListResponse>;
-
-  getPaymentMethod: (id: string) => Promise<PaymentMethodResponse>;
-  getPaymentMethodSync: (id: string) => PaymentMethodResponse | undefined;
+  fetchPaymentMethod: (id: string) => Promise<PaymentMethodResponse>;
 };
 
-export const usePaymentMethodStore = create<PaymentMethodState>((set, get) => ({
-  paymentMethods: undefined,
+const usePaymentMethodStore = create<PaymentMethodState>((set, get) => ({
+  paymentMethods: null,
+
+  getPaymentMethod(id: string): PaymentMethodResponse | undefined {
+    return structuredClone(
+      get().paymentMethods?.methods.find((method) => method.id === id)
+    );
+  },
 
   async fetchPaymentMethods(): Promise<PaymentMethodListResponse> {
     const { paymentMethods } = get();
-    if (paymentMethods) return paymentMethods;
+    if (paymentMethods) return structuredClone(paymentMethods);
 
     try {
       const res = await retrieve(PAYMENT_METHODS_URL);
       if (!res.success) throw new Error(res.message);
 
-      const data = res.data as PaymentMethodListResponse;
-      set({ paymentMethods: data });
-      return data;
+      const methods = res.data as PaymentMethodListResponse;
+      set({ paymentMethods: methods });
+      return structuredClone(methods);
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
 
-  async getPaymentMethod(id: string): Promise<PaymentMethodResponse> {
+  async fetchPaymentMethod(id: string): Promise<PaymentMethodResponse> {
     const method = get().paymentMethods?.methods.find(
       (method) => method.id === id
     );
-    if (method) return method;
+    if (method) return structuredClone(method);
 
     try {
       const fetchedMethods = await get().fetchPaymentMethods();
-
       const method = fetchedMethods.methods.find((method) => method.id === id);
+
       if (!method) {
         throw new Error(`Payment method with id ${id} not found`);
       }
-
       return method;
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
-
-  getPaymentMethodSync(id: string): PaymentMethodResponse | undefined {
-    return get().paymentMethods?.methods.find((method) => method.id === id);
-  },
 }));
+
+export default usePaymentMethodStore;

@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBoxOpen, faSearch } from "@fortawesome/free-solid-svg-icons";
-import { useDeliveryStateStore } from "../../../store/common/order/deliveryStateStore";
+import useDeliveryStateStore from "../../../store/common/order/deliveryStateStore";
 import type {
   OrderListResponse,
   OrderReturnListResponse,
@@ -8,19 +8,19 @@ import type {
 import { useCallback, useEffect, useRef, useState } from "react";
 import ApiError from "../../common/ApiError";
 import type { PurchaseTab } from "../../../utils/types";
-import { useOrderStateStore } from "../../../store/common/order/orderStateStore";
+import useOrderStateStore from "../../../store/common/order/orderStateStore";
 import { MAX_PURCHASES_PER_PAGE, WAITING_EMOJI } from "../../../configs";
-import { useOrderStore } from "../../../store/user/orderStore";
+import useOrderStore from "../../../store/user/orderStore";
 import { formatError } from "../../../../../common/utils.common";
 import toast from "react-hot-toast";
 import PurchaseCard from "../purchase/PurchaseCard";
 import ConfirmSubmitModal from "../modal/ConfirmSubmitModal";
-import { useReturnStore } from "../../../store/user/orderReturnStore";
-import { useReturnStateStore } from "../../../store/common/returnRefund/returnStateStore";
+import useReturnStore from "../../../store/user/orderReturnStore";
+import useReturnStateStore from "../../../store/common/returnRefund/returnStateStore";
 import ReturnCard from "../purchase/ReturnCard";
 import { useSearchParams } from "react-router-dom";
 import Loading from "../../common/Loading";
-import { usePaymentMethodStore } from "../../../store/common/order/paymentMethodStore";
+import usePaymentMethodStore from "../../../store/common/order/paymentMethodStore";
 
 type SearchForm = {
   activeTab: PurchaseTab;
@@ -64,12 +64,12 @@ export default function Purchase() {
   console.log("Purchase render count:", renderCount.current);
 
   const { deliveryStates, fetchDeliveryStates } = useDeliveryStateStore();
-  const { orderStates, fetchOrderStates, getOrderStateByLookupId } =
+  const { orderStates, fetchOrderStates, fetchOrderStateByLookupId } =
     useOrderStateStore();
   const { paymentMethods, fetchPaymentMethods } = usePaymentMethodStore();
   const { fetchOrders, updateSelfOrder } = useOrderStore();
   const { fetchReturns, updateReturn } = useReturnStore();
-  const { returnStates, fetchReturnStates, getReturnStateByLookupId } =
+  const { returnStates, fetchReturnStates, fetchReturnStateByLookupId } =
     useReturnStateStore();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -111,10 +111,10 @@ export default function Purchase() {
 
       try {
         await Promise.all([
-          fetchDeliveryStates(),
-          fetchOrderStates(),
-          fetchPaymentMethods(),
-          fetchReturnStates(),
+          deliveryStates ? Promise.resolve() : fetchDeliveryStates(),
+          orderStates ? Promise.resolve() : fetchOrderStates(),
+          paymentMethods ? Promise.resolve() : fetchPaymentMethods(),
+          returnStates ? Promise.resolve() : fetchReturnStates(),
         ]);
       } catch (error) {
         setApiErr(formatError(error));
@@ -198,7 +198,9 @@ export default function Purchase() {
       const newSearchForm: SearchForm = {
         ...searchForm,
         activeTab,
-        limit: urlLimit ? Number.parseInt(urlLimit, 10) : MAX_PURCHASES_PER_PAGE,
+        limit: urlLimit
+          ? Number.parseInt(urlLimit, 10)
+          : MAX_PURCHASES_PER_PAGE,
         searchTerm: urlSearchTerm && activeTab === "all" ? urlSearchTerm : "",
       };
       setSearchForm(newSearchForm);
@@ -301,13 +303,13 @@ export default function Purchase() {
 
       try {
         return Promise.all(
-          stateLookupIds.map((lookupId) => getOrderStateByLookupId(lookupId))
+          stateLookupIds.map((lookupId) => fetchOrderStateByLookupId(lookupId))
         ).then((states) => states.map((state) => state.id));
       } catch (error) {
         throw new Error(formatError(error));
       }
     },
-    [getOrderStateByLookupId]
+    [fetchOrderStateByLookupId]
   );
 
   const handleTabChange = useCallback(
@@ -443,7 +445,7 @@ export default function Purchase() {
     }
 
     try {
-      const completeState = await getOrderStateByLookupId("6"); // completed
+      const completeState = await fetchOrderStateByLookupId("6"); // completed
       if (!completeState) throw new Error("Order state not found.");
 
       const updatedOrder = await updateSelfOrder(orderIdToSubmit, {
@@ -485,7 +487,7 @@ export default function Purchase() {
       toast.error(formatError(error));
     }
   }, [
-    getOrderStateByLookupId,
+    fetchOrderStateByLookupId,
     modal.orderIdToSubmit,
     process.isProcessing,
     searchForm.activeTab,
@@ -507,7 +509,7 @@ export default function Purchase() {
     }
 
     try {
-      const cancelledState = await getOrderStateByLookupId("7"); // cancelled
+      const cancelledState = await fetchOrderStateByLookupId("7"); // cancelled
       if (!cancelledState) throw new Error("Order state not found.");
 
       const updatedOrder = await updateSelfOrder(orderIdToCancel, {
@@ -550,7 +552,7 @@ export default function Purchase() {
       toast.error(formatError(error));
     }
   }, [
-    getOrderStateByLookupId,
+    fetchOrderStateByLookupId,
     modal.orderIdToCancel,
     process.isProcessing,
     searchForm.activeTab,
@@ -572,11 +574,10 @@ export default function Purchase() {
     }
 
     try {
-      const cancelState = await getReturnStateByLookupId("7"); // cancelled
-      const updatedReturn = await updateReturn(
-        returnToCancel.returnId,
-        { stateId: cancelState.id }
-      );
+      const cancelState = await fetchReturnStateByLookupId("7"); // cancelled
+      const updatedReturn = await updateReturn(returnToCancel.returnId, {
+        stateId: cancelState.id,
+      });
 
       // Refresh the list after update
       setSearchReturns((prev) => {
@@ -604,7 +605,7 @@ export default function Purchase() {
       toast.error(formatError(error));
     }
   }, [
-    getReturnStateByLookupId,
+    fetchReturnStateByLookupId,
     modal.returnToCancel,
     process.isProcessing,
     updateReturn,

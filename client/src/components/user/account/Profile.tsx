@@ -12,8 +12,7 @@ import {
   readFileAsDataUrl,
 } from "../../../../../common/utils.common";
 import defaultAvatar from "../../../assets/default-avatar.webp";
-import { useAuthStore } from "../../../store/user/authStore";
-import ApiError from "../../common/ApiError";
+import useAuthStore from "../../../store/user/authStore";
 import type { FormFileInput, FormInput } from "../../../utils/types";
 import type { UserSelfGeneralInfoUpdate } from "../../../../../common/types.common";
 import { getImgFileErrs, uploadFile } from "../../../utils/utils";
@@ -27,6 +26,7 @@ import SetSelfPasswordModal from "../modal/SetSelfPasswordModal";
 import HorizontalDivider from "../HorizontalDivider";
 import { useNavigate } from "react-router-dom";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
+import ApiError from "../../common/ApiError";
 
 type FormData = {
   fullName: FormInput;
@@ -57,8 +57,8 @@ export default function Profile() {
   renderCount.current += 1;
   console.log("Profile render count:", renderCount.current);
 
-  const { user, updateSelfGeneralInfo, deleteAccount } = useAuthStore();
   const navigate = useNavigate();
+  const { user, updateSelfGeneralInfo, deleteAccount } = useAuthStore();
 
   const [formData, setFormData] = useState<FormData>({
     fullName: { val: user?.fullName || "Not provided" },
@@ -227,9 +227,8 @@ export default function Profile() {
       }));
       if (await validateForm()) {
         const getChangedData = async (): Promise<UserSelfGeneralInfoUpdate> => {
-          if (!user) {
-            throw new Error("User data is not available.");
-          }
+          if (!user) throw new Error("User data not found.");
+
           const changedData: UserSelfGeneralInfoUpdate = {};
 
           if (formData.fullName.val !== user.fullName) {
@@ -242,10 +241,7 @@ export default function Profile() {
             changedData.birth = new Date(formData.birth.val).toISOString();
           }
           if (formData.avatar.val instanceof File) {
-            const downloadUrl = await uploadFile(
-              formData.avatar.val,
-              "avatar"
-            );
+            const downloadUrl = await uploadFile(formData.avatar.val, "avatar");
             if (!downloadUrl) throw new Error("Failed to upload avatar.");
             changedData.avatarUrl = downloadUrl;
           } else if (formData.avatar.val === null && user.avatarUrl) {
@@ -320,7 +316,7 @@ export default function Profile() {
   return (
     <>
       {!user ? (
-        <ApiError errMsg="User data is not available." />
+        <ApiError errMsg="User data not found." />
       ) : (
         <>
           <form onSubmit={handleSubmit}>

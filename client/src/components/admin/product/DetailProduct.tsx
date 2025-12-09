@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import {
   Link,
-  useNavigate,
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { useUserStore } from "../../../store/admin/userStore";
-import { useRefreshStore } from "../../../store/admin/refreshStore";
+import useUserStore from "../../../store/admin/userStore";
+import useRefreshStore from "../../../store/admin/refreshStore";
 import type {
   AdminModelVariationResponse,
   AdminProductDetailResponse,
   AdminProductModelResponse,
 } from "../../../../../common/types.common";
-import { useProductStore } from "../../../store/admin/product/productStore";
+import useProductStore from "../../../store/admin/product/productStore";
 import {
   formatError,
   centsToUSD,
@@ -50,10 +49,9 @@ export default function DetailProduct() {
   console.log("DetailProduct render count:", renderCount.current);
 
   const { id } = useParams();
-  const navigate = useNavigate();
 
-  const { getSysUserId } = useUserStore();
-  const { getProductDetail } = useProductStore();
+  const { sysUserId, fetchSysUserId } = useUserStore();
+  const { fetchProductDetail } = useProductStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -85,8 +83,8 @@ export default function DetailProduct() {
         if (!id) throw new Error("Product ID is missing.");
 
         const [productDetail] = await Promise.all([
-          getProductDetail(id),
-          getSysUserId(),
+          fetchProductDetail(id),
+          sysUserId ? Promise.resolve() : fetchSysUserId(),
         ]);
 
         setProductDetail(productDetail);
@@ -192,7 +190,7 @@ export default function DetailProduct() {
 
     return imgUrls.map((url, i) => (
       <button
-        key={i}
+        key={url}
         type="button"
         className="border-0 bg-transparent p-0 flex-shrink-0"
         onClick={() => setMainImgIdx(i)}

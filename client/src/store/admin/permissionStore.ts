@@ -10,16 +10,25 @@ import { formatError } from "../../../../common/utils.common";
 type PermissionState = {
   permissions: PermissionListResponse | null;
 
+  getPermission: (permissionId: string) => PermissionResponse | undefined;
+
   fetchPermissions: () => Promise<PermissionListResponse>;
-  getPermissionSync: (permissionId: string) => PermissionResponse | undefined;
 };
 
-export const usePermissionStore = create<PermissionState>((set, get) => ({
+const usePermissionStore = create<PermissionState>((set, get) => ({
   permissions: null,
+
+  getPermission(permissionId: string): PermissionResponse | undefined {
+    return structuredClone(
+      get().permissions?.permissions.find(
+        (permission) => permission.id === permissionId
+      )
+    );
+  },
 
   async fetchPermissions(): Promise<PermissionListResponse> {
     const { permissions } = get();
-    if (permissions) return permissions;
+    if (permissions) return structuredClone(permissions);
 
     try {
       const res = await retrieve(PERMISSION_URL);
@@ -27,15 +36,11 @@ export const usePermissionStore = create<PermissionState>((set, get) => ({
 
       const permissions = res.data as PermissionListResponse;
       set({ permissions });
-      return permissions;
+      return structuredClone(permissions);
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
-
-  getPermissionSync(permissionId: string): PermissionResponse | undefined {
-    return get().permissions?.permissions.find(
-      (permission) => permission.id === permissionId
-    );
-  },
 }));
+
+export default usePermissionStore;

@@ -13,8 +13,8 @@ import {
 } from "../../configs";
 import ApiError from "../../components/common/ApiError";
 import defaultProductImg from "../../assets/default-product.webp";
-import { useProductCategoryStore } from "../../store/common/product/categoryStore";
-import { useProductBrandStore } from "../../store/common/product/brandStore";
+import useProductCategoryStore from "../../store/common/product/categoryStore";
+import useProductBrandStore from "../../store/common/product/brandStore";
 import { centsToUSD, formatError } from "../../../../common/utils.common";
 import HorizontalDivider from "../../components/user/HorizontalDivider";
 import ProductCardSkeleton from "../../components/user/skeleton/ProductCardSkeleton";
@@ -94,18 +94,18 @@ export default function Home() {
       setApiErr((prev) => ({ ...prev, initErr: null }));
 
       try {
-        const [mostPopularProducts, , , productMaxPrice] = await Promise.all([
+        const [mostPopularProducts, productMaxPrice] = await Promise.all([
           fetchProducts({
             limit: MAX_POPULAR_PRODUCTS_DISPLAY.toString(),
             stopSelling: "false", // Always query products that are not stopped selling
           }),
-          fetchBrands(),
-          fetchCategories(),
           fetchProducts({
             limit: "1",
             sortBy: "basePriceCents_desc",
             stopSelling: "false", // Always query products that are not stopped selling
           }),
+          brands ? Promise.resolve() : fetchBrands(),
+          categories ? Promise.resolve() : fetchCategories(),
         ]);
 
         if (productMaxPrice.products.total === 0) {

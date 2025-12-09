@@ -10,23 +10,38 @@ import { formatError } from "../../../../../common/utils.common";
 type ReturnStateState = {
   returnStates: ReturnStateListResponse | null;
 
-  fetchReturnStates: () => Promise<ReturnStateListResponse>;
-
-  getReturnState: (id: string) => Promise<ReturnStateResponse>;
-  getReturnStateSync: (id: string) => ReturnStateResponse | undefined;
-
-  getReturnStateByLookupId: (lookupId: string) => Promise<ReturnStateResponse>;
-  getReturnStateByLookupIdSync: (
+  getReturnState: (id: string) => ReturnStateResponse | undefined;
+  getReturnStateByLookupId: (
     lookupId: string
   ) => ReturnStateResponse | undefined;
+
+  fetchReturnStates: () => Promise<ReturnStateListResponse>;
+  fetchReturnState: (id: string) => Promise<ReturnStateResponse>;
+  fetchReturnStateByLookupId: (
+    lookupId: string
+  ) => Promise<ReturnStateResponse>;
 };
 
-export const useReturnStateStore = create<ReturnStateState>((set, get) => ({
+const useReturnStateStore = create<ReturnStateState>((set, get) => ({
   returnStates: null,
+
+  // Must be pre-fetched to use
+  getReturnState(id: string): ReturnStateResponse | undefined {
+    return structuredClone(
+      get().returnStates?.states.find((state) => state.id === id)
+    );
+  },
+
+  // Must be pre-fetched to use
+  getReturnStateByLookupId(lookupId: string): ReturnStateResponse | undefined {
+    return structuredClone(
+      get().returnStates?.states.find((state) => state.lookupId === lookupId)
+    );
+  },
 
   async fetchReturnStates(): Promise<ReturnStateListResponse> {
     const { returnStates } = get();
-    if (returnStates) return returnStates;
+    if (returnStates) return structuredClone(returnStates);
 
     try {
       const res = await retrieve(RETURN_STATES_URL);
@@ -34,16 +49,16 @@ export const useReturnStateStore = create<ReturnStateState>((set, get) => ({
 
       const returnState = res.data as ReturnStateListResponse;
       set({ returnStates: returnState });
-      return returnState;
+      return structuredClone(returnState);
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
 
-  async getReturnState(id: string): Promise<ReturnStateResponse> {
+  async fetchReturnState(id: string): Promise<ReturnStateResponse> {
     try {
       const state = get().returnStates?.states.find((state) => state.id === id);
-      if (state) return state;
+      if (state) return structuredClone(state);
 
       try {
         const fetchedReturnStates = await get().fetchReturnStates();
@@ -61,18 +76,13 @@ export const useReturnStateStore = create<ReturnStateState>((set, get) => ({
     }
   },
 
-  // Must be pre-fetched to use
-  getReturnStateSync(id: string): ReturnStateResponse | undefined {
-    return get().returnStates?.states.find((state) => state.id === id);
-  },
-
-  async getReturnStateByLookupId(
+  async fetchReturnStateByLookupId(
     lookupId: string
   ): Promise<ReturnStateResponse> {
     const state = get().returnStates?.states.find(
       (state) => state.lookupId === lookupId
     );
-    if (state) return state;
+    if (state) return structuredClone(state);
 
     try {
       const fetchedReturnStates = await get().fetchReturnStates();
@@ -86,13 +96,6 @@ export const useReturnStateStore = create<ReturnStateState>((set, get) => ({
       throw new Error(formatError(error));
     }
   },
-
-  // Must be pre-fetched to use
-  getReturnStateByLookupIdSync(
-    lookupId: string
-  ): ReturnStateResponse | undefined {
-    return get().returnStates?.states.find(
-      (state) => state.lookupId === lookupId
-    );
-  },
 }));
+
+export default useReturnStateStore;

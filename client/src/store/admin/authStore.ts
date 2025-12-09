@@ -20,7 +20,7 @@ type AuthState = {
   logout: () => Promise<void>;
 };
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+const useAuthStore = create<AuthState>((set, get) => ({
   admin: null,
 
   async checkAuth(): Promise<boolean> {
@@ -53,7 +53,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const admin = res.data as AdminUserResponse;
       set({ admin });
-      return admin;
+      return structuredClone(admin);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -76,3 +76,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 }));
+
+export default useAuthStore;
+

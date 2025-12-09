@@ -8,16 +8,12 @@ import { retrieve } from "../../utils/utils";
 import { SELF_BALANCE_HISTORY_URL } from "../../configs";
 
 type UserBalanceHistory = {
-  balanceHistories: UserBalanceHistoryListResponse | null;
-
   fetchBalanceHistories: (
     query?: UserBalanceHistorySearchQuery
   ) => Promise<UserBalanceHistoryListResponse>;
 };
 
 export const useUserBalanceHistoryStore = create<UserBalanceHistory>(() => ({
-  balanceHistories: null,
-
   async fetchBalanceHistories(
     query?: UserBalanceHistorySearchQuery
   ): Promise<UserBalanceHistoryListResponse> {

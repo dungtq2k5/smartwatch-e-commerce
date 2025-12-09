@@ -15,7 +15,7 @@ import {
 } from "../../../../../common/utils.common";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useUserAddressStore } from "../../../store/user/addressStore";
+import useUserAddressStore from "../../../store/user/addressStore";
 import type {
   UserSelfAddressResponse,
   UserAddressUpdate,
@@ -51,7 +51,7 @@ const UpdateAddressModal = memo(
     renderCount.current += 1;
     console.log("UpdateAddressModal render count:", renderCount.current);
 
-    const { getAddress, updateAddress } = useUserAddressStore();
+    const { fetchAddress, updateAddress } = useUserAddressStore();
 
     const [address, setAddress] = useState<UserSelfAddressResponse | undefined>(
       undefined
@@ -87,7 +87,7 @@ const UpdateAddressModal = memo(
           setApiErr(null);
 
           try {
-            const addressRes = await getAddress(addressId);
+            const addressRes = await fetchAddress(addressId);
             setAddress(addressRes);
             setFormData({
               name: { val: addressRes.name },

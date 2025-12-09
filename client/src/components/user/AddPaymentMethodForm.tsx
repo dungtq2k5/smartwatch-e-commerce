@@ -7,7 +7,7 @@ import type { StripePaymentElementOptions } from "@stripe/stripe-js";
 import { useCallback, useState, type FormEvent } from "react";
 import { formatError } from "../../../../common/utils.common";
 import type { UserPaymentMethodCreate } from "../../../../common/types.common";
-import { useUserPaymentMethodStore } from "../../store/user/userPaymentMethodStore";
+import useUserPaymentMethodStore from "../../store/user/userPaymentMethodStore";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import ConfirmSubmitModal from "./modal/ConfirmSubmitModal";

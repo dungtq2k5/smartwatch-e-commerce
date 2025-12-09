@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
-import { useUserAddressStore } from "../../../store/user/addressStore";
+import useUserAddressStore from "../../../store/user/addressStore";
 import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";

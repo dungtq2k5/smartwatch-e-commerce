@@ -9,18 +9,20 @@ import { formatError } from "../../../../common/utils.common";
 import { SELF_WITHDRAWAL_REQUESTS_URL } from "../../configs";
 import { patch, post, retrieve } from "../../utils/utils";
 
-type USerWithdrawalRequestState = {
+type UserWithdrawalRequestState = {
   withdrawalRequestCache: SelfWithdrawalRequestResponse | null;
 
   fetchWithdrawalRequests: (
     query?: SelfWithdrawalRequestSearchQuery
   ) => Promise<SelfWithdrawalRequestListResponse>;
+  fetchWithdrawalRequest: (
+    requestId: string
+  ) => Promise<SelfWithdrawalRequestResponse>;
+
   createWithdrawalRequest: (
     request: WithdrawalRequestCreate
   ) => Promise<SelfWithdrawalRequestResponse>;
-  getWithdrawalRequest: (
-    requestId: string
-  ) => Promise<SelfWithdrawalRequestResponse>;
+
   cancelWithdrawalRequest: (
     requestId: string
   ) => Promise<SelfWithdrawalRequestResponse>;
@@ -28,8 +30,8 @@ type USerWithdrawalRequestState = {
   canCancelRequest: (requestStateLookupId: string) => boolean;
 };
 
-export const useUserWithdrawalRequestStore = create<USerWithdrawalRequestState>(
-  (set, get) => ({
+const useUserWithdrawalRequestStoreInternal =
+  create<UserWithdrawalRequestState>((set, get) => ({
     withdrawalRequestCache: null,
 
     async fetchWithdrawalRequests(
@@ -54,27 +56,12 @@ export const useUserWithdrawalRequestStore = create<USerWithdrawalRequestState>(
       }
     },
 
-    async createWithdrawalRequest(
-      request: WithdrawalRequestCreate
-    ): Promise<SelfWithdrawalRequestResponse> {
-      try {
-        const res = await post(SELF_WITHDRAWAL_REQUESTS_URL, request);
-        if (!res.success) throw new Error(res.message);
-
-        const withdrawalRequest = res.data as SelfWithdrawalRequestResponse;
-        set({ withdrawalRequestCache: withdrawalRequest });
-        return withdrawalRequest;
-      } catch (error) {
-        throw new Error(formatError(error));
-      }
-    },
-
-    async getWithdrawalRequest(
+    async fetchWithdrawalRequest(
       requestId: string
     ): Promise<SelfWithdrawalRequestResponse> {
       const { withdrawalRequestCache } = get();
-      if (withdrawalRequestCache && withdrawalRequestCache.id === requestId) {
-        return withdrawalRequestCache;
+      if (withdrawalRequestCache?.id === requestId) {
+        return structuredClone(withdrawalRequestCache);
       }
 
       try {
@@ -85,7 +72,22 @@ export const useUserWithdrawalRequestStore = create<USerWithdrawalRequestState>(
 
         const withdrawalRequest = res.data as SelfWithdrawalRequestResponse;
         set({ withdrawalRequestCache: withdrawalRequest });
-        return withdrawalRequest;
+        return structuredClone(withdrawalRequest);
+      } catch (error) {
+        throw new Error(formatError(error));
+      }
+    },
+
+    async createWithdrawalRequest(
+      request: WithdrawalRequestCreate
+    ): Promise<SelfWithdrawalRequestResponse> {
+      try {
+        const res = await post(SELF_WITHDRAWAL_REQUESTS_URL, request);
+        if (!res.success) throw new Error(res.message);
+
+        const withdrawalRequest = res.data as SelfWithdrawalRequestResponse;
+        set({ withdrawalRequestCache: withdrawalRequest });
+        return structuredClone(withdrawalRequest);
       } catch (error) {
         throw new Error(formatError(error));
       }
@@ -102,7 +104,7 @@ export const useUserWithdrawalRequestStore = create<USerWithdrawalRequestState>(
 
         const withdrawalRequest = res.data as SelfWithdrawalRequestResponse;
         set({ withdrawalRequestCache: withdrawalRequest });
-        return withdrawalRequest;
+        return structuredClone(withdrawalRequest);
       } catch (error) {
         throw new Error(formatError(error));
       }
@@ -112,5 +114,11 @@ export const useUserWithdrawalRequestStore = create<USerWithdrawalRequestState>(
       // Can only cancel if the latest state is "Pending" (lookupId: "1")
       return requestStateLookupId === "1";
     },
-  })
-);
+  }));
+
+export default function useUserWithdrawalRequestStore() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { withdrawalRequestCache, ...actions } =
+    useUserWithdrawalRequestStoreInternal();
+  return actions;
+}

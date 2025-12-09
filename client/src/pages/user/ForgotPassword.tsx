@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { FormInput } from "../../utils/types";
-import { useAuthStore } from "../../store/user/authStore";
+import useAuthStore from "../../store/user/authStore";
 import { useCallback, useState } from "react";
 import {
   formatError,

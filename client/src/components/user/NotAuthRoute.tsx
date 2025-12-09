@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuthStore } from "../../store/user/authStore";
+import useAuthStore from "../../store/user/authStore";
 import { memo, useRef } from "react";
 
 const NotAuthRoute = memo(() => {

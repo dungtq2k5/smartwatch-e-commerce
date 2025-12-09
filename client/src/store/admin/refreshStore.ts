@@ -4,11 +4,12 @@ type Scope = "admin";
 
 type RefreshStore = {
   signals: Record<Scope, number>;
+
   refresh: (scope: Scope) => void;
 };
 
-export const useRefreshStore = create<RefreshStore>((set) => ({
-  signals: { user: 0, admin: 0 },
+const useRefreshStore = create<RefreshStore>((set) => ({
+  signals: { admin: 0 },
 
   refresh: (scope: Scope) => {
     set((state) => ({
@@ -19,3 +20,5 @@ export const useRefreshStore = create<RefreshStore>((set) => ({
     }));
   },
 }));
+
+export default useRefreshStore;

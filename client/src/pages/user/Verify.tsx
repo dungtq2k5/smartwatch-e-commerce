@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { useAuthStore } from "../../store/user/authStore";
+import useAuthStore from "../../store/user/authStore";
 import VerifyForm from "../../components/user/VerifyForm";
 import ApiError from "../../components/common/ApiError";
 import { useNavigate } from "react-router-dom";

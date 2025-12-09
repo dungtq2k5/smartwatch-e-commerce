@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { useUserBankAccountStore } from "../../../store/user/userBankAccountStore";
+import useUserBankAccountStore from "../../../store/user/userBankAccountStore";
 import { centsToUSD, formatError } from "../../../../../common/utils.common";
 import { Button, Modal } from "react-bootstrap";
 import ApiError from "../../common/ApiError";
@@ -12,10 +12,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Loading from "../../common/Loading";
 import { MIN_WITHDRAWAL_AMOUNT_CENTS } from "../../../../../common/configs.common";
-import { useAuthStore } from "../../../store/user/authStore";
+import useAuthStore from "../../../store/user/authStore";
 import { WAITING_EMOJI } from "../../../configs";
 import toast from "react-hot-toast";
-import { useUserWithdrawalRequestStore } from "../../../store/user/userWithdrawalRequestStore";
+import useUserWithdrawalRequestStore from "../../../store/user/userWithdrawalRequestStore";
 import type { SelfWithdrawalRequestResponse } from "../../../../../common/types.common";
 
 type Process = {

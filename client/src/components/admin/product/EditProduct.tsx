@@ -22,12 +22,12 @@ import {
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
-import { useProductStore } from "../../../store/admin/product/productStore";
-import { useRefreshStore } from "../../../store/admin/refreshStore";
-import { useHasPermission } from "../../../hooks/admin/useHasPermission";
+import useProductStore from "../../../store/admin/product/productStore";
+import useRefreshStore from "../../../store/admin/refreshStore";
+import useHasPermission from "../../../hooks/admin/useHasPermission";
 import type { FormInput } from "../../../utils/types";
-import { useProductBrandStore } from "../../../store/common/product/brandStore";
-import { useProductCategoryStore } from "../../../store/common/product/categoryStore";
+import useProductBrandStore from "../../../store/common/product/brandStore";
+import useProductCategoryStore from "../../../store/common/product/categoryStore";
 import toast from "react-hot-toast";
 import {
   createFileList,
@@ -36,7 +36,14 @@ import {
 } from "../../../utils/utils";
 import ApiError from "../../common/ApiError";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
-import { useUserStore } from "../../../store/admin/userStore";
+import useUserStore from "../../../store/admin/userStore";
+
+type Process = {
+  isProcessing: boolean;
+  isInitializing: boolean;
+  isUploadingImages: boolean;
+  isUpdating: boolean;
+};
 
 type FormData = {
   name: FormInput;

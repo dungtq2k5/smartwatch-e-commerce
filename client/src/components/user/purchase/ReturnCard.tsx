@@ -12,8 +12,8 @@ import {
 } from "../../../configs";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleQuestion, faTruck } from "@fortawesome/free-solid-svg-icons";
-import { useReturnStateStore } from "../../../store/common/returnRefund/returnStateStore";
-import { useReturnStore } from "../../../store/user/orderReturnStore";
+import useReturnStateStore from "../../../store/common/returnRefund/returnStateStore";
+import useReturnStore from "../../../store/user/orderReturnStore";
 import ApiError from "../../common/ApiError";
 import PurchaseCardSkeleton from "../skeleton/PurchaseCardSkeleton";
 
@@ -27,14 +27,14 @@ const ReturnCard = memo(
   }>) => {
     const navigate = useNavigate();
 
-    const { getReturnState, getReturnStateSync } = useReturnStateStore();
+    const { fetchReturnState, getReturnState } = useReturnStateStore();
     const { canUpdateReturn } = useReturnStore();
 
     const latestReturnState = orderReturn.states.at(-1);
 
     const [returnState, setReturnState] = useState<
       ReturnStateResponse | undefined
-    >(latestReturnState ? getReturnStateSync(latestReturnState.id) : undefined);
+    >(latestReturnState ? getReturnState(latestReturnState.id) : undefined);
 
     const [isInitializing, setIsInitializing] = useState<boolean>(false);
     const [apiErr, setApiErr] = useState<string | null>(null);
@@ -51,7 +51,7 @@ const ReturnCard = memo(
             throw new Error("No return state found");
           }
 
-          setReturnState(await getReturnState(latestReturnState.id));
+          setReturnState(await fetchReturnState(latestReturnState.id));
         } catch (error) {
           setApiErr(formatError(error));
         } finally {

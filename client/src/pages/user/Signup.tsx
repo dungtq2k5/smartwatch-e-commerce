@@ -13,7 +13,7 @@ import {
   isValidUserFullName,
   isValidVnPhoneNumber,
 } from "../../../../common/utils.common";
-import { useAuthStore } from "../../store/user/authStore";
+import useAuthStore from "../../store/user/authStore";
 import type { UserSignup } from "../../../../common/types.common";
 import toast from "react-hot-toast";
 import AuthByGoogleBtn from "../../components/user/AuthByGoogleBtn";

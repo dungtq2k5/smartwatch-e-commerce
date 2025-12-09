@@ -10,12 +10,12 @@ type ReturnReasonState = {
   fetchReturnReasons: () => Promise<ReturnReasonListResponse>;
 };
 
-export const useReturnReasonStore = create<ReturnReasonState>((set, get) => ({
+const useReturnReasonStore = create<ReturnReasonState>((set, get) => ({
   returnReasons: null,
 
   async fetchReturnReasons(): Promise<ReturnReasonListResponse> {
     const { returnReasons } = get();
-    if (returnReasons) return returnReasons;
+    if (returnReasons) return structuredClone(returnReasons);
 
     try {
       const res = await retrieve(`${ROOT_URL}/return-reasons`);
@@ -23,9 +23,11 @@ export const useReturnReasonStore = create<ReturnReasonState>((set, get) => ({
 
       const returnReasons = res.data as ReturnReasonListResponse;
       set({ returnReasons });
-      return returnReasons;
+      return structuredClone(returnReasons);
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
 }));
+
+export default useReturnReasonStore;

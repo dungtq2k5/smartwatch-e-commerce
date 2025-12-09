@@ -1,6 +1,6 @@
 import { loadStripe, type StripeElementsOptions } from "@stripe/stripe-js";
 import { useEffect, useState } from "react";
-import { useUserPaymentMethodStore } from "../../store/user/userPaymentMethodStore";
+import useUserPaymentMethodStore from "../../store/user/userPaymentMethodStore";
 import Loading from "../../components/common/Loading";
 import ApiError from "../../components/common/ApiError";
 import { Elements } from "@stripe/react-stripe-js";

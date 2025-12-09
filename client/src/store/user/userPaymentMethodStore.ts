@@ -15,15 +15,18 @@ type UserPaymentMethodState = {
   fetchPaymentMethods: (
     oblige?: boolean
   ) => Promise<UserSelfPaymentMethodListResponse>;
+
   createPaymentMethod: (
     data: UserPaymentMethodCreate
   ) => Promise<UserPaymentMethodResponse>;
   createStripeSetupIntent: () => Promise<StripeSetupIntentResponse>;
+
   setDefaultPaymentMethod: (id: string) => Promise<void>;
+
   deletePaymentMethod: (id: string) => Promise<void>;
 };
 
-export const useUserPaymentMethodStore = create<UserPaymentMethodState>(
+const useUserPaymentMethodStore = create<UserPaymentMethodState>(
   (set, get) => ({
     paymentMethods: null,
 
@@ -32,7 +35,7 @@ export const useUserPaymentMethodStore = create<UserPaymentMethodState>(
     ): Promise<UserSelfPaymentMethodListResponse> {
       if (!oblige) {
         const { paymentMethods } = get();
-        if (paymentMethods) return paymentMethods;
+        if (paymentMethods) return structuredClone(paymentMethods);
       }
 
       try {
@@ -41,7 +44,7 @@ export const useUserPaymentMethodStore = create<UserPaymentMethodState>(
 
         const paymentMethods = res.data as UserSelfPaymentMethodListResponse;
         set({ paymentMethods });
-        return paymentMethods;
+        return structuredClone(paymentMethods);
       } catch (error) {
         throw new Error(formatError(error));
       }
@@ -67,7 +70,7 @@ export const useUserPaymentMethodStore = create<UserPaymentMethodState>(
           });
         }
 
-        return newPaymentMethod;
+        return structuredClone(newPaymentMethod);
       } catch (error) {
         throw new Error(formatError(error));
       }
@@ -147,3 +150,5 @@ export const useUserPaymentMethodStore = create<UserPaymentMethodState>(
     },
   })
 );
+
+export default useUserPaymentMethodStore;

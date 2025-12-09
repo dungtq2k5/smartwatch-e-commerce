@@ -5,13 +5,13 @@ import { USER_URL } from "../../configs";
 import { retrieve } from "../../utils/utils";
 
 type UserAddressStore = {
-  getUserAddressesByUserId: (
+  fetchUserAddressesByUserId: (
     userId: string
   ) => Promise<UserAddressListResponse>;
 };
 
-export const useUserAddressStore = create<UserAddressStore>(() => ({
-  async getUserAddressesByUserId(
+const useUserAddressStore= create<UserAddressStore>(() => ({
+  async fetchUserAddressesByUserId(
     userId: string
   ): Promise<UserAddressListResponse> {
     try {
@@ -24,3 +24,5 @@ export const useUserAddressStore = create<UserAddressStore>(() => ({
     }
   },
 }));
+
+export default useUserAddressStore;

@@ -25,7 +25,7 @@ import ProductDetailSpecsModal from "../../components/user/modal/ProductDetailSp
 import ProductDetailSkeleton from "../../components/user/skeleton/ProductDetailSkeleton";
 import type { BuyNowItem, ItemPicked } from "../../utils/types";
 import toast from "react-hot-toast";
-import { useUserCartStore } from "../../store/user/cartStore";
+import useUserCartStore from "../../store/user/cartStore";
 import ProductCardSkeleton from "../../components/user/skeleton/ProductCardSkeleton";
 import ProductCard from "../../components/user/product/ProductCard";
 import defaultProductImg from "../../assets/default-product.webp";
@@ -57,7 +57,7 @@ export default function ProductDetail() {
 
   const { id } = useParams();
   const navigate = useNavigate();
-  const { fetchProducts, getProductDetail } = useProductStore();
+  const { fetchProducts, fetchProductDetail } = useProductStore();
   const { createCart } = useUserCartStore();
 
   const [process, setProcess] = useState<process>({
@@ -116,7 +116,7 @@ export default function ProductDetail() {
           throw new Error("Product ID is required");
         }
 
-        productDetail = await getProductDetail(id, {
+        productDetail = await fetchProductDetail(id, {
           modelStopSelling: "false",
           variationStopSelling: "false",
         });

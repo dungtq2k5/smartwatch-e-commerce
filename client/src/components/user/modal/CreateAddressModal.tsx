@@ -15,7 +15,7 @@ import {
 } from "../../../../../common/utils.common";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useUserAddressStore } from "../../../store/user/addressStore";
+import useUserAddressStore from "../../../store/user/addressStore";
 import type { UserAddressCreate } from "../../../../../common/types.common";
 import toast from "react-hot-toast";
 import { useJsApiLoader } from "@react-google-maps/api";

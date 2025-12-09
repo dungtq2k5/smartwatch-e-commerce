@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useCallback, useRef, useState } from "react";
-import { useAuthStore } from "../../store/user/authStore";
+import useAuthStore from "../../store/user/authStore";
 import type { UserLogin } from "../../../../common/types.common";
 import toast from "react-hot-toast";
 import type { FormInput } from "../../utils/types";

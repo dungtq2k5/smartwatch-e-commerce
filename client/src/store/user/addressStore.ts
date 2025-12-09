@@ -12,27 +12,37 @@ import { formatError } from "../../../../common/utils.common";
 type UserAddressState = {
   addresses: UserAddressListResponse | null;
 
+  getAddress: (addressId: string) => UserSelfAddressResponse | undefined;
+
   fetchAddresses: () => Promise<UserAddressListResponse>;
+  fetchAddress: (addressId: string) => Promise<UserSelfAddressResponse>;
+  fetchDefaultAddress: () => Promise<UserSelfAddressResponse | null>;
+
   deleteAddress: (addressId: string) => Promise<void>;
+
   createAddress: (
     addressData: UserAddressCreate
   ) => Promise<UserSelfAddressResponse>;
+
   updateAddress: (
     addressData: UserAddressUpdate,
     addressId: string
   ) => Promise<UserSelfAddressResponse>;
-
-  getAddress: (addressId: string) => Promise<UserSelfAddressResponse>;
-  getAddressSync: (addressId: string) => UserSelfAddressResponse | undefined;
-  getDefaultAddress: () => Promise<UserSelfAddressResponse | undefined>;
 };
 
-export const useUserAddressStore = create<UserAddressState>((set, get) => ({
+const useUserAddressStore = create<UserAddressState>((set, get) => ({
   addresses: null,
+
+  getAddress(addressId: string): UserSelfAddressResponse | undefined {
+    const { addresses } = get();
+    return structuredClone(
+      addresses?.addresses.find((address) => address.id === addressId)
+    );
+  },
 
   async fetchAddresses(): Promise<UserAddressListResponse> {
     const { addresses } = get();
-    if (addresses) return addresses;
+    if (addresses) return structuredClone(addresses);
 
     try {
       const res = await retrieve(SELF_ADDRESSES_URL);
@@ -40,7 +50,44 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
 
       const addresses = res.data as UserAddressListResponse;
       set({ addresses });
-      return addresses;
+      return structuredClone(addresses);
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async fetchAddress(addressId: string): Promise<UserSelfAddressResponse> {
+    const { addresses } = get();
+    if (addresses) {
+      const address = addresses.addresses.find(
+        (address) => address.id === addressId
+      );
+      if (address) return structuredClone(address);
+    }
+
+    try {
+      const res = await retrieve(`${SELF_ADDRESSES_URL}/${addressId}`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as UserSelfAddressResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async fetchDefaultAddress(): Promise<UserSelfAddressResponse | null> {
+    const { addresses } = get();
+    if (addresses) {
+      return structuredClone(
+        addresses.addresses.find((address) => address.isDefault) || null
+      );
+    }
+
+    try {
+      const res = await retrieve(`${SELF_ADDRESSES_URL}/default`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as UserSelfAddressResponse | null; // Null when user doesn't have any addresses
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -101,7 +148,7 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
         });
       }
 
-      return newAddress;
+      return structuredClone(newAddress);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -145,49 +192,11 @@ export const useUserAddressStore = create<UserAddressState>((set, get) => ({
         });
       }
 
-      return updatedAddress;
-    } catch (error) {
-      throw new Error(formatError(error));
-    }
-  },
-
-  async getAddress(addressId: string): Promise<UserSelfAddressResponse> {
-    const { addresses } = get();
-    if (addresses) {
-      const address = addresses.addresses.find(
-        (address) => address.id === addressId
-      );
-      if (address) return address;
-    }
-
-    try {
-      const res = await retrieve(`${SELF_ADDRESSES_URL}/${addressId}`);
-      if (!res.success) throw new Error(res.message);
-
-      return res.data as UserSelfAddressResponse;
-    } catch (error) {
-      throw new Error(formatError(error));
-    }
-  },
-
-  getAddressSync(addressId: string): UserSelfAddressResponse | undefined {
-    const { addresses } = get();
-    return addresses?.addresses.find((address) => address.id === addressId);
-  },
-
-  async getDefaultAddress(): Promise<UserSelfAddressResponse | undefined> {
-    const { addresses } = get();
-    if (addresses) {
-      return addresses.addresses.find((address) => address.isDefault);
-    }
-
-    try {
-      const res = await retrieve(`${SELF_ADDRESSES_URL}/default`);
-      if (!res.success) throw new Error(res.message);
-
-      return res.data as UserSelfAddressResponse | undefined; // Undefined when user doesn't have any addresses
+      return structuredClone(updatedAddress);
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
 }));
+
+export default useUserAddressStore;

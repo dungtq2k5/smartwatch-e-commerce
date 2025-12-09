@@ -23,7 +23,7 @@ import { useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUserBalanceHistoryStore } from "../../../store/user/userBalanceHistoryStore";
 import ApiError from "../../common/ApiError";
-import { useAuthStore } from "../../../store/user/authStore";
+import useAuthStore from "../../../store/user/authStore";
 import toast from "react-hot-toast";
 import CreateWithdrawalRequestModal from "../modal/CreateWithdrawalRequestModal";
 import WithdrawalDetailModal from "../modal/WithdrawalDetailModal";

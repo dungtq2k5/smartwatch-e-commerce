@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useRoleStore } from "../../../store/admin/roleStore";
-import { useUserStore } from "../../../store/admin/userStore";
+import useRoleStore from "../../../store/admin/roleStore";
+import useUserStore from "../../../store/admin/userStore";
 import type { FormFileInput, FormInput } from "../../../utils/types";
 import {
   AVATAR_ALLOWED_TYPES,
@@ -37,8 +37,8 @@ import {
   faCircleExclamation,
   faCircleQuestion,
 } from "@fortawesome/free-solid-svg-icons";
-import { useHasPermission } from "../../../hooks/admin/useHasPermission";
-import { useRefreshStore } from "../../../store/admin/refreshStore";
+import useHasPermission from "../../../hooks/admin/useHasPermission";
+import useRefreshStore from "../../../store/admin/refreshStore";
 import EditUserSkeleton from "../skeleton/EditUserSkeleton";
 
 type FormData = {
@@ -74,7 +74,7 @@ export default function EditUser() {
   const navigate = useNavigate();
 
   const { roles, fetchRoles } = useRoleStore();
-  const { getUser, updateUser, updateUserEmail, updateUserPhoneNumber } =
+  const { fetchUser, updateUser, updateUserEmail, updateUserPhoneNumber } =
     useUserStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
@@ -123,24 +123,29 @@ export default function EditUser() {
       try {
         if (!id) throw new Error("User ID is missing.");
 
-        const [fetchedUser] = await Promise.all([getUser(id), fetchRoles()]);
+        const [fetchedUser] = await Promise.all([
+          fetchUser(id),
+          roles ? Promise.resolve() : fetchRoles(),
+        ]);
 
         setUser(fetchedUser);
+
+        const copiedUser = structuredClone(fetchedUser); // Avoid direct mutation
         setFormData({
-          fullName: { val: fetchedUser.fullName },
-          avatar: { val: fetchedUser.avatarUrl },
+          fullName: { val: copiedUser.fullName },
+          avatar: { val: copiedUser.avatarUrl },
           password: { val: "" },
-          birth: { val: fetchedUser.birth },
-          gender: fetchedUser.gender,
-          isLocked: fetchedUser.isLocked,
-          roleIds: fetchedUser.roles.map((role) => role.id),
+          birth: { val: copiedUser.birth },
+          gender: copiedUser.gender,
+          isLocked: copiedUser.isLocked,
+          roleIds: copiedUser.roles.map((role) => role.id),
           // Contact info
-          email: { val: fetchedUser.email || "" },
-          isEmailVerified: fetchedUser.isEmailVerified,
-          phoneNumber: { val: fetchedUser.phoneNumber || "" },
-          isPhoneNumberVerified: fetchedUser.isPhoneNumberVerified,
+          email: { val: copiedUser.email || "" },
+          isEmailVerified: copiedUser.isEmailVerified,
+          phoneNumber: { val: copiedUser.phoneNumber || "" },
+          isPhoneNumberVerified: copiedUser.isPhoneNumberVerified,
         });
-        setAvatarPreviewUrl(fetchedUser.avatarUrl || defaultAvatar);
+        setAvatarPreviewUrl(copiedUser.avatarUrl || defaultAvatar);
       } catch (error) {
         setApiErr(formatError(error));
       } finally {

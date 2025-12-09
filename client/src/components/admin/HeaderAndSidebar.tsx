@@ -10,9 +10,9 @@ import { memo, useCallback, useRef, useState } from "react";
 import { PROJECT_NAME } from "../../../../common/configs.common";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import defaultAvatar from "../../assets/default-avatar.webp";
-import { useAuthStore } from "../../store/admin/authStore";
-import { useHasPermission } from "../../hooks/admin/useHasPermission";
-import { useRefreshStore } from "../../store/admin/refreshStore";
+import useAuthStore from "../../store/admin/authStore";
+import useHasPermission from "../../hooks/admin/useHasPermission";
+import useRefreshStore from "../../store/admin/refreshStore";
 
 const HeaderAndSidebar = memo(() => {
   // DEV temp for testing
@@ -21,7 +21,7 @@ const HeaderAndSidebar = memo(() => {
   console.log("Admin header rendered", renderCount.current);
 
   const { admin } = useAuthStore();
-  const { refresh } = useRefreshStore();
+  const refresh = useRefreshStore((state) => state.refresh);
 
   const [canReadUser, canReadProduct, canReadModel] = [
     useHasPermission("r_usr"),

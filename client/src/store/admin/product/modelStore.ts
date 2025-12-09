@@ -2,11 +2,14 @@ import { create } from "zustand";
 import type {
   AdminProductModelDetailResponse,
   AdminProductModelListResponse,
+  AdminProductModelResponse,
   ProductModelBulkDelete,
   ProductModelDetailQuery,
+  ProductModelResponse,
   ProductModelSearchQuery,
+  ProductModelUpdate,
 } from "../../../../../common/types.common";
-import { remove, retrieve } from "../../../utils/utils";
+import { patch, remove, retrieve } from "../../../utils/utils";
 import { PRODUCT_MODEL_URL } from "../../../configs";
 import {
   formatError,
@@ -19,16 +22,22 @@ type ModelState = {
     query?: ProductModelSearchQuery
   ) => Promise<AdminProductModelListResponse>;
 
-  getModelDetail: (
+  fetchModel: (modelId: string) => Promise<AdminProductModelResponse>;
+  fetchModelDetail: (
     modelId: string,
     query?: ProductModelDetailQuery
   ) => Promise<AdminProductModelDetailResponse>;
+
+  updateModel: (
+    modelId: string,
+    data: ProductModelUpdate
+  ) => Promise<ProductModelResponse>;
 
   deleteModel: (modelId: string) => Promise<void>;
   deleteModelBulk: (data: ProductModelBulkDelete) => Promise<void>;
 };
 
-export const useModelStore = create<ModelState>(() => ({
+const useModelStore = create<ModelState>(() => ({
   async fetchModels(
     query?: ProductModelSearchQuery
   ): Promise<AdminProductModelListResponse> {
@@ -119,7 +128,18 @@ export const useModelStore = create<ModelState>(() => ({
     }
   },
 
-  async getModelDetail(
+  async fetchModel(modelId: string): Promise<AdminProductModelResponse> {
+    try {
+      const res = await retrieve(`${PRODUCT_MODEL_URL}/${modelId}/admin`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as AdminProductModelResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async fetchModelDetail(
     modelId: string,
     query?: ProductModelDetailQuery
   ): Promise<AdminProductModelDetailResponse> {
@@ -137,6 +157,20 @@ export const useModelStore = create<ModelState>(() => ({
       if (!res.success) throw new Error(res.message);
 
       return res.data as AdminProductModelDetailResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async updateModel(
+    modelId: string,
+    data: ProductModelUpdate
+  ): Promise<ProductModelResponse> {
+    try {
+      const res = await patch(PRODUCT_MODEL_URL, modelId, data);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as ProductModelResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -169,3 +203,5 @@ export const useModelStore = create<ModelState>(() => ({
     }
   },
 }));
+
+export default useModelStore;

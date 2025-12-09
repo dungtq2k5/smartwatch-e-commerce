@@ -1,8 +1,8 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { useAuthStore } from "../../store/admin/authStore";
+import useAuthStore from "../../store/admin/authStore";
 import { Navigate, Outlet } from "react-router-dom";
-import { usePermissionStore } from "../../store/admin/permissionStore";
-import { useRoleStore } from "../../store/admin/roleStore";
+import usePermissionStore from "../../store/admin/permissionStore";
+import useRoleStore from "../../store/admin/roleStore";
 import { formatError } from "../../../../common/utils.common";
 import Loading from "../common/Loading";
 import ApiError from "../common/ApiError";
@@ -14,8 +14,8 @@ const AuthRoute = memo(() => {
   console.log("AuthRoute admin rendered", renderCount.current);
 
   const { admin } = useAuthStore();
-  const { fetchRoles } = useRoleStore();
-  const { fetchPermissions } = usePermissionStore();
+  const { roles, fetchRoles } = useRoleStore();
+  const { permissions, fetchPermissions } = usePermissionStore();
 
   const [isInitializing, setIsInitializing] = useState(false);
   const [apiErr, setApiErr] = useState<string | null>(null);
@@ -28,8 +28,10 @@ const AuthRoute = memo(() => {
         setApiErr(null);
 
         try {
-          await fetchRoles();
-          await fetchPermissions();
+          await Promise.all([
+            roles ? Promise.resolve() : fetchRoles(),
+            permissions ? Promise.resolve() : fetchPermissions(),
+          ]);
         } catch (error) {
           setApiErr(formatError(error));
         } finally {

@@ -26,7 +26,7 @@ import {
   useState,
   type JSX,
 } from "react";
-import { useUserStore } from "../../../store/admin/userStore";
+import useUserStore from "../../../store/admin/userStore";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   DATA_DISPLAY_ROWS_PER_PAGE,
@@ -50,12 +50,12 @@ import type {
 import ConfigDisplayModal from "../modal/ConfigDisplayModal";
 import { exportToCsv } from "../../../utils/utils";
 import defaultAvatar from "../../../assets/default-avatar.webp";
-import { useRoleStore } from "../../../store/admin/roleStore";
+import useRoleStore from "../../../store/admin/roleStore";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
-import { useConfigStore } from "../../../store/admin/configStore";
-import { useAuthStore } from "../../../store/admin/authStore";
-import { useHasPermission } from "../../../hooks/admin/useHasPermission";
-import { useRefreshStore } from "../../../store/admin/refreshStore";
+import useConfigStore from "../../../store/admin/configStore";
+import useAuthStore from "../../../store/admin/authStore";
+import useHasPermission from "../../../hooks/admin/useHasPermission";
+import useRefreshStore from "../../../store/admin/refreshStore";
 import EditBtnLink from "../EditBtnLink";
 import DeleteBtn from "../DeleteBtn";
 import TableHeadSortBtn from "../TableHeadSortBtn";
@@ -99,9 +99,9 @@ export default function UserManagement() {
   renderCount.current += 1;
   console.log(`UserManagement render count: ${renderCount.current}`);
 
-  const { admin } = useAuthStore();
+  const admin = useAuthStore((state) => state.admin);
   const { fetchUsers, deleteUser, deleteUserBulk } = useUserStore();
-  const { fetchRoles, getRoleSync } = useRoleStore();
+  const { roles, getRole, fetchRoles } = useRoleStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
   const {
     config: { userManagementDisplayFields: displayFields },
@@ -254,7 +254,7 @@ export default function UserManagement() {
                     idx > 1 ? "ms-1" : ""
                   }`}
                 >
-                  {getRoleSync(role.id)?.name || "Unknown Role"}
+                  {getRole(role.id)?.name || "Unknown Role"}
                 </span>
               ))
             ) : (
@@ -265,7 +265,7 @@ export default function UserManagement() {
         getCsvVal: (user) =>
           user.roles.length > 0
             ? user.roles
-                .map((role) => getRoleSync(role.id)?.name || "Unknown Role")
+                .map((role) => getRole(role.id)?.name || "Unknown Role")
                 .join(", ")
             : "No roles assigned",
       },
@@ -292,7 +292,7 @@ export default function UserManagement() {
         getCsvVal: () => null,
       },
     }),
-    [admin?.id, canDeleteUser, canEditUser, getRoleSync]
+    [admin?.id, canDeleteUser, canEditUser, getRole]
   );
 
   const [process, setProcess] = useState<Process>({
@@ -329,7 +329,7 @@ export default function UserManagement() {
       setApiErr(null);
 
       try {
-        await fetchRoles(); // Pre-fetch roles to use getRoleSync for display
+        if (!roles) await fetchRoles(); // Pre-fetch roles to use getRole for display
 
         const [
           urlLimit,

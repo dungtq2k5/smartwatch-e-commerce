@@ -25,8 +25,8 @@ type OrderState = {
     query?: OrderSearchQuery,
     signal?: AbortSignal
   ) => Promise<OrderListResponse>;
-  getOrder: (id: string) => Promise<OrderResponse>;
-  getOrderDetail: (id: string) => Promise<OrderDetailResponse>;
+  fetchOrder: (id: string) => Promise<OrderResponse>;
+  fetchOrderDetail: (id: string) => Promise<OrderDetailResponse>;
 
   checkItemIsReturned: (item: OrderResponse["items"][0]) => boolean;
   checkItemAvailable: (
@@ -54,7 +54,7 @@ type OrderState = {
   canChangeDeliveryAddress: (orderStateLookupId: string) => boolean;
 };
 
-export const useOrderStore = create<OrderState>((set, get) => ({
+const useOrderStoreInternal = create<OrderState>((set, get) => ({
   orderCache: null,
   orderDetailCache: null,
 
@@ -124,9 +124,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  async getOrder(id: string): Promise<OrderResponse> {
+  async fetchOrder(id: string): Promise<OrderResponse> {
     const { orderCache } = get();
-    if (orderCache && orderCache.id === id) return orderCache;
+    if (orderCache?.id === id) return structuredClone(orderCache);
 
     try {
       const res = await retrieve(`${ORDER_URL}/${id}`);
@@ -134,15 +134,15 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
       const order = res.data as OrderResponse;
       set({ orderCache: order });
-      return order;
+      return structuredClone(order);
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
 
-  async getOrderDetail(id: string): Promise<OrderDetailResponse> {
+  async fetchOrderDetail(id: string): Promise<OrderDetailResponse> {
     const { orderDetailCache } = get();
-    if (orderDetailCache && orderDetailCache.id === id) return orderDetailCache;
+    if (orderDetailCache?.id === id) return structuredClone(orderDetailCache);
 
     try {
       const res = await retrieve(`${ORDER_URL}/${id}/details`);
@@ -150,7 +150,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
       const orderDetail = res.data as OrderDetailResponse;
       set({ orderDetailCache: orderDetail });
-      return orderDetail;
+      return structuredClone(orderDetail);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -190,7 +190,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
       const updatedOrder = res.data as OrderResponse;
       set({ orderCache: updatedOrder });
-      return updatedOrder;
+      return structuredClone(updatedOrder);
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -239,3 +239,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     return ["1", "2"].includes(orderStateLookupId); // pending, confirmed
   },
 }));
+
+export default function useOrderStore() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { orderCache, orderDetailCache, ...actions } = useOrderStoreInternal();
+  return actions;
+}

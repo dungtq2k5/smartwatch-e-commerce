@@ -26,18 +26,18 @@ type ConfigState = {
 
 const getInitialState = (): AdminConfig => {
   const storedConfig = localStorage.getItem(CONFIG_STORAGE_KEY);
-  if (!storedConfig) return DEFAULT_ADMIN_CONFIG;
+  if (!storedConfig) return structuredClone(DEFAULT_ADMIN_CONFIG);
 
   try {
     const parsedConfig = JSON.parse(storedConfig) as Partial<AdminConfig>;
-    return { ...DEFAULT_ADMIN_CONFIG, ...parsedConfig };
+    return structuredClone({ ...DEFAULT_ADMIN_CONFIG, ...parsedConfig });
   } catch (error) {
     console.error("Failed to parse config from localStorage:", error);
-    return DEFAULT_ADMIN_CONFIG;
+    return structuredClone(DEFAULT_ADMIN_CONFIG);
   }
 };
 
-export const useConfigStore = create<ConfigState>((set, get) => ({
+const useConfigStore = create<ConfigState>((set, get) => ({
   config: getInitialState(),
 
   setUserManagementDisplayFields: (displayFields: UserDisplayField[]): void => {
@@ -107,3 +107,5 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     set({ config: newConfig });
   },
 }));
+
+export default useConfigStore;

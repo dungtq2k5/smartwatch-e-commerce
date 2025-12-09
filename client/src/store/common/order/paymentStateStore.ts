@@ -8,32 +8,37 @@ import { PAYMENT_STATES_URL } from "../../../configs";
 import { formatError } from "../../../../../common/utils.common";
 
 type PaymentStateState = {
-  paymentStates?: PaymentStateListResponse;
+  paymentStates: PaymentStateListResponse | null;
+
+  getPaymentState: (id: string) => PaymentStateResponse | undefined;
 
   fetchPaymentStates: () => Promise<PaymentStateListResponse | undefined>;
-  getPaymentState: (id: string) => PaymentStateResponse | undefined;
 };
 
-export const usePaymentStateStore = create<PaymentStateState>((set, get) => ({
-  paymentStates: undefined,
+const usePaymentStateStore = create<PaymentStateState>((set, get) => ({
+  paymentStates: null,
+
+  getPaymentState(id: string): PaymentStateResponse | undefined {
+    return structuredClone(
+      get().paymentStates?.states.find((state) => state.id === id)
+    );
+  },
 
   async fetchPaymentStates(): Promise<PaymentStateListResponse | undefined> {
     const { paymentStates } = get();
-    if (paymentStates) return paymentStates;
+    if (paymentStates) return structuredClone(paymentStates);
 
     try {
       const res = await retrieve(PAYMENT_STATES_URL);
       if (!res.success) throw new Error(res.message);
 
-      const data = res.data as PaymentStateListResponse;
-      set({ paymentStates: data });
-      return data;
+      const states = res.data as PaymentStateListResponse;
+      set({ paymentStates: states });
+      return structuredClone(states);
     } catch (error) {
       throw new Error(formatError(error));
     }
   },
-
-  getPaymentState(id: string): PaymentStateResponse | undefined {
-    return get().paymentStates?.states.find((state) => state.id === id);
-  },
 }));
+
+export default usePaymentStateStore;

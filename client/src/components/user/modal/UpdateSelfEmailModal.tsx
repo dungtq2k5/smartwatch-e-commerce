@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { useAuthStore } from "../../../store/user/authStore";
+import useAuthStore from "../../../store/user/authStore";
 import { Button, Modal } from "react-bootstrap";
 import type { FormInput } from "../../../utils/types";
 import { formatError, isValidEmail } from "../../../../../common/utils.common";

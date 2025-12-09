@@ -1,5 +1,5 @@
 import { useCallback, useState, useRef, useEffect, memo } from "react";
-import { useAuthStore } from "../../store/user/authStore";
+import useAuthStore from "../../store/user/authStore";
 import { VERIFICATION_CODE_LENGTH } from "../../../../common/configs.common";
 import type { VerifyType, UserVerify } from "../../../../common/types.common";
 import toast from "react-hot-toast";

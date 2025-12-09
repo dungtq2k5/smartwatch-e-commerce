@@ -6,15 +6,15 @@ import {
   useState,
   type JSX,
 } from "react";
-import { useOrderStore } from "../../store/user/orderStore";
+import useOrderStore from "../../store/user/orderStore";
 import type {
   OrderResponse,
   OrderReturnCreate,
 } from "../../../../common/types.common";
 import { createFileList, getImgFilesErrs, uploadFile } from "../../utils/utils";
 import ApiError from "../../components/common/ApiError";
-import { useReturnReasonStore } from "../../store/common/returnRefund/returnReasonStore";
-import { useUserAddressStore } from "../../store/user/addressStore";
+import useReturnReasonStore from "../../store/common/returnRefund/returnReasonStore";
+import useUserAddressStore from "../../store/user/addressStore";
 import defaultProductImg from "../../assets/default-product.webp";
 import SlashColor from "../../components/common/SlashColor";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -41,7 +41,7 @@ import {
 } from "../../../../common/utils.common";
 import type { FormInput } from "../../utils/types";
 import toast from "react-hot-toast";
-import { useReturnStore } from "../../store/user/orderReturnStore";
+import useReturnStore from "../../store/user/orderReturnStore";
 import { WAITING_EMOJI } from "../../configs";
 import ReturnCreateSkeleton from "../../components/user/skeleton/ReturnCreateSkeleton";
 
@@ -70,7 +70,7 @@ export default function ReturnRefundCreate() {
   const { orderId } = useParams();
   const navigate = useNavigate();
 
-  const { getOrder } = useOrderStore();
+  const { fetchOrder } = useOrderStore();
   const { returnReasons, fetchReturnReasons } = useReturnReasonStore();
   const { addresses, fetchAddresses } = useUserAddressStore();
   const { createReturn } = useReturnStore();
@@ -117,9 +117,11 @@ export default function ReturnRefundCreate() {
 
         const [fetchedOrder, fetchedReasons, fetchedAddresses] =
           await Promise.all([
-            getOrder(orderId),
-            fetchReturnReasons(),
-            fetchAddresses(),
+            fetchOrder(orderId),
+            returnReasons
+              ? Promise.resolve(returnReasons)
+              : fetchReturnReasons(),
+            addresses ? Promise.resolve(addresses) : fetchAddresses(),
           ]);
 
         setOrder(fetchedOrder);

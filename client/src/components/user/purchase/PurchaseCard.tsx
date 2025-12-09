@@ -5,7 +5,7 @@ import type {
   OrderStateResponse,
   PaymentMethodResponse,
 } from "../../../../../common/types.common";
-import { useOrderStore } from "../../../store/user/orderStore";
+import useOrderStore from "../../../store/user/orderStore";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleQuestion, faTruck } from "@fortawesome/free-solid-svg-icons";
@@ -17,10 +17,10 @@ import {
   WAITING_EMOJI,
 } from "../../../configs";
 import toast from "react-hot-toast";
-import { useUserCartStore } from "../../../store/user/cartStore";
-import { useOrderStateStore } from "../../../store/common/order/orderStateStore";
-import { useDeliveryStateStore } from "../../../store/common/order/deliveryStateStore";
-import { usePaymentMethodStore } from "../../../store/common/order/paymentMethodStore";
+import useUserCartStore from "../../../store/user/cartStore";
+import useOrderStateStore from "../../../store/common/order/orderStateStore";
+import useDeliveryStateStore from "../../../store/common/order/deliveryStateStore";
+import usePaymentMethodStore from "../../../store/common/order/paymentMethodStore";
 import ApiError from "../../common/ApiError";
 import PurchaseCardSkeleton from "../skeleton/PurchaseCardSkeleton";
 import SmallSpinner from "../../common/SmallSpinner";
@@ -44,9 +44,9 @@ const PurchaseCard = memo(
   }>) => {
     const navigate = useNavigate();
 
-    const { getOrderState, getOrderStateSync } = useOrderStateStore();
-    const { getDeliveryState, getDeliveryStateSync } = useDeliveryStateStore();
-    const { getPaymentMethod, getPaymentMethodSync } = usePaymentMethodStore();
+    const { fetchOrderState, getOrderState } = useOrderStateStore();
+    const { fetchDeliveryState, getDeliveryState } = useDeliveryStateStore();
+    const { fetchPaymentMethod, getPaymentMethod } = usePaymentMethodStore();
     const {
       checkItemAvailable,
       canSubmitOrder,
@@ -63,17 +63,15 @@ const PurchaseCard = memo(
 
     const [orderState, setOrderState] = useState<
       OrderStateResponse | undefined
-    >(latestOrderState ? getOrderStateSync(latestOrderState.id) : undefined);
+    >(latestOrderState ? getOrderState(latestOrderState.id) : undefined);
     const [deliveryState, setDeliveryState] = useState<
       DeliveryStateResponse | undefined
     >(
-      latestDeliveryState
-        ? getDeliveryStateSync(latestDeliveryState.id)
-        : undefined
+      latestDeliveryState ? getDeliveryState(latestDeliveryState.id) : undefined
     );
     const [paymentMethod, setPaymentMethod] = useState<
       PaymentMethodResponse | undefined
-    >(getPaymentMethodSync(order.paymentMethodId));
+    >(getPaymentMethod(order.paymentMethodId));
 
     const [process, setProcess] = useState<Process>({
       isProcessing: false,
@@ -104,9 +102,9 @@ const PurchaseCard = memo(
             deliveryStateFetched,
             paymentMethodFetched,
           ] = await Promise.all([
-            getOrderState(latestOrderState.id),
-            getDeliveryState(latestDeliveryState.id),
-            getPaymentMethod(order.paymentMethodId),
+            fetchOrderState(latestOrderState.id),
+            fetchDeliveryState(latestDeliveryState.id),
+            fetchPaymentMethod(order.paymentMethodId),
           ]);
 
           setOrderState(orderStateFetched);

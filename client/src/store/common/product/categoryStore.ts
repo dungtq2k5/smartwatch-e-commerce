@@ -10,35 +10,35 @@ import { formatError } from "../../../../../common/utils.common";
 type ProductCategoryState = {
   categories: ProductCategoryListResponse | null;
 
-  fetchCategories: () => Promise<ProductCategoryListResponse>;
+  getCategory: (id: string) => ProductCategoryResponse | undefined;
 
-  getCategorySync: (id: string) => ProductCategoryResponse | undefined;
+  fetchCategories: () => Promise<ProductCategoryListResponse>;
 };
 
-export const useProductCategoryStore = create<ProductCategoryState>(
-  (set, get) => ({
-    categories: null,
+const useProductCategoryStore = create<ProductCategoryState>((set, get) => ({
+  categories: null,
 
-    async fetchCategories(): Promise<ProductCategoryListResponse> {
-      const { categories } = get();
-      if (categories) return categories;
+  getCategory(id: string): ProductCategoryResponse | undefined {
+    return structuredClone(
+      get().categories?.categories.categories.find((cat) => cat.id === id)
+    );
+  },
 
-      try {
-        const res = await retrieve(PRODUCT_CATEGORIES_URL);
-        if (!res.success) throw new Error(res.message);
+  async fetchCategories(): Promise<ProductCategoryListResponse> {
+    const { categories } = get();
+    if (categories) return structuredClone(categories);
 
-        const categories = res.data as ProductCategoryListResponse;
-        set({ categories });
-        return categories;
-      } catch (error) {
-        throw new Error(formatError(error));
-      }
-    },
+    try {
+      const res = await retrieve(PRODUCT_CATEGORIES_URL);
+      if (!res.success) throw new Error(res.message);
 
-    getCategorySync(id: string): ProductCategoryResponse | undefined {
-      return get().categories?.categories.categories.find(
-        (cat) => cat.id === id
-      );
-    },
-  })
-);
+      const categories = res.data as ProductCategoryListResponse;
+      set({ categories });
+      return structuredClone(categories);
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+}));
+
+export default useProductCategoryStore;

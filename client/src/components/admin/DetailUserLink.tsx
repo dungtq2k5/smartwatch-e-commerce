@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { useUserStore } from "../../store/admin/userStore";
+import useUserStore from "../../store/admin/userStore";
 import { formatError } from "../../../../common/utils.common";
 import SmallSpinner from "../common/SmallSpinner";
 import { Link } from "react-router-dom";
@@ -12,7 +12,7 @@ const DetailUserLink = memo(
     userId: string;
     displayName: string;
   }>) => {
-    const { getSysUserId, sysUserId } = useUserStore();
+    const { sysUserId, fetchSysUserId } = useUserStore();
 
     const [isInitializing, setIsInitializing] = useState<boolean>(
       sysUserId === null
@@ -25,7 +25,7 @@ const DetailUserLink = memo(
         setIsInitializing(true);
 
         try {
-          await getSysUserId();
+          if (!sysUserId) await fetchSysUserId();
         } catch (error) {
           console.error("DetailUserLink: ", formatError(error));
         } finally {

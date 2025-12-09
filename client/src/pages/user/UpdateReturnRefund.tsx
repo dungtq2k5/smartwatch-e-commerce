@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useReturnStore } from "../../store/user/orderReturnStore";
-import { useUserAddressStore } from "../../store/user/addressStore";
-import { useReturnReasonStore } from "../../store/common/returnRefund/returnReasonStore";
+import useReturnStore from "../../store/user/orderReturnStore";
+import useUserAddressStore from "../../store/user/addressStore";
+import useReturnReasonStore from "../../store/common/returnRefund/returnReasonStore";
 import type {
   OrderReturnResponse,
   OrderReturnSelfUpdate,
@@ -34,7 +34,7 @@ import {
 import { createFileList, getImgFilesErrs, uploadFile } from "../../utils/utils";
 import toast from "react-hot-toast";
 import { WAITING_EMOJI } from "../../configs";
-import { useReturnStateStore } from "../../store/common/returnRefund/returnStateStore";
+import useReturnStateStore from "../../store/common/returnRefund/returnStateStore";
 import ConfirmSubmitModal from "../../components/user/modal/ConfirmSubmitModal";
 import ReturnUpdateSkeleton from "../../components/user/skeleton/ReturnUpdateSkeleton";
 import InvalidInputMsg from "../../components/common/InvalidInputMsg";
@@ -64,10 +64,10 @@ export default function ReturnRefundUpdate() {
   const { returnId } = useParams();
   const navigate = useNavigate();
 
-  const { getReturn, getUserAddressIdFromReturn, updateReturn } =
+  const { fetchReturn, getUserAddressIdFromReturn, updateReturn } =
     useReturnStore();
   const { returnReasons, fetchReturnReasons } = useReturnReasonStore();
-  const { getReturnStateByLookupId } = useReturnStateStore();
+  const { fetchReturnStateByLookupId } = useReturnStateStore();
   const { addresses, fetchAddresses, getAddress } = useUserAddressStore();
 
   const [orderReturn, setOrderReturn] = useState<
@@ -113,9 +113,9 @@ export default function ReturnRefundUpdate() {
         }
 
         const [fetchedReturn, userAddresses] = await Promise.all([
-          getReturn(returnId),
-          fetchAddresses(),
-          fetchReturnReasons(),
+          fetchReturn(returnId),
+          addresses ? Promise.resolve(addresses) : fetchAddresses(),
+          returnReasons ? Promise.resolve() : fetchReturnReasons(),
         ]);
 
         setOrderReturn(fetchedReturn);
@@ -541,7 +541,7 @@ export default function ReturnRefundUpdate() {
 
     setProcess((prev) => ({ ...prev, isProcessing: true }));
     try {
-      const cancelState = await getReturnStateByLookupId("7");
+      const cancelState = await fetchReturnStateByLookupId("7");
 
       const { orderId, id: returnId } = orderReturn;
       await updateReturn(returnId, {
@@ -557,7 +557,7 @@ export default function ReturnRefundUpdate() {
       setProcess((prev) => ({ ...prev, isProcessing: false }));
     }
   }, [
-    getReturnStateByLookupId,
+    fetchReturnStateByLookupId,
     navigate,
     orderReturn,
     process.isProcessing,

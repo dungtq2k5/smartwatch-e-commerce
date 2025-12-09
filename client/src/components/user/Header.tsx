@@ -1,4 +1,9 @@
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { faCartShopping, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -9,10 +14,10 @@ import {
   useState,
   type JSX,
 } from "react";
-import { useAuthStore } from "../../store/user/authStore";
+import useAuthStore from "../../store/user/authStore";
 import defaultAvatar from "../../assets/default-avatar.webp";
 import { formatError, removeOddSpaces } from "../../../../common/utils.common";
-import { useUserCartStore } from "../../store/user/cartStore";
+import useUserCartStore from "../../store/user/cartStore";
 import toast from "react-hot-toast";
 
 const Header = memo(() => {
@@ -32,7 +37,6 @@ const Header = memo(() => {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState<string>("");
-
 
   // Handle searchTerm change by updating the URL
   useEffect(() => {

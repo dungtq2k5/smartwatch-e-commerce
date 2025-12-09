@@ -7,7 +7,7 @@ import {
   type JSX,
 } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useOrderStore } from "../../../store/user/orderStore";
+import useOrderStore from "../../../store/user/orderStore";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { formatError, centsToUSD } from "../../../../../common/utils.common";
@@ -16,7 +16,7 @@ import type {
   OrderDetailResponse,
   OrderStateListResponse,
 } from "../../../../../common/types.common";
-import { useOrderStateStore } from "../../../store/common/order/orderStateStore";
+import useOrderStateStore from "../../../store/common/order/orderStateStore";
 import ApiError from "../../common/ApiError";
 import {
   ORDER_STATE_LEVEL_ICON_LEGEND,
@@ -26,7 +26,7 @@ import {
 import SelectAddressModal from "../modal/SelectAddressModal";
 import toast from "react-hot-toast";
 import ConfirmSubmitModal from "../modal/ConfirmSubmitModal";
-import { useUserCartStore } from "../../../store/user/cartStore";
+import useUserCartStore from "../../../store/user/cartStore";
 import PurchaseDetailSkeleton from "../skeleton/PurchaseDetailSkeleton";
 
 type Process = {
@@ -50,10 +50,10 @@ export default function PurchaseDetail() {
   const { id: orderId } = useParams();
   const navigate = useNavigate();
 
-  const { orderStates, fetchOrderStates, getOrderStateByLookupIdSync } =
+  const { orderStates, fetchOrderStates, getOrderStateByLookupId } =
     useOrderStateStore();
   const {
-    getOrderDetail,
+    fetchOrderDetail,
     updateSelfOrder,
     checkItemAvailable,
     canChangeDeliveryAddress,
@@ -127,9 +127,9 @@ export default function PurchaseDetail() {
       try {
         if (!orderId) throw new Error("Order ID is not provided");
 
-        const [, fetchedOrderDetail] = await Promise.all([
-          fetchOrderStates(),
-          getOrderDetail(orderId),
+        const [fetchedOrderDetail] = await Promise.all([
+          fetchOrderDetail(orderId),
+          orderStates ? Promise.resolve() : fetchOrderStates(),
         ]);
 
         setOrderDetail(fetchedOrderDetail);
@@ -271,7 +271,7 @@ export default function PurchaseDetail() {
 
     setProcess((prev) => ({ ...prev, isProcessing: true }));
     try {
-      const completeState = getOrderStateByLookupIdSync("6"); // "completed"
+      const completeState = getOrderStateByLookupId("6"); // "completed"
       if (!completeState) throw new Error("Order state 'completed' not found");
 
       await updateSelfOrder(orderDetail.id, {
@@ -279,7 +279,7 @@ export default function PurchaseDetail() {
       });
 
       // Refresh order detail
-      const updatedOrderDetail = await getOrderDetail(orderDetail.id);
+      const updatedOrderDetail = await fetchOrderDetail(orderDetail.id);
       setOrderDetail(updatedOrderDetail);
       toast.success("Order marked as received.");
     } catch (error) {
@@ -289,8 +289,8 @@ export default function PurchaseDetail() {
     }
   }, [
     canSubmit,
-    getOrderDetail,
-    getOrderStateByLookupIdSync,
+    fetchOrderDetail,
+    getOrderStateByLookupId,
     orderDetail,
     process.isProcessing,
     updateSelfOrder,
@@ -314,7 +314,7 @@ export default function PurchaseDetail() {
 
     setProcess((prev) => ({ ...prev, isProcessing: true }));
     try {
-      const cancelState = getOrderStateByLookupIdSync("7"); // "cancelled"
+      const cancelState = getOrderStateByLookupId("7"); // "cancelled"
       if (!cancelState) throw new Error("Order state 'cancelled' not found");
 
       await updateSelfOrder(orderDetail.id, {
@@ -322,7 +322,7 @@ export default function PurchaseDetail() {
       });
 
       // Refresh order detail
-      const updatedOrderDetail = await getOrderDetail(orderDetail.id);
+      const updatedOrderDetail = await fetchOrderDetail(orderDetail.id);
       setOrderDetail(updatedOrderDetail);
       toast.success("Order has been cancelled.");
     } catch (error) {
@@ -332,8 +332,8 @@ export default function PurchaseDetail() {
     }
   }, [
     canCancel,
-    getOrderDetail,
-    getOrderStateByLookupIdSync,
+    fetchOrderDetail,
+    getOrderStateByLookupId,
     orderDetail,
     process.isProcessing,
     updateSelfOrder,

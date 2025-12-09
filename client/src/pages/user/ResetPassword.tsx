@@ -6,7 +6,7 @@ import { formatError, isValidPassword } from "../../../../common/utils.common";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import toast from "react-hot-toast";
-import { useAuthStore } from "../../store/user/authStore";
+import useAuthStore from "../../store/user/authStore";
 import { WAITING_EMOJI } from "../../configs";
 
 type FormData = {

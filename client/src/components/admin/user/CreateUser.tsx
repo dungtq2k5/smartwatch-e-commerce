@@ -8,7 +8,7 @@ import {
 import { AVATAR_HINT_MESSAGE, WAITING_EMOJI } from "../../../configs";
 import { Link, useNavigate } from "react-router-dom";
 import type { FormFileInput, FormInput } from "../../../utils/types";
-import { useRoleStore } from "../../../store/admin/roleStore";
+import useRoleStore from "../../../store/admin/roleStore";
 import {
   formatError,
   getLocalDateString,
@@ -23,7 +23,7 @@ import toast from "react-hot-toast";
 import ApiError from "../../common/ApiError";
 import { getImgFileErrs, uploadFile } from "../../../utils/utils";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
-import { useUserStore } from "../../../store/admin/userStore";
+import useUserStore from "../../../store/admin/userStore";
 import type { UserCreate } from "../../../../../common/types.common";
 import CreateUserSkeleton from "../skeleton/CreateUserSkeleton";
 
@@ -96,7 +96,7 @@ export default function CreateUser() {
       setApiErr(null);
 
       try {
-        await fetchRoles();
+        if (!roles) await fetchRoles();
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
