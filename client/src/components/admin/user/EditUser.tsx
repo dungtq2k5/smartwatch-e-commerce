@@ -324,16 +324,16 @@ export default function EditUser() {
         let allValid = true;
         const newFormData: FormData = { ...formData };
 
-        if (!formData.fullName.val) {
+        if (!newFormData.fullName.val) {
           newFormData.fullName.err = "Full name is required";
           allValid = false;
-        } else if (!isValidUserFullName(formData.fullName.val)) {
+        } else if (!isValidUserFullName(newFormData.fullName.val)) {
           newFormData.fullName.err = "Full name is invalid";
           allValid = false;
         }
-        if (formData.avatar.val instanceof File) {
+        if (newFormData.avatar.val instanceof File) {
           const imgFileErrs = await getImgFileErrs(
-            formData.avatar.val,
+            newFormData.avatar.val,
             "avatar"
           );
           if (imgFileErrs.length) {
@@ -343,14 +343,17 @@ export default function EditUser() {
             allValid = false;
           }
         }
-        if (formData.password.val && !isValidPassword(formData.password.val)) {
+        if (
+          newFormData.password.val &&
+          !isValidPassword(newFormData.password.val)
+        ) {
           newFormData.password.err = "Password is invalid";
           allValid = false;
         }
-        if (!formData.birth.val) {
+        if (!newFormData.birth.val) {
           newFormData.birth.err = "Birth date is required";
           allValid = false;
-        } else if (!isValidBirthDate(formData.birth.val)) {
+        } else if (!isValidBirthDate(newFormData.birth.val)) {
           newFormData.birth.err = "Birth date is invalid";
           allValid = false;
         }
