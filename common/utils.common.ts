@@ -71,27 +71,25 @@ export function convertVnPhoneNumberToE164(phoneNumber: string): string {
 }
 
 /**
- * Converts a UTC ISO date string to a local date string in YYYY-MM-DD format.
+ * Converts a Date object or an ISO date string into a local date string in "YYYY-MM-DD" format.
  *
- * This function parses a date string in UTC and then uses the local timezone
- * of the environment where the code is running to format it.
+ * This function interprets the input date based on the local time zone of the runtime environment.
+ * It extracts the local year, month, and day to construct the formatted string.
  *
- * @param utcIsoString - The date string in UTC ISO format (e.g., '2023-10-27T02:00:00.000Z').
- * @returns The local date formatted as a 'YYYY-MM-DD' string.
- *
- * @example
- * // Running in a GMT-5 timezone
- * getLocalDateString('2023-01-01T02:00:00.000Z');
- * // returns "2022-12-31"
+ * @param date - The date to format, either as a `Date` object or a string (e.g., ISO 8601 format).
+ * @returns A string representing the local date in "YYYY-MM-DD" format.
  *
  * @example
- * // Running in a GMT+8 timezone
- * getLocalDateString('2023-12-31T20:00:00.000Z');
- * // returns "2024-01-01"
+ * // Assuming local time zone is UTC-5 (EST)
+ * getLocalDateString("2023-10-25T02:00:00Z"); // Returns "2023-10-24" (because 2 AM UTC is 9 PM previous day EST)
+ *
+ * @example
+ * const d = new Date(2023, 0, 15); // Jan 15, 2023
+ * getLocalDateString(d); // Returns "2023-01-15"
  */
-export function getLocalDateString(utcIsoString: string): string {
+export function getLocalDateString(date: string | Date): string {
   // Create a Date object from the UTC ISO string.
-  const date = new Date(utcIsoString);
+  if (!(date instanceof Date)) date = new Date(date);
 
   // Use the local-based methods to get the year, month, and day.
   const year = date.getFullYear();
@@ -129,7 +127,7 @@ export function capEveryFirstLetter(str: string): string {
 
 export function centsToUSD(cents: number, locale: string = "en-US"): string {
   const dollars = cents / 100;
-  
+
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
@@ -149,7 +147,7 @@ export function isNoneArrObj(item: any): item is Record<string, any> {
   return (
     item && typeof item === "object" && item !== null && !Array.isArray(item)
   );
-};
+}
 
 /**
  * Recursively removes keys from an object that have `undefined` values or are empty objects.

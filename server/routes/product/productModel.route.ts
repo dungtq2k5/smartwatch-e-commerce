@@ -13,6 +13,7 @@ import {
   remove,
   adminSearch,
   removeBulk,
+  adminGet,
 } from "../../controllers/product/productModel.controller";
 
 const router = express.Router();
@@ -40,6 +41,12 @@ router.get(
   inputSanitizer("admin model details"),
   verifyModelInput("admin details"),
   adminGetDetails
+);
+
+router.get(
+  "/:modelId/admin",
+  verifyPermission("r_product_model"),
+  adminGet
 );
 
 router.get("/:modelId", get);

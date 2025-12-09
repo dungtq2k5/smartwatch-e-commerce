@@ -45,6 +45,7 @@ import ProductManagement from "./components/admin/product/ProductManagement.tsx"
 import DetailProduct from "./components/admin/product/DetailProduct.tsx";
 import ModelManagement from "./components/admin/product/ModelManagement.tsx";
 import { EditProduct } from "./components/admin/product/EditProduct.tsx";
+import { EditModel } from "./components/admin/product/EditModel.tsx";
 
 export default function App() {
   // DEV for testing
@@ -121,6 +122,8 @@ export default function App() {
 
                 <Route path="product-models">
                   <Route index element={<ModelManagement />} />
+                  <Route path="create" element={<div>Create model</div>} />
+                  <Route path=":id/edit" element={<EditModel />} />
                 </Route>
               </Route>
             </Route>

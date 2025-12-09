@@ -237,7 +237,10 @@ export default function Profile() {
           if (formData.gender !== user.gender) {
             changedData.gender = formData.gender;
           }
-          if (formData.birth.val !== user.birth) {
+          if (
+            getLocalDateString(formData.birth.val) !==
+            getLocalDateString(user.birth)
+          ) {
             changedData.birth = new Date(formData.birth.val).toISOString();
           }
           if (formData.avatar.val instanceof File) {

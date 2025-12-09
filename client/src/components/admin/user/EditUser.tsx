@@ -384,7 +384,10 @@ export default function EditUser() {
           if (formData.password.val) {
             changedData.password = formData.password.val;
           }
-          if (formData.birth.val !== user.birth) {
+          if (
+            getLocalDateString(formData.birth.val) !==
+            getLocalDateString(user.birth)
+          ) {
             changedData.birth = new Date(formData.birth.val).toISOString();
           }
           if (formData.gender !== user.gender) {
