@@ -641,13 +641,34 @@ export type ProductModelUpdate = DeepPartial<
   Omit<ProductModelCreate, "productId">
 >;
 
-export type ProductModelResponse = DeepNoneOptional<
+export type ProductModelResponse = DeepNonePartial<
   Omit<
     ProductModelCreate,
-    "imageUrls" | "config" | "stockPriceCents" | "stopSelling"
+    "imageUrls" | "feature" | "config" | "stockPriceCents" | "stopSelling"
   > & {
-    config: Omit<ProductModelCreate["config"], "osId"> & {
+    feature: Omit<
+      ProductModelCreate["feature"],
+      "utilities" | "supportedAppsForNotifications"
+    > & {
+      utilities: {
+        healths: string[];
+        sports: string[];
+        specials: string[];
+        others: string[];
+      } | null;
+      supportedAppsForNotifications: string[];
+    };
+  } & {
+    config: Pick<ProductModelCreate["config"], "chipset" | "memory"> & {
+      connectivities: string[];
+      camera: {
+        resolutionMp: number;
+        features: string[];
+      } | null;
       os: ProductOsResponse;
+      compatiblePhoneOs: string[];
+      appsConnect: string[];
+      sensors: string[];
     };
   }
 > & {
@@ -674,7 +695,7 @@ export type AdminProductModelResponseForList = Omit<
   AdminProductModelResponse,
   "config"
 > & {
-  config: DeepNoneOptional<ProductModelCreate["config"]>;
+  config: DeepNonePartial<ProductModelCreate["config"]>;
 };
 
 export type AdminProductModelListResponse = {
@@ -762,7 +783,7 @@ export type ModelVariationCreate = {
   stopSelling?: boolean;
 };
 
-export type ModelVariationResponse = DeepNoneOptional<
+export type ModelVariationResponse = DeepNonePartial<
   Omit<
     ModelVariationCreate,
     | "imageUrls"
@@ -1341,8 +1362,8 @@ export type DeepPartial<T> = {
     : T[P];
 };
 
-export type DeepNoneOptional<T> = {
+export type DeepNonePartial<T> = {
   [K in keyof T]-?: T[K] extends object | undefined
-    ? DeepNoneOptional<T[K]>
+    ? DeepNonePartial<T[K]>
     : T[K];
 };
