@@ -20,7 +20,8 @@ body {
   font-family: 'Roboto', sans-serif;
   background-color: white;
   color: var(--dark-color);
-  min-height: 100vh;
+  min-height: 100dvh; /* Use this instead of 100vh for mobile screen */
+  min-height: 100vh; /* Fallback for browsers that do not support 100dvh */
 }
 
 #root {
@@ -30,7 +31,8 @@ body {
   width: 100%;
   max-width: 1920px;
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: 100vh; /* Fallback for browsers that do not support 100dvh */
 }
 
 .container--g {

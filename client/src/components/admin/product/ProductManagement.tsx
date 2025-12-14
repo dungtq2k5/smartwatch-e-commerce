@@ -1172,7 +1172,7 @@ export default function ProductManagement() {
                     className="form-control"
                     placeholder="From"
                     min={0}
-                    value={searchForm.priceCentsMin}
+                    value={searchForm.priceCentsMin ?? ""}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
                   />
@@ -1183,8 +1183,8 @@ export default function ProductManagement() {
                     name="priceCentsMax"
                     className="form-control"
                     placeholder="To"
-                    min={0}
-                    value={searchForm.priceCentsMax}
+                    min={searchForm.priceCentsMin ?? 0}
+                    value={searchForm.priceCentsMax ?? ""}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
                   />

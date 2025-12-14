@@ -128,7 +128,7 @@ export default function ModelManagement() {
       productId: {
         label: MODEL_FIELD_LABEL_LEGEND["productId"] || "Product ID",
         tdContent: (model) => (
-          <Link to={`products/${model.productId}`} title="View detail product">
+          <Link to={`/admin/products/${model.productId}`} title="View detail product">
             {model.productId}
           </Link>
         ),
@@ -146,7 +146,7 @@ export default function ModelManagement() {
               className="admin-model-img--g me-2"
             />
             <Link
-              to={`products/${model.productId}?modelId=${model.id}`}
+              to={`/admin/products/${model.productId}?modelId=${model.id}`}
               title="View detail model"
             >
               {model.name}
@@ -1052,7 +1052,7 @@ export default function ModelManagement() {
                     className="form-control"
                     placeholder="From"
                     min={0}
-                    value={searchForm.priceCentsMin}
+                    value={searchForm.priceCentsMin ?? ""}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
                   />
@@ -1063,8 +1063,8 @@ export default function ModelManagement() {
                     name="priceCentsMax"
                     className="form-control"
                     placeholder="To"
-                    min={0}
-                    value={searchForm.priceCentsMax}
+                    min={searchForm.priceCentsMin ?? 0}
+                    value={searchForm.priceCentsMax ?? ""}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
                   />
@@ -1085,7 +1085,7 @@ export default function ModelManagement() {
                     className="form-control"
                     placeholder="From"
                     min={0}
-                    value={searchForm.stockPriceCentsMin}
+                    value={searchForm.stockPriceCentsMin ?? ""}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
                   />
@@ -1096,8 +1096,8 @@ export default function ModelManagement() {
                     name="stockPriceCentsMax"
                     className="form-control"
                     placeholder="To"
-                    min={0}
-                    value={searchForm.stockPriceCentsMax}
+                    min={searchForm.stockPriceCentsMin ?? 0}
+                    value={searchForm.stockPriceCentsMax ?? ""}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
                   />

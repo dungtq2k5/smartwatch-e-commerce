@@ -60,7 +60,7 @@ export default function DetailProduct() {
   const [modelPicked, setModelPicked] =
     useState<ItemPicked<AdminProductModelResponse>>(null);
   const [variationPicked, setVariationPicked] =
-    useState<ItemPicked<AdminModelVariationResponse>>(null);
+    useState<ItemPicked<Omit<AdminModelVariationResponse, "productId">>>(null);
 
   const [mainImgIdx, setMainImgIdx] = useState<number>(0);
 

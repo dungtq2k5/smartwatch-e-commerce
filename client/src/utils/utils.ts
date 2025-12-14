@@ -84,12 +84,10 @@ async function request(
           processFailedReqQueue(error);
 
           // Force logout both user and admin
-          const { useAuthStore } = await import("../store/user/authStore");
-          const { useAuthStore: useAdminAuthStore } = await import(
-            "../store/admin/authStore"
-          );
-          useAuthStore.getState().logout();
-          useAdminAuthStore.getState().logout();
+          const useAuthStore = await import("../store/user/authStore");
+          const useAdminAuthStore = await import("../store/admin/authStore");
+          useAuthStore.default.getState().logout();
+          useAdminAuthStore.default.getState().logout();
           throw error;
         }
 

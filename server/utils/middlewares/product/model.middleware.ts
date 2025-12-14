@@ -1223,7 +1223,6 @@ export function verifyModelInput(
             limit,
             offset,
             searchTerm,
-            productId,
             priceCentsMin,
             priceCentsMax,
             stockPriceCentsMin,
@@ -1245,9 +1244,6 @@ export function verifyModelInput(
             (typeof searchTerm !== "string" || !searchTerm)
           ) {
             errors.push("searchTerm must be a non-empty string.");
-          }
-          if (productId !== undefined && !isValidObjectId(productId)) {
-            errors.push("productId must be a valid ObjectId string.");
           }
           if (priceCentsMin !== undefined) {
             if (!isValidNumString(priceCentsMin)) {

@@ -81,23 +81,6 @@ const useModelStore = create<ModelState>(() => ({
         );
       }
 
-      if (query.stockPriceCentsMin) {
-        queryString.set("stockPriceCentsMin", query.stockPriceCentsMin);
-      }
-      if (query.stockPriceCentsMax) {
-        queryString.set("stockPriceCentsMax", query.stockPriceCentsMax);
-      }
-      if (
-        query.stockPriceCentsMin &&
-        query.stockPriceCentsMax &&
-        Number.parseInt(query.stockPriceCentsMin, 10) >
-          Number.parseInt(query.stockPriceCentsMax, 10)
-      ) {
-        throw new Error(
-          "Minimum stock price cannot be greater than maximum stock price"
-        );
-      }
-
       if (query.releaseDateFrom) {
         queryString.set("releaseDateFrom", query.releaseDateFrom);
       }

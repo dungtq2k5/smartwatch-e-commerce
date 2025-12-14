@@ -2,10 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import {
   OrderReturnCreate,
   OrderReturnResponse,
-  OrderReturnUpdateSelf,
+  OrderReturnSelfUpdate,
   SuccessResponse,
-  OrderReturnUpdateState,
-  OrderReturnUpdatePickupState,
+  OrderReturnStateUpdate,
+  OrderReturnPickupStateUpdate,
   OrderReturnSearchQuery,
   OrderReturnListResponse,
   OrderReturnDetailResponse,
@@ -667,7 +667,7 @@ export async function updateSelf(
       userAddressIdToPickup,
       estimatePickupDate,
       stateId,
-    } = req.body as OrderReturnUpdateSelf;
+    } = req.body as OrderReturnSelfUpdate;
 
     // Update reasonId
     const updatedReasonId = reasonId || orderReturn.reasonId;
@@ -865,7 +865,7 @@ export async function updateState(
     }
 
     const { returnStateId: returnStateIdRaw, notes } =
-      req.body as OrderReturnUpdateState;
+      req.body as OrderReturnStateUpdate;
     const returnStateId = new Types.ObjectId(returnStateIdRaw);
 
     // Check returnStateId exists
@@ -1029,7 +1029,7 @@ export async function updatePickupState(
     }
 
     const { pickupStateId, estimatePickupDate, notes } =
-      req.body as OrderReturnUpdatePickupState;
+      req.body as OrderReturnPickupStateUpdate;
 
     // Update pickupState
     const latestPickupStateId = getLatestStateId(orderReturn.pickupStates);
