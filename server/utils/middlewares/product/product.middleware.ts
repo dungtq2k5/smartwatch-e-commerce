@@ -106,7 +106,7 @@ function sanitizeProductDetailQuery(
   next();
 }
 
-function sanitizeDeleteManyInput(
+function sanitizeDeleteBulkInput(
   req: Request,
   res: Response,
   next: NextFunction
@@ -150,7 +150,7 @@ export function inputSanitizer(
     case "admin product details":
       return sanitizeProductDetailQuery;
     case "delete many":
-      return sanitizeDeleteManyInput;
+      return sanitizeDeleteBulkInput;
   }
 }
 

@@ -441,12 +441,12 @@ export async function adminSearch(
 
     query.$or = [
       {
-        _id: Types.ObjectId.isValid(reqQuery.searchTerm)
+        _id: isValidObjectId
           ? new Types.ObjectId(reqQuery.searchTerm)
           : undefined,
       },
       {
-        productId: Types.ObjectId.isValid(reqQuery.searchTerm)
+        productId: isValidObjectId
           ? new Types.ObjectId(reqQuery.searchTerm)
           : undefined,
       },

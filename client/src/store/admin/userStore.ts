@@ -205,7 +205,7 @@ const useUserStore = create<UserState>((set, get) => ({
         throw new Error("Cannot delete the system user.");
       }
 
-      const res = await remove(`${USER_URL}/many`, null, data);
+      const res = await remove(`${USER_URL}/bulk`, null, data);
       if (!res.success) throw new Error(res.message);
     } catch (error) {
       throw new Error(formatError(error));

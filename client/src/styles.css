@@ -578,7 +578,8 @@ body {
 }
 
 .admin-product-img--g,
-.admin-model-img--g {
+.admin-model-img--g,
+.admin-variation-img--g {
   width: 2.5em;
   height: 2.5em;
   object-fit: cover;

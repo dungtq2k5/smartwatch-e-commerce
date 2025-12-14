@@ -14,6 +14,7 @@ import {
   WITHDRAWAL_METHODS,
   USER_SEARCH_SORT_OPTIONS,
   PRODUCT_MODEL_SEARCH_SORT_OPTIONS,
+  MODEL_VARIATION_SORT_OPTIONS,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -472,7 +473,7 @@ export type AdminProductDetailResponse = Omit<
       models: (AdminProductModelResponse & {
         variations: {
           total: number;
-          variations: AdminModelVariationResponse[];
+          variations: Omit<AdminModelVariationResponse, "productId">[];
         };
       })[];
     };
@@ -714,7 +715,7 @@ export type AdminProductModelDetailResponse = Omit<
 > & {
   variations: {
     total: number;
-    variations: AdminModelVariationResponse[];
+    variations: Omit<AdminModelVariationResponse, "productId">[];
   };
 };
 
@@ -807,8 +808,20 @@ export type AdminModelVariationResponse = Omit<
   "createdBy"
 > &
   Pick<AdminProductResponse, "createdBy"> & {
+    productId: string;
     stockAdditionalPriceCents: number;
   };
+
+export type AdminModelVariationListResponse = {
+  total: number;
+  variations: {
+    total: number;
+    variations: AdminModelVariationResponse[];
+  };
+  offset: number;
+  limit: number;
+};
+
 export type ModelVariationUpdate = DeepPartial<
   Omit<ModelVariationCreate, "productModelId">
 >;
@@ -820,6 +833,22 @@ export type ModelVariationListResponse = {
   offset: number;
   limit: number;
   total: number;
+};
+
+export type ModelVariationSearchQuery = Partial<{
+  limit: string;
+  offset: string;
+  searchTerm: string;
+  additionalPriceCentsMin: string;
+  additionalPriceCentsMax: string;
+  stockAdditionalPriceCentsMin: string;
+  stockAdditionalPriceCentsMax: string;
+  stopSelling: "true" | "false";
+  sortBy: (typeof MODEL_VARIATION_SORT_OPTIONS)[number];
+}>;
+
+export type ModelVariationBulkDelete = {
+  variationIds: string[];
 };
 
 export type VariationInstanceCreate = {

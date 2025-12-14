@@ -145,10 +145,10 @@ router.patch(
 router.delete("/:userId", verifyPermission("d_usr"), userController.remove);
 
 router.delete(
-  "/many",
+  "/bulk",
   verifyPermission("d_usr"),
-  inputSanitizer("delete many"),
-  verifyUserInput("delete many"),
+  inputSanitizer("delete bulk"),
+  verifyUserInput("delete bulk"),
   userController.removeBulk
 );
 

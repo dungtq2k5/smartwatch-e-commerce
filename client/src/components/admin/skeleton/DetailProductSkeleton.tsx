@@ -48,7 +48,7 @@ const DetailProductSkeleton = memo(() => {
               </Placeholder>
               <div className="d-flex flex-row justify-content-center gap-2 overflow-auto">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <Placeholder key={i} animation="glow">
+                  <Placeholder key={i+1} animation="glow">
                     <Placeholder className="product-detail-thumb-img--g" />
                   </Placeholder>
                 ))}

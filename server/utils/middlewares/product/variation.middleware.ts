@@ -6,16 +6,16 @@ import {
   isValidListOfColorObj,
   isNoneArrObj,
   isEmptyObj,
+  isValidNumString,
+  isValidBooleanString,
 } from "../../../../common/utils.common";
 import {
+  MODEL_VARIATION_SORT_OPTIONS,
   PRODUCT_NAME_MAX_LENGTH,
   PRODUCT_NAME_MIN_LENGTH,
 } from "../../../../common/configs.common";
 import { HttpError } from "../../errorHandler";
-import {
-  isPresent,
-  isValidImgUrls,
-} from "../../utils";
+import { isPresent, isValidImgUrls } from "../../utils";
 import { isValidObjectId } from "mongoose";
 
 function sanitizeVariationInput(
@@ -65,14 +65,59 @@ function sanitizeVariationInput(
   next();
 }
 
+function sanitizeVariationSearchInput(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing model variation admin search input...");
+
+  // Since req.query can't be modifiable so we create a new query obj for the request
+  const sanitizedQuery = { ...req.query };
+  const { searchTerm, stopSelling } = sanitizedQuery;
+
+  if (typeof searchTerm === "string") {
+    sanitizedQuery.searchTerm = removeOddSpaces(searchTerm);
+  }
+  if (typeof stopSelling === "string") {
+    sanitizedQuery.stopSelling = removeOddSpaces(stopSelling.toLowerCase());
+  }
+
+  req["sanitizedQuery"] = sanitizedQuery;
+  next();
+}
+
+function sanitizeVariationDeleteBulkInput(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing model variation delete bulk input...");
+  const { variationIds } = req.body;
+
+  // Auto remove duplicates
+  if (variationIds && Array.isArray(variationIds)) {
+    req.body.variationIds = Array.from(new Set(variationIds));
+  }
+
+  next();
+}
+
 export function inputSanitizer(
-  type: "variation"
+  type: "variation" | "admin search" | "delete bulk"
 ): (req: Request, res: Response, next: NextFunction) => void {
-  return sanitizeVariationInput;
+  switch (type) {
+    case "variation":
+      return sanitizeVariationInput;
+    case "admin search":
+      return sanitizeVariationSearchInput;
+    case "delete bulk":
+      return sanitizeVariationDeleteBulkInput;
+  }
 }
 
 export function verifyVariationInput(
-  type: "create" | "update"
+  type: "create" | "update" | "admin search" | "delete bulk"
 ): (req: Request, res: Response, next: NextFunction) => void {
   return async (
     req: Request,
@@ -429,6 +474,127 @@ export function verifyVariationInput(
           if (stopSelling !== undefined && typeof stopSelling !== "boolean") {
             errors.push("stopSelling must be a boolean.");
           }
+          break;
+        }
+        case "admin search": {
+          const {
+            limit,
+            offset,
+            searchTerm,
+            additionalPriceCentsMin,
+            additionalPriceCentsMax,
+            stockAdditionalPriceCentsMin,
+            stockAdditionalPriceCentsMax,
+            stopSelling,
+            sortBy,
+          } = req["sanitizedQuery"] || req.query;
+
+          if (limit !== undefined && !isValidNumString(limit)) {
+            errors.push("limit must be a valid number string.");
+          }
+          if (offset !== undefined && !isValidNumString(offset)) {
+            errors.push("offset must be a valid number string.");
+          }
+          if (
+            searchTerm !== undefined &&
+            (typeof searchTerm !== "string" || !searchTerm)
+          ) {
+            errors.push("searchTerm must be a non-empty string.");
+          }
+          if (additionalPriceCentsMin !== undefined) {
+            if (!isValidNumString(additionalPriceCentsMin)) {
+              errors.push(
+                "additionalPriceCentsMin must be a valid number string."
+              );
+            } else if (Number.parseInt(additionalPriceCentsMin, 10) < 0) {
+              errors.push(
+                "additionalPriceCentsMin must be a non-negative number."
+              );
+            }
+          }
+          if (additionalPriceCentsMax !== undefined) {
+            if (!isValidNumString(additionalPriceCentsMax)) {
+              errors.push(
+                "additionalPriceCentsMax must be a valid number string."
+              );
+            } else if (Number.parseInt(additionalPriceCentsMax, 10) < 0) {
+              errors.push(
+                "additionalPriceCentsMax must be a non-negative number."
+              );
+            }
+          }
+          if (
+            additionalPriceCentsMin !== undefined &&
+            additionalPriceCentsMax !== undefined &&
+            Number.parseInt(additionalPriceCentsMin, 10) >
+              Number.parseInt(additionalPriceCentsMax, 10)
+          ) {
+            errors.push(
+              "additionalPriceCentsMin cannot be greater than additionalPriceCentsMax."
+            );
+          }
+          if (stockAdditionalPriceCentsMin !== undefined) {
+            if (!isValidNumString(stockAdditionalPriceCentsMin)) {
+              errors.push(
+                "stockAdditionalPriceCentsMin must be a valid number string."
+              );
+            } else if (Number.parseInt(stockAdditionalPriceCentsMin, 10) < 0) {
+              errors.push(
+                "stockAdditionalPriceCentsMin must be a non-negative number."
+              );
+            }
+          }
+          if (stockAdditionalPriceCentsMax !== undefined) {
+            if (!isValidNumString(stockAdditionalPriceCentsMax)) {
+              errors.push(
+                "stockAdditionalPriceCentsMax must be a valid number string."
+              );
+            } else if (Number.parseInt(stockAdditionalPriceCentsMax, 10) < 0) {
+              errors.push(
+                "stockAdditionalPriceCentsMax must be a non-negative number."
+              );
+            }
+          }
+          if (
+            stockAdditionalPriceCentsMin !== undefined &&
+            stockAdditionalPriceCentsMax !== undefined &&
+            Number.parseInt(stockAdditionalPriceCentsMin, 10) >
+              Number.parseInt(stockAdditionalPriceCentsMax, 10)
+          ) {
+            errors.push(
+              "stockAdditionalPriceCentsMin cannot be greater than stockAdditionalPriceCentsMax."
+            );
+          }
+          if (stopSelling !== undefined && !isValidBooleanString(stopSelling)) {
+            errors.push("stopSelling must be a valid boolean string.");
+          }
+          if (
+            sortBy !== undefined &&
+            !MODEL_VARIATION_SORT_OPTIONS.includes(sortBy)
+          ) {
+            errors.push(
+              `sortBy must be one of the following: ${MODEL_VARIATION_SORT_OPTIONS.join(
+                ", "
+              )}.`
+            );
+          }
+          break;
+        }
+        case "delete bulk": {
+          const { variationIds } = req.body;
+
+          if (!Array.isArray(variationIds) || variationIds.length === 0) {
+            errors.push("variationIds must be a non-empty array.");
+          } else {
+            for (const [idx, id] of variationIds.entries()) {
+              if (typeof id !== "string" || !id) {
+                errors.push(
+                  `variationIds[${idx}] is invalid. Each variationId must be a non-empty string.`
+                );
+              }
+            }
+          }
+
           break;
         }
       }

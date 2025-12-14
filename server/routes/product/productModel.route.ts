@@ -61,11 +61,11 @@ router.patch(
 );
 
 router.delete(
-  "/many",
+  "/bulk",
   verifyPermission("d_product_model"),
   verifyEmptyBody,
-  inputSanitizer("delete many"),
-  verifyModelInput("delete many"),
+  inputSanitizer("delete bulk"),
+  verifyModelInput("delete bulk"),
   removeBulk
 );
 

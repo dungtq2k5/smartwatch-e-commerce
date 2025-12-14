@@ -199,12 +199,12 @@ function sanitizeModelDetailQuery(
   next();
 }
 
-function sanitizeModelDeleteManyInput(
+function sanitizeModelDeleteBulkInput(
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
-  console.log("▶️ ", "Sanitizing product model delete many input...");
+  console.log("▶️ ", "Sanitizing product model delete bulk input...");
   const { modelIds } = req.body;
 
   // Auto remove duplicates
@@ -222,7 +222,7 @@ export function inputSanitizer(
     | "admin model search"
     | "model details"
     | "admin model details"
-    | "delete many"
+    | "delete bulk"
 ): (req: Request, res: Response, next: NextFunction) => void {
   switch (type) {
     case "model":
@@ -233,8 +233,8 @@ export function inputSanitizer(
     case "model details":
     case "admin model details":
       return sanitizeModelDetailQuery;
-    case "delete many":
-      return sanitizeModelDeleteManyInput;
+    case "delete bulk":
+      return sanitizeModelDeleteBulkInput;
   }
 }
 
@@ -246,7 +246,7 @@ export function verifyModelInput(
     | "admin search"
     | "details"
     | "admin details"
-    | "delete many"
+    | "delete bulk"
 ): (req: Request, res: Response, next: NextFunction) => void {
   return async (
     req: Request,
@@ -1338,7 +1338,7 @@ export function verifyModelInput(
 
           break;
         }
-        case "delete many": {
+        case "delete bulk": {
           const { modelIds } = req.body;
 
           if (!Array.isArray(modelIds) || modelIds.length === 0) {

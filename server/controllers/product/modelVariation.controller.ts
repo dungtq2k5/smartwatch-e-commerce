@@ -4,16 +4,24 @@ import { HttpError } from "../../utils/errorHandler";
 import Product from "../../models/product/product.model";
 import ProductModel from "../../models/product/productModel.model";
 import {
+  AdminModelVariationListResponse,
+  AdminModelVariationResponse,
+  ModelVariationBulkDelete,
   ModelVariationCreate,
   ModelVariationListResponse,
   ModelVariationResponse,
+  ModelVariationSearchQuery,
   ModelVariationUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
 import ModelVariation, {
   IModelVariation,
 } from "../../models/product/modelVariation.model";
-import { formatModelVariationResponse, isPresent } from "../../utils/utils";
+import {
+  formatAdminModelVariationResponse,
+  formatModelVariationResponse,
+  isPresent,
+} from "../../utils/utils";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
 import { isEmptyObj, shallowMerge } from "../../../common/utils.common";
 import Cart from "../../models/user/cart.model";
@@ -197,6 +205,165 @@ export async function getAll(
         total: variations.length,
       },
     } as SuccessResponse<ModelVariationListResponse>);
+    console.log("✅ ", "Product model variations retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function adminSearch(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Admin searching product model variations...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const reqQuery = req["sanitizedQuery"] as ModelVariationSearchQuery;
+
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const query: any = {};
+
+  if (reqQuery.searchTerm) {
+    const isValidObjectId = Types.ObjectId.isValid(reqQuery.searchTerm);
+
+    // If searchTerm is a valid ObjectId -> find all models belong to the productId
+    let modelIdsFromProduct: Types.ObjectId[] = [];
+    if (isValidObjectId) {
+      const models = await ProductModel.find({
+        isDeleted: false,
+        productId: new Types.ObjectId(reqQuery.searchTerm),
+      })
+        .select("_id")
+        .lean();
+
+      modelIdsFromProduct = models.map((m) => m._id);
+    }
+
+    query.$or = [
+      {
+        _id: isValidObjectId
+          ? new Types.ObjectId(reqQuery.searchTerm)
+          : undefined,
+      },
+      {
+        productModelId: isValidObjectId
+          ? new Types.ObjectId(reqQuery.searchTerm)
+          : undefined,
+      },
+      { productModelId: { $in: modelIdsFromProduct } },
+      { name: { $regex: reqQuery.searchTerm, $options: "i" } },
+      { "color.name": { $regex: reqQuery.searchTerm, $options: "i" } },
+      { "color.hex": { $regex: reqQuery.searchTerm, $options: "i" } },
+    ];
+  }
+
+  if (reqQuery.additionalPriceCentsMin) {
+    query.additionalPriceCents = {
+      $gte: Number.parseInt(reqQuery.additionalPriceCentsMin, 10),
+    };
+  }
+  if (reqQuery.additionalPriceCentsMax) {
+    query.additionalPriceCents = {
+      ...query.priceCents,
+      $lte: Number.parseInt(reqQuery.additionalPriceCentsMax, 10),
+    };
+  }
+
+  if (reqQuery.stockAdditionalPriceCentsMin) {
+    query.stockAdditionalPriceCents = {
+      $gte: Number.parseInt(reqQuery.stockAdditionalPriceCentsMin, 10),
+    };
+  }
+  if (reqQuery.stockAdditionalPriceCentsMax) {
+    query.stockAdditionalPriceCents = {
+      ...query.stockPriceCents,
+      $lte: Number.parseInt(reqQuery.stockAdditionalPriceCentsMax, 10),
+    };
+  }
+
+  if (reqQuery.stopSelling !== undefined) {
+    query.stopSelling = reqQuery.stopSelling === "true";
+  }
+
+  const sort = (reqQuery.sortBy || "createdAt").split("_");
+  const sortField = sort[0];
+  const sortBy = sort[1] === "desc" ? -1 : 1;
+  const sortStage: any = { [sortField]: sortBy, _id: 1 };
+
+  try {
+    const aggregationResult = await ModelVariation.aggregate([
+      { $match: { isDeleted: false, ...query } },
+      {
+        $lookup: {
+          from: "productmodels",
+          localField: "productModelId",
+          foreignField: "_id",
+          as: "productModel",
+          pipeline: [{ $project: { productId: 1 } }],
+        },
+      },
+      { $unwind: "$productModel" },
+      {
+        $addFields: {
+          productId: "$productModel.productId",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $sort: sortStage }, { $skip: offset }, { $limit: limit }],
+        },
+      },
+    ]);
+
+    const variations: AdminModelVariationResponse[] =
+      aggregationResult[0].data.map(formatAdminModelVariationResponse);
+    const total: number = aggregationResult[0].metadata[0]?.total || 0;
+
+    res.status(200).json({
+      success: true,
+      message: "Product model variations retrieved successfully.",
+      data: {
+        total,
+        variations: {
+          total: variations.length,
+          variations,
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<AdminModelVariationListResponse>);
     console.log("✅ ", "Product model variations retrieved successfully.");
   } catch (error) {
     next(error);
@@ -393,6 +560,73 @@ export async function remove(
       message: "Product model variation removed successfully.",
     } as SuccessResponse);
     console.log("✅ ", "Product model variation removed successfully.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
+export async function removeBulk(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Removing multiple model variations...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const { variationIds: variationIdsToDelete } =
+    req.body as ModelVariationBulkDelete;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (variationIdsToDelete.length > MAX_MODEL_VARIATIONS_TO_DELETE_BULK) {
+      throw new HttpError(
+        400,
+        `Cannot delete more than ${MAX_MODEL_VARIATIONS_TO_DELETE_BULK} model variations at once.`
+      );
+    }
+
+    // Delete variations, if variations not found -> skip and continue
+    for (const variationId of variationIdsToDelete) {
+      const variation = Types.ObjectId.isValid(variationId)
+        ? await ModelVariation.findById(variationId).session(session)
+        : null;
+      if (variation && !variation.isDeleted) {
+        await executeDeletion(
+          variation,
+          new Types.ObjectId(reqUserId),
+          session
+        );
+      }
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "Model variations removed successfully",
+    } as SuccessResponse<null>);
+    console.log("✅ ", "Model variations removed successfully");
   } catch (error) {
     await session.abortTransaction();
     next(error);

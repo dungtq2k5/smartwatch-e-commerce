@@ -54,6 +54,7 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
   - Features:
     - Dynamic default avatar for user profile ❌.
     - Resend verification code feature ❌.
+    - Storing end-user search keywords for more features about it (eg: trending searches, related searches) ❌.
 
 - 📜 Rules:
   - FrontEnd:

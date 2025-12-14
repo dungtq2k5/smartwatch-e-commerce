@@ -23,10 +23,11 @@ const HeaderAndSidebar = memo(() => {
   const { admin } = useAuthStore();
   const refresh = useRefreshStore((state) => state.refresh);
 
-  const [canReadUser, canReadProduct, canReadModel] = [
+  const [canReadUser, canReadProduct, canReadModel, canReadVariation] = [
     useHasPermission("r_usr"),
     useHasPermission("r_product"),
     useHasPermission("r_product_model"),
+    useHasPermission("r_model_variation"),
   ];
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
@@ -120,6 +121,15 @@ const HeaderAndSidebar = memo(() => {
               >
                 <FontAwesomeIcon icon={faBox} className="me-2" />
                 Product Model Management
+              </NavLink>
+            )}
+            {canReadVariation && (
+              <NavLink
+                to="/admin/model-variations"
+                className="list-group-item list-group-item-action"
+              >
+                <FontAwesomeIcon icon={faBox} className="me-2" />
+                Model Variation Management
               </NavLink>
             )}
           </div>

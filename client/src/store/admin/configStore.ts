@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type {
   AdminConfig,
+  ModelVariationDisplayField,
   ProductDisplayField,
   ProductModelDisplayField,
   UserDisplayField,
@@ -22,6 +23,11 @@ type ConfigState = {
     displayFields: ProductModelDisplayField[]
   ) => void;
   resetProductModelManagementDisplayFields: () => void;
+
+  setModelVariationManagementDisplayFields: (
+    displayFields: ModelVariationDisplayField[]
+  ) => void;
+  resetModelVariationManagementDisplayFields: () => void;
 };
 
 const getInitialState = (): AdminConfig => {
@@ -101,6 +107,29 @@ const useConfigStore = create<ConfigState>((set, get) => ({
       ...get().config,
       productModelManagementDisplayFields:
         DEFAULT_ADMIN_CONFIG.productModelManagementDisplayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  setModelVariationManagementDisplayFields: (
+    displayFields: ModelVariationDisplayField[]
+  ): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      modelVariationManagementDisplayFields: displayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  resetModelVariationManagementDisplayFields: (): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      modelVariationManagementDisplayFields:
+        DEFAULT_ADMIN_CONFIG.modelVariationManagementDisplayFields,
     };
 
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));

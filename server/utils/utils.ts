@@ -591,6 +591,7 @@ export function formatAdminModelVariationResponse(
 
   return {
     ...restData,
+    productId: variation.productId,
     stockAdditionalPriceCents: variation.stockAdditionalPriceCents,
     createdBy: {
       id: variation.createdBy._id,

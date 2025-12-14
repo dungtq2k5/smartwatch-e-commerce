@@ -15,9 +15,11 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import type {
   AdminConfig,
+  AdminModelVariationDisplayableField,
   AdminProductDisplayableField,
   AdminProductModelDisplayableField,
   AdminUserDisplayableField,
+  ModelVariationDisplayField,
   ProductDisplayField,
   ProductModelDisplayField,
   UserDisplayField,
@@ -72,6 +74,8 @@ export const PRODUCT_OS_URL = `${ROOT_URL}/product-os`;
 export const PRODUCT_MODEL_URL = `${ROOT_URL}/product-models`;
 
 export const PRODUCT_VARIATION_URL = `${ROOT_URL}/product-variations`;
+
+export const MODEL_VARIATION_URL = `${ROOT_URL}/model-variations`;
 
 export const ORDER_URL = `${ROOT_URL}/orders`;
 export const SELF_ORDER_URL = `${ORDER_URL}/me`;
@@ -301,6 +305,24 @@ export const PRODUCT_MODEL_FIELD_LABEL_LEGEND: Readonly<
   actions: "Actions",
 };
 
+export const MODEL_VARIATION_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminModelVariationDisplayableField, string>
+> = {
+  id: "ID",
+  productId: "Product ID",
+  productModelId: "Model ID",
+  name: "Name",
+  color: "Color",
+  additionalPriceCents: "Additional price",
+  stockAdditionalPriceCents: "Stock additional price",
+  stockQuantity: "Stock quantity",
+  createdBy: "Created by",
+  createdAt: "Created at",
+  updatedAt: "Updated at",
+  stopSelling: "Stop selling",
+  actions: "Actions",
+};
+
 export const DEFAULT_ADMIN_USER_DISPLAY_FIELDS: UserDisplayField[] = [
   { name: "id", visible: false, exportable: true },
   { name: "fullName", visible: true, exportable: true },
@@ -356,6 +378,23 @@ export const DEFAULT_ADMIN_PRODUCT_MODEL_DISPLAY_FIELDS: ProductModelDisplayFiel
     { name: "actions", visible: true, exportable: false },
   ];
 
+export const DEFAULT_ADMIN_MODEL_VARIATION_DISPLAY_FIELDS: ModelVariationDisplayField[] =
+  [
+    { name: "id", visible: true, exportable: true },
+    { name: "productId", visible: false, exportable: true },
+    { name: "productModelId", visible: false, exportable: true },
+    { name: "name", visible: true, exportable: true },
+    { name: "color", visible: true, exportable: true },
+    { name: "additionalPriceCents", visible: true, exportable: true },
+    { name: "stockAdditionalPriceCents", visible: false, exportable: true },
+    { name: "stockQuantity", visible: true, exportable: true },
+    { name: "createdBy", visible: false, exportable: true },
+    { name: "createdAt", visible: false, exportable: true },
+    { name: "updatedAt", visible: false, exportable: true },
+    { name: "stopSelling", visible: true, exportable: true },
+    { name: "actions", visible: true, exportable: false },
+  ];
+
 export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   visa: (
     <FontAwesomeIcon
@@ -387,4 +426,6 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   productManagementDisplayFields: DEFAULT_ADMIN_PRODUCT_DISPLAY_FIELDS,
   productModelManagementDisplayFields:
     DEFAULT_ADMIN_PRODUCT_MODEL_DISPLAY_FIELDS,
+  modelVariationManagementDisplayFields:
+    DEFAULT_ADMIN_MODEL_VARIATION_DISPLAY_FIELDS,
 };

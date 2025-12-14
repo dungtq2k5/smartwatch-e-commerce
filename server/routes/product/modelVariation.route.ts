@@ -7,9 +7,11 @@ import {
 } from "../../utils/middlewares/product/variation.middleware";
 import {
   create,
+  adminSearch,
   get,
   update,
   remove,
+  removeBulk,
 } from "../../controllers/product/modelVariation.controller";
 
 const router = express.Router();
@@ -23,6 +25,14 @@ router.post(
   create
 );
 
+router.get(
+  "/admin",
+  verifyPermission("r_model_variation"),
+  inputSanitizer("admin search"),
+  verifyVariationInput("admin search"),
+  adminSearch
+);
+
 router.get("/:variationId", get);
 
 router.patch(
@@ -32,6 +42,14 @@ router.patch(
   inputSanitizer("variation"),
   verifyVariationInput("update"),
   update
+);
+
+router.delete(
+  "/many",
+  verifyPermission("d_model_variation"),
+  verifyEmptyBody,
+  inputSanitizer("delete bulk"),
+  removeBulk
 );
 
 router.delete("/:variationId", verifyPermission("d_model_variation"), remove);

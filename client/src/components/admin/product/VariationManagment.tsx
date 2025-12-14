@@ -289,7 +289,7 @@ export default function VariationManagement() {
         getCsvVal: () => null,
       },
     }),
-    []
+    [canDeleteVariation, canEditVariation]
   );
 
   const [process, setProcess] = useState<Process>({

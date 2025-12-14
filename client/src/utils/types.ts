@@ -1,5 +1,6 @@
 import type { JSX } from "react";
 import type {
+  AdminModelVariationResponse,
   AdminProductModelResponse,
   AdminProductResponse,
   AdminUserResponse,
@@ -84,6 +85,10 @@ export type AdminProductModelDisplayableField =
     >
   | "actions";
 
+export type AdminModelVariationDisplayableField =
+  | keyof Omit<AdminModelVariationResponse, "imageUrls" | "band">
+  | "actions";
+
 export type TableColDisplay<Item, SortOption> = {
   label: string; // For header display
   thClassName?: string; // Additional className for <th>
@@ -114,8 +119,12 @@ export type ProductDisplayField = DisplayField<AdminProductDisplayableField>;
 export type ProductModelDisplayField =
   DisplayField<AdminProductModelDisplayableField>;
 
+export type ModelVariationDisplayField =
+  DisplayField<AdminModelVariationDisplayableField>;
+
 export type AdminConfig = {
   userManagementDisplayFields: UserDisplayField[];
   productManagementDisplayFields: ProductDisplayField[];
   productModelManagementDisplayFields: ProductModelDisplayField[];
+  modelVariationManagementDisplayFields: ModelVariationDisplayField[];
 };
