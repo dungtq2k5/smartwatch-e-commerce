@@ -215,3 +215,5 @@ export const OPTIMIZE_PIPELINE: mongoose.PipelineStage.Project = {
     __v: 0,
   },
 };
+
+export const DEFAULT_SEARCH_LIMIT = 9;

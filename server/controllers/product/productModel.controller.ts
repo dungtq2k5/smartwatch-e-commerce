@@ -37,6 +37,7 @@ import {
 } from "../../../common/utils.common";
 import Cart from "../../models/user/cart.model";
 import {
+  DEFAULT_SEARCH_LIMIT,
   OPTIMIZE_CREATED_BY_PIPELINE,
   OPTIMIZE_PIPELINE,
 } from "../../configs/configs";
@@ -431,7 +432,7 @@ export async function adminSearch(
 
   const reqQuery = req["sanitizedQuery"] as ProductModelSearchQuery;
 
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
   const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
   const query: any = {};
 

@@ -40,6 +40,7 @@ import User from "../../models/user/user.model";
 import { createRefund } from "../stripe.controller";
 import CancelReason from "../../models/order/cancelReason.model";
 import { compareUserAddress } from "../../../common/utils.common";
+import { DEFAULT_SEARCH_LIMIT } from "../../configs/configs";
 
 // --- BOTH BUYER AND ADMIN FUNCTIONS ---
 export async function createSelf(
@@ -420,7 +421,7 @@ export function search(
 
     const reqQuery = req["sanitizedQuery"] as OrderSearchQuery;
 
-    const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+    const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
     const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
     const baseMatch: any = {};
     const exprConditions: any[] = [];

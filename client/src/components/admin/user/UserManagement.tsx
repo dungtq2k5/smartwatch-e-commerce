@@ -277,11 +277,11 @@ export default function UserManagement() {
           ) : (
             <div className="d-flex gap-2">
               {canEditUser && (
-                <EditBtnLink linkTo={`${user.id}/edit`} title="edit user" />
+                <EditBtnLink to={`${user.id}/edit`} title="Edit user" />
               )}
               {canDeleteUser && (
                 <DeleteBtn
-                  title="delete user"
+                  title="Delete user"
                   onClick={() =>
                     setModal((prev) => ({ ...prev, userIdToDelete: user.id }))
                   }

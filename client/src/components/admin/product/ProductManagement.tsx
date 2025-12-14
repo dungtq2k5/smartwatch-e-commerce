@@ -256,7 +256,7 @@ export default function ProductManagement() {
         tdContent: (product) => (
           <div className="d-flex gap-2">
             {canEditProduct && (
-              <EditBtnLink linkTo={`${product.id}/edit`} title="edit product" />
+              <EditBtnLink to={`${product.id}/edit`} title="Edit product" />
             )}
             {canDeleteProduct && (
               <DeleteBtn
@@ -266,7 +266,7 @@ export default function ProductManagement() {
                     productIdToDelete: product.id,
                   }));
                 }}
-                title="delete product"
+                title="Delete product"
               />
             )}
           </div>

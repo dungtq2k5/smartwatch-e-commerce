@@ -16,6 +16,7 @@ import {
 import OrderReturn from "../../models/returnRefund/orderReturn.model";
 import Order from "../../models/order/order.model";
 import WithdrawRequest from "../../models/withdrawal/withdrawalRequest.model";
+import { DEFAULT_SEARCH_LIMIT } from "../../configs/configs";
 
 export async function searchSelfBalanceHistory(
   req: Request,
@@ -44,7 +45,7 @@ export async function searchSelfBalanceHistory(
 
   const reqQuery = req["sanitizedQuery"] as UserBalanceHistorySearchQuery;
 
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
   const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
   const category = reqQuery.category;
   const { createdAtFrom, createdAtTo } = reqQuery;

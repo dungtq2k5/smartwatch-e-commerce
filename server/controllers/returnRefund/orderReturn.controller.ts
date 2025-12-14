@@ -54,6 +54,7 @@ import { createRefund } from "../stripe.controller";
 import ModelVariation from "../../models/product/modelVariation.model";
 import InventoryMovement from "../../models/inventory/inventoryMovement.model";
 import VariationInstance from "../../models/product/variationInstance.model";
+import { DEFAULT_SEARCH_LIMIT } from "../../configs/configs";
 
 // --- BOTH BUYER AND ADMIN FUNCTIONS ---
 export async function create(
@@ -486,7 +487,7 @@ export async function search(
   const { orderId } = req.params;
   const reqQuery = req["sanitizedQuery"] as OrderReturnSearchQuery;
 
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
   const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
 
   try {
@@ -551,7 +552,7 @@ export async function searchAll(
   }
   const reqQuery = req["sanitizedQuery"] as OrderReturnSearchQuery;
 
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
   const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
   const query: any = {};
 

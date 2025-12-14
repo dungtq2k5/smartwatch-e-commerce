@@ -24,6 +24,7 @@ import type {
 } from "../../../common/types.common";
 import UserBankAccount from "../../models/user/userBankAccount.model";
 import stripe from "../../configs/stripe.config";
+import { DEFAULT_SEARCH_LIMIT } from "../../configs/configs";
 
 // --- BOTH BUYER AND ADMIN FUNCTIONS ---
 export async function createRequest(
@@ -156,7 +157,7 @@ export async function searchSelf(
   }
 
   const reqQuery = req.query as SelfWithdrawalRequestSearchQuery;
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
   const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
 
   try {

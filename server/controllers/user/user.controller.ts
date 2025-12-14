@@ -28,6 +28,7 @@ import type {
 import { HttpError } from "../../utils/errorHandler";
 import bcrypt from "bcryptjs";
 import {
+  DEFAULT_SEARCH_LIMIT,
   HASH_SALT,
   JWT_NAME,
 } from "../../configs/configs";
@@ -347,7 +348,7 @@ export async function search(
 
   const reqQuery = req["sanitizedQuery"] as UserSearchQuery;
 
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 9;
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
   const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
   const query: any = {
     _id: { $ne: getSysUserId() }, // Prevent system user from being retrieved

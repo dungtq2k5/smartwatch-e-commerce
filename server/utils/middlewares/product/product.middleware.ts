@@ -335,22 +335,22 @@ export function verifyProductInput(
           if (priceCentsMin !== undefined) {
             if (!isValidNumString(priceCentsMin)) {
               errors.push("priceCentsMin must be a valid number string.");
-            } else if (Number.parseInt(priceCentsMin as string, 10) < 0) {
+            } else if (Number.parseInt(priceCentsMin, 10) < 0) {
               errors.push("priceCentsMin must be a non-negative number.");
             }
           }
           if (priceCentsMax !== undefined) {
             if (!isValidNumString(priceCentsMax)) {
               errors.push("priceCentsMax must be a valid number string.");
-            } else if (Number.parseInt(priceCentsMax as string, 10) < 0) {
+            } else if (Number.parseInt(priceCentsMax, 10) < 0) {
               errors.push("priceCentsMax must be a non-negative number.");
             }
           }
           if (
             priceCentsMin !== undefined &&
             priceCentsMax !== undefined &&
-            Number.parseInt(priceCentsMin as string, 10) >
-              Number.parseInt(priceCentsMax as string, 10)
+            Number.parseInt(priceCentsMin, 10) >
+              Number.parseInt(priceCentsMax, 10)
           ) {
             errors.push("priceCentsMin cannot be greater than priceCentsMax.");
           }

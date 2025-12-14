@@ -5,15 +5,15 @@ import { Link } from "react-router-dom";
 
 const EditBtnLink = memo(
   ({
-    linkTo,
+    to,
     title,
   }: Readonly<{
-    linkTo: string;
+    to: string;
     title: string;
   }>) => {
     return (
       <Link
-        to={linkTo}
+        to={to}
         className="btn btn-link text-white bg-primary"
         title={title}
       >

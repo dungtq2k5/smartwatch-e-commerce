@@ -236,7 +236,7 @@ export default function ModelManagement() {
         tdContent: (model) => (
           <div className="d-flex gap-2">
             {canEditModel && (
-              <EditBtnLink linkTo={`${model.id}/edit`} title="edit model" />
+              <EditBtnLink to={`${model.id}/edit`} title="Edit model" />
             )}
             {canDeleteModel && (
               <DeleteBtn
@@ -246,7 +246,7 @@ export default function ModelManagement() {
                     modelIdToDelete: model.id,
                   }));
                 }}
-                title="delete model"
+                title="Delete model"
               />
             )}
           </div>
@@ -286,7 +286,7 @@ export default function ModelManagement() {
 
   // Fetch set initial data when first load or search params change or refresh signal
   useEffect(() => {
-    const handleFetchSetInitialData = async () => {
+    const handleFetchSetInitialData = async (): Promise<void> => {
       setProcess((prev) => ({ ...prev, isProcessing: true, isFetching: true }));
       setApiErr(null);
 
