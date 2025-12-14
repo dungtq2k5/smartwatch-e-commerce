@@ -436,6 +436,8 @@ export async function adminSearch(
   const query: any = {};
 
   if (reqQuery.searchTerm) {
+    const isValidObjectId = Types.ObjectId.isValid(reqQuery.searchTerm);
+
     query.$or = [
       {
         _id: Types.ObjectId.isValid(reqQuery.searchTerm)
