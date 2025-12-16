@@ -499,6 +499,7 @@ export function search(
         const matchingOrders = await Order.aggregate([
           // 1. Initial filter for the user and other query params
           { $match: baseMatch },
+          { ...OPTIMIZE_PIPELINE },
           // 2. Unwind the items array to process each item individually
           { $unwind: "$items" },
           // 3. Lookup variation details

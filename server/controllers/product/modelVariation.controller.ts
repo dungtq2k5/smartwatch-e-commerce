@@ -312,6 +312,7 @@ export async function adminSearch(
   try {
     const aggregationResult = await ModelVariation.aggregate([
       { $match: { isDeleted: false, ...query } },
+      { ...OPTIMIZE_PIPELINE },
       {
         $lookup: {
           from: "productmodels",

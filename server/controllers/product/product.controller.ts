@@ -102,6 +102,7 @@ export async function getDetails(
 
     const productDetails = await Product.aggregate([
       { $match: { _id: new Types.ObjectId(productId), isDeleted: false } },
+      { ...OPTIMIZE_PIPELINE },
       {
         $lookup: {
           from: "productbrands",
@@ -262,6 +263,7 @@ export async function search(
   try {
     const aggregationResult = await Product.aggregate([
       { $match: { isDeleted: false, ...query } },
+      { ...OPTIMIZE_PIPELINE },
       {
         $lookup: {
           from: "productbrands",
@@ -349,6 +351,7 @@ export async function adminGet(
     }
     const aggregationResult = await Product.aggregate([
       { $match: { _id: new Types.ObjectId(productId), isDeleted: false } },
+      { ...OPTIMIZE_PIPELINE },
       {
         $lookup: {
           from: "users",
@@ -457,6 +460,7 @@ export async function adminGetDetails(
 
     const productDetails = await Product.aggregate([
       { $match: { _id: new Types.ObjectId(productId), isDeleted: false } },
+      { ...OPTIMIZE_PIPELINE },
       {
         $lookup: {
           from: "productbrands",
@@ -688,6 +692,7 @@ export async function adminSearch(
   try {
     const aggregationResult = await Product.aggregate([
       { $match: { isDeleted: false, ...query } },
+      { ...OPTIMIZE_PIPELINE },
       {
         $lookup: {
           from: "users",

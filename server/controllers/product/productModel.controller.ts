@@ -226,6 +226,7 @@ export async function adminGet(
           _id: new Types.ObjectId(modelId),
         },
       },
+      { ...OPTIMIZE_PIPELINE },
       {
         $lookup: {
           from: "users",
@@ -331,6 +332,7 @@ export async function adminGetDetails(
           _id: new Types.ObjectId(modelId),
         },
       },
+      { ...OPTIMIZE_PIPELINE },
       {
         $lookup: {
           from: "users",
@@ -502,6 +504,7 @@ export async function adminSearch(
   try {
     const aggregationResult = await ProductModel.aggregate([
       { $match: { isDeleted: false, ...query } },
+      { ...OPTIMIZE_PIPELINE },
       {
         $lookup: {
           from: "users",

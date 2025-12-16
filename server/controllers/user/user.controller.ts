@@ -384,6 +384,7 @@ export async function search(
   try {
     const aggregationResult = await User.aggregate([
       { $match: { isDeleted: false, ...query } },
+      { ...OPTIMIZE_PIPELINE },
       {
         $facet: {
           metadata: [{ $count: "total" }],
