@@ -245,11 +245,11 @@ export async function adminSearch(
   const query: any = {};
 
   if (reqQuery.searchTerm) {
-    const isValidObjectId = Types.ObjectId.isValid(reqQuery.searchTerm);
+    const isValidObjId = Types.ObjectId.isValid(reqQuery.searchTerm);
 
     // If searchTerm is a valid ObjectId -> find all models belong to the productId
     let modelIdsFromProduct: Types.ObjectId[] = [];
-    if (isValidObjectId) {
+    if (isValidObjId) {
       const models = await ProductModel.find({
         isDeleted: false,
         productId: new Types.ObjectId(reqQuery.searchTerm),
@@ -262,12 +262,10 @@ export async function adminSearch(
 
     query.$or = [
       {
-        _id: isValidObjectId
-          ? new Types.ObjectId(reqQuery.searchTerm)
-          : undefined,
+        _id: isValidObjId ? new Types.ObjectId(reqQuery.searchTerm) : undefined,
       },
       {
-        productModelId: isValidObjectId
+        productModelId: isValidObjId
           ? new Types.ObjectId(reqQuery.searchTerm)
           : undefined,
       },
@@ -302,7 +300,7 @@ export async function adminSearch(
     };
   }
 
-  if (reqQuery.stopSelling !== undefined) {
+  if (reqQuery.stopSelling) {
     query.stopSelling = reqQuery.stopSelling === "true";
   }
 

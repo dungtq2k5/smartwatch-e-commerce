@@ -109,8 +109,8 @@ export default function ModelManagement() {
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
   const {
     config: { productModelManagementDisplayFields: displayFields },
-    resetProductModelManagementDisplayFields,
-    setProductModelManagementDisplayFields,
+    resetProductModelManagementDisplayFields: resetDisplayFields,
+    setProductModelManagementDisplayFields: setDisplayFields,
   } = useConfigStore();
 
   const [canEditModel, canDeleteModel] = [

@@ -105,8 +105,8 @@ export default function UserManagement() {
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
   const {
     config: { userManagementDisplayFields: displayFields },
-    resetUserManagementDisplayFields,
-    setUserManagementDisplayFields,
+    resetUserManagementDisplayFields: resetDisplayFields,
+    setUserManagementDisplayFields: setDisplayFields,
   } = useConfigStore();
 
   const [canEditUser, canDeleteUser] = [

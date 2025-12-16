@@ -432,21 +432,21 @@ export async function adminSearch(
 
   const reqQuery = req["sanitizedQuery"] as ProductModelSearchQuery;
 
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
   const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
   const query: any = {};
 
   if (reqQuery.searchTerm) {
-    const isValidObjectId = Types.ObjectId.isValid(reqQuery.searchTerm);
+    const isValidObjId = Types.ObjectId.isValid(reqQuery.searchTerm);
 
     query.$or = [
       {
-        _id: isValidObjectId
-          ? new Types.ObjectId(reqQuery.searchTerm)
-          : undefined,
+        _id: isValidObjId ? new Types.ObjectId(reqQuery.searchTerm) : undefined,
       },
       {
-        productId: isValidObjectId
+        productId: isValidObjId
           ? new Types.ObjectId(reqQuery.searchTerm)
           : undefined,
       },
@@ -490,7 +490,7 @@ export async function adminSearch(
     };
   }
 
-  if (reqQuery.stopSelling !== undefined) {
+  if (reqQuery.stopSelling) {
     query.stopSelling = reqQuery.stopSelling === "true";
   }
 

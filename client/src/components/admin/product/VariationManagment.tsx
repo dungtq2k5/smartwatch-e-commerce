@@ -109,8 +109,8 @@ export default function VariationManagement() {
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
   const {
     config: { modelVariationManagementDisplayFields: displayFields },
-    resetModelVariationManagementDisplayFields,
-    setModelVariationManagementDisplayFields,
+    resetModelVariationManagementDisplayFields: resetDisplayFields,
+    setModelVariationManagementDisplayFields: setDisplayFields,
   } = useConfigStore();
 
   const [canEditVariation, canDeleteVariation] = [

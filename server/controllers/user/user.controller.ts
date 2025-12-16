@@ -348,7 +348,9 @@ export async function search(
 
   const reqQuery = req["sanitizedQuery"] as UserSearchQuery;
 
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
   const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
   const query: any = {
     _id: { $ne: getSysUserId() }, // Prevent system user from being retrieved
@@ -364,13 +366,13 @@ export async function search(
     ];
   }
 
-  if (reqQuery.isEmailVerified !== undefined) {
+  if (reqQuery.isEmailVerified) {
     query.isEmailVerified = reqQuery.isEmailVerified === "true";
   }
-  if (reqQuery.isPhoneNumberVerified !== undefined) {
+  if (reqQuery.isPhoneNumberVerified) {
     query.isPhoneNumberVerified = reqQuery.isPhoneNumberVerified === "true";
   }
-  if (reqQuery.isLocked !== undefined) {
+  if (reqQuery.isLocked) {
     query.isLocked = reqQuery.isLocked === "true";
   }
 

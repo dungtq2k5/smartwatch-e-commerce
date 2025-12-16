@@ -115,8 +115,8 @@ export default function ProductManagement() {
 
   const {
     config: { productManagementDisplayFields: displayFields },
-    resetProductManagementDisplayFields,
-    setProductManagementDisplayFields,
+    resetProductManagementDisplayFields: resetDisplayFields,
+    setProductManagementDisplayFields: setDisplayFields,
   } = useConfigStore();
 
   const [canEditProduct, canDeleteProduct] = [
