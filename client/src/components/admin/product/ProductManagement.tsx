@@ -195,6 +195,7 @@ export default function ProductManagement() {
         label: PRODUCT_FIELD_LABEL_LEGEND["basePriceCents"] || "Base price",
         isSortable: true,
         sortKey: { asc: "basePriceCents_asc", desc: "basePriceCents_desc" },
+        tdClassName: "text-center",
         tdContent: (product) => <>{centsToUSD(product.basePriceCents)}</>,
         getCsvVal: (product) => centsToUSD(product.basePriceCents),
       },

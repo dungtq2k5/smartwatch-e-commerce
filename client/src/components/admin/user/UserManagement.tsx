@@ -146,7 +146,7 @@ export default function UserManagement() {
       },
       gender: {
         label: USER_FIELD_LABEL_LEGEND["gender"] || "Gender",
-        thClassName: "text-capitalize",
+        tdClassName: "text-capitalize",
         tdContent: (user) => <>{user.gender}</>,
         getCsvVal: (user) => user.gender,
       },
@@ -159,6 +159,7 @@ export default function UserManagement() {
         label: USER_FIELD_LABEL_LEGEND["userBalanceCents"] || "User balance",
         isSortable: true,
         sortKey: { asc: "userBalanceCents_asc", desc: "userBalanceCents_desc" },
+        tdClassName: "text-center",
         tdContent: (user) => <>{centsToUSD(user.userBalanceCents)}</>,
         getCsvVal: (user) => centsToUSD(user.userBalanceCents),
       },
@@ -198,8 +199,18 @@ export default function UserManagement() {
       },
       authProvider: {
         label: USER_FIELD_LABEL_LEGEND["authProvider"] || "Auth type",
-        thClassName: "text-capitalize",
-        tdContent: (user) => <>{user.authProvider}</>,
+        tdClassName: "text-capitalize",
+        tdContent: (user) =>
+          user.authProvider === "google" ? (
+            <FontAwesomeIcon
+              icon={faGoogle}
+              size="sm"
+              className="text-danger"
+              title="Google Auth"
+            />
+          ) : (
+            <>{user.authProvider}</>
+          ),
         getCsvVal: (user) => user.authProvider,
       },
       accountVerified: {

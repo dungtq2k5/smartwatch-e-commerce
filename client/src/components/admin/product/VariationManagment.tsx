@@ -195,6 +195,7 @@ export default function VariationManagement() {
           asc: "additionalPriceCents_asc",
           desc: "additionalPriceCents_desc",
         },
+        tdClassName: "text-center",
         tdContent: (variation) => (
           <>{centsToUSD(variation.additionalPriceCents)}</>
         ),
@@ -209,6 +210,7 @@ export default function VariationManagement() {
           asc: "stockAdditionalPriceCents_asc",
           desc: "stockAdditionalPriceCents_desc",
         },
+        tdClassName: "text-center",
         tdContent: (variation) => (
           <>{centsToUSD(variation.stockAdditionalPriceCents)}</>
         ),
