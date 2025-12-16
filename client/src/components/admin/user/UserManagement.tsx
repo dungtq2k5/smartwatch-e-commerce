@@ -544,24 +544,16 @@ export default function UserManagement() {
     if (process.isProcessing) return;
 
     // Case when url hasn't changed but user wants to clear filters -> reset form state
-    setSearchForm(DEFAULT_SEARCH_FORM);
+    setSearchForm((prev) => ({
+      ...DEFAULT_SEARCH_FORM,
+      limit: prev.limit,
+    }));
 
-    // setSearchParams((prev) => {
-    //   prev.delete("searchTerm");
-    //   prev.delete("isEmailVerified");
-    //   prev.delete("isPhoneNumberVerified");
-    //   prev.delete("isLocked");
-
-    //   prev.set("limit", DEFAULT_SEARCH_FORM.limit);
-    //   prev.set("offset", "0");
-
-    //   return prev;
-    // });
     setSearchParams({
-      limit: DEFAULT_SEARCH_FORM.limit,
+      limit: searchForm.limit,
       offset: "0",
     });
-  }, [process.isProcessing, setSearchParams]);
+  }, [process.isProcessing, searchForm.limit, setSearchParams]);
 
   const handleSort = useCallback(
     (sortBy: SearchForm["sortBy"]): void => {

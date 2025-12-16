@@ -60,7 +60,7 @@ const grnSchema: Schema<IGrn> = new Schema(
       default: null,
     },
   },
-  { timestamps: { createdAt: true } }
+  { timestamps: { createdAt: true, updatedAt: false } }
 );
 
 const Grn: Model<IGrn> = mongoose.model<IGrn>("Grn", grnSchema);

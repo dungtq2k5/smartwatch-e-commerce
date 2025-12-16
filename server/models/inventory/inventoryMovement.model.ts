@@ -55,7 +55,7 @@ const inventoryMovementSchema: Schema<IInventoryMovement> = new Schema(
       default: null,
     },
   },
-  { timestamps: { createdAt: true } }
+  { timestamps: { createdAt: true, updatedAt: false } }
 );
 
 const InventoryMovement: Model<IInventoryMovement> =

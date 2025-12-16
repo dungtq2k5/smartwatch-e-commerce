@@ -688,8 +688,8 @@ async function mockModelVariations(
             name: colorName,
           }, // unique
           imageUrls: genRandImgUrls(randNum(1, 5), imgSpecs),
-          additionalPriceCents: faker.number.int({ min: 0, max: 100_00 }),
-          stockAdditionalPriceCents: faker.number.int({ min: 0, max: 50_00 }),
+          additionalPriceCents: faker.number.int({ min: 0, max: 10_000 }),
+          stockAdditionalPriceCents: faker.number.int({ min: 0, max: 5_000 }),
           band,
           stockQuantity: faker.number.int({ min: 1, max: 20 }),
           createdBy: sysUserId,

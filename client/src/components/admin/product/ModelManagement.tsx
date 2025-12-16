@@ -525,17 +525,16 @@ export default function ModelManagement() {
     if (process.isProcessing) return;
 
     // Case when url hasn't changed but user wants to clear filters -> reset form state
-    setSearchForm({
-      limit: DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE.toString(),
-      offset: "0",
-      searchTerm: "",
-    });
+    setSearchForm((prev) => ({
+      ...DEFAULT_SEARCH_FORM,
+      limit: prev.limit,
+    }));
 
     setSearchParams({
-      limit: DEFAULT_SEARCH_FORM.limit,
+      limit: searchForm.limit,
       offset: "0",
     });
-  }, [process.isProcessing, setSearchParams]);
+  }, [process.isProcessing, searchForm.limit, setSearchParams]);
 
   const handleSort = useCallback(
     (sortBy: SearchForm["sortBy"]): void => {
@@ -828,7 +827,7 @@ export default function ModelManagement() {
       };
 
       exportToCsv<AdminProductModelResponse>(
-        `${PROJECT_NAME.toLowerCase()}-model-models-${new Date().toISOString()}.csv`,
+        `${PROJECT_NAME.toLowerCase()}-models-exports-${new Date().toISOString()}.csv`,
         headers,
         modelsToExport.models,
         getVals

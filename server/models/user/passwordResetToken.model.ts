@@ -30,7 +30,7 @@ const passwordResetToken: Schema<IPasswordResetToken> = new Schema(
       default: false,
     },
   },
-  { timestamps: { createdAt: true } }
+  { timestamps: true }
 );
 
 const PasswordResetToken: Model<IPasswordResetToken> =
