@@ -150,16 +150,33 @@ export function isArrayOfNonEmptyStrings(arr: any): boolean {
   return arr.every((item) => typeof item === "string" && !!item.trim());
 }
 
-/*
-SKU format: [BRAND_CODE]-[MODEL_NAME]-[SIZE_MM]-[VAR_TYPE_CODE]-[VAR_NAME_CODE]-[UNIQUE_ID]
-- BRAND_CODE: A 3-letter abbreviation of the product's brand name (e.g., APL for Apple).
-- MODEL_NAME: The model from the ProductModel, sanitized (e.g., "Series 9" becomes "S9").
-- SIZE_MM: The watchSizeMm from the ProductModel (e.g., 45).
-- VAR_TYPE_CODE: A short code for the variation type (CLR for color, BND for band).
-- VAR_NAME_CODE: A 3-letter abbreviation of the variation's name (e.g., MID for Midnight).
-- UNIQUE_ID: A unique identifier to prevent collisions. A combination of the current timestamp and a random string is a reliable method.
--> Example SKU: APL-S9-45-CLR-MID-L9SO2A1
-*/
+/**
+ * Generates a unique SKU (Stock Keeping Unit) string for a specific product variation instance.
+ *
+ * This function retrieves the full hierarchy of product data (Variation -> Model -> Product -> Brand)
+ * to construct a meaningful SKU string. The format follows the pattern:
+ * `BRAND-MODEL-SIZE-VAR-UNIQUEID`.
+ *
+ * @param variationId - The MongoDB ObjectId of the specific model variation.
+ * @returns A Promise that resolves to the generated SKU string (e.g., "APL-SERIES9-45-MID-L9SO2A1").
+ * @throws {Error} If the variation cannot be found in the database.
+ * @throws {Error} If the associated product model, product, or brand data is missing or incomplete.
+ *
+ * @example
+ * ```ts
+ * const sku = await genInstanceSku(variationId);
+ * console.log(sku); // Output: "APL-SERIES9-45-MID-X7Z9A2B"
+ * ```
+ *
+ * Format breakdown:
+ * 1. Brand Code: First 3 letters of brand name (e.g., "Apple" -> "APL")
+ * 2. Model Name: Alphanumeric characters only (e.g., "Series 9" -> "Series9")
+ * 3. Watch Size: The size in mm (e.g., 45)
+ * 4. Variation Name Code: First 3 letters of variation name (e.g., "Midnight" -> "MID")
+ * 5. Unique ID: A combination of timestamp and random string (e.g., "L9SO2A1")
+ *
+ * Result: "APL-Series9-45-MID-L9SO2A1"
+ */
 export async function genInstanceSku(
   variationId: Types.ObjectId
 ): Promise<string> {
