@@ -28,6 +28,7 @@ import Cart from "../../models/user/cart.model";
 import {
   DEFAULT_SEARCH_LIMIT,
   OPTIMIZE_CREATED_BY_PIPELINE,
+  OPTIMIZE_PIPELINE,
 } from "../../configs/configs";
 import { MAX_MODEL_VARIATIONS_TO_DELETE_BULK } from "../../../common/configs.common";
 

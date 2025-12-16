@@ -28,6 +28,8 @@ import productModelRoute from "./routes/product/productModel.route";
 import modelVariationRoute from "./routes/product/modelVariation.route";
 import variationInstanceRoute from "./routes/product/variationInstance.route";
 
+import instanceCondition from "./routes/product/instanceCondition.route";
+
 import orderRoute from "./routes/order/order.route";
 import orderStateRoute from "./routes/order/orderState.route";
 import paymentStateRoute from "./routes/order/paymentState.route";
@@ -124,6 +126,8 @@ app.use(`${ROOT_URL}/product-categories`, productCategoryRoute);
 app.use(`${ROOT_URL}/product-models`, productModelRoute);
 app.use(`${ROOT_URL}/model-variations`, modelVariationRoute);
 app.use(`${ROOT_URL}/variation-instances`, variationInstanceRoute);
+
+app.use(`${ROOT_URL}/instance-conditions`, instanceCondition);
 
 app.use(`${ROOT_URL}/orders`, orderRoute);
 app.use(`${ROOT_URL}/order-states`, orderStateRoute);

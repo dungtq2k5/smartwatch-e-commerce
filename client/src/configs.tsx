@@ -19,10 +19,12 @@ import type {
   AdminProductDisplayableField,
   AdminProductModelDisplayableField,
   AdminUserDisplayableField,
+  AdminVariationInstanceDisplayableField,
   ModelVariationDisplayField,
   ProductDisplayField,
   ProductModelDisplayField,
   UserDisplayField,
+  VariationInstanceDisplayField,
 } from "./utils/types";
 import type { JSX } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -76,6 +78,10 @@ export const PRODUCT_MODEL_URL = `${ROOT_URL}/product-models`;
 export const PRODUCT_VARIATION_URL = `${ROOT_URL}/product-variations`;
 
 export const MODEL_VARIATION_URL = `${ROOT_URL}/model-variations`;
+
+export const VARIATION_INSTANCE_URL = `${ROOT_URL}/variation-instances`;
+
+export const INSTANCE_CONDITION_URL = `${ROOT_URL}/instance-conditions`;
 
 export const ORDER_URL = `${ROOT_URL}/orders`;
 export const SELF_ORDER_URL = `${ORDER_URL}/me`;
@@ -323,6 +329,21 @@ export const MODEL_VARIATION_FIELD_LABEL_LEGEND: Readonly<
   actions: "Actions",
 };
 
+export const VARIATION_INSTANCE_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminVariationInstanceDisplayableField, string>
+> = {
+  id: "ID",
+  sku: "SKU",
+  modelVariationId: "Model Variation ID",
+  supplierImeiNumber: "IMEI Number",
+  supplierSerialNumber: "Serial Number",
+  conditionId: "Condition",
+  isActive: "Active Status",
+  createdAt: "Created At",
+  updatedAt: "Updated At",
+  actions: "Actions",
+};
+
 export const DEFAULT_ADMIN_USER_DISPLAY_FIELDS: UserDisplayField[] = [
   { name: "id", visible: false, exportable: true },
   { name: "fullName", visible: true, exportable: true },
@@ -395,6 +416,20 @@ export const DEFAULT_ADMIN_MODEL_VARIATION_DISPLAY_FIELDS: ModelVariationDisplay
     { name: "actions", visible: true, exportable: false },
   ];
 
+export const DEFAULT_ADMIN_VARIATION_INSTANCE_DISPLAY_FIELDS: VariationInstanceDisplayField[] =
+  [
+    { name: "id", visible: true, exportable: true },
+    { name: "sku", visible: true, exportable: true },
+    { name: "modelVariationId", visible: false, exportable: true },
+    { name: "supplierImeiNumber", visible: true, exportable: true },
+    { name: "supplierSerialNumber", visible: true, exportable: true },
+    { name: "conditionId", visible: true, exportable: true },
+    { name: "isActive", visible: true, exportable: true },
+    { name: "createdAt", visible: false, exportable: true },
+    { name: "updatedAt", visible: false, exportable: true },
+    { name: "actions", visible: true, exportable: false },
+  ];
+
 export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   visa: (
     <FontAwesomeIcon
@@ -428,4 +463,6 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
     DEFAULT_ADMIN_PRODUCT_MODEL_DISPLAY_FIELDS,
   modelVariationManagementDisplayFields:
     DEFAULT_ADMIN_MODEL_VARIATION_DISPLAY_FIELDS,
+  variationInstanceManagementDisplayFields:
+    DEFAULT_ADMIN_VARIATION_INSTANCE_DISPLAY_FIELDS,
 };

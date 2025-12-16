@@ -128,7 +128,10 @@ export default function ModelManagement() {
       productId: {
         label: MODEL_FIELD_LABEL_LEGEND["productId"] || "Product ID",
         tdContent: (model) => (
-          <Link to={`/admin/products/${model.productId}`} title="View detail product">
+          <Link
+            to={`/admin/products/${model.productId}`}
+            title="View detail product"
+          >
             {model.productId}
           </Link>
         ),
@@ -159,6 +162,7 @@ export default function ModelManagement() {
         label: MODEL_FIELD_LABEL_LEGEND["priceCents"] || "Selling Price",
         isSortable: true,
         sortKey: { asc: "priceCents_asc", desc: "priceCents_desc" },
+        tdClassName: "text-center",
         tdContent: (model) => <>{centsToUSD(model.priceCents)}</>,
         getCsvVal: (model) => centsToUSD(model.priceCents),
       },
@@ -166,6 +170,7 @@ export default function ModelManagement() {
         label: MODEL_FIELD_LABEL_LEGEND["stockPriceCents"] || "Stock Price",
         isSortable: true,
         sortKey: { asc: "stockPriceCents_asc", desc: "stockPriceCents_desc" },
+        tdClassName: "text-center",
         tdContent: (model) => <>{centsToUSD(model.stockPriceCents)}</>,
         getCsvVal: (model) => centsToUSD(model.stockPriceCents),
       },
@@ -766,16 +771,16 @@ export default function ModelManagement() {
 
   const handleApplyConfigDisplay = useCallback(
     (fields: ProductModelDisplayField[]): void => {
-      setProductModelManagementDisplayFields(fields);
+      setDisplayFields(fields);
       toast.success("Config display has been updated.");
     },
-    [setProductModelManagementDisplayFields]
+    [setDisplayFields]
   );
 
   const handleResetConfigDisplay = useCallback((): void => {
-    resetProductModelManagementDisplayFields();
+    resetDisplayFields();
     toast.success("Config display has been reset to default.");
-  }, [resetProductModelManagementDisplayFields]);
+  }, [resetDisplayFields]);
 
   const handleExportList = useCallback(async (): Promise<void> => {
     if (process.isProcessing) {

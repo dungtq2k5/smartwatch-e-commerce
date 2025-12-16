@@ -7,6 +7,7 @@ import type {
   BaseUserAddress,
   OrderReturnSearchQuery,
   UserCartResponse,
+  VariationInstanceResponse,
 } from "../../../common/types.common";
 
 export type FormInput<ValT = string, ErrT = string> = {
@@ -89,6 +90,10 @@ export type AdminModelVariationDisplayableField =
   | keyof Omit<AdminModelVariationResponse, "imageUrls" | "band">
   | "actions";
 
+export type AdminVariationInstanceDisplayableField =
+  | keyof Omit<VariationInstanceResponse, "inactiveAt">
+  | "actions";
+
 export type TableColDisplay<Item, SortOption> = {
   label: string; // For header display
   thClassName?: string; // Additional className for <th>
@@ -122,9 +127,13 @@ export type ProductModelDisplayField =
 export type ModelVariationDisplayField =
   DisplayField<AdminModelVariationDisplayableField>;
 
+export type VariationInstanceDisplayField =
+  DisplayField<AdminVariationInstanceDisplayableField>;
+
 export type AdminConfig = {
   userManagementDisplayFields: UserDisplayField[];
   productManagementDisplayFields: ProductDisplayField[];
   productModelManagementDisplayFields: ProductModelDisplayField[];
   modelVariationManagementDisplayFields: ModelVariationDisplayField[];
+  variationInstanceManagementDisplayFields: VariationInstanceDisplayField[];
 };

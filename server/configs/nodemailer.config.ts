@@ -14,7 +14,7 @@ const {
 
 export const transporter = nodemailer.createTransport({
   host: EMAIL_HOST,
-  port: parseInt(EMAIL_PORT, 10),
+  port: Number.parseInt(EMAIL_PORT, 10),
   secure: EMAIL_SECURE === "true", // true for 465, false for other ports
   auth: {
     user: EMAIL_USER,

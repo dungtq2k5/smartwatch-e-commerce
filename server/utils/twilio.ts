@@ -1,6 +1,9 @@
 import { twilioClient, twilioPhoneNumber } from "../configs/twilio.config";
 import { PROJECT_NAME } from "../../common/configs.common";
-import { convertVnPhoneNumberToE164, formatError } from "../../common/utils.common";
+import {
+  convertVnPhoneNumberToE164,
+  formatError,
+} from "../../common/utils.common";
 
 export async function sendVerificationSms(
   plainPhoneNumber: string,
@@ -115,7 +118,9 @@ export async function sendPhoneNumberChangeSms(
       );
     } catch (error) {
       throw new Error(
-        `Failed to send phone number change SMS to ${plainPhoneNumber}: ${formatError(error)}`
+        `Failed to send phone number change SMS to ${plainPhoneNumber}: ${formatError(
+          error
+        )}`
       );
     }
   }

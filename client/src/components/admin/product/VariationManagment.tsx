@@ -800,16 +800,16 @@ export default function VariationManagement() {
 
   const handleApplyConfigDisplay = useCallback(
     (fields: ModelVariationDisplayField[]): void => {
-      setModelVariationManagementDisplayFields(fields);
+      setDisplayFields(fields);
       toast.success("Config display has been updated.");
     },
-    [setModelVariationManagementDisplayFields]
+    [setDisplayFields]
   );
 
   const handleResetConfigDisplay = useCallback((): void => {
-    resetModelVariationManagementDisplayFields();
+    resetDisplayFields();
     toast.success("Config display has been reset to default.");
-  }, [resetModelVariationManagementDisplayFields]);
+  }, [resetDisplayFields]);
 
   const handleExportList = useCallback(async (): Promise<void> => {
     if (process.isProcessing) {

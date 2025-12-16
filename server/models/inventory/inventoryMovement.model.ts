@@ -2,7 +2,7 @@ import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
 export interface IInventoryMovement extends Document<Types.ObjectId> {
   variationInstanceId: Types.ObjectId;
-  sku: string;
+  variationInstanceSku: string;
   inventoryMovementTypeId: Types.ObjectId;
   grnId: Types.ObjectId | null;
   createdBy: Types.ObjectId;
@@ -19,7 +19,7 @@ const inventoryMovementSchema: Schema<IInventoryMovement> = new Schema(
       ref: "VariationInstance",
       required: true,
     },
-    sku: {
+    variationInstanceSku: {
       type: String,
       required: true,
     },

@@ -370,3 +370,12 @@ export const MODEL_VARIATION_SORT_OPTIONS = [
 ] as const;
 
 export const MAX_MODEL_VARIATIONS_TO_DELETE_BULK = 5;
+
+export const VARIATION_INSTANCE_SORT_OPTIONS = [
+  "sku_desc",
+  "sku_asc",
+  "createdAt_desc",
+  "createdAt_asc",
+  "updatedAt_desc",
+  "updatedAt_asc",
+] as const;

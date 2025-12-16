@@ -789,16 +789,16 @@ export default function ProductManagement() {
 
   const handleApplyConfigDisplay = useCallback(
     (fields: ProductDisplayField[]): void => {
-      setProductManagementDisplayFields(fields);
+      setDisplayFields(fields);
       toast.success("Config display has been updated.");
     },
-    [setProductManagementDisplayFields]
+    [setDisplayFields]
   );
 
   const handleResetConfigDisplay = useCallback((): void => {
-    resetProductManagementDisplayFields();
+    resetDisplayFields();
     toast.success("Config display has been reset to default.");
-  }, [resetProductManagementDisplayFields]);
+  }, [resetDisplayFields]);
 
   const handleExportList = useCallback(async (): Promise<void> => {
     if (process.isProcessing) {

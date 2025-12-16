@@ -1,8 +1,10 @@
 import express from "express";
 import { verifyPermission } from "../../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../../utils/middlewares/general.middleware";
-import { verifyVariationInstanceInput } from "../../utils/middlewares/product/instance.middleware";
+import { inputSanitizer, verifyVariationInstanceInput } from "../../utils/middlewares/product/instance.middleware";
 import {
+  adminGetDetails,
+  adminSearch,
   create,
   get,
   update,
@@ -16,6 +18,20 @@ router.post(
   verifyEmptyBody,
   verifyVariationInstanceInput("create"),
   create
+);
+
+router.get(
+  "/admin",
+  verifyPermission("r_variation_instance"),
+  inputSanitizer("admin search"),
+  verifyVariationInstanceInput("admin search"),
+  adminSearch
+);
+
+router.get(
+  "/:instanceId/details/admin",
+  verifyPermission("r_variation_instance"),
+  adminGetDetails
 );
 
 router.get("/:instanceId", verifyPermission("r_variation_instance"), get);

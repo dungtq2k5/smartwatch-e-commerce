@@ -47,6 +47,7 @@ import ModelManagement from "./components/admin/product/ModelManagement.tsx";
 import { EditProduct } from "./components/admin/product/EditProduct.tsx";
 import { EditModel } from "./components/admin/product/EditModel.tsx";
 import VariationManagement from "./components/admin/product/VariationManagment.tsx";
+import InstanceManagement from "./components/admin/product/InstanceManagement.tsx";
 
 export default function App() {
   // DEV for testing
@@ -129,6 +130,10 @@ export default function App() {
 
                 <Route path="model-variations">
                   <Route index element={<VariationManagement />} />
+                </Route>
+
+                <Route path="variation-instances">
+                  <Route index element={<InstanceManagement />} />
                 </Route>
               </Route>
             </Route>

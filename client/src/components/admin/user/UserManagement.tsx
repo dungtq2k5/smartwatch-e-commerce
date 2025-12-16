@@ -59,6 +59,7 @@ import useRefreshStore from "../../../store/admin/refreshStore";
 import EditBtnLink from "../EditBtnLink";
 import DeleteBtn from "../DeleteBtn";
 import TableHeadSortBtn from "../TableHeadSortBtn";
+import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 
 type Process = {
   isProcessing: boolean;
@@ -784,16 +785,16 @@ export default function UserManagement() {
 
   const handleApplyConfigDisplay = useCallback(
     (fields: UserDisplayField[]): void => {
-      setUserManagementDisplayFields(fields);
+      setDisplayFields(fields);
       toast.success("Config display has been updated.");
     },
-    [setUserManagementDisplayFields]
+    [setDisplayFields]
   );
 
   const handleResetConfigDisplay = useCallback((): void => {
-    resetUserManagementDisplayFields();
+    resetDisplayFields();
     toast.success("Config display has been reset to default.");
-  }, [resetUserManagementDisplayFields]);
+  }, [resetDisplayFields]);
 
   const closeModal = useCallback((): void => {
     setModal({

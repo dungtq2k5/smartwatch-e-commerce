@@ -4,12 +4,16 @@ import { HttpError } from "../../utils/errorHandler";
 import ModelVariation from "../../models/product/modelVariation.model";
 import VariationInstance from "../../models/product/variationInstance.model";
 import type {
+  AdminVariationInstanceDetailResponse,
   SuccessResponse,
   VariationInstanceCreate,
+  VariationInstanceListResponse,
   VariationInstanceResponse,
+  VariationInstanceSearchQuery,
   VariationInstanceUpdate,
 } from "../../../common/types.common";
 import {
+  formatAdminVariationInstanceDetailResponse,
   formatVariationInstanceResponse,
   genInstanceSku,
   getInstanceConditionId,
@@ -18,6 +22,11 @@ import {
 } from "../../utils/utils";
 import { appCache } from "../../configs/cache";
 import InventoryMovement from "../../models/inventory/inventoryMovement.model";
+import {
+  DEFAULT_SEARCH_LIMIT,
+  OPTIMIZE_CREATED_BY_PIPELINE,
+  OPTIMIZE_PIPELINE,
+} from "../../configs/configs";
 
 export async function create(
   req: Request,
@@ -163,6 +172,180 @@ export async function get(
       data: formatVariationInstanceResponse(instance),
     } as SuccessResponse<VariationInstanceResponse>);
     console.log("✅ Variation instance fetched successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function adminGetDetails(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Admin fetching variation instance details...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const { instanceId } = req.params;
+
+  try {
+    const aggregationResult = await VariationInstance.aggregate([
+      { $match: { _id: new Types.ObjectId(instanceId) } },
+      { ...OPTIMIZE_PIPELINE },
+      {
+        $lookup: {
+          from: "inventorymovements",
+          localField: "_id",
+          foreignField: "variationInstanceId",
+          as: "inventoryMovements",
+          pipeline: [
+            OPTIMIZE_PIPELINE,
+            {
+              $lookup: {
+                from: "users",
+                localField: "createdBy",
+                foreignField: "_id",
+                as: "createdBy",
+                pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+              },
+            },
+            { $unwind: "$createdBy" },
+            { $sort: { createdAt: -1 } },
+            { $project: { variationInstanceId: 0, variationInstanceSku: 0 } },
+          ],
+        },
+      },
+    ]);
+
+    const instance = aggregationResult[0];
+    if (!instance) {
+      throw new HttpError(404, "Variation instance not found.");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Variation instance details fetched successfully.",
+      data: formatAdminVariationInstanceDetailResponse(instance),
+    } as SuccessResponse<AdminVariationInstanceDetailResponse>);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function adminSearch(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Admin searching variation instances...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const reqQuery = req["sanitizedQuery"] as VariationInstanceSearchQuery;
+
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const query: any = {};
+
+  if (reqQuery.searchTerm) {
+    const isValidObjId = Types.ObjectId.isValid(reqQuery.searchTerm);
+
+    query.$or = [
+      {
+        _id: isValidObjId ? new Types.ObjectId(reqQuery.searchTerm) : undefined,
+      },
+      { sku: reqQuery.searchTerm },
+      {
+        modelVariationId: isValidObjId
+          ? new Types.ObjectId(reqQuery.searchTerm)
+          : undefined,
+      },
+      { supplierSerialNumber: reqQuery.searchTerm },
+      { supplierImeiNumber: reqQuery.searchTerm },
+    ];
+  }
+
+  if (reqQuery.conditionId) {
+    if (!Types.ObjectId.isValid(reqQuery.conditionId)) {
+      return next(new HttpError(400, "Invalid conditionId."));
+    }
+
+    query.conditionId = new Types.ObjectId(reqQuery.conditionId);
+  }
+
+  if (reqQuery.isActive) {
+    query.isActive = reqQuery.isActive === "true";
+  }
+
+  const sort = (reqQuery.sortBy || "createdAt").split("_");
+  const sortField = sort[0];
+  const sortBy = sort[1] === "desc" ? -1 : 1;
+  const sortStage: any = { [sortField]: sortBy, _id: 1 };
+
+  try {
+    const aggregationResult = await VariationInstance.aggregate([
+      { $match: query },
+      { ...OPTIMIZE_PIPELINE },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $sort: sortStage }, { $skip: offset }, { $limit: limit }],
+        },
+      },
+    ]);
+
+    const instances: VariationInstanceResponse[] =
+      aggregationResult[0].data.map(formatVariationInstanceResponse);
+    const total: number = aggregationResult[0].metadata[0]?.total || 0;
+
+    res.status(200).json({
+      success: true,
+      message: "Variation instances fetched successfully.",
+      data: {
+        total: total,
+        instances: {
+          instances,
+          total,
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<VariationInstanceListResponse>);
+    console.log("✅ Variation instances fetched successfully.");
   } catch (error) {
     next(error);
   }

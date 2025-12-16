@@ -31,6 +31,7 @@ import {
   DEFAULT_SEARCH_LIMIT,
   HASH_SALT,
   JWT_NAME,
+  OPTIMIZE_PIPELINE,
 } from "../../configs/configs";
 import {
   sendEmailChangeEmail,
@@ -50,7 +51,10 @@ import mongoose, { Types } from "mongoose";
 import { deleteFileFromFirebaseStorage } from "../../utils/firebase";
 import Otp from "../../models/user/otp.model";
 import PasswordResetToken from "../../models/user/passwordResetToken.model";
-import { MAX_USERS_TO_DELETE_BULK, VERIFICATION_CODE_TTL } from "../../../common/configs.common";
+import {
+  MAX_USERS_TO_DELETE_BULK,
+  VERIFICATION_CODE_TTL,
+} from "../../../common/configs.common";
 import Role from "../../models/role/role.model";
 import Order from "../../models/order/order.model";
 import UserPaymentMethod from "../../models/user/userPaymentMethod.model";
@@ -1119,7 +1123,7 @@ export async function updateSelfContactInfo(
 
     // Send verification code
     if (type === "email") {
-      await sendVerificationEmail(value, verificationCode);
+      await sendVerificationEmail(user.fullName, value, verificationCode);
     } else {
       await sendVerificationSms(value, verificationCode);
     }

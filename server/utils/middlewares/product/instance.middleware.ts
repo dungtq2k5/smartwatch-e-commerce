@@ -2,9 +2,43 @@ import { Request, Response, NextFunction } from "express";
 import { HttpError } from "../../errorHandler";
 import { isPresent } from "../../utils";
 import { isValidObjectId } from "mongoose";
+import {
+  isValidBooleanString,
+  isValidNumString,
+  removeOddSpaces,
+} from "../../../../common/utils.common";
+import { VARIATION_INSTANCE_SORT_OPTIONS } from "../../../../common/configs.common";
+
+function sanitizeVariationSearchInput(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing variation instance admin search input...");
+
+  // Since req.query can't be modifiable so we create a new query obj for the request
+  const sanitizedQuery = { ...req.query };
+  const { searchTerm, isActive } = sanitizedQuery;
+
+  if (typeof searchTerm === "string") {
+    sanitizedQuery.searchTerm = removeOddSpaces(searchTerm);
+  }
+  if (typeof isActive === "string") {
+    sanitizedQuery.isActive = removeOddSpaces(isActive.toLowerCase());
+  }
+
+  req["sanitizedQuery"] = sanitizedQuery;
+  next();
+}
+
+export function inputSanitizer(
+  type: "admin search"
+): (req: Request, res: Response, next: NextFunction) => void {
+  return sanitizeVariationSearchInput;
+}
 
 export function verifyVariationInstanceInput(
-  type: "create" | "update"
+  type: "create" | "update" | "admin search"
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating instance input...");
@@ -90,6 +124,43 @@ export function verifyVariationInstanceInput(
           }
           if (isActive !== undefined && typeof isActive !== "boolean") {
             errors.push("Variation instance isActive must be a boolean.");
+          }
+          break;
+        }
+        case "admin search": {
+          const { limit, offset, searchTerm, conditionId, isActive, sortBy } =
+            req["sanitizedQuery"] || req.query;
+
+          if (limit !== undefined && !isValidNumString(limit)) {
+            errors.push("limit must be a valid number string.");
+          }
+          if (offset !== undefined && !isValidNumString(offset)) {
+            errors.push("offset must be a valid number string.");
+          }
+          if (
+            searchTerm !== undefined &&
+            (typeof searchTerm !== "string" || !searchTerm)
+          ) {
+            errors.push("searchTerm must be a non-empty string.");
+          }
+          if (
+            conditionId !== undefined &&
+            (typeof conditionId !== "string" || !conditionId)
+          ) {
+            errors.push("conditionId must be a non-empty string.");
+          }
+          if (isActive !== undefined && !isValidBooleanString(isActive)) {
+            errors.push("isActive must be a valid boolean string.");
+          }
+          if (
+            sortBy !== undefined &&
+            !VARIATION_INSTANCE_SORT_OPTIONS.includes(sortBy)
+          ) {
+            errors.push(
+              `sortBy must be one of the following: ${VARIATION_INSTANCE_SORT_OPTIONS.join(
+                ", "
+              )}.`
+            );
           }
           break;
         }

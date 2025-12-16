@@ -15,6 +15,7 @@ import {
   USER_SEARCH_SORT_OPTIONS,
   PRODUCT_MODEL_SEARCH_SORT_OPTIONS,
   MODEL_VARIATION_SORT_OPTIONS,
+  VARIATION_INSTANCE_SORT_OPTIONS,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -870,9 +871,44 @@ export type VariationInstanceResponse = {
   createdAt: string;
   updatedAt: string;
 };
+export type VariationInstanceListResponse = {
+  total: number;
+  instances: {
+    total: number;
+    instances: VariationInstanceResponse[];
+  };
+  offset: number;
+  limit: number;
+};
 export type VariationInstanceUpdate = Partial<
   Omit<VariationInstanceCreate, "modelVariationId">
 >;
+export type VariationInstanceSearchQuery = Partial<{
+  limit: string;
+  offset: string;
+  searchTerm: string; // SKU, modelVariationId, supplierSerialNumber, supplierImeiNumber
+  conditionId: string;
+  isActive: "true" | "false";
+  sortBy: (typeof VARIATION_INSTANCE_SORT_OPTIONS)[number];
+}>;
+export type AdminVariationInstanceDetailResponse = VariationInstanceResponse & {
+  // modelVariation: Omit<AdminModelVariationResponse, "productId">;
+  inventoryMovements: {
+    total: number;
+    movements: InventoryMovementResponse[];
+  };
+};
+
+export type InstanceConditionResponse = {
+  id: string;
+  lookupId: string;
+  name: string;
+  description: string;
+};
+export type InstanceConditionListResponse = {
+  total: number;
+  conditions: InstanceConditionResponse[];
+};
 
 export type ProviderCreate = {
   fullName: string;
@@ -1358,6 +1394,22 @@ export type WithdrawalStateResponse = OrderStateResponse;
 export type WithdrawalStateListResponse = {
   total: number;
   states: WithdrawalStateResponse[];
+};
+
+export type InventoryMovementResponse = {
+  id: string;
+  variationInstanceId: string;
+  variationInstanceSku: string;
+  inventoryMovementTypeId: string;
+  grnId: string | null;
+  createdBy: {
+    id: string;
+    fullName: string;
+  };
+  movementDate: string;
+  quantity: 1 | -1;
+  notes: string | null;
+  createdAt: string;
 };
 
 // --- HELPER TYPES ---

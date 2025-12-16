@@ -634,6 +634,33 @@ export function formatVariationInstanceResponse(
   };
 }
 
+export function formatAdminVariationInstanceDetailResponse(
+  instance: any
+): commonType.AdminVariationInstanceDetailResponse {
+  return {
+    ...formatVariationInstanceResponse(instance),
+    inventoryMovements: {
+      total: instance.inventoryMovements.length,
+      movements: instance.inventoryMovements.map((movement: any) => {
+        const { variationInstanceId, variationInstanceSku, ...restData } =
+          formatInventoryMovementResponse(movement);
+        return restData;
+      }),
+    },
+  };
+}
+
+export function formatInstanceConditionResponse(
+  condition: any
+): commonType.InstanceConditionResponse {
+  return {
+    id: condition._id,
+    lookupId: condition.lookupId,
+    name: condition.name,
+    description: condition.description,
+  };
+}
+
 export function formatProviderResponse(
   provider: any
 ): commonType.ProviderResponse {
@@ -982,6 +1009,26 @@ export function formatWithdrawalStateResponse(
   state: any
 ): commonType.WithdrawalStateResponse {
   return formatOrderStateResponse(state);
+}
+
+export function formatInventoryMovementResponse(
+  movement: any
+): commonType.InventoryMovementResponse {
+  return {
+    id: movement._id,
+    variationInstanceId: movement.variationInstanceId,
+    variationInstanceSku: movement.variationInstanceSku,
+    inventoryMovementTypeId: movement.inventoryMovementTypeId,
+    grnId: movement.grnId,
+    createdBy: {
+      id: movement.createdBy._id,
+      fullName: movement.createdBy.fullName,
+    },
+    movementDate: movement.movementDate,
+    quantity: movement.quantity,
+    notes: movement.notes,
+    createdAt: movement.createdAt,
+  };
 }
 
 // --- CACHING FUNCTIONS ---
