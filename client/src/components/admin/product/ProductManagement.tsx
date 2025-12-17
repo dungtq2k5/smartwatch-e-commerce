@@ -216,7 +216,14 @@ export default function ProductManagement() {
         label:
           PRODUCT_FIELD_LABEL_LEGEND["totalVariations"] || "Related variations",
         tdClassName: "text-center",
-        tdContent: (product) => <>{product.totalVariations}</>,
+        tdContent: (product) => (
+          <Link
+            to={`/admin/product-variations?searchTerm=${product.id}`}
+            title="View variations of this product"
+          >
+            {product.totalVariations}
+          </Link>
+        ),
         getCsvVal: (product) => product.totalVariations,
       },
       stopSelling: {
@@ -954,10 +961,6 @@ export default function ProductManagement() {
       productIdsToDelete: null,
     });
   }, []);
-
-  /*
-    TODO: Click to total variations to go to related models/variations management page with pre-applied filter.
-  */
 
   return (
     <>

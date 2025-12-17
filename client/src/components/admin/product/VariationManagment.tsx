@@ -295,8 +295,8 @@ export default function VariationManagement() {
   );
 
   const [process, setProcess] = useState<Process>({
-    isProcessing: false,
-    isFetching: false,
+    isProcessing: true,
+    isFetching: true,
     isExportingList: false,
   });
   const [apiErr, setApiErr] = useState<string | null>(null);

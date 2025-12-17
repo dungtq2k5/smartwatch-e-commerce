@@ -343,7 +343,7 @@ export default function CreateUser() {
           let avatarUrl: string | null = null;
           if (formData.avatar.val instanceof File) {
             const downloadUrl = await uploadFile(formData.avatar.val, "avatar");
-            if (!downloadUrl) throw new Error("Failed to upload avatar file");
+            if (!downloadUrl) throw new Error("Failed to upload avatar file.");
             avatarUrl = downloadUrl;
           }
 

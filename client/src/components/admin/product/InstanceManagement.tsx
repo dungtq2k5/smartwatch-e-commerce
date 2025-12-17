@@ -241,8 +241,8 @@ export default function InstanceManagement() {
   );
 
   const [process, setProcess] = useState<Process>({
-    isProcessing: false,
-    isFetching: false,
+    isProcessing: true,
+    isFetching: true,
     isExportingList: false,
   });
   const [apiErr, setApiErr] = useState<string | null>(null);
@@ -778,9 +778,6 @@ export default function InstanceManagement() {
     });
   }, []);
 
-  /*
-    TODO: filter form.
-  */
   return (
     <>
       {/* Heading */}
@@ -849,7 +846,7 @@ export default function InstanceManagement() {
                     id="searchTerm"
                     name="searchTerm"
                     className="form-control rounded"
-                    placeholder="Search by name, ID, Model ID, Product ID..."
+                    placeholder="Search by name, ID, Sku, variation ID..."
                     value={searchForm.searchTerm}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}

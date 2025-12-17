@@ -10,6 +10,7 @@ import {
   formatError,
   isValidProductName,
   readFileAsDataUrl,
+  removeOddSpaces,
 } from "../../../../../common/utils.common";
 import type {
   AdminProductResponse,
@@ -384,7 +385,7 @@ export function EditProduct() {
           newFormData.name.err = "Product name is invalid.";
           allValid = false;
         }
-        if (!newFormData.description.val) {
+        if (!newFormData.description.val || !removeOddSpaces(newFormData.description.val)) {
           newFormData.description.err = "Description is required.";
           allValid = false;
         }
@@ -501,14 +502,7 @@ export function EditProduct() {
           toast.success("Product updated successfully.");
         } catch (error) {
           toast.error(formatError(error));
-        } finally {
-          setProcess((prev) => ({
-            ...prev,
-            isProcessing: false,
-            isUpdating: false,
-          }));
         }
-        return;
       }
 
       setProcess((prev) => ({
@@ -527,6 +521,17 @@ export function EditProduct() {
       updateFormData,
     ]
   );
+
+  const handleDiscard = useCallback((): void => {
+    if (process.isProcessing) {
+      toast("Another request is being processed. Please wait.", {
+        icon: WAITING_EMOJI,
+      });
+      return;
+    }
+
+    navigate("/admin/products");
+  }, [navigate, process.isProcessing]);
 
   return (
     <>
@@ -680,6 +685,7 @@ export function EditProduct() {
                         id="basePriceCents"
                         name="basePriceCents"
                         className="form-control"
+                        placeholder={product.basePriceCents.toString()}
                         min={0}
                         value={formData.basePriceCents.val}
                         onChange={handleChange}
@@ -881,10 +887,10 @@ export function EditProduct() {
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => navigate(-1)}
+                onClick={handleDiscard}
                 disabled={process.isProcessing}
               >
-                Go Back
+                Discard
               </button>
               <button
                 type="submit"

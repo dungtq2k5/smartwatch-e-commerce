@@ -1311,12 +1311,6 @@ export function EditModel() {
           toast.success("Product model updated successfully.");
         } catch (error) {
           toast.error(formatError(error));
-        } finally {
-          setProcess((prev) => ({
-            ...prev,
-            isProcessing: false,
-            isUpdating: false,
-          }));
         }
       }
 

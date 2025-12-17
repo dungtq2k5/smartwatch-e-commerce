@@ -178,7 +178,14 @@ export default function ModelManagement() {
         label:
           MODEL_FIELD_LABEL_LEGEND["totalVariations"] || "Total Variations",
         tdClassName: "text-center",
-        tdContent: (model) => <>{model.totalVariations}</>,
+        tdContent: (model) => (
+          <Link
+            to={`/admin/model-variations?searchTerm=${model.id}`}
+            title="View variations of this model"
+          >
+            {model.totalVariations}
+          </Link>
+        ),
         getCsvVal: (model) => model.totalVariations,
       },
       caseMaterial: {
@@ -263,8 +270,8 @@ export default function ModelManagement() {
   );
 
   const [process, setProcess] = useState<Process>({
-    isProcessing: false,
-    isFetching: false,
+    isProcessing: true,
+    isFetching: true,
     isExportingList: false,
   });
   const [apiErr, setApiErr] = useState<string | null>(null);
@@ -943,7 +950,6 @@ export default function ModelManagement() {
     TODO: Model management features
       - Create model component.
       - Edit model component.
-      - Click totalVariations to view all variations of this model.
   */
 
   return (
