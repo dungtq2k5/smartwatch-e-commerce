@@ -4,6 +4,7 @@ import type {
   AdminProductListResponse,
   AdminProductResponse,
   ProductBulkDelete,
+  ProductCreate,
   ProductDetailQuery,
   ProductResponse,
   ProductSearchQuery,
@@ -13,7 +14,7 @@ import {
   formatError,
   removeOddSpaces,
 } from "../../../../../common/utils.common";
-import { patch, remove, retrieve } from "../../../utils/utils";
+import { patch, post, remove, retrieve } from "../../../utils/utils";
 import { PRODUCT_ADMIN_SEARCH_URL, PRODUCT_URL } from "../../../configs";
 import { MAX_PRODUCTS_TO_DELETE_BULK } from "../../../../../common/configs.common";
 
@@ -35,6 +36,8 @@ type ProductState = {
     productId: string,
     data: ProductUpdate
   ) => Promise<ProductResponse>;
+
+  createProduct: (product: ProductCreate) => Promise<ProductResponse>;
 };
 
 const useProductStore = create<ProductState>(() => ({
@@ -152,6 +155,17 @@ const useProductStore = create<ProductState>(() => ({
   ): Promise<ProductResponse> {
     try {
       const res = await patch(PRODUCT_URL, productId, data);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as ProductResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async createProduct(product: ProductCreate): Promise<ProductResponse> {
+    try {
+      const res = await post(PRODUCT_URL, product);
       if (!res.success) throw new Error(res.message);
 
       return res.data as ProductResponse;

@@ -361,8 +361,8 @@ export default function CreateUser() {
             roleIds: formData.roleIds.length ? formData.roleIds : null,
           };
 
-          await createUser(user);
-          navigate("/admin/users");
+          const createdUser = await createUser(user);
+          navigate(`/admin/users?searchTerm=${createdUser.id}`);
           toast.success("User created successfully.");
         } catch (error) {
           toast.error(formatError(error));
