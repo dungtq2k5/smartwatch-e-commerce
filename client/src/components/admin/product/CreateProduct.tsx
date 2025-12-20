@@ -91,7 +91,7 @@ export default function CreateProduct() {
   const [continueToCreateModal, setContinueToCreateModal] =
     useState<boolean>(false);
 
-  // Fetch set data on initial load: brands, categories, formData
+  // Fetch set data on initial load: brands, categories
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       setProcess((prev) => ({
@@ -720,7 +720,7 @@ export default function CreateProduct() {
               title: "Continue creation process.",
               body: `Do you want to create a variation for the product ${
                 formData.name.val || "N/A"
-              } you have just created?`,
+              } that you have just created?`,
               cancelText: "No, finish creation",
               submitText: "Yes, create variation",
             }}
