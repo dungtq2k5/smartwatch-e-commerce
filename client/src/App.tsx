@@ -46,9 +46,10 @@ import DetailProduct from "./components/admin/product/DetailProduct.tsx";
 import ModelManagement from "./components/admin/product/ModelManagement.tsx";
 import { EditProduct } from "./components/admin/product/EditProduct.tsx";
 import { EditModel } from "./components/admin/product/EditModel.tsx";
-import VariationManagement from "./components/admin/product/VariationManagment.tsx";
+import VariationManagement from "./components/admin/product/VariationManagement.tsx";
 import InstanceManagement from "./components/admin/product/InstanceManagement.tsx";
 import CreateProduct from "./components/admin/product/CreateProduct.tsx";
+import CreateModel from "./components/admin/product/CreateModel.tsx";
 
 export default function App() {
   // DEV for testing
@@ -125,7 +126,7 @@ export default function App() {
 
                 <Route path="product-models">
                   <Route index element={<ModelManagement />} />
-                  <Route path="create" element={<div>Create model</div>} />
+                  <Route path="create/:productId" element={<CreateModel />} />
                   <Route path=":id/edit" element={<EditModel />} />
                 </Route>
 

@@ -32,6 +32,7 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - Auto login user when user is verified ✅.
     - When user auth by Google send back to BackEnd idToken ✅.
     - Only display create user/product/... if users have permission ❌.
+    - Ctrl+K to focus search input box ❌.
 
   - Backend - API: (remember isDeleted field)
     - Because __v field is only activated with doc.save() so stick with find-modify-save method when modifying data 📝.

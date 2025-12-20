@@ -4,12 +4,13 @@ import type {
   AdminProductModelListResponse,
   AdminProductModelResponse,
   ProductModelBulkDelete,
+  ProductModelCreate,
   ProductModelDetailQuery,
   ProductModelResponse,
   ProductModelSearchQuery,
   ProductModelUpdate,
 } from "../../../../../common/types.common";
-import { patch, remove, retrieve } from "../../../utils/utils";
+import { patch, post, remove, retrieve } from "../../../utils/utils";
 import { PRODUCT_MODEL_URL } from "../../../configs";
 import {
   formatError,
@@ -35,6 +36,8 @@ type ModelState = {
 
   deleteModel: (modelId: string) => Promise<void>;
   deleteModelBulk: (data: ProductModelBulkDelete) => Promise<void>;
+
+  createModel: (model: ProductModelCreate) => Promise<ProductModelResponse>;
 };
 
 const useModelStore = create<ModelState>(() => ({
@@ -181,6 +184,17 @@ const useModelStore = create<ModelState>(() => ({
 
       const res = await remove(`${PRODUCT_MODEL_URL}/bulk`, null, data);
       if (!res.success) throw new Error(res.message);
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async createModel(model: ProductModelCreate): Promise<ProductModelResponse> {
+    try {
+      const res = await post(PRODUCT_MODEL_URL, model);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as ProductModelResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }
