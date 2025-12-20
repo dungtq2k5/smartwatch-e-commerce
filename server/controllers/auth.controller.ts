@@ -125,7 +125,7 @@ export async function signup(
 
     // Send verification code via email or SMS
     if (email) {
-      await sendVerificationEmail(email, verificationCode);
+      await sendVerificationEmail(user.fullName, email, verificationCode);
     } else if (phoneNumber) {
       await sendVerificationSms(phoneNumber, verificationCode);
     }
@@ -190,16 +190,16 @@ export async function login(
     }
 
     // Check password
-    if (!bcrypt.compareSync(password, user.password)) {
+    if (!(await bcrypt.compare(password, user.password))) {
       throw new HttpError(401, "Invalid credentials.");
     }
 
     // Update last login time + refresh token + set cookie
     user.lastLogin = new Date();
-    const { refreshToken } = genJwtAndSetCookie(res, {
+    const refreshToken = genJwtAndSetCookie(res, {
       userId: user._id.toString(),
       isVerified: true,
-    });
+    }).refreshToken;
     user.refreshToken = await bcrypt.hash(refreshToken, HASH_SALT);
     await user.save();
 
@@ -231,17 +231,17 @@ export async function loginAdmin(
       (user.roles.length === 1 && getBuyerRoleId().equals(user.roles[0].id)) || // isBuyerOnly
       user.isLocked ||
       !user.isEmailVerified ||
-      !bcrypt.compareSync(password, user.password)
+      !(await bcrypt.compare(password, user.password))
     ) {
       throw new HttpError(401, "Invalid credentials.");
     }
 
     // Update last login time + refresh token + set cookie
     user.lastLogin = new Date();
-    const { refreshToken } = genJwtAndSetCookie(res, {
+    const refreshToken = genJwtAndSetCookie(res, {
       userId: user._id.toString(),
       isVerified: true,
-    });
+    }).refreshToken;
     user.refreshToken = await bcrypt.hash(refreshToken, HASH_SALT);
     await user.save();
 
@@ -377,10 +377,10 @@ export async function verifyUser(
     }
 
     // Refresh JWT and set cookie with isVerified is true
-    const { refreshToken } = genJwtAndSetCookie(res, {
+    const refreshToken = genJwtAndSetCookie(res, {
       userId: user._id.toString(),
       isVerified: true,
-    });
+    }).refreshToken;
     user.refreshToken = await bcrypt.hash(refreshToken, HASH_SALT);
 
     await user.save({ session });
@@ -505,10 +505,10 @@ export async function authByGoogle(
         ],
       });
 
-      const { refreshToken } = genJwtAndSetCookie(res, {
+      const refreshToken = genJwtAndSetCookie(res, {
         userId: newUser._id.toString(),
         isVerified: true,
-      });
+      }).refreshToken;
       newUser.refreshToken = await bcrypt.hash(refreshToken, HASH_SALT);
 
       await newUser.save({ session });
@@ -538,10 +538,10 @@ export async function authByGoogle(
     // Login user
     user.isEmailVerified = true; // Make sure email is verified for Google users
     user.lastLogin = new Date();
-    const { refreshToken } = genJwtAndSetCookie(res, {
+    const refreshToken = genJwtAndSetCookie(res, {
       userId: user._id.toString(),
       isVerified: true,
-    });
+    }).refreshToken;
     user.refreshToken = await bcrypt.hash(refreshToken, HASH_SALT);
 
     await user.save({ session });
@@ -605,10 +605,10 @@ export async function refreshToken(
     }
 
     // --- Token rotation ---
-    const { refreshToken: newRefreshToken } = genJwtAndSetCookie(res, {
+    const newRefreshToken = genJwtAndSetCookie(res, {
       userId: user._id.toString(),
       isVerified: user.isEmailVerified || user.isPhoneNumberVerified,
-    });
+    }).refreshToken;
     user.refreshToken = await bcrypt.hash(newRefreshToken, HASH_SALT);
     await user.save();
 
@@ -878,7 +878,7 @@ export async function validatePassword(
     }
 
     // Check password
-    const isPasswordValid = bcrypt.compareSync(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new HttpError(401, "Invalid password.");
     }
