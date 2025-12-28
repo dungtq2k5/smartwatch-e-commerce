@@ -13,8 +13,8 @@ import {
   readFileAsDataUrl,
 } from "../../../../../common/utils.common";
 import type {
-  AdminProductResponse,
   ProductModelCreate,
+  ProductResponse,
 } from "../../../../../common/types.common";
 import toast from "react-hot-toast";
 import { WAITING_EMOJI } from "../../../configs";
@@ -38,7 +38,7 @@ import {
 import ApiError from "../../common/ApiError";
 import useProductStore from "../../../store/admin/product/productStore";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
-import TxtListInputField from "../TxtListInputField";
+import TxtListInput from "../TxtListInput";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 
 type Process = {
@@ -140,7 +140,7 @@ export default function CreateModel() {
     location.state?.fromCreateProduct || false;
 
   const { oses, fetchOses } = useProductOsStore();
-  const { fetchProduct } = useProductStore();
+  const { fetchProductLite } = useProductStore();
   const { createModel } = useModelStore();
 
   const canCreateModel = useHasPermission("c_product_model");
@@ -153,7 +153,7 @@ export default function CreateModel() {
   });
   const [apiErr, setApiErr] = useState<string | null>(null);
 
-  const [product, setProduct] = useState<AdminProductResponse | null>(null);
+  const [product, setProduct] = useState<ProductResponse | null>(null);
   const [formData, setFormData] = useState<FormData>({
     name: { val: "" },
     priceCents: { val: "" },
@@ -251,7 +251,7 @@ export default function CreateModel() {
         if (!productId) throw new Error("Product ID is missing.");
 
         const [fetchedProduct] = await Promise.all([
-          fetchProduct(productId),
+          fetchProductLite(productId),
           oses ? Promise.resolve() : fetchOses(),
         ]);
 
@@ -966,12 +966,10 @@ export default function CreateModel() {
       if (await validateForm()) {
         try {
           const imageUrls: string[] = [];
-          if (formData.imageUrls.val.length > 0) {
-            for (const img of formData.imageUrls.val) {
-              const downloadUrl = await uploadFile(img, "product");
-              if (!downloadUrl) throw new Error("Failed to upload image file.");
-              imageUrls.push(downloadUrl);
-            }
+          for (const img of formData.imageUrls.val) {
+            const downloadUrl = await uploadFile(img, "product");
+            if (!downloadUrl) throw new Error("Failed to upload image file.");
+            imageUrls.push(downloadUrl);
           }
 
           const {
@@ -1171,10 +1169,13 @@ export default function CreateModel() {
     }
 
     navigate("/admin/variation-models/create", {
-      state: { fromCreateVariation: true },
+      state: {
+        fromCreateProduct: isFromContinueToCreate,
+        fromCreateVariation: true,
+      },
       replace: true,
     });
-  }, [navigate, process.isProcessing]);
+  }, [isFromContinueToCreate, navigate, process.isProcessing]);
 
   /*
     TODO:
@@ -1233,13 +1234,18 @@ export default function CreateModel() {
                     <div className="mb-3">
                       <label htmlFor="name" className="form-label">
                         Name
+                        <FontAwesomeIcon
+                          icon={faQuestionCircle}
+                          className="ms-1 text-muted"
+                          title="This model name will be displayed as a model option for the product."
+                        />
                       </label>
                       <input
                         type="text"
                         id="name"
                         name="name"
                         className="form-control"
-                        placeholder="Apple Watch Series 8 45mm GPS"
+                        placeholder="45mm GPS"
                         value={formData.name.val}
                         onChange={handleChange}
                         autoComplete="off"
@@ -2004,93 +2010,110 @@ export default function CreateModel() {
                     </div>
 
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.config.connectivities.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="config.connectivities"
+                        className="form-label"
+                      >
+                        Connectivities
+                      </label>
+                      <TxtListInput
+                        name="config.connectivities"
+                        id="config.connectivities"
+                        value={formData.config.connectivities.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "config.connectivities",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "config.connectivities",
-                          label: "Connectivities",
-                          placeholder: "Wifi, Bluetooth, NFC",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder="Wifi, Bluetooth, NFC"
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.config.camera.features.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="config.camera.features"
+                        className="form-label"
+                      >
+                        Camera Features
+                      </label>
+                      <TxtListInput
+                        name="config.camera.features"
+                        id="config.camera.features"
+                        value={formData.config.camera.features.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "config.camera.features",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "config.camera.features",
-                          label: "Camera Features",
-                          placeholder: "None",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder="None"
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.config.compatiblePhoneOs.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="config.compatiblePhoneOs"
+                        className="form-label"
+                      >
+                        Compatible Phone OS
+                      </label>
+                      <TxtListInput
+                        name="config.compatiblePhoneOs"
+                        id="config.compatiblePhoneOs"
+                        value={formData.config.compatiblePhoneOs.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "config.compatiblePhoneOs",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "config.compatiblePhoneOs",
-                          label: "Compatible Phone OS",
-                          placeholder: "iOS",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder="iOS"
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.config.appsConnect.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="config.appsConnect"
+                        className="form-label"
+                      >
+                        Apps Connect
+                      </label>
+                      <TxtListInput
+                        name="config.appsConnect"
+                        id="config.appsConnect"
+                        value={formData.config.appsConnect.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "config.appsConnect",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "config.appsConnect",
-                          label: "Apps Connect",
-                          placeholder: "Apple Health, Google Fit",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder="Apple Health, Google Fit"
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.config.sensors.val}
-                        onListChange={(item, action) =>
+                      <label htmlFor="config.sensors" className="form-label">
+                        Sensors
+                      </label>
+                      <TxtListInput
+                        name="config.sensors"
+                        id="config.sensors"
+                        value={formData.config.sensors.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "config.sensors",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "config.sensors",
-                          label: "Sensors",
-                          placeholder: "Accelerometer, Gyroscope",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder="Accelerometer, Gyroscope"
+                        disabled={process.isProcessing}
                       />
                     </div>
                   </div>
@@ -2169,95 +2192,115 @@ export default function CreateModel() {
                     </div>
 
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.feature.utilities.healths.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="feature.utilities.healths"
+                        className="form-label"
+                      >
+                        Health Utilities
+                      </label>
+                      <TxtListInput
+                        name="feature.utilities.healths"
+                        id="feature.utilities.healths"
+                        value={formData.feature.utilities.healths.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "feature.utilities.healths",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "feature.utilities.healths",
-                          label: "Health Utilities",
-                          placeholder: "Heart Rate Monitor, Sleep Tracking",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder="Heart Rate Monitor, Sleep Tracking"
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.feature.utilities.sports.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="feature.utilities.sports"
+                        className="form-label"
+                      >
+                        Sports Utilities
+                      </label>
+                      <TxtListInput
+                        name="feature.utilities.sports"
+                        id="feature.utilities.sports"
+                        value={formData.feature.utilities.sports.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "feature.utilities.sports",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "feature.utilities.sports",
-                          label: "Sports Utilities",
-                          placeholder: "Running, Cycling, Swimming",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder="Running, Cycling, Swimming"
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.feature.utilities.specials.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="feature.utilities.specials"
+                        className="form-label"
+                      >
+                        Special Utilities
+                      </label>
+                      <TxtListInput
+                        name="feature.utilities.specials"
+                        id="feature.utilities.specials"
+                        value={formData.feature.utilities.specials.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "feature.utilities.specials",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "feature.utilities.specials",
-                          label: "Special Utilities",
-                          placeholder: "ECG, Fall Detection",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder="ECG, Fall Detection"
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.feature.utilities.others.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="feature.utilities.others"
+                        className="form-label"
+                      >
+                        Other Utilities
+                      </label>
+                      <TxtListInput
+                        name="feature.utilities.others"
+                        id="feature.utilities.others"
+                        value={formData.feature.utilities.others.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "feature.utilities.others",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "feature.utilities.others",
-                          label: "Other Utilities",
-                          placeholder: "Voice Assistant, Mobile Payments",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder="Voice Assistant, Mobile Payments"
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={
+                      <label
+                        htmlFor="feature.supportedAppsForNotifications"
+                        className="form-label"
+                      >
+                        Supported Apps for Notifications
+                      </label>
+                      <TxtListInput
+                        name="feature.supportedAppsForNotifications"
+                        id="feature.supportedAppsForNotifications"
+                        value={
                           formData.feature.supportedAppsForNotifications.val
                         }
-                        onListChange={(item, action) =>
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "feature.supportedAppsForNotifications",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "feature.supportedAppsForNotifications",
-                          label: "Supported Apps for Notifications",
-                          placeholder: "Messages, Calls, Calendar",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder="Messages, Calls, Calendar"
+                        disabled={process.isProcessing}
                       />
                     </div>
                   </div>
