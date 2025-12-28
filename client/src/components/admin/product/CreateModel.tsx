@@ -1249,7 +1249,7 @@ export default function CreateModel() {
                     <div className="row">
                       <div className="col-md-6 mb-3">
                         <label htmlFor="priceCents" className="form-label">
-                          Price (&#65504; - cents)
+                          Selling Price (&#65504; - cents)
                         </label>
                         <input
                           type="number"
