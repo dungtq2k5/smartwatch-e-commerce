@@ -24,6 +24,7 @@ type ProductState = {
   ) => Promise<AdminProductListResponse>;
 
   fetchProduct: (productId: string) => Promise<AdminProductResponse>;
+  fetchProductLite: (productId: string) => Promise<ProductResponse>; // Less data version than fetchProduct
   fetchProductDetail: (
     productId: string,
     query?: ProductDetailQuery
@@ -91,6 +92,17 @@ const useProductStore = create<ProductState>(() => ({
 
       const product = res.data as AdminProductResponse;
       return product;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async fetchProductLite(productId: string): Promise<ProductResponse> {
+    try {
+      const res = await retrieve(`${PRODUCT_URL}/${productId}`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as ProductResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }

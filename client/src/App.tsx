@@ -50,6 +50,7 @@ import VariationManagement from "./components/admin/product/VariationManagement.
 import InstanceManagement from "./components/admin/product/InstanceManagement.tsx";
 import CreateProduct from "./components/admin/product/CreateProduct.tsx";
 import CreateModel from "./components/admin/product/CreateModel.tsx";
+import CreateVariation from "./components/admin/product/CreateVariation.tsx";
 
 export default function App() {
   // DEV for testing
@@ -132,6 +133,7 @@ export default function App() {
 
                 <Route path="model-variations">
                   <Route index element={<VariationManagement />} />
+                  <Route path="create/:modelId" element={<CreateVariation />} />
                 </Route>
 
                 <Route path="variation-instances">

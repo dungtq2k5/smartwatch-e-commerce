@@ -24,6 +24,7 @@ type ModelState = {
   ) => Promise<AdminProductModelListResponse>;
 
   fetchModel: (modelId: string) => Promise<AdminProductModelResponse>;
+  fetchModelLite: (modelId: string) => Promise<ProductModelResponse>; // Less detailed version than fetchModel
   fetchModelDetail: (
     modelId: string,
     query?: ProductModelDetailQuery
@@ -120,6 +121,17 @@ const useModelStore = create<ModelState>(() => ({
       if (!res.success) throw new Error(res.message);
 
       return res.data as AdminProductModelResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async fetchModelLite(modelId: string): Promise<ProductModelResponse> {
+    try {
+      const res = await retrieve(`${PRODUCT_MODEL_URL}/${modelId}`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as ProductModelResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }

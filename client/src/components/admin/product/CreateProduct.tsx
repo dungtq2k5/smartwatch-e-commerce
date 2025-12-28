@@ -362,12 +362,10 @@ export default function CreateProduct() {
       if (await validateForm()) {
         try {
           const imageUrls: string[] = [];
-          if (formData.imageUrls.val.length > 0) {
-            for (const img of formData.imageUrls.val) {
-              const downloadUrl = await uploadFile(img, "product");
-              if (!downloadUrl) throw new Error("Failed to upload image file.");
-              imageUrls.push(downloadUrl);
-            }
+          for (const img of formData.imageUrls.val) {
+            const downloadUrl = await uploadFile(img, "product");
+            if (!downloadUrl) throw new Error("Failed to upload image file.");
+            imageUrls.push(downloadUrl);
           }
 
           const product: ProductCreate = {

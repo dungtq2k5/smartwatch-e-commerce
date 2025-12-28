@@ -2,13 +2,15 @@ import { create } from "zustand";
 import type {
   AdminModelVariationListResponse,
   ModelVariationBulkDelete,
+  ModelVariationCreate,
+  ModelVariationResponse,
   ModelVariationSearchQuery,
 } from "../../../../../common/types.common";
 import {
   formatError,
   removeOddSpaces,
 } from "../../../../../common/utils.common";
-import { remove, retrieve } from "../../../utils/utils";
+import { post, remove, retrieve } from "../../../utils/utils";
 import { MODEL_VARIATION_URL } from "../../../configs";
 import { MAX_MODEL_VARIATIONS_TO_DELETE_BULK } from "../../../../../common/configs.common";
 
@@ -18,8 +20,11 @@ type VariationState = {
   ) => Promise<AdminModelVariationListResponse>;
 
   deleteVariation: (variationId: string) => Promise<void>;
-
   deleteVariationBulk: (data: ModelVariationBulkDelete) => Promise<void>;
+
+  createVariation: (
+    variation: ModelVariationCreate
+  ) => Promise<ModelVariationResponse>;
 };
 
 const useVariationStore = create<VariationState>(() => ({
@@ -116,6 +121,19 @@ const useVariationStore = create<VariationState>(() => ({
 
       const res = await remove(`${MODEL_VARIATION_URL}/bulk`, null, data);
       if (!res.success) throw new Error(res.message);
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async createVariation(
+    variation: ModelVariationCreate
+  ): Promise<ModelVariationResponse> {
+    try {
+      const res = await post(MODEL_VARIATION_URL, variation);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as ModelVariationResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }

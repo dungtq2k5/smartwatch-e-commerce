@@ -38,7 +38,7 @@ import {
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import ApiError from "../../common/ApiError";
-import TxtListInputField from "../TxtListInputField";
+import TxtListInput from "../TxtListInput";
 import useProductOsStore from "../../../store/common/product/osStore";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 
@@ -2196,98 +2196,118 @@ export function EditModel() {
                     </div>
 
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.config.connectivities.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="config.connectivities"
+                        className="form-label"
+                      >
+                        Connectivities
+                      </label>
+                      <TxtListInput
+                        name="config.connectivities"
+                        id="config.connectivities"
+                        value={formData.config.connectivities.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "config.connectivities",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "config.connectivities",
-                          label: "Connectivities",
-                          placeholder:
-                            model.config.connectivities.join(", ") || "None",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder={
+                          model.config.connectivities.join(", ") || "None"
+                        }
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.config.camera.features.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="config.camera.features"
+                        className="form-label"
+                      >
+                        Camera Features
+                      </label>
+                      <TxtListInput
+                        name="config.camera.features"
+                        id="config.camera.features"
+                        value={formData.config.camera.features.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "config.camera.features",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "config.camera.features",
-                          label: "Camera Features",
-                          placeholder:
-                            model.config.camera?.features.join(", ") || "None",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder={
+                          model.config.camera?.features.join(", ") || "None"
+                        }
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.config.compatiblePhoneOs.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="config.compatiblePhoneOs"
+                        className="form-label"
+                      >
+                        Compatible Phone OS
+                      </label>
+                      <TxtListInput
+                        name="config.compatiblePhoneOs"
+                        id="config.compatiblePhoneOs"
+                        value={formData.config.compatiblePhoneOs.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "config.compatiblePhoneOs",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "config.compatiblePhoneOs",
-                          label: "Compatible Phone OS",
-                          placeholder:
-                            model.config.compatiblePhoneOs.join(", ") || "None",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder={
+                          model.config.compatiblePhoneOs.join(", ") || "None"
+                        }
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.config.appsConnect.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="config.appsConnect"
+                        className="form-label"
+                      >
+                        Apps Connect
+                      </label>
+                      <TxtListInput
+                        name="config.appsConnect"
+                        id="config.appsConnect"
+                        value={formData.config.appsConnect.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "config.appsConnect",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "config.appsConnect",
-                          label: "Apps Connect",
-                          placeholder:
-                            model.config.appsConnect.join(", ") || "None",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder={
+                          model.config.appsConnect.join(", ") || "None"
+                        }
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.config.sensors.val}
-                        onListChange={(item, action) =>
+                      <label htmlFor="config.sensors" className="form-label">
+                        Sensors
+                      </label>
+                      <TxtListInput
+                        name="config.sensors"
+                        id="config.sensors"
+                        value={formData.config.sensors.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "config.sensors",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "config.sensors",
-                          label: "Sensors",
-                          placeholder:
-                            model.config.sensors.join(", ") || "None",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder={model.config.sensors.join(", ") || "None"}
+                        disabled={process.isProcessing}
                       />
                     </div>
                   </div>
@@ -2370,106 +2390,127 @@ export function EditModel() {
                     </div>
 
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.feature.utilities.healths.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="feature.utilities.healths"
+                        className="form-label"
+                      >
+                        Health Utilities
+                      </label>
+                      <TxtListInput
+                        name="feature.utilities.healths"
+                        id="feature.utilities.healths"
+                        value={formData.feature.utilities.healths.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "feature.utilities.healths",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "feature.utilities.healths",
-                          label: "Health Utilities",
-                          placeholder:
-                            model.feature.utilities?.healths.join(", ") ||
-                            "None",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder={
+                          model.feature.utilities?.healths.join(", ") || "None"
+                        }
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.feature.utilities.sports.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="feature.utilities.sports"
+                        className="form-label"
+                      >
+                        Sports Utilities
+                      </label>
+                      <TxtListInput
+                        name="feature.utilities.sports"
+                        id="feature.utilities.sports"
+                        value={formData.feature.utilities.sports.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "feature.utilities.sports",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "feature.utilities.sports",
-                          label: "Sports Utilities",
-                          placeholder:
-                            model.feature.utilities?.sports.join(", ") ||
-                            "None",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder={
+                          model.feature.utilities?.sports.join(", ") || "None"
+                        }
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.feature.utilities.specials.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="feature.utilities.specials"
+                        className="form-label"
+                      >
+                        Special Utilities
+                      </label>
+                      <TxtListInput
+                        name="feature.utilities.specials"
+                        id="feature.utilities.specials"
+                        value={formData.feature.utilities.specials.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "feature.utilities.specials",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "feature.utilities.specials",
-                          label: "Special Utilities",
-                          placeholder:
-                            model.feature.utilities?.specials.join(", ") ||
-                            "None",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder={
+                          model.feature.utilities?.specials.join(", ") || "None"
+                        }
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={formData.feature.utilities.others.val}
-                        onListChange={(item, action) =>
+                      <label
+                        htmlFor="feature.utilities.others"
+                        className="form-label"
+                      >
+                        Other Utilities
+                      </label>
+                      <TxtListInput
+                        name="feature.utilities.others"
+                        id="feature.utilities.others"
+                        value={formData.feature.utilities.others.val}
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "feature.utilities.others",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "feature.utilities.others",
-                          label: "Other Utilities",
-                          placeholder:
-                            model.feature.utilities?.others.join(", ") ||
-                            "None",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder={
+                          model.feature.utilities?.others.join(", ") || "None"
+                        }
+                        disabled={process.isProcessing}
                       />
                     </div>
                     <div className="mb-3">
-                      <TxtListInputField
-                        currList={
+                      <label
+                        htmlFor="feature.supportedAppsForNotifications"
+                        className="form-label"
+                      >
+                        Supported Apps for Notifications
+                      </label>
+                      <TxtListInput
+                        name="feature.supportedAppsForNotifications"
+                        id="feature.supportedAppsForNotifications"
+                        value={
                           formData.feature.supportedAppsForNotifications.val
                         }
-                        onListChange={(item, action) =>
+                        onChange={(item, action) =>
                           handleChangeItemInListField(
                             "feature.supportedAppsForNotifications",
                             item,
                             action
                           )
                         }
-                        configs={{
-                          fieldName: "feature.supportedAppsForNotifications",
-                          label: "Supported Apps for Notifications",
-                          placeholder:
-                            model.feature.supportedAppsForNotifications.join(
-                              ", "
-                            ) || "None",
-                          disabled: process.isProcessing,
-                        }}
+                        placeholder={
+                          model.feature.supportedAppsForNotifications.join(
+                            ", "
+                          ) || "None"
+                        }
+                        disabled={process.isProcessing}
                       />
                     </div>
                   </div>
