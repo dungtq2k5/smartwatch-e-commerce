@@ -670,7 +670,12 @@ export default function CreateModel() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
-      if (process.isProcessing) return;
+      if (process.isProcessing) {
+        toast("Another request is being processed. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
       if (!productId) {
         toast.error("Product ID is missing.");
         return;
