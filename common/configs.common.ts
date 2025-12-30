@@ -379,3 +379,10 @@ export const VARIATION_INSTANCE_SORT_OPTIONS = [
   "updatedAt_desc",
   "updatedAt_asc",
 ] as const;
+
+export const GRN_FILE_IMPORT_EXTENSIONS = [".xlsx", ".xls", ".csv"] as const;
+export const GRN_FILE_IMPORT_MAX_SIZE = 5 * 1024 * 1024; // 5MB
+export const GRN_FILE_IMPORT_HEADERS = [
+  "supplierSerialNumber",
+  "supplierImeiNumber",
+] as const;

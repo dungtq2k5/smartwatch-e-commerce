@@ -15,7 +15,7 @@ import {
   RETURN_POLICY_DAYS,
 } from "../configs/configs";
 import * as commonType from "../../common/types.common";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import ModelVariation from "../models/product/modelVariation.model";
 import { appCache } from "../configs/cache";
 import { HttpError } from "./errorHandler";
@@ -151,35 +151,20 @@ export function isArrayOfNonEmptyStrings(arr: any): boolean {
 }
 
 /**
- * Generates a unique SKU (Stock Keeping Unit) string for a specific product variation instance.
+ * Retrieves the necessary properties for generating a SKU for a specific variation instance.
  *
- * This function retrieves the full hierarchy of product data (Variation -> Model -> Product -> Brand)
- * to construct a meaningful SKU string. The format follows the pattern:
- * `BRAND-MODEL-SIZE-VAR-UNIQUEID`.
+ * This function fetches the variation, product model, product, and brand details from the database
+ * to populate the `GenSkuProps` object required by `genInstanceSkuSync`.
  *
- * @param variationId - The MongoDB ObjectId of the specific model variation.
- * @returns A Promise that resolves to the generated SKU string (e.g., "APL-SERIES9-45-MID-L9SO2A1").
- * @throws {Error} If the variation cannot be found in the database.
- * @throws {Error} If the associated product model, product, or brand data is missing or incomplete.
- *
- * @example
- * ```ts
- * const sku = await genInstanceSku(variationId);
- * console.log(sku); // Output: "APL-SERIES9-45-MID-X7Z9A2B"
- * ```
- *
- * Format breakdown:
- * 1. Brand Code: First 3 letters of brand name (e.g., "Apple" -> "APL")
- * 2. Model Name: Alphanumeric characters only (e.g., "Series 9" -> "Series9")
- * 3. Watch Size: The size in mm (e.g., 45)
- * 4. Variation Name Code: First 3 letters of variation name (e.g., "Midnight" -> "MID")
- * 5. Unique ID: A combination of timestamp and random string (e.g., "L9SO2A1")
- *
- * Result: "APL-Series9-45-MID-L9SO2A1"
+ * @param variationId - The MongoDB ObjectId of the model variation.
+ * @param session - Optional Mongoose client session for transaction support.
+ * @returns A Promise that resolves to a `GenSkuProps` object containing brand name, model name, size, and variation name.
+ * @throws {Error} If the variation is not found or if the product hierarchy data is incomplete.
  */
-export async function genInstanceSku(
-  variationId: Types.ObjectId
-): Promise<string> {
+export async function getPropsForInstanceSkuGen(
+  variationId: Types.ObjectId,
+  session?: mongoose.ClientSession
+): Promise<commonType.GenSkuProps> {
   const variation = await ModelVariation.findById(variationId)
     .populate({
       path: "productModelId",
@@ -193,7 +178,8 @@ export async function genInstanceSku(
         },
       },
     })
-    .lean();
+    .lean()
+    .session(session || null);
 
   if (!variation) {
     throw new Error("Model variation not found for SKU generation.");
@@ -208,25 +194,77 @@ export async function genInstanceSku(
     throw new Error("Incomplete product data for SKU generation.");
   }
 
+  return {
+    brandName: productModel.productId.brandId.name,
+    modelName: productModel.model,
+    sizeMm: productModel.watchSizeMm,
+    variationName: variation.name,
+  };
+}
+
+/**
+ * Asynchronously generates a unique SKU (Stock Keeping Unit) string for a specific product variation instance.
+ *
+ * This is a convenience wrapper that first retrieves the necessary product properties from the database
+ * using `getPropsForInstanceSkuGen` and then generates the SKU using `genInstanceSkuSync`.
+ *
+ * @param variationId - The MongoDB ObjectId of the specific model variation.
+ * @param session - Optional Mongoose client session for transaction support.
+ * @returns A Promise that resolves to the generated SKU string (e.g., "APL-SERIES9-45-MID-L9SO2A1").
+ * @throws {Error} If the variation cannot be found or data is incomplete.
+ *
+ * @see {@link getPropsForInstanceSkuGen} for data retrieval.
+ * @see {@link genInstanceSkuSync} for the generation logic and format.
+ */
+export async function genInstanceSku(
+  variationId: Types.ObjectId,
+  session?: mongoose.ClientSession
+): Promise<string> {
+  return genInstanceSkuSync(
+    await getPropsForInstanceSkuGen(variationId, session)
+  );
+}
+
+/**
+ * Synchronously generates a unique SKU (Stock Keeping Unit) string based on provided product properties.
+ *
+ * The generated SKU follows the format: `BRAND-MODEL-SIZE-VARIATION-UNIQUEID`.
+ *
+ * Format breakdown:
+ * 1. **Brand Code**: First 3 letters of brand name (e.g., "Apple" -> "APL").
+ * 2. **Model Name**: Alphanumeric characters only (e.g., "Series 9" -> "Series9").
+ * 3. **Watch Size**: The size in mm (e.g., 45).
+ * 4. **Variation Name Code**: First 3 letters of variation name (e.g., "Midnight" -> "MID").
+ * 5. **Unique ID**: A combination of timestamp and random characters to ensure uniqueness (e.g., "L9SO2A1").
+ *
+ * @param props - The properties required to generate the SKU.
+ * @param props.brandName - The name of the brand.
+ * @param props.modelName - The model name.
+ * @param props.sizeMm - The size of the watch in millimeters.
+ * @param props.variationName - The name of the variation or color.
+ *
+ * @returns A formatted string representing the unique SKU (e.g., "APL-Series9-45-MID-L9SO2A1").
+ */
+export function genInstanceSkuSync(props: commonType.GenSkuProps): string {
+  const { brandName, modelName, sizeMm, variationName } = props;
+
   // 1. Brand Code (e.g., "Apple" -> "APL")
-  const brandName = productModel.productId.brandId.name;
   const brandCode = brandName.substring(0, 3).toUpperCase();
 
   // 2. Model Name (e.g., "Series 9" -> "S9")
-  const modelName = productModel.model.replace(/[^a-zA-Z0-9]/g, "");
+  const formattedModelName = modelName.replaceAll(/[^a-zA-Z0-9]/g, "");
 
   // 3. Watch Size (e.g., 45)
-  const sizeMm = productModel.watchSizeMm;
 
   // 4. Variation Name Code (e.g., "Midnight" -> "MID")
-  const varNameCode = variation.name.substring(0, 3).toUpperCase();
+  const varNameCode = variationName.substring(0, 3).toUpperCase();
 
   // 5. Unique ID (e.g., "L9SO2A1")
   const uniqueId =
-    Date.now().toString(36).slice(-4).toUpperCase() +
-    Math.random().toString(36).slice(-3).toUpperCase();
+    Date.now() + "-" +
+    crypto.randomUUID().slice(-6).toUpperCase();
 
-  return `${brandCode}-${modelName}-${sizeMm}-${varNameCode}-${uniqueId}`;
+  return `${brandCode}-${formattedModelName}-${sizeMm}-${varNameCode}-${uniqueId}`;
 }
 
 /**
@@ -1031,6 +1069,25 @@ export function formatInventoryMovementResponse(
   };
 }
 
+export function formatGrnResponse(grn: any): commonType.GrnResponse {
+  return {
+    id: grn._id,
+    name: grn.name,
+    providerId: grn.providerId,
+    createdBy: {
+      id: grn.createdBy._id,
+      fullName: grn.createdBy.fullName,
+    },
+    totalPriceCents: grn.totalPriceCents,
+    quantity: grn.quantity,
+    notes: grn.notes,
+    stateId: grn.stateId,
+    createdAt: grn.created,
+    reversedByGrnId: grn.reversedByGrnId,
+    reversedAt: grn.reversedAt,
+  };
+}
+
 // --- CACHING FUNCTIONS ---
 export function getInstanceConditionId(lookupId: string): Types.ObjectId {
   const { instanceConditions } = appCache;
@@ -1407,4 +1464,35 @@ export function getWithdrawalStateLookupId(stateId: Types.ObjectId): string {
   }
 
   throw new Error(`Withdrawal state with ID '${stateId}' not found in cache.`);
+}
+
+export function getGrnStateId(lookupId: string): Types.ObjectId {
+  const { grnStates } = appCache;
+  if (!grnStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const stateId = grnStates[lookupId];
+  if (!stateId) {
+    throw new Error(
+      `GRN state with lookupId '${lookupId}' not found in cache.`
+    );
+  }
+
+  return stateId;
+}
+
+export function getGrnStateLookupId(stateId: Types.ObjectId): string {
+  const { grnStates } = appCache;
+  if (!grnStates) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const lookupId in grnStates) {
+    if (grnStates[lookupId].equals(stateId)) {
+      return lookupId;
+    }
+  }
+
+  throw new Error(`GRN state with ID '${stateId}' not found in cache.`);
 }

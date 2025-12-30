@@ -42,6 +42,8 @@ import returnStateRoute from "./routes/returnRefund/returnState.route";
 import refundStateRoute from "./routes/returnRefund/refundState.route";
 import returnReasonRoute from "./routes/returnRefund/returnReason.route";
 
+import grnRouter from "./routes/grn.route";
+
 import { errorHandler as errorHandlerMiddleware } from "./utils/middlewares/error.middleware";
 import connectDB from "./db/connectDB";
 import { initAppCache } from "./configs/cache";
@@ -140,6 +142,8 @@ app.use(`${ROOT_URL}/pickup-states`, pickupStateRoute);
 app.use(`${ROOT_URL}/return-states`, returnStateRoute);
 app.use(`${ROOT_URL}/return-reasons`, returnReasonRoute);
 app.use(`${ROOT_URL}/refund-states`, refundStateRoute);
+
+app.use(`${ROOT_URL}/grns`, grnRouter);
 
 app.use((req, res, next) => {
   next(

@@ -1,0 +1,237 @@
+import { NextFunction, Request, Response } from "express";
+import { removeOddSpaces } from "../../../common/utils.common";
+import { isPresent } from "../utils";
+import { HttpError } from "../errorHandler";
+import { GRN_FILE_IMPORT_HEADERS } from "../../../common/configs.common";
+import ExcelJS from "exceljs";
+
+function sanitizeGrnInput(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing GRN create input...");
+
+  // When sending FromData, objects often come as JSON strings -> need to pare back to objects
+  if (req.body.grn && typeof req.body.grn === "string") {
+    try {
+      req.body.grn = JSON.parse(req.body.grn);
+    } catch {
+      return next(new HttpError(400, "Invalid JSON format in 'grn' field."));
+    }
+  }
+
+  // Convert numeric strings to numbers, sanitize strings
+  if (req.body.grn) {
+    const { name, totalPriceCents, quantity, notes } = req.body.grn;
+
+    if (typeof name === "string") {
+      req.body.grn.name = removeOddSpaces(name);
+    }
+    if (typeof notes === "string") {
+      req.body.grn.notes = removeOddSpaces(notes);
+    }
+    if (typeof totalPriceCents === "string") {
+      req.body.grn.totalPriceCents = Number(totalPriceCents);
+    }
+    if (typeof quantity === "string") {
+      req.body.grn.quantity = Number(quantity);
+    }
+  }
+
+  next();
+}
+
+export function inputSanitizer(
+  type: "create"
+): (req: Request, res: Response, next: NextFunction) => void {
+  return sanitizeGrnInput;
+}
+
+export function verifyGrnInput(
+  type: "create"
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    console.log("▶️ ", `Verifying GRN ${type} input...`);
+
+    const errors: string[] = [];
+    try {
+      if (type === "create") {
+        const { modelVariationId, providerId, grn, instances } = req.body;
+
+        if (modelVariationId === undefined) {
+          errors.push("Model Variation ID is required.");
+        } else if (typeof modelVariationId !== "string" || !modelVariationId) {
+          errors.push("Model Variation ID must be a non-empty string.");
+        }
+        if (providerId === undefined) {
+          errors.push("Provider ID is required.");
+        } else if (typeof providerId !== "string" || !providerId) {
+          errors.push("Provider ID must be a non-empty string.");
+        }
+        if (!grn) {
+          errors.push("GRN data is required.");
+        } else if (typeof grn !== "object" || Object.keys(grn).length === 0) {
+          errors.push("GRN data must be a non-empty object.");
+        } else {
+          const { name, totalPriceCents, quantity, notes, stateId } = grn;
+
+          if (!name) {
+            errors.push("GRN name is required.");
+          } else if (typeof name !== "string") {
+            errors.push("GRN name must be a string.");
+          }
+          if (totalPriceCents === undefined) {
+            errors.push("Total price is required.");
+          } else if (
+            typeof totalPriceCents !== "number" ||
+            totalPriceCents < 0
+          ) {
+            errors.push("Total price must be a non-negative number.");
+          }
+          if (quantity === undefined) {
+            errors.push("Quantity is required.");
+          } else if (typeof quantity !== "number" || quantity < 0) {
+            errors.push("Quantity must be a non-negative number.");
+          }
+          if (isPresent(notes) && typeof notes !== "string") {
+            errors.push("Notes must be a string.");
+          }
+          if (isPresent(stateId) && typeof stateId !== "string") {
+            errors.push("State ID must be a string.");
+          }
+        }
+        if (!Array.isArray(instances) || instances.length === 0) {
+          errors.push("At least one instance row is required.");
+        } else {
+          // For checking duplicate, use Set instead of normal array for better performance "O(n^2)" to "O(n)"
+          const validSerialNumbers = new Set<string>();
+          const validImeiNumbers = new Set<string>();
+
+          instances.forEach((instance, idx) => {
+            const { supplierSerialNumber, supplierImeiNumber } = instance;
+
+            if (!supplierSerialNumber) {
+              errors.push(
+                "Supplier Serial Number is required for each instance."
+              );
+            } else if (typeof supplierSerialNumber !== "string") {
+              errors.push("Supplier Serial Number must be a string.");
+            } else if (validSerialNumbers.has(supplierSerialNumber)) {
+              errors.push(
+                `Duplicate Supplier Serial Number found: "${supplierSerialNumber}" at row ${
+                  idx + 2
+                }.`
+              );
+            } else {
+              validSerialNumbers.add(supplierSerialNumber);
+            }
+
+            if (isPresent(supplierImeiNumber)) {
+              if (typeof supplierImeiNumber !== "string") {
+                errors.push("Supplier IMEI Number must be a string.");
+              } else if (validImeiNumbers.has(supplierImeiNumber)) {
+                errors.push(
+                  `Duplicate Supplier IMEI Number found: "${supplierImeiNumber}" at row ${
+                    idx + 2
+                  }.`
+                );
+              } else {
+                validImeiNumbers.add(supplierImeiNumber);
+              }
+            }
+          });
+        }
+
+        // If not errors -> check grn.quantity matches instances.length
+        if (errors.length === 0 && grn.quantity !== instances.length) {
+          errors.push(
+            `GRN quantity (${grn.quantity}) does not match number of instance rows (${instances.length}).`
+          );
+        }
+      }
+
+      if (errors.length > 0) {
+        throw new HttpError(400, errors);
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+export async function parseExcelToJson(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Parsing Excel file to JSON...");
+
+  try {
+    if (!req.file) {
+      throw new HttpError(500, "File not found during parsing.");
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(req.file.buffer as any);
+
+    const worksheet = workbook.getWorksheet(1); // Get the first worksheet
+    if (!worksheet) {
+      throw new HttpError(400, "The uploaded file is empty or has no sheets.");
+    }
+
+    const rawRows: any[] = [];
+    const headers: string[] = [];
+
+    // Get headers from Row 1
+    worksheet.getRow(1).eachCell((cell, colNumber) => {
+      const header = removeOddSpaces(cell.text);
+      if (!GRN_FILE_IMPORT_HEADERS.includes(header as any)) {
+        throw new HttpError(
+          400,
+          `Invalid header found: "${header}". Please use the provided template for importing GRNs.`
+        );
+      }
+
+      headers[colNumber] = header;
+    });
+
+    // Iterate data from Row 2 onwards
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return; // Skip header row
+
+      const rowData: any = {};
+      let hasData = false;
+
+      row.eachCell((cell, colNumber) => {
+        const header = headers[colNumber];
+        if (header) {
+          // Handle rich text or simple values
+          const val =
+            cell.value && typeof cell.value === "object" && "text" in cell.value
+              ? (cell.value as any).text
+              : cell.value;
+
+          rowData[header] = val;
+          hasData = true;
+        }
+      });
+
+      if (hasData) {
+        rawRows.push(rowData);
+      }
+    });
+
+    if (rawRows.length === 0) {
+      throw new HttpError(400, "The uploaded file contains no data rows.");
+    }
+
+    // Attach parsed data to req.body for next middleware/controller
+    req.body.instances = rawRows;
+    next();
+  } catch (error) {
+    next(error);
+  }
+}

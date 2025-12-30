@@ -16,7 +16,9 @@ import {
   PRODUCT_MODEL_SEARCH_SORT_OPTIONS,
   MODEL_VARIATION_SORT_OPTIONS,
   VARIATION_INSTANCE_SORT_OPTIONS,
+  GRN_FILE_IMPORT_HEADERS,
 } from "./configs.common";
+import ExcelJS from "exceljs";
 
 export type ErrorResponse = {
   readonly success: false;
@@ -1412,7 +1414,56 @@ export type InventoryMovementResponse = {
   createdAt: string;
 };
 
+// For GRN creation at client side
+// Since use FormData to send file, we cannot use number type for totalPriceCents and quantity
+export type GrnCreateSend = {
+  modelVariationId: string;
+  providerId: string;
+  grn: {
+    name: string;
+    totalPriceCents: string;
+    quantity: string;
+    notes?: string | null;
+    stateId?: string | null;
+  };
+  file: File; // .xlsx, .xls, .csv file containing stock import data
+};
+
+// For GRN creation at server side after processing
+export type GrnCreateReceived = Omit<GrnCreateSend, "file"> & {
+  instances: {
+    [K in (typeof GRN_FILE_IMPORT_HEADERS)[number]]: K extends "supplierSerialNumber"
+      ? string
+      : string | null | undefined;
+  }[];
+};
+
+export type GrnResponse = {
+  id: string;
+  name: string;
+  providerId: string;
+  createdBy: {
+    id: string;
+    fullName: string;
+  };
+  totalPriceCents: number;
+  quantity: number;
+  notes: string | null;
+  stateId: string;
+  createdAt: string;
+  reversedByGrnId: string | null;
+  reversedAt: string | null;
+};
+
+export type GenSkuProps = {
+  brandName: string;
+  modelName: string;
+  sizeMm: number;
+  variationName: string;
+};
+
 // --- HELPER TYPES ---
+
 export type NoneOptional<T> = {
   [K in keyof T]-?: T[K];
 };

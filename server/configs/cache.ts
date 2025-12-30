@@ -13,6 +13,7 @@ import type { LookupIdObjectId } from "../utils/types";
 import PickupState from "../models/returnRefund/pickupState.model";
 import OrderState from "../models/order/orderState.model";
 import WithdrawalState from "../models/withdrawal/withdrawalState.model";
+import GrnState from "../models/inventory/grnState.model";
 
 type LookupIdObjectIdWithLevel = {
   [lookupId: string]: {
@@ -39,6 +40,8 @@ type AppCache = {
   returnStates?: LookupIdObjectIdWithLevel;
 
   withdrawalStates?: LookupIdObjectIdWithLevel;
+
+  grnStates?: LookupIdObjectId;
 };
 
 export const appCache: AppCache = {};
@@ -95,7 +98,9 @@ async function instanceConditionsCache(): Promise<void> {
   console.log("🗂️ ", "Initializing instance conditions cache...");
 
   try {
-    const conditions = await InstanceCondition.find().select("_id lookupId").lean();
+    const conditions = await InstanceCondition.find()
+      .select("_id lookupId")
+      .lean();
     if (!conditions || conditions.length === 0) {
       throw new Error("No instance conditions found in the database.");
     }
@@ -279,7 +284,9 @@ async function pickupStatesCache(): Promise<void> {
 async function withdrawalStateCache(): Promise<void> {
   console.log("🗂️ ", "Initializing withdrawal state cache...");
   try {
-    const states = await WithdrawalState.find().select("_id lookupId level").lean();
+    const states = await WithdrawalState.find()
+      .select("_id lookupId level")
+      .lean();
     if (!states || states.length === 0) {
       throw new Error("No pickup states found in the database.");
     }
@@ -294,6 +301,25 @@ async function withdrawalStateCache(): Promise<void> {
     console.log("✅ ", "Withdrawal state cache initialized successfully.");
   } catch (error) {
     throw new Error(`Error initializing withdrawal state cache: ${error}`);
+  }
+}
+
+async function grnStatesCache(): Promise<void> {
+  console.log("🗂️ ", "Initializing GRN states cache...");
+
+  try {
+    const states = await GrnState.find().select("_id lookupId").lean();
+    if (!states || states.length === 0) {
+      throw new Error("No GRN states found in the database.");
+    }
+    appCache.grnStates = states.reduce((acc, state) => {
+      acc[state.lookupId] = state._id;
+      return acc;
+    }, {} as LookupIdObjectId);
+
+    console.log("✅ ", "GRN states cache initialized successfully.");
+  } catch (error) {
+    throw new Error(`Error initializing GRN states cache: ${error}`);
   }
 }
 
@@ -320,6 +346,8 @@ export async function initAppCache(): Promise<void> {
       returnStatesCache(),
 
       withdrawalStateCache(),
+
+      grnStatesCache(),
     ]);
 
     console.log("✅ ", "Application cache initialized successfully.");
