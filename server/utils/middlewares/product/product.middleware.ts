@@ -171,7 +171,7 @@ export function verifyProductInput(
   ): Promise<void> => {
     console.log("▶️ ", "Validating product input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {
@@ -427,7 +427,7 @@ export function verifyBrandInput(
   ): Promise<void> => {
     console.log("▶️ ", "Validating product brand input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {
@@ -490,7 +490,7 @@ export function verifyCategoryInput(
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating product category input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {
@@ -545,7 +545,7 @@ export function verifyOsInput(
   ): Promise<void> => {
     console.log("▶️ ", "Validating product OS input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {

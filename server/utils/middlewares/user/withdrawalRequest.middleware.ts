@@ -31,7 +31,7 @@ export function verifyWithdrawalRequestInput(
   ): Promise<void> => {
     console.log("▶️ ", "Validating withdrawal request input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {

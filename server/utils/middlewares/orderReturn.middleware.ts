@@ -100,7 +100,7 @@ export function verifyOrderReturnInput(
   ): Promise<void> => {
     console.log("▶️ ", "Validating order return input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {

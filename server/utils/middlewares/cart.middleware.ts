@@ -49,7 +49,7 @@ export function verifyCartInput(
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating cart input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {

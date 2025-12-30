@@ -51,7 +51,7 @@ export function verifyAddressInput(
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating address input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         // Validations of address code will be handled in controller

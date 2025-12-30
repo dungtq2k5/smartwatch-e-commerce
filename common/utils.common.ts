@@ -507,7 +507,7 @@ export function isValidDateTimeString(dateTimeString: any): boolean {
 
   // Check if the string is a valid date-time format
   const date = new Date(dateTimeString);
-  return !isNaN(date.getTime());
+  return !Number.isNaN(date.getTime());
 }
 
 export function isValidColorHex(colorCode: any): boolean {

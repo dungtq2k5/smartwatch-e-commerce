@@ -25,7 +25,7 @@ export function verifyRoleInput(type: "create" | "update") {
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", `Verifying role input...`);
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {

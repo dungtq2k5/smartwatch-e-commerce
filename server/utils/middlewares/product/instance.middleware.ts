@@ -43,7 +43,7 @@ export function verifyVariationInstanceInput(
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating instance input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {

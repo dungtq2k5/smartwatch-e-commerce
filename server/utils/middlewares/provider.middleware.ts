@@ -30,7 +30,7 @@ export function verifyProviderInput(
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating provider input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {

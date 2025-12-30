@@ -31,7 +31,7 @@ export function verifyBalanceHistorySearchInput(
 ): void {
   console.log("▶️ ", "Validating user balance history search input...");
 
-  let errors: string[] = [];
+  const errors: string[] = [];
   try {
     const { limit, offset, category, createdAtFrom, createdAtTo } =
       req["sanitizedQuery"] || req.query;

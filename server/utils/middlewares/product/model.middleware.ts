@@ -255,7 +255,7 @@ export function verifyModelInput(
   ): Promise<void> => {
     console.log("▶️ ", "Validating product model input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {

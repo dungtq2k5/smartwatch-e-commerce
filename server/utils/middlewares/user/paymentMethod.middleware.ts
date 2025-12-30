@@ -7,7 +7,7 @@ export function verifyPaymentMethodInput(
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating payment method input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       if (type === "create") {
         const { stripePaymentMethodId } = req.body;

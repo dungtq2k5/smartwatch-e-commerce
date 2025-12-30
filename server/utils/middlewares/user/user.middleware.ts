@@ -165,7 +165,7 @@ export function verifyUserInput(
   ): Promise<void> => {
     console.log("▶️ ", "Validating user input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "signup": {

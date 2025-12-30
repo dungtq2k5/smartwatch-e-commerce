@@ -157,7 +157,7 @@ export function verifyOrderInput(
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating order input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       switch (type) {
         case "create": {
@@ -365,7 +365,7 @@ export function verifyPaymentIntentInput(
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating payment intent input...");
 
-    let errors: string[] = [];
+    const errors: string[] = [];
     try {
       if (type === "create") {
         console.log("Validating payment intent creation input...");
