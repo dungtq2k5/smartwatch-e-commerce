@@ -361,7 +361,7 @@ export default function InstanceManagement() {
             <div className="fw-bold">{selectedCount} model(s) selected</div>
           </div>
 
-          <button
+          {/* <button
             type="button"
             className="text-danger border-0 bg-transparent p-0"
             onClick={() => {
@@ -377,7 +377,7 @@ export default function InstanceManagement() {
             }}
           >
             Delete selected instances
-          </button>
+          </button> */}
         </div>
       ),
       {
