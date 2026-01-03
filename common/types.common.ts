@@ -1456,10 +1456,9 @@ export type GrnResponse = {
 };
 
 export type GenSkuProps = {
-  brandName: string;
+  productName: string;
   modelName: string;
-  sizeMm: number;
-  variationName: string;
+  variationColor: string;
 };
 
 // --- HELPER TYPES ---

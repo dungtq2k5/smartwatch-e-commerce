@@ -153,52 +153,56 @@ export function isArrayOfNonEmptyStrings(arr: any): boolean {
 /**
  * Retrieves the necessary properties for generating a SKU for a specific variation instance.
  *
- * This function fetches the variation, product model, product, and brand details from the database
+ * This function fetches the variation, product model, and product details from the database
  * to populate the `GenSkuProps` object required by `genInstanceSkuSync`.
  *
  * @param variationId - The MongoDB ObjectId of the model variation.
  * @param session - Optional Mongoose client session for transaction support.
- * @returns A Promise that resolves to a `GenSkuProps` object containing brand name, model name, size, and variation name.
+ * @returns A Promise that resolves to a `GenSkuProps` object containing product name, model name, and variation color.
  * @throws {Error} If the variation is not found or if the product hierarchy data is incomplete.
  */
 export async function getPropsForInstanceSkuGen(
   variationId: Types.ObjectId,
   session?: mongoose.ClientSession
 ): Promise<commonType.GenSkuProps> {
-  const variation = await ModelVariation.findById(variationId)
-    .populate({
-      path: "productModelId",
-      select: "model watchSizeMm productId",
-      populate: {
-        path: "productId",
-        select: "brandId",
-        populate: {
-          path: "brandId",
-          select: "name",
-        },
+  const variation = await ModelVariation.aggregate([
+    { $match: { _id: variationId } },
+    { $project: { productModelId: 1, color: 1 } },
+    {
+      $lookup: {
+        from: "productmodels",
+        localField: "productModelId",
+        foreignField: "_id",
+        as: "model",
+        pipeline: [{ $project: { productId: 1, name: 1 } }],
       },
-    })
-    .lean()
-    .session(session || null);
+    },
+    { $unwind: "$model" },
+    {
+      $lookup: {
+        from: "products",
+        localField: "model.productId",
+        foreignField: "_id",
+        as: "product",
+        pipeline: [{ $project: { name: 1 } }],
+      },
+    },
+    { $unwind: "$product" },
+  ])
+    .session(session || null)
+    .then((results) => results[0]);
 
   if (!variation) {
     throw new Error("Model variation not found for SKU generation.");
   }
-
-  const productModel = variation.productModelId as any;
-  if (
-    !productModel ||
-    !productModel.productId ||
-    !productModel.productId.brandId
-  ) {
+  if (!variation.model || !variation.product) {
     throw new Error("Incomplete product data for SKU generation.");
   }
 
   return {
-    brandName: productModel.productId.brandId.name,
-    modelName: productModel.model,
-    sizeMm: productModel.watchSizeMm,
-    variationName: variation.name,
+    productName: variation.product.name,
+    modelName: variation.model.name,
+    variationColor: variation.color.name,
   };
 }
 
@@ -210,7 +214,7 @@ export async function getPropsForInstanceSkuGen(
  *
  * @param variationId - The MongoDB ObjectId of the specific model variation.
  * @param session - Optional Mongoose client session for transaction support.
- * @returns A Promise that resolves to the generated SKU string (e.g., "APL-SERIES9-45-MID-L9SO2A1").
+ * @returns A Promise that resolves to the generated SKU string (e.g., "APPLEWATCH-SERIES9-MIDNIGHT-1234567890-A1B2C3").
  * @throws {Error} If the variation cannot be found or data is incomplete.
  *
  * @see {@link getPropsForInstanceSkuGen} for data retrieval.
@@ -228,38 +232,33 @@ export async function genInstanceSku(
 /**
  * Synchronously generates a unique SKU (Stock Keeping Unit) string based on provided product properties.
  *
- * The generated SKU follows the format: `BRAND-MODEL-SIZE-VARIATION-UNIQUEID`.
+ * The generated SKU follows the format: `PRODUCT-MODEL-COLOR-UNIQUEID`.
  *
  * Format breakdown:
- * 1. **Brand Code**: First 3 letters of brand name (e.g., "Apple" -> "APL").
- * 2. **Model Name**: Alphanumeric characters only (e.g., "Series 9" -> "Series9").
- * 3. **Watch Size**: The size in mm (e.g., 45).
- * 4. **Variation Name Code**: First 3 letters of variation name (e.g., "Midnight" -> "MID").
- * 5. **Unique ID**: A combination of timestamp and random characters to ensure uniqueness (e.g., "L9SO2A1").
+ * 1. **Product Name**: First 10 characters of product name, uppercased with spaces removed (e.g., "Apple Watch" -> "APPLEWATCH").
+ * 2. **Model Name**: First 10 characters of model name, uppercased with spaces removed (e.g., "Series 9" -> "SERIES9").
+ * 3. **Variation Color**: First 10 characters of color name, uppercased with spaces removed (e.g., "Midnight" -> "MIDNIGHT").
+ * 4. **Unique ID**: A combination of timestamp and random UUID characters to ensure uniqueness (e.g., "1234567890-A1B2C3").
  *
  * @param props - The properties required to generate the SKU.
- * @param props.brandName - The name of the brand.
+ * @param props.productName - The name of the product.
  * @param props.modelName - The model name.
- * @param props.sizeMm - The size of the watch in millimeters.
- * @param props.variationName - The name of the variation or color.
+ * @param props.variationColor - The color name of the variation.
  *
- * @returns A formatted string representing the unique SKU (e.g., "APL-Series9-45-MID-L9SO2A1").
+ * @returns A formatted string representing the unique SKU (e.g., "APPLEWATCH-SERIES9-MIDNIGHT-1234567890-A1B2C3").
  */
 export function genInstanceSkuSync(props: commonType.GenSkuProps): string {
-  const { brandName, modelName, sizeMm, variationName } = props;
+  const { productName, modelName, variationColor } = props;
 
-  // 1. Brand Code (e.g., "Apple" -> "APL")
-  const brandCode = brandName.substring(0, 3).toUpperCase();
-
-  // 2. Model Name (e.g., "Series 9" -> "S9")
-  const formattedModelName = modelName.replaceAll(/[^a-zA-Z0-9]/g, "");
-
-  // 3. Watch Size (e.g., 45)
-
-  // 4. Variation Name Code (e.g., "Midnight" -> "MID")
-  const varNameCode = variationName.substring(0, 3).toUpperCase();
-
-  // 5. Unique ID (e.g., "L9SO2A1")
+  const formattedProductName = removeAllSpaces(productName)
+    .toUpperCase()
+    .slice(0, 10);
+  const formattedModelName = removeAllSpaces(modelName)
+    .toUpperCase()
+    .slice(0, 10);
+  const formattedVariationColor = removeAllSpaces(variationColor)
+    .toUpperCase()
+    .slice(0, 10);
   const uniqueId =
     Date.now() + "-" +
     crypto.randomUUID().slice(-6).toUpperCase();

@@ -84,6 +84,7 @@ export default function Login() {
           isAllValid = false;
         }
 
+        setFormData(newFormData);
         return isAllValid;
       };
 
