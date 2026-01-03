@@ -246,19 +246,14 @@ export default function CreateVariation() {
           err: `Invalid files found: ${imgFileErrs.join(", ")}`,
         },
       }));
-      setProcess((prev) => ({
+    } else {
+      // All valid -> add to form data
+      setFormData((prev) => ({
         ...prev,
-        isProcessing: false,
-        isUploadingImgs: false,
+        imageUrls: { val: [...currFiles, ...files] },
       }));
-      return;
     }
 
-    // All valid -> add to form data
-    setFormData((prev) => ({
-      ...prev,
-      imageUrls: { val: [...currFiles, ...files] },
-    }));
     setProcess((prev) => ({
       ...prev,
       isProcessing: false,

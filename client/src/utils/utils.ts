@@ -290,4 +290,5 @@ export function exportToCsv<T>(
   document.body.appendChild(link);
   link.click();
   link.remove();
+  URL.revokeObjectURL(url);
 }
