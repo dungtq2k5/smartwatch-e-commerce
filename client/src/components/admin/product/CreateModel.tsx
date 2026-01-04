@@ -42,6 +42,7 @@ import TxtListInput from "../TxtListInput";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import useCreationWizardStore from "../../../store/admin/creationWizardStore";
 import WizardStepHeader from "../WizardStepHeader";
+import CreateModelSkeleton from "../skeleton/CreateModelSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -1186,7 +1187,7 @@ export default function CreateModel() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p>
+        <CreateModelSkeleton />
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
       ) : !oses ? (

@@ -37,6 +37,7 @@ import InvalidInputMsg from "../../common/InvalidInputMsg";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import useCreationWizardStore from "../../../store/admin/creationWizardStore";
 import WizardStepHeader from "../WizardStepHeader";
+import CreateProductSkeleton from "../skeleton/CreateProductSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -435,7 +436,7 @@ export default function CreateProduct() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO loading skeleton
+        <CreateProductSkeleton />
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
       ) : !brands ? (

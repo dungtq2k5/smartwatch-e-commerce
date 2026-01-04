@@ -33,6 +33,7 @@ import ExcelJS from "exceljs";
 import useCreationWizardStore from "../../../store/admin/creationWizardStore";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import WizardStepHeader from "../WizardStepHeader";
+import CreateGrnSkeleton from "../skeleton/CreateGrnSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -428,7 +429,7 @@ export default function CreateGrn() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO loading skeleton
+        <CreateGrnSkeleton />
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
       ) : !providers ? (
@@ -570,8 +571,11 @@ export default function CreateGrn() {
                         </>
                       ) : (
                         <>
-                          <FontAwesomeIcon icon={faFileArrowDown} className="me-2" />Download
-                          Template
+                          <FontAwesomeIcon
+                            icon={faFileArrowDown}
+                            className="me-2"
+                          />
+                          Download Template
                         </>
                       )}
                     </button>
@@ -681,7 +685,8 @@ export default function CreateGrn() {
                   </>
                 ) : (
                   <>
-                    <FontAwesomeIcon icon={faFileArrowUp} className="me-2"/>Import GRN
+                    <FontAwesomeIcon icon={faFileArrowUp} className="me-2" />
+                    Import GRN
                   </>
                 )}
               </button>

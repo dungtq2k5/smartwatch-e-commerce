@@ -40,6 +40,7 @@ import InvalidInputMsg from "../../common/InvalidInputMsg";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import useCreationWizardStore from "../../../store/admin/creationWizardStore";
 import WizardStepHeader from "../WizardStepHeader";
+import CreateVariationSkeleton from "../skeleton/CreateVariationSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -713,7 +714,7 @@ export default function CreateVariation() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO loading skeleton
+        <CreateVariationSkeleton />
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
       ) : !model ? (
