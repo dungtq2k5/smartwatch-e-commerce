@@ -29,12 +29,15 @@ import useHasPermission from "../../../hooks/admin/useHasPermission";
 import {
   DATA_DISPLAY_ROWS_PER_PAGE,
   DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE,
+  DISABLED_TITLE_FOR_PERFORMING,
+  DISABLED_TITLE_FOR_VIEWING,
+  INSTRUCTION_EMOJI,
   PRODUCT_MODEL_FIELD_LABEL_LEGEND as MODEL_FIELD_LABEL_LEGEND,
   WAITING_EMOJI,
   WARNING_EMOJI,
 } from "../../../configs";
 import defaultProductImg from "../../../assets/default-product.webp";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   centsToUSD,
   formatError,
@@ -61,6 +64,8 @@ import ConfigDisplayModal from "../modal/ConfigDisplayModal";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import EditBtnLink from "../EditBtnLink";
 import DeleteBtn from "../DeleteBtn";
+import LinkBtn from "../../common/LinkBtn";
+import CreateBtnLink from "../CreateBtnLink";
 
 type Process = {
   isProcessing: boolean;
@@ -104,6 +109,8 @@ export default function ModelManagement() {
   renderCount.current += 1;
   console.log(`ModelManagement render count: ${renderCount.current}`);
 
+  const navigate = useNavigate();
+
   const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchModels, deleteModel, deleteModelBulk } = useModelStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
@@ -113,9 +120,22 @@ export default function ModelManagement() {
     setProductModelManagementDisplayFields: setDisplayFields,
   } = useConfigStore();
 
-  const [canEditModel, canDeleteModel] = [
+  const [
+    canCreateModel,
+    canEditModel,
+    canDeleteModel,
+    canReadProduct,
+    canReadVariation,
+    canReadUser,
+    canCreateVariation,
+  ] = [
+    useHasPermission("c_product_model"),
     useHasPermission("u_product_model"),
     useHasPermission("d_product_model"),
+    useHasPermission("r_product"),
+    useHasPermission("r_model_variation"),
+    useHasPermission("r_usr"),
+    useHasPermission("c_model_variation"),
   ]; // canReadModel is handled by ApiError
 
   const TABLE_COL_DISPLAY = useMemo(
@@ -128,12 +148,14 @@ export default function ModelManagement() {
       productId: {
         label: MODEL_FIELD_LABEL_LEGEND["productId"] || "Product ID",
         tdContent: (model) => (
-          <Link
+          <LinkBtn
             to={`/admin/products/${model.productId}`}
             title="View detail product"
+            disabled={!canReadProduct}
+            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {model.productId}
-          </Link>
+          </LinkBtn>
         ),
         getCsvVal: (model) => model.productId,
       },
@@ -179,12 +201,14 @@ export default function ModelManagement() {
           MODEL_FIELD_LABEL_LEGEND["totalVariations"] || "Total Variations",
         tdClassName: "text-center",
         tdContent: (model) => (
-          <Link
+          <LinkBtn
             to={`/admin/model-variations?searchTerm=${model.id}`}
             title="View variations of this model"
+            disabled={!canReadVariation}
+            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {model.totalVariations}
-          </Link>
+          </LinkBtn>
         ),
         getCsvVal: (model) => model.totalVariations,
       },
@@ -224,8 +248,11 @@ export default function ModelManagement() {
         tdContent: (model) => (
           <DetailUserLink
             userId={model.createdBy.id}
-            displayName={model.createdBy.fullName}
-          />
+            disabled={!canReadUser}
+            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+          >
+            {model.createdBy.fullName}
+          </DetailUserLink>
         ),
         getCsvVal: (model) => model.createdBy.fullName,
       },
@@ -247,26 +274,42 @@ export default function ModelManagement() {
         label: MODEL_FIELD_LABEL_LEGEND["actions"] || "Actions",
         tdContent: (model) => (
           <div className="d-flex gap-2">
-            {canEditModel && (
-              <EditBtnLink to={`${model.id}/edit`} title="Edit model" />
-            )}
-            {canDeleteModel && (
-              <DeleteBtn
-                onClick={() => {
-                  setModal((prev) => ({
-                    ...prev,
-                    modelIdToDelete: model.id,
-                  }));
-                }}
-                title="Delete model"
-              />
-            )}
+            <EditBtnLink
+              to={`${model.id}/edit`}
+              title="Edit model"
+              disabled={!canEditModel}
+              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+            />
+            <CreateBtnLink
+              to={`/admin/model-variations/create/${model.id}`}
+              title="Create variation for this model"
+              disabled={!canCreateVariation}
+              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+            />
+            <DeleteBtn
+              onClick={() => {
+                setModal((prev) => ({
+                  ...prev,
+                  modelIdToDelete: model.id,
+                }));
+              }}
+              title="Delete model"
+              disabled={!canDeleteModel}
+              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+            />
           </div>
         ),
         getCsvVal: () => null,
       },
     }),
-    [canDeleteModel, canEditModel]
+    [
+      canCreateVariation,
+      canDeleteModel,
+      canEditModel,
+      canReadProduct,
+      canReadUser,
+      canReadVariation,
+    ]
   );
 
   const [process, setProcess] = useState<Process>({
@@ -946,11 +989,25 @@ export default function ModelManagement() {
     });
   }, []);
 
-  /*
-    TODO: Model management features
-      - Create model component.
-      - Edit model component.
-  */
+  const handleCreateModel = useCallback((): void => {
+    if (!canCreateModel) {
+      toast.error("You do not have permission to create models.", {
+        icon: WARNING_EMOJI,
+      });
+      return;
+    }
+
+    // Navigate to product management page and prompt user
+    navigate("/admin/products");
+    toast(
+      "Please click the '+' button at each product in action column to create.",
+      {
+        icon: INSTRUCTION_EMOJI,
+      }
+    );
+  }, [canCreateModel, navigate]);
+
+  // TODO: Edit model component.
 
   return (
     <>
@@ -958,13 +1015,20 @@ export default function ModelManagement() {
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h1 className="h2">Model management</h1>
         <div className="d-flex gap-3">
-          <Link
-            to="create"
-            className="text-decoration-none border-0 p-0 bg-transparent text-primary"
-          >
-            <FontAwesomeIcon icon={faPlus} size="sm" className="me-2" />
-            Create new model
-          </Link>
+          {canCreateModel && (
+            <button
+              type="button"
+              className="border-0 p-0 bg-transparent text-primary"
+              onClick={handleCreateModel}
+              disabled={!canCreateModel}
+              title={
+                !canCreateModel ? DISABLED_TITLE_FOR_PERFORMING : undefined
+              }
+            >
+              <FontAwesomeIcon icon={faPlus} size="sm" className="me-2" />
+              Create new model
+            </button>
+          )}
           <button
             type="button"
             className="border-0 p-0 bg-transparent text-primary"

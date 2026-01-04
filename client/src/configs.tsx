@@ -185,6 +185,7 @@ export const RETURN_LOOKUPID_MSG_LEGEND = {
 
 export const WAITING_EMOJI = "⏳";
 export const WARNING_EMOJI = "⚠️";
+export const INSTRUCTION_EMOJI = "ℹ️";
 
 // level -> icon
 export const RETURN_STATE_LEVEL_ICON_LEGEND = {
@@ -481,3 +482,6 @@ export const PRODUCT_CREATION_WIZARD_STEPS: ProductCreationWizardStep[] = [
   "variation",
   "grn",
 ]; // Order matters
+
+export const DISABLED_TITLE_FOR_VIEWING = "You don't have permission to view";
+export const DISABLED_TITLE_FOR_PERFORMING = "You don't have permission to perform";

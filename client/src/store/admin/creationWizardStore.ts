@@ -26,10 +26,9 @@ type CreationWizardState = {
 };
 
 const useCreationWizardStore = create<CreationWizardState>((set) => ({
-  // DEV temp for testing
-  isActive: true,
-  startStep: "product",
-  currStep: "product",
+  isActive: false,
+  startStep: null,
+  currStep: null,
   context: {
     productId: null,
     productName: null,

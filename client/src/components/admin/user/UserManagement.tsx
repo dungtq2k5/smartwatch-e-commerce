@@ -34,6 +34,7 @@ import {
   WARNING_EMOJI,
   DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE,
   USER_FIELD_LABEL_LEGEND,
+  DISABLED_TITLE_FOR_PERFORMING,
 } from "../../../configs";
 import {
   PROJECT_NAME,
@@ -60,6 +61,7 @@ import EditBtnLink from "../EditBtnLink";
 import DeleteBtn from "../DeleteBtn";
 import TableHeadSortBtn from "../TableHeadSortBtn";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
+import LinkBtn from "../../common/LinkBtn";
 
 type Process = {
   isProcessing: boolean;
@@ -110,9 +112,10 @@ export default function UserManagement() {
     setUserManagementDisplayFields: setDisplayFields,
   } = useConfigStore();
 
-  const [canEditUser, canDeleteUser] = [
+  const [canEditUser, canDeleteUser, canCreateUser] = [
     useHasPermission("u_usr"),
     useHasPermission("d_usr"),
+    useHasPermission("c_usr"),
   ]; // canReadUser is handled by ApiError
 
   const TABLE_COL_DISPLAY = useMemo(
@@ -284,21 +287,24 @@ export default function UserManagement() {
       actions: {
         label: USER_FIELD_LABEL_LEGEND["actions"] || "Actions",
         tdContent: (user) =>
-          user.id === admin?.id ? ( // Prevent admin from deleting/editing self
+          user.id === admin?.id ? ( // Prevent admin from self deleting/editing
             <>None</>
           ) : (
             <div className="d-flex gap-2">
-              {canEditUser && (
-                <EditBtnLink to={`${user.id}/edit`} title="Edit user" />
-              )}
-              {canDeleteUser && (
-                <DeleteBtn
-                  title="Delete user"
-                  onClick={() =>
-                    setModal((prev) => ({ ...prev, userIdToDelete: user.id }))
-                  }
-                />
-              )}
+              <EditBtnLink
+                to={`${user.id}/edit`}
+                title="Edit user"
+                disabled={!canEditUser}
+                disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              />
+              <DeleteBtn
+                title="Delete user"
+                onClick={() =>
+                  setModal((prev) => ({ ...prev, userIdToDelete: user.id }))
+                }
+                disabled={!canDeleteUser}
+                disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              />
             </div>
           ),
         getCsvVal: () => null,
@@ -957,13 +963,15 @@ export default function UserManagement() {
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h1 className="h2">User management</h1>
         <div className="d-flex gap-3">
-          <Link
+          <LinkBtn
             to="create"
             className="text-decoration-none border-0 p-0 bg-transparent text-primary"
+            disabled={!canCreateUser}
+            disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
           >
             <FontAwesomeIcon icon={faPlus} size="sm" className="me-2" />
             Create new user
-          </Link>
+          </LinkBtn>
           <button
             type="button"
             className="border-0 p-0 bg-transparent text-primary"

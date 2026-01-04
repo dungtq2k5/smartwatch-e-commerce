@@ -38,6 +38,8 @@ import useProductCategoryStore from "../../../store/common/product/categoryStore
 import {
   DATA_DISPLAY_ROWS_PER_PAGE,
   DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE,
+  DISABLED_TITLE_FOR_PERFORMING,
+  DISABLED_TITLE_FOR_VIEWING,
   PRODUCT_FIELD_LABEL_LEGEND,
   WAITING_EMOJI,
   WARNING_EMOJI,
@@ -63,6 +65,8 @@ import { exportToCsv } from "../../../utils/utils";
 import ConfigDisplayModal from "../modal/ConfigDisplayModal";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import DetailUserLink from "../DetailUserLink";
+import LinkBtn from "../../common/LinkBtn";
+import CreateBtnLink from "../CreateBtnLink";
 
 type Process = {
   isProcessing: boolean;
@@ -119,9 +123,20 @@ export default function ProductManagement() {
     setProductManagementDisplayFields: setDisplayFields,
   } = useConfigStore();
 
-  const [canEditProduct, canDeleteProduct] = [
+  const [
+    canCreateProduct,
+    canEditProduct,
+    canDeleteProduct,
+    canReadModel,
+    canReadVariation,
+    canReadUser,
+  ] = [
+    useHasPermission("c_product"),
     useHasPermission("u_product"),
     useHasPermission("d_product"),
+    useHasPermission("r_product_model"),
+    useHasPermission("r_model_variation"),
+    useHasPermission("r_usr"),
   ]; // canReadProduct is handled by ApiError
 
   const TABLE_COL_DISPLAY = useMemo(
@@ -203,12 +218,14 @@ export default function ProductManagement() {
         label: PRODUCT_FIELD_LABEL_LEGEND["totalModels"] || "Related models",
         tdClassName: "text-center",
         tdContent: (product) => (
-          <Link
+          <LinkBtn
             to={`/admin/product-models?searchTerm=${product.id}`}
             title="View models of this product"
+            disabled={!canReadModel}
+            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {product.totalModels}
-          </Link>
+          </LinkBtn>
         ),
         getCsvVal: (product) => product.totalModels,
       },
@@ -217,12 +234,14 @@ export default function ProductManagement() {
           PRODUCT_FIELD_LABEL_LEGEND["totalVariations"] || "Related variations",
         tdClassName: "text-center",
         tdContent: (product) => (
-          <Link
+          <LinkBtn
             to={`/admin/product-variations?searchTerm=${product.id}`}
             title="View variations of this product"
+            disabled={!canReadVariation}
+            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {product.totalVariations}
-          </Link>
+          </LinkBtn>
         ),
         getCsvVal: (product) => product.totalVariations,
       },
@@ -236,8 +255,11 @@ export default function ProductManagement() {
         tdContent: (product) => (
           <DetailUserLink
             userId={product.createdBy.id}
-            displayName={product.createdBy.fullName}
-          />
+            disabled={!canReadUser}
+            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+          >
+            {product.createdBy.fullName}
+          </DetailUserLink>
         ),
         getCsvVal: (product) => product.createdBy.fullName,
       },
@@ -263,26 +285,43 @@ export default function ProductManagement() {
         label: PRODUCT_FIELD_LABEL_LEGEND["actions"] || "Actions",
         tdContent: (product) => (
           <div className="d-flex gap-2">
-            {canEditProduct && (
-              <EditBtnLink to={`${product.id}/edit`} title="Edit product" />
-            )}
-            {canDeleteProduct && (
-              <DeleteBtn
-                onClick={() => {
-                  setModal((prev) => ({
-                    ...prev,
-                    productIdToDelete: product.id,
-                  }));
-                }}
-                title="Delete product"
-              />
-            )}
+            <EditBtnLink
+              to={`${product.id}/edit`}
+              title="Edit product"
+              disabled={!canEditProduct}
+              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+            />
+            <CreateBtnLink
+              to={`/admin/product-models/create/${product.id}`}
+              title="Create model for this product"
+              disabled={!canReadModel}
+              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+            />
+            <DeleteBtn
+              onClick={() => {
+                setModal((prev) => ({
+                  ...prev,
+                  productIdToDelete: product.id,
+                }));
+              }}
+              title="Delete product"
+              disabled={!canDeleteProduct}
+              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+            />
           </div>
         ),
         getCsvVal: () => null,
       },
     }),
-    [canDeleteProduct, canEditProduct, getBrand, getCategory]
+    [
+      canDeleteProduct,
+      canEditProduct,
+      canReadModel,
+      canReadUser,
+      canReadVariation,
+      getBrand,
+      getCategory,
+    ]
   );
 
   const [process, setProcess] = useState<Process>({
@@ -968,13 +1007,15 @@ export default function ProductManagement() {
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h1 className="h2">Product management</h1>
         <div className="d-flex gap-3">
-          <Link
+          <LinkBtn
             to="create"
             className="text-decoration-none border-0 p-0 bg-transparent text-primary"
+            disabled={!canCreateProduct}
+            disabledTitle="You don't have permission to perform"
           >
             <FontAwesomeIcon icon={faPlus} size="sm" className="me-2" />
             Create new product
-          </Link>
+          </LinkBtn>
           <button
             type="button"
             className="border-0 p-0 bg-transparent text-primary"

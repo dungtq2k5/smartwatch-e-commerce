@@ -2,16 +2,16 @@ import { memo, useEffect, useState } from "react";
 import useUserStore from "../../store/admin/userStore";
 import { formatError } from "../../../../common/utils.common";
 import SmallSpinner from "../common/SmallSpinner";
-import { Link } from "react-router-dom";
+import type { LinkBtnProps } from "../common/LinkBtn";
+import LinkBtn from "../common/LinkBtn";
+
+type DetailUserLinkProps = Readonly<{
+  userId: string;
+}> &
+  Omit<LinkBtnProps, "to">;
 
 const DetailUserLink = memo(
-  ({
-    userId,
-    displayName,
-  }: Readonly<{
-    userId: string;
-    displayName: string;
-  }>) => {
+  ({ userId, ...props }: DetailUserLinkProps) => {
     const { sysUserId, fetchSysUserId } = useUserStore();
 
     const [isInitializing, setIsInitializing] = useState<boolean>(
@@ -46,7 +46,7 @@ const DetailUserLink = memo(
         ) : sysUserId === userId ? (
           "system"
         ) : (
-          <Link to={`/admin/users/${userId}`}>{displayName}</Link>
+          <LinkBtn {...props} to={`/admin/users/${userId}`} />
         )}
       </>
     );

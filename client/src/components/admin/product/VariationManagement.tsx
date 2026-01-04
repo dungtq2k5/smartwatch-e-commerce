@@ -19,6 +19,9 @@ import type {
 import {
   DATA_DISPLAY_ROWS_PER_PAGE,
   DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE,
+  DISABLED_TITLE_FOR_PERFORMING,
+  DISABLED_TITLE_FOR_VIEWING,
+  INSTRUCTION_EMOJI,
   MODEL_VARIATION_FIELD_LABEL_LEGEND as VARIATION_FIELD_LABEL_LEGEND,
   WAITING_EMOJI,
   WARNING_EMOJI,
@@ -33,7 +36,7 @@ import useVariationStore from "../../../store/admin/product/variationStore";
 import useConfigStore from "../../../store/admin/configStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import defaultProductImg from "../../../assets/default-product.webp";
 import DetailUserLink from "../DetailUserLink";
 import {
@@ -60,6 +63,8 @@ import {
 import Pagination from "../../common/Pagination";
 import ConfigDisplayModal from "../modal/ConfigDisplayModal";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
+import LinkBtn from "../../common/LinkBtn";
+import CreateBtnLink from "../CreateBtnLink";
 
 type Process = {
   isProcessing: boolean;
@@ -103,6 +108,8 @@ export default function VariationManagement() {
   renderCount.current += 1;
   console.log(`ModelManagement render count: ${renderCount.current}`);
 
+  const navigate = useNavigate();
+
   const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchVariations, deleteVariation, deleteVariationBulk } =
     useVariationStore();
@@ -113,9 +120,24 @@ export default function VariationManagement() {
     setModelVariationManagementDisplayFields: setDisplayFields,
   } = useConfigStore();
 
-  const [canEditVariation, canDeleteVariation] = [
+  const [
+    canCreateVariation,
+    canEditVariation,
+    canDeleteVariation,
+    canReadProduct,
+    canReadModel,
+    canReadInstance,
+    canReadUser,
+    canCreateGrn,
+  ] = [
+    useHasPermission("c_model_variation"),
     useHasPermission("u_model_variation"),
     useHasPermission("d_model_variation"),
+    useHasPermission("r_product"),
+    useHasPermission("r_product_model"),
+    useHasPermission("r_variation_instance"),
+    useHasPermission("r_usr"),
+    useHasPermission("c_grn"),
   ]; // canReadVariation is handled by ApiErr
 
   const TABLE_COL_DISPLAY = useMemo(
@@ -128,24 +150,28 @@ export default function VariationManagement() {
       productId: {
         label: VARIATION_FIELD_LABEL_LEGEND["productId"] || "Product ID",
         tdContent: (variation) => (
-          <Link
+          <LinkBtn
             to={`/admin/products/${variation.productId}`}
             title="View detail product"
+            disabled={!canReadProduct}
+            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {variation.productId}
-          </Link>
+          </LinkBtn>
         ),
         getCsvVal: (variation) => variation.productId,
       },
       productModelId: {
         label: VARIATION_FIELD_LABEL_LEGEND["productModelId"] || "Model ID",
         tdContent: (variation) => (
-          <Link
+          <LinkBtn
             to={`/admin/products/${variation.productId}?modelId=${variation.productModelId}`}
             title="View detail model"
+            disabled={!canReadModel}
+            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {variation.productModelId}
-          </Link>
+          </LinkBtn>
         ),
         getCsvVal: (variation) => variation.productModelId,
       },
@@ -224,12 +250,14 @@ export default function VariationManagement() {
         sortKey: { asc: "stockQuantity_asc", desc: "stockQuantity_desc" },
         tdClassName: "text-center",
         tdContent: (variation) => (
-          <Link
+          <LinkBtn
             to={`/admin/variation-instances?variationId=${variation.id}`}
             title="View stock instances"
+            disabled={!canReadInstance}
+            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {variation.stockQuantity}
-          </Link>
+          </LinkBtn>
         ),
         getCsvVal: (variation) => variation.stockQuantity,
       },
@@ -238,8 +266,11 @@ export default function VariationManagement() {
         tdContent: (variation) => (
           <DetailUserLink
             userId={variation.createdBy.id}
-            displayName={variation.createdBy.fullName}
-          />
+            disabled={!canReadUser}
+            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+          >
+            {variation.createdBy.fullName}
+          </DetailUserLink>
         ),
         getCsvVal: (variation) => variation.createdBy.fullName,
       },
@@ -272,26 +303,43 @@ export default function VariationManagement() {
         label: VARIATION_FIELD_LABEL_LEGEND["actions"] || "Actions",
         tdContent: (variation) => (
           <div className="d-flex gap-2">
-            {canEditVariation && (
-              <EditBtnLink to={`${variation.id}/edit`} title="Edit variation" />
-            )}
-            {canDeleteVariation && (
-              <DeleteBtn
-                onClick={() => {
-                  setModal((prev) => ({
-                    ...prev,
-                    variationIdToDelete: variation.id,
-                  }));
-                }}
-                title="Delete variation"
-              />
-            )}
+            <EditBtnLink
+              to={`${variation.id}/edit`}
+              title="Edit variation"
+              disabled={!canEditVariation}
+              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+            />
+            <CreateBtnLink
+              to={`/admin/grn/create/${variation.id}`}
+              title="Import GRN for this variation"
+              disabled={!canCreateGrn}
+              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+            />
+            <DeleteBtn
+              onClick={() => {
+                setModal((prev) => ({
+                  ...prev,
+                  variationIdToDelete: variation.id,
+                }));
+              }}
+              title="Delete variation"
+              disabled={!canDeleteVariation}
+              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+            />
           </div>
         ),
         getCsvVal: () => null,
       },
     }),
-    [canDeleteVariation, canEditVariation]
+    [
+      canCreateGrn,
+      canDeleteVariation,
+      canEditVariation,
+      canReadInstance,
+      canReadModel,
+      canReadProduct,
+      canReadUser,
+    ]
   );
 
   const [process, setProcess] = useState<Process>({
@@ -972,12 +1020,25 @@ export default function VariationManagement() {
     });
   }, []);
 
-  /*
-    TODO:
-      - Edit variation component.
-      - Create variation component.
-      - Link to variation instances management page via stock quantity link.
-  */
+  const handleCreateVariation = useCallback((): void => {
+    if (!canCreateVariation) {
+      toast.error("You do not have permission to create variations.", {
+        icon: WARNING_EMOJI,
+      });
+      return;
+    }
+
+    // Navigate to model management page and prompt user
+    navigate("/admin/product-models");
+    toast(
+      "Please click the '+' button at each model in action column to create.",
+      {
+        icon: INSTRUCTION_EMOJI,
+      }
+    );
+  }, [canCreateVariation, navigate]);
+
+  // TODO: Edit variation component.
 
   return (
     <>
@@ -985,13 +1046,18 @@ export default function VariationManagement() {
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h1 className="h2">Variation management</h1>
         <div className="d-flex gap-3">
-          <Link
-            to="create"
-            className="text-decoration-none border-0 p-0 bg-transparent text-primary"
+          <button
+            type="button"
+            className="border-0 p-0 bg-transparent text-primary"
+            onClick={handleCreateVariation}
+            disabled={!canCreateVariation}
+            title={
+              !canCreateVariation ? DISABLED_TITLE_FOR_PERFORMING : undefined
+            }
           >
             <FontAwesomeIcon icon={faPlus} size="sm" className="me-2" />
             Create new variation
-          </Link>
+          </button>
           <button
             type="button"
             className="border-0 p-0 bg-transparent text-primary"

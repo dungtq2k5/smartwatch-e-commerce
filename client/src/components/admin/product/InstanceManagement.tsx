@@ -19,7 +19,10 @@ import type {
 import {
   DATA_DISPLAY_ROWS_PER_PAGE,
   DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE,
+  DISABLED_TITLE_FOR_PERFORMING,
+  DISABLED_TITLE_FOR_VIEWING,
   VARIATION_INSTANCE_FIELD_LABEL_LEGEND as INSTANCE_FIELD_LABEL_LEGEND,
+  INSTRUCTION_EMOJI,
   WAITING_EMOJI,
   WARNING_EMOJI,
 } from "../../../configs";
@@ -33,7 +36,7 @@ import useInstanceStore from "../../../store/admin/product/instanceStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useConfigStore from "../../../store/admin/configStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
-import { Link, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import useInstanceConditionStore from "../../../store/admin/product/instanceConditionStore";
 import EditBtnLink from "../EditBtnLink";
 import {
@@ -55,6 +58,7 @@ import {
   faSliders,
 } from "@fortawesome/free-solid-svg-icons";
 import Pagination from "../../common/Pagination";
+import LinkBtn from "../../common/LinkBtn";
 
 type Process = {
   isProcessing: boolean;
@@ -97,6 +101,8 @@ export default function InstanceManagement() {
   renderCount.current += 1;
   console.log(`InstanceManagement render count: ${renderCount.current}`);
 
+  const navigate = useNavigate();
+
   const { sysUserId, fetchSysUserId } = useUserStore();
   const { instanceConditions, fetchInstanceConditions, getInstanceCondition } =
     useInstanceConditionStore();
@@ -108,7 +114,11 @@ export default function InstanceManagement() {
     setVariationInstanceManagementDisplayFields: setDisplayFields,
   } = useConfigStore();
 
-  const canEditInstance = useHasPermission("u_variation_instance"); // canReadInstance is handled by ApiErr
+  const [canEditInstance, canCreateInstance, canReadModel] = [
+    useHasPermission("u_variation_instance"),
+    useHasPermission("c_variation_instance"),
+    useHasPermission("r_product_model"),
+  ]; // canReadInstance is handled by ApiErr
 
   const TABLE_COL_DISPLAY = useMemo(
     (): TableColDisplay => ({
@@ -128,12 +138,14 @@ export default function InstanceManagement() {
         label:
           INSTANCE_FIELD_LABEL_LEGEND["modelVariationId"] || "Variation ID",
         tdContent: (instance) => (
-          <Link
+          <LinkBtn
             to={`/admin/model-variations?searchTerm=${instance.modelVariationId}`}
             title="View detail model"
+            disabled={!canReadModel}
+            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {instance.modelVariationId}
-          </Link>
+          </LinkBtn>
         ),
         getCsvVal: (instance) => instance.modelVariationId,
       },
@@ -229,15 +241,18 @@ export default function InstanceManagement() {
         label: INSTANCE_FIELD_LABEL_LEGEND["actions"] || "Actions",
         tdContent: (instance) => (
           <div className="d-flex gap-2">
-            {canEditInstance && (
-              <EditBtnLink to={`${instance.id}/edit`} title="Edit instance" />
-            )}
+            <EditBtnLink
+              to={`${instance.id}/edit`}
+              title="Edit instance"
+              disabled={!canEditInstance}
+              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+            />
           </div>
         ),
         getCsvVal: () => null,
       },
     }),
-    [canEditInstance, getInstanceCondition]
+    [canEditInstance, canReadModel, getInstanceCondition]
   );
 
   const [process, setProcess] = useState<Process>({
@@ -778,19 +793,44 @@ export default function InstanceManagement() {
     });
   }, []);
 
+  const handleCreateInstance = useCallback((): void => {
+    if (!canCreateInstance) {
+      toast.error("You do not have permission to create instances.", {
+        icon: WARNING_EMOJI,
+      });
+      return;
+    }
+
+    // Navigate to variation management page and prompt user
+    navigate("/admin/model-variations");
+    toast(
+      "Please click the '+' button at each variation in action column to create.",
+      {
+        icon: INSTRUCTION_EMOJI,
+      }
+    );
+  }, [canCreateInstance, navigate]);
+
+  // TODO create instance component
+
   return (
     <>
       {/* Heading */}
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h1 className="h2">Instance management</h1>
         <div className="d-flex gap-3">
-          <Link
-            to="create"
-            className="text-decoration-none border-0 p-0 bg-transparent text-primary"
+          <button
+            type="button"
+            className="border-0 p-0 bg-transparent text-primary"
+            onClick={handleCreateInstance}
+            disabled={!canCreateInstance}
+            title={
+              !canCreateInstance ? DISABLED_TITLE_FOR_PERFORMING : undefined
+            }
           >
             <FontAwesomeIcon icon={faPlus} size="sm" className="me-2" />
             Create new instance
-          </Link>
+          </button>
           <button
             type="button"
             className="border-0 p-0 bg-transparent text-primary"
@@ -884,7 +924,11 @@ export default function InstanceManagement() {
                       <>
                         <option value="">All</option>
                         {instanceConditions.conditions.map((condition) => (
-                          <option key={condition.id} value={condition.id} className="text-capitalize">
+                          <option
+                            key={condition.id}
+                            value={condition.id}
+                            className="text-capitalize"
+                          >
                             {condition.name}
                           </option>
                         ))}

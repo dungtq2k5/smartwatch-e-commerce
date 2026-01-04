@@ -1178,12 +1178,6 @@ export default function CreateModel() {
     });
   }, [navigate, process.isProcessing, wizard]);
 
-  /*
-    TODO:
-      - UI to see is from continue create or not (better UI)
-      - CreateModelSkeleton.
-  */
-
   return (
     <>
       {process.isInitializing ? (
