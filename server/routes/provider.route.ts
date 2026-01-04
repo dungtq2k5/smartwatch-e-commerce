@@ -8,6 +8,7 @@ import {
 import {
   create,
   get,
+  getAll,
   remove,
   update,
 } from "../controllers/provider.controller";
@@ -22,6 +23,8 @@ router.post(
   verifyProviderInput("create"),
   create
 );
+
+router.get("/", verifyPermission("r_provider_inventory"), getAll);
 
 router.get("/:providerId", verifyPermission("r_provider_inventory"), get);
 

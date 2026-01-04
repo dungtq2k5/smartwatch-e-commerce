@@ -381,6 +381,11 @@ export const VARIATION_INSTANCE_SORT_OPTIONS = [
 ] as const;
 
 export const GRN_FILE_IMPORT_EXTENSIONS = [".xlsx", ".xls", ".csv"] as const;
+export const GRN_FILE_IMPORT_NAME_TYPES = [
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+  "text/csv",
+] as const;
 export const GRN_FILE_IMPORT_MAX_SIZE = 5 * 1024 * 1024; // 5MB
 export const GRN_FILE_IMPORT_HEADERS = [
   "supplierSerialNumber",

@@ -63,6 +63,12 @@ const providerSchema: Schema<IProvider> = new Schema(
   { timestamps: true }
 );
 
+providerSchema.virtual("addresses", {
+  ref: "ProviderAddress",
+  localField: "_id",
+  foreignField: "providerId",
+});
+
 const Provider: Model<IProvider> = mongoose.model<IProvider>(
   "Provider",
   providerSchema

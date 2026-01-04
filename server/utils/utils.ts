@@ -19,6 +19,7 @@ import mongoose, { Types } from "mongoose";
 import ModelVariation from "../models/product/modelVariation.model";
 import { appCache } from "../configs/cache";
 import { HttpError } from "./errorHandler";
+import { removeAllSpaces } from "../../common/utils.common";
 
 export function isValidUrl(url: any): boolean {
   if (typeof url !== "string") return false;
@@ -260,10 +261,9 @@ export function genInstanceSkuSync(props: commonType.GenSkuProps): string {
     .toUpperCase()
     .slice(0, 10);
   const uniqueId =
-    Date.now() + "-" +
-    crypto.randomUUID().slice(-6).toUpperCase();
+    Date.now() + "-" + crypto.randomUUID().slice(-6).toUpperCase();
 
-  return `${brandCode}-${formattedModelName}-${sizeMm}-${varNameCode}-${uniqueId}`;
+  return `${formattedProductName}-${formattedModelName}-${formattedVariationColor}-${uniqueId}`;
 }
 
 /**
@@ -1084,6 +1084,17 @@ export function formatGrnResponse(grn: any): commonType.GrnResponse {
     createdAt: grn.created,
     reversedByGrnId: grn.reversedByGrnId,
     reversedAt: grn.reversedAt,
+  };
+}
+
+export function formatGrnStateResponse(
+  state: any
+): commonType.GrnStateResponse {
+  return {
+    id: state._id,
+    lookupId: state.lookupId,
+    name: state.name,
+    description: state.description,
   };
 }
 

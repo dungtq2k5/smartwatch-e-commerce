@@ -18,7 +18,6 @@ import {
   VARIATION_INSTANCE_SORT_OPTIONS,
   GRN_FILE_IMPORT_HEADERS,
 } from "./configs.common";
-import ExcelJS from "exceljs";
 
 export type ErrorResponse = {
   readonly success: false;
@@ -927,6 +926,10 @@ export type ProviderResponse = {
   createdAt: string;
   updatedAt: string;
 };
+export type ProviderListResponse = {
+  total: number;
+  providers: ProviderResponse[];
+};
 
 export type ProviderUpdate = Partial<ProviderCreate>;
 
@@ -1414,15 +1417,13 @@ export type InventoryMovementResponse = {
   createdAt: string;
 };
 
-// For GRN creation at client side
-// Since use FormData to send file, we cannot use number type for totalPriceCents and quantity
-export type GrnCreateSend = {
+export type GrnCreate = {
   modelVariationId: string;
   providerId: string;
   grn: {
     name: string;
-    totalPriceCents: string;
-    quantity: string;
+    totalPriceCents: number;
+    quantity: number;
     notes?: string | null;
     stateId?: string | null;
   };
@@ -1430,7 +1431,7 @@ export type GrnCreateSend = {
 };
 
 // For GRN creation at server side after processing
-export type GrnCreateReceived = Omit<GrnCreateSend, "file"> & {
+export type GrnCreateReceived = Omit<GrnCreate, "file"> & {
   instances: {
     [K in (typeof GRN_FILE_IMPORT_HEADERS)[number]]: K extends "supplierSerialNumber"
       ? string
@@ -1453,6 +1454,18 @@ export type GrnResponse = {
   createdAt: string;
   reversedByGrnId: string | null;
   reversedAt: string | null;
+};
+
+export type GrnStateResponse = {
+  id: string;
+  lookupId: string;
+  name: string;
+  description: string | null;
+};
+
+export type GrnStateListResponse = {
+  total: number;
+  states: GrnStateResponse[];
 };
 
 export type GenSkuProps = {

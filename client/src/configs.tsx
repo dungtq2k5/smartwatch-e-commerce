@@ -21,6 +21,7 @@ import type {
   AdminUserDisplayableField,
   AdminVariationInstanceDisplayableField,
   ModelVariationDisplayField,
+  ProductCreationWizardStep,
   ProductDisplayField,
   ProductModelDisplayField,
   UserDisplayField,
@@ -105,6 +106,11 @@ export const WITHDRAWAL_STATES_URL = `${ROOT_URL}/withdrawal-states`;
 
 export const ROLE_URL = `${ROOT_URL}/roles`;
 export const PERMISSION_URL = `${ROOT_URL}/permissions`;
+
+export const GRN_URL = `${ROOT_URL}/grns`;
+export const GRN_STATES_URL = `${ROOT_URL}/grn-states`;
+
+export const PROVIDER_URL = `${ROOT_URL}/providers`;
 
 // --- OTHERS ---
 
@@ -466,3 +472,12 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   variationInstanceManagementDisplayFields:
     DEFAULT_ADMIN_VARIATION_INSTANCE_DISPLAY_FIELDS,
 };
+
+export const GRN_FILE_IMPORT_WORKSHEET_NAME = "grn-import-template"; // Must match with the worksheet name in the Excel template file
+
+export const PRODUCT_CREATION_WIZARD_STEPS: ProductCreationWizardStep[] = [
+  "product",
+  "model",
+  "variation",
+  "grn",
+]; // Order matters

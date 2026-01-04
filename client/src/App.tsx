@@ -51,6 +51,7 @@ import InstanceManagement from "./components/admin/product/InstanceManagement.ts
 import CreateProduct from "./components/admin/product/CreateProduct.tsx";
 import CreateModel from "./components/admin/product/CreateModel.tsx";
 import CreateVariation from "./components/admin/product/CreateVariation.tsx";
+import CreateGrn from "./components/admin/grn/CreateGrn.tsx";
 
 export default function App() {
   // DEV for testing
@@ -138,6 +139,11 @@ export default function App() {
 
                 <Route path="variation-instances">
                   <Route index element={<InstanceManagement />} />
+                </Route>
+
+                <Route path="grn">
+                  <Route index element={<div>GRN Management - TODO</div>} />
+                  <Route path="create/:variationId" element={<CreateGrn />} />
                 </Route>
               </Route>
             </Route>

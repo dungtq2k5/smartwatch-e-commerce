@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import type { FormInput } from "../../../utils/types";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import useModelStore from "../../../store/admin/product/modelStore";
 import useVariationStore from "../../../store/admin/product/variationStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
@@ -38,6 +38,8 @@ import ApiError from "../../common/ApiError";
 import ColorListInput from "../ColorListInput";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
+import useCreationWizardStore from "../../../store/admin/creationWizardStore";
+import WizardStepHeader from "../WizardStepHeader";
 
 type Process = {
   isProcessing: boolean;
@@ -79,18 +81,14 @@ type FormData = {
 
 export default function CreateVariation() {
   // DEV temp for testing
-  const renderCount = useRef(0); // Fixed type mismatch in original code if any
+  const renderCount = useRef(0);
   renderCount.current += 1;
   console.log("CreateVariation render count:", renderCount.current);
 
   const { modelId } = useParams();
 
   const navigate = useNavigate();
-  const location = useLocation();
-  const isFromProductContinueToCreate: boolean =
-    location.state?.fromCreateProduct || false;
-  const isFromModelContinueToCreate: boolean =
-    location.state?.fromCreateModel || false;
+  const wizard = useCreationWizardStore();
 
   const { fetchModelLite } = useModelStore();
   const { createVariation } = useVariationStore();
@@ -133,9 +131,9 @@ export default function CreateVariation() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imgPreviews, setImgPreviews] = useState<string[]>([]);
 
-  // TODO handle grn
-  const [continueToCreateModal, setContinueToCreateModal] =
-    useState<boolean>(false);
+  const [continueToCreateGrn, setContinueToCreateGrn] = useState<string | null>(
+    null
+  ); // Store created variation ID
 
   // Fetch set data on initial load: model
   useEffect(() => {
@@ -650,9 +648,14 @@ export default function CreateVariation() {
             stopSelling: formData.stopSelling.val,
           };
 
-          await createVariation(variation);
+          const createdVariation = await createVariation(variation);
+
+          wizard.setContext({
+            variationId: createdVariation.id,
+            variationName: createdVariation.name,
+          });
           toast.success("Variation created successfully.");
-          setContinueToCreateModal(true);
+          setContinueToCreateGrn(createdVariation.id);
         } catch (error) {
           toast.error(formatError(error));
         }
@@ -670,6 +673,7 @@ export default function CreateVariation() {
       formData,
       modelId,
       process.isProcessing,
+      wizard,
     ]
   );
 
@@ -681,27 +685,9 @@ export default function CreateVariation() {
       return;
     }
 
-    if (isFromProductContinueToCreate && isFromModelContinueToCreate) {
-      navigate("/admin/products", {
-        replace: true,
-      });
-      return;
-    }
-
-    if (isFromModelContinueToCreate) {
-      navigate("/admin/product-models", {
-        replace: true,
-      });
-      return;
-    }
-
+    if (wizard.isActive) wizard.reset();
     navigate(-1);
-  }, [
-    isFromModelContinueToCreate,
-    isFromProductContinueToCreate,
-    navigate,
-    process.isProcessing,
-  ]);
+  }, [navigate, process.isProcessing, wizard]);
 
   const handleContinueToCreate = useCallback((): void => {
     if (process.isProcessing) {
@@ -710,11 +696,23 @@ export default function CreateVariation() {
       });
       return;
     }
-  }, [process.isProcessing]);
+    const variationId = wizard.context.variationId;
+    if (!variationId) {
+      toast.error("Created variation ID not found in context.");
+      return;
+    }
+
+    if (!wizard.isActive) wizard.startFlow("variation");
+    wizard.nextStep("grn");
+
+    navigate(`/admin/grns/create/${variationId}`, {
+      replace: true,
+    });
+  }, [navigate, process.isProcessing, wizard]);
 
   return (
     <>
-      {process.isProcessing ? (
+      {process.isInitializing ? (
         <p>Loading...</p> // TODO loading skeleton
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
@@ -723,28 +721,13 @@ export default function CreateVariation() {
       ) : (
         <>
           {/* Heading */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="fs-2 mb-0 d-flex gap-2">
-              {isFromProductContinueToCreate && isFromModelContinueToCreate ? (
-                <>
-                  <span className="text-muted text-small">Step: 3/N</span>
-                  <p className="mb-0 fw-light">/</p>
-                  Create Variation for model {model.name}
-                </>
-              ) : (
-                <>
-                  <Link
-                    to={"/admin/products"}
-                    className="text-decoration-none text-black"
-                  >
-                    Variation Management
-                  </Link>
-                  <p className="mb-0 fw-light">/</p>
-                  Create Variation for model {model.name}
-                </>
-              )}
-            </h1>
-          </div>
+          <WizardStepHeader
+            currStep="variation"
+            title={`Create new Variation for ${model.name}`}
+            parentTitle="Variation Management"
+            parentLink="/admin/model-variations"
+            className="mb-4"
+          />
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
@@ -1238,17 +1221,17 @@ export default function CreateVariation() {
 
           {/* Modals */}
           <ConfirmSubmitModal
-            show={continueToCreateModal}
+            show={!!continueToCreateGrn}
             onHide={handleDiscard}
             onSubmit={handleContinueToCreate}
             custom={{
               action: "leave",
               title: "Continue creation process.",
-              body: `Do you want to create another variation for the model ${
+              body: `Do you want to continue to create GRN for ${
                 model.name || "N/A"
               }?`,
               cancelText: "No, finish creation",
-              submitText: "Yes, create another variation",
+              submitText: "Yes, create GRN",
             }}
           />
         </>

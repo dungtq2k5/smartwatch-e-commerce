@@ -15,6 +15,7 @@ import { MODEL_VARIATION_URL } from "../../../configs";
 import { MAX_MODEL_VARIATIONS_TO_DELETE_BULK } from "../../../../../common/configs.common";
 
 type VariationState = {
+  fetchVariationLite: (variationId: string) => Promise<ModelVariationResponse>; // Less detailed version than fetchVariation
   fetchVariations: (
     query?: ModelVariationSearchQuery
   ) => Promise<AdminModelVariationListResponse>;
@@ -28,6 +29,19 @@ type VariationState = {
 };
 
 const useVariationStore = create<VariationState>(() => ({
+  async fetchVariationLite(
+    variationId: string
+  ): Promise<ModelVariationResponse> {
+    try {
+      const res = await retrieve(`${MODEL_VARIATION_URL}/${variationId}`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as ModelVariationResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
   async fetchVariations(
     query?: ModelVariationSearchQuery
   ): Promise<AdminModelVariationListResponse> {

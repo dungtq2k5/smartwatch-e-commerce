@@ -22,6 +22,7 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - react-google-maps/api for location.
     - lodash.debounce for geocoding (geographic coordinates).
     - jspdf, html2canvas for generating PDF file with content.
+    - exceljs for handling Excel files.
   - Faker for mocking data.
   - multer, exceljs for handling multipart/form-data (file uploads).
 

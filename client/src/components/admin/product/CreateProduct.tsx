@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type { FormInput } from "../../../utils/types";
 import {
   MAX_PRODUCT_IMG_UPLOAD,
@@ -35,6 +35,8 @@ import type { ProductCreate } from "../../../../../common/types.common";
 import ApiError from "../../common/ApiError";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
+import useCreationWizardStore from "../../../store/admin/creationWizardStore";
+import WizardStepHeader from "../WizardStepHeader";
 
 type Process = {
   isProcessing: boolean;
@@ -61,6 +63,7 @@ export default function CreateProduct() {
   console.log("CreateProduct rendered", renderCount.current);
 
   const navigate = useNavigate();
+  const wizard = useCreationWizardStore();
   const { brands, fetchBrands } = useProductBrandStore();
   const { categories, fetchCategories } = useProductCategoryStore();
   const { createProduct } = useProductStore();
@@ -374,7 +377,12 @@ export default function CreateProduct() {
             basePriceCents: Number(formData.basePriceCents.val),
           };
 
-          await createProduct(product);
+          const createdProduct = await createProduct(product);
+
+          wizard.setContext({
+            productId: createdProduct.id,
+            productName: createdProduct.name,
+          });
           toast.success("Product created successfully.");
           setContinueToCreateModal(true);
         } catch (error) {
@@ -388,7 +396,7 @@ export default function CreateProduct() {
         isCreating: false,
       }));
     },
-    [canCreateProduct, createProduct, formData, process.isProcessing]
+    [canCreateProduct, createProduct, formData, process.isProcessing, wizard]
   );
 
   const handleDiscard = useCallback((): void => {
@@ -399,8 +407,9 @@ export default function CreateProduct() {
       return;
     }
 
-    navigate("/admin/products");
-  }, [navigate, process.isProcessing]);
+    if (wizard.isActive) wizard.reset();
+    navigate(-1);
+  }, [navigate, process.isProcessing, wizard]);
 
   const handleContinueToCreate = useCallback((): void => {
     if (process.isProcessing) {
@@ -409,23 +418,24 @@ export default function CreateProduct() {
       });
       return;
     }
+    const productId = wizard.context.productId;
+    if (!productId) {
+      toast.error("Created product data not found in context.");
+      return;
+    }
 
-    navigate("/admin/product-variations/create", {
-      state: { fromCreateProduct: true },
+    if (!wizard.isActive) wizard.startFlow("product");
+    wizard.nextStep("model");
+
+    navigate(`/admin/variation-models/create/${productId}`, {
       replace: true,
     });
-  }, [navigate, process.isProcessing]);
-
-  /*
-    TODO:
-      - Continue to create models/variations buttons and so on.
-      - CreateProductSkeleton.
-  */
+  }, [navigate, process.isProcessing, wizard]);
 
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p>
+        <p>Loading...</p> // TODO loading skeleton
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
       ) : !brands ? (
@@ -435,18 +445,13 @@ export default function CreateProduct() {
       ) : (
         <>
           {/* Heading */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="fs-2 mb-0 d-flex gap-2">
-              <Link
-                to={"/admin/products"}
-                className="text-decoration-none text-black"
-              >
-                Product Management
-              </Link>
-              <p className="mb-0 fw-light">/</p>
-              Create Product
-            </h1>
-          </div>
+          <WizardStepHeader
+            currStep="product"
+            title="Create new Product"
+            parentTitle="Product Management"
+            parentLink="/admin/products"
+            className="mb-4"
+          />
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
@@ -473,6 +478,7 @@ export default function CreateProduct() {
                         value={formData.name.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        autoComplete="off"
                       />
                       {formData.name.err && (
                         <InvalidInputMsg msg={formData.name.err} />
@@ -711,7 +717,7 @@ export default function CreateProduct() {
             custom={{
               action: "leave",
               title: "Continue creation process.",
-              body: `Do you want to create a variation for the product ${
+              body: `Do you want to create a model for the product ${
                 formData.name.val || "N/A"
               } that you have just created?`,
               cancelText: "No, finish creation",

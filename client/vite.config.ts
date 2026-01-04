@@ -13,4 +13,5 @@ export default defineConfig({
     hmr: false, // Disable automatic page reloads
   },
   plugins: [react()],
+  assetsInclude: ["**/*.xlsx"],
 });

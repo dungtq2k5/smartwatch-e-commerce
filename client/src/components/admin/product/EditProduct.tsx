@@ -39,6 +39,7 @@ import {
 import ApiError from "../../common/ApiError";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import useUserStore from "../../../store/admin/userStore";
+import Title from "../Title";
 
 type Process = {
   isProcessing: boolean;
@@ -548,18 +549,12 @@ export function EditProduct() {
       ) : (
         <>
           {/* Heading */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="fs-2 mb-0 d-flex gap-2">
-              <Link
-                to={"/admin/products"}
-                className="text-decoration-none text-black"
-              >
-                Product Management
-              </Link>
-              <p className="mb-0 fw-light">/</p>
-              Update Product #ID {product.id}
-            </h1>
-          </div>
+          <Title
+            title={`Edit Product #ID ${product.id}`}
+            parentTitle="Product Management"
+            parentLink="/admin/products"
+            className="mb-4"
+          />
 
           {/* Form */}
           <form onSubmit={handleSubmit}>

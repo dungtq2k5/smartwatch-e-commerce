@@ -62,6 +62,8 @@ import {
   getSysUserId,
 } from "./utils";
 import Order, { IOrder } from "../models/order/order.model";
+import Provider, { IProvider } from "../models/inventory/provider.model";
+import ProviderAddress from "../models/inventory/providerAddress.model";
 
 // --- USERS ---
 
@@ -128,13 +130,7 @@ async function mockUsers(
 async function mockUserAddresses(
   session: mongoose.mongo.ClientSession,
   users: IUser[],
-  rand: {
-    min: number;
-    max: number;
-  } = {
-    min: 1,
-    max: 4,
-  },
+  { min = 1, max = 4 } = {},
   deleteExisting: boolean = true
 ): Promise<any[]> {
   console.log("⏳ ", `Mocking user addresses...`);
@@ -166,7 +162,7 @@ async function mockUserAddresses(
     const addressesToCreate: any = [];
 
     for (const user of users) {
-      const count = randNum(rand.min, rand.max);
+      const count = randNum(min, max);
       for (let i = 0; i < count; i++) {
         let randProvince: any, randDistrict: any, randWard: any;
         let districtsInProvince: { total: number; data: any[] },
@@ -218,8 +214,8 @@ async function mockUserAddresses(
           location: {
             locationType: "point",
             coordinates: [
-              parseFloat(faker.location.longitude().toFixed(6)),
-              parseFloat(faker.location.latitude().toFixed(6)),
+              Number.parseFloat(faker.location.longitude().toFixed(6)),
+              Number.parseFloat(faker.location.latitude().toFixed(6)),
             ],
           },
           isDefault: i === 0, // First address is default
@@ -376,7 +372,7 @@ async function mockProduct(
         categoryId: categories[randNum(0, categories.length - 1)]._id,
         description: faker.lorem.paragraph(),
         imageUrls: genRandImgUrls(randNum(1, 5), imgSpecs),
-        basePriceCents: faker.number.int({ min: 100_00, max: 1000_00 }),
+        basePriceCents: faker.number.int({ min: 10_000, max: 100_000 }),
         createdBy: sysUserId,
       };
 
@@ -397,13 +393,7 @@ async function mockProductModels(
   session: mongoose.mongo.ClientSession,
   products: IProduct[],
   osId: IProductOs[],
-  rand: {
-    min: number;
-    max: number;
-  } = {
-    min: 1,
-    max: 4,
-  }
+  { min = 1, max = 4 } = {}
 ): Promise<any> {
   console.log("⏳ ", "Mocking product models...");
 
@@ -425,10 +415,10 @@ async function mockProductModels(
     const sysUserId = getSysUserId();
 
     for (const product of products) {
-      const count = randNum(rand.min, rand.max);
+      const count = randNum(min, max);
 
       for (let i = 0; i < count; i++) {
-        const stockPriceCents = faker.number.int({ min: 100_00, max: 1000_00 });
+        const stockPriceCents = faker.number.int({ min: 10_000, max: 100_000 });
 
         const feature = {
           speakAndMicroPhone: faker.datatype.boolean(),
@@ -607,13 +597,7 @@ async function mockProductModels(
 async function mockModelVariations(
   session: mongoose.mongo.ClientSession,
   productModels: IProductModel[],
-  rand: {
-    min: number;
-    max: number;
-  } = {
-    min: 1,
-    max: 4,
-  }
+  { min = 1, max = 4 } = {}
 ): Promise<any> {
   console.log("⏳ ", "Mocking product model variations...");
 
@@ -635,7 +619,7 @@ async function mockModelVariations(
     const sysUserId = getSysUserId();
 
     for (const model of productModels) {
-      const count = randNum(rand.min, rand.max);
+      const count = randNum(min, max);
       const usedColorHexes = new Set<string>(); // Track used color hexes to ensure uniqueness
       const usedColorNames = new Set<string>(); // Track used color names to ensure uniqueness
 
@@ -1362,6 +1346,128 @@ async function mockOrderReturn(
   }
 }
 
+export async function mockProviders(
+  session: mongoose.mongo.ClientSession,
+  count: number = 3
+): Promise<any[]> {
+  console.log("⏳ ", "Mocking providers...");
+
+  try {
+    // Clear existing providers
+    await Provider.deleteMany().session(session);
+
+    // Generate mock providers
+    const providersToCreate: any = [];
+    const sysUserId = getSysUserId();
+    for (let i = 0; i < count; i++) {
+      providersToCreate.push({
+        fullName: faker.company.name(),
+        email: faker.internet.email(),
+        phoneNumber: faker.phone.number(),
+        createdBy: sysUserId,
+      });
+    }
+
+    const createdProviders = await Provider.insertMany(providersToCreate, {
+      session,
+    });
+    console.log("✅ Mocked providers successfully.");
+    return createdProviders;
+  } catch (error) {
+    throw new Error(`Error mocking providers: ${error}`);
+  }
+}
+
+export async function mockProviderAddresses(
+  session: mongoose.mongo.ClientSession,
+  providers: IProvider[],
+  { min = 1, max = 3 } = {},
+  deleteExisting: boolean = true
+): Promise<any[]> {
+  console.log("⏳ ", "Mocking provider addresses...");
+
+  if (providers.length === 0) {
+    throw new Error("Providers must be mocked before addresses.");
+  }
+
+  try {
+    // Clear existing provider addresses
+    if (deleteExisting) {
+      await ProviderAddress.deleteMany().session(session);
+    }
+
+    // Generate mock provider addresses
+    const addressesToCreate: any = [];
+    const sysUserId = getSysUserId();
+
+    for (const provider of providers) {
+      const count = randNum(min, max);
+      for (let i = 0; i < count; i++) {
+        let randProvince: any, randDistrict: any, randWard: any;
+        let districtsInProvince: { total: number; data: any[] },
+          wardsInDistrict: { total: number; data: any[] };
+
+        // Loop to ensure we get a valid province, district, and ward
+        do {
+          // Pick a random province
+          randProvince = provinces.data[randNum(0, provinces.total - 1)];
+
+          // Pick a random district from the province
+          districtsInProvince = getDistrictsByProvinceCode(randProvince.code);
+          if (districtsInProvince.total > 0) {
+            randDistrict =
+              districtsInProvince.data[
+                randNum(0, districtsInProvince.total - 1)
+              ];
+
+            // Pick a random ward code from the district
+            wardsInDistrict = getWardsByDistrictCode(randDistrict.code);
+            if (wardsInDistrict.total > 0) {
+              randWard =
+                wardsInDistrict.data[randNum(0, wardsInDistrict.total - 1)];
+            }
+          }
+        } while (!randWard); // Continue until a valid ward is found
+
+        const addressDetails = {
+          street: faker.location.streetAddress(),
+          apartmentNumber: faker.location.buildingNumber(),
+          wardCode: randWard.code,
+          districtCode: randDistrict.code,
+          cityProvinceCode: randProvince.code,
+        };
+
+        addressesToCreate.push({
+          providerId: provider._id,
+          name: faker.location.direction(),
+          ...addressDetails,
+          countryCode: VN_COUNTRY_CODE,
+          phoneNumber: faker.phone.number(),
+          fullAddress: formatAddress(addressDetails),
+          location: {
+            type: "Point",
+            coordinates: [
+              Number.parseFloat(faker.location.longitude().toFixed(6)),
+              Number.parseFloat(faker.location.latitude().toFixed(6)),
+            ],
+          },
+          notes: faker.lorem.sentence(),
+          isDefault: i === 0, // First address is default
+          createdBy: sysUserId,
+        });
+      }
+    }
+
+    const createdAddrs = await ProviderAddress.insertMany(addressesToCreate, {
+      session,
+    });
+    console.log("✅ Mocked provider addresses successfully.");
+    return createdAddrs;
+  } catch (error) {
+    throw new Error(`Error mocking provider addresses: ${error}`);
+  }
+}
+
 export async function mockAllData(): Promise<void> {
   console.log("⏳ ", "Mocking all data...");
 
@@ -1397,6 +1503,13 @@ export async function mockAllData(): Promise<void> {
     await mockInventoryMovements(session, variationInstances);
     await session.commitTransaction();
     console.log("✅ Inventory data committed.");
+
+    // Providers
+    session.startTransaction();
+    const providers = await mockProviders(session);
+    await mockProviderAddresses(session, providers);
+    await session.commitTransaction();
+    console.log("✅ Provider data committed.");
 
     // Actual buyerMe and order
     session.startTransaction();

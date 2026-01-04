@@ -6,7 +6,7 @@
 
 :root {
   --primary-color: #0d6efd;
-  --secondary-color: #34A853;
+  --success-color: #34A853;
   --danger-color: #EA4335;
   --warning-color: #FBBC05;
   --light-color: #F8F9FA;
@@ -20,8 +20,10 @@ body {
   font-family: 'Roboto', sans-serif;
   background-color: white;
   color: var(--dark-color);
-  min-height: 100dvh; /* Use this instead of 100vh for mobile screen */
-  min-height: 100vh; /* Fallback for browsers that do not support 100dvh */
+  min-height: 100dvh;
+  /* Use this instead of 100vh for mobile screen */
+  min-height: 100vh;
+  /* Fallback for browsers that do not support 100dvh */
 }
 
 #root {
@@ -32,7 +34,8 @@ body {
   max-width: 1920px;
   margin: 0 auto;
   min-height: 100dvh;
-  min-height: 100vh; /* Fallback for browsers that do not support 100dvh */
+  min-height: 100vh;
+  /* Fallback for browsers that do not support 100dvh */
 }
 
 .container--g {
@@ -209,7 +212,8 @@ body {
   text-overflow: ellipsis;
 }
 
-.brand-logo--g, .os-logo--g {
+.brand-logo--g,
+.os-logo--g {
   width: 1.5em;
   height: 1.5em;
   object-fit: cover;
@@ -636,6 +640,22 @@ body {
 
 .rh-toast-selected.rt-leave {
   animation: toast-leave 150ms ease-in forwards;
+}
+
+/* WebKit/Blink (Chrome, Safari, Edge) background styling */
+.progress-filled-color-success--g::-webkit-progress-bar {
+  background-color: var(--success-color);
+}
+
+/* WebKit/Blink (Chrome, Safari, Edge) value styling */
+.progress-filled-color-success--g::-webkit-progress-value {
+  background-color: var(--success-color);
+  /* The color of the filled part */
+}
+
+/* Firefox value styling (Firefox uses the main 'background-color' for the value part) */
+.progress-filled-color-success--g::-moz-progress-bar {
+  background-color: var(--success-color);
 }
 
 @keyframes toast-enter {

@@ -16,9 +16,17 @@ import {
   AVATAR_MAX_SIZE,
   AVATAR_MAX_WIDTH,
   AVATAR_MAX_HEIGHT,
+  GRN_FILE_IMPORT_EXTENSIONS,
+  GRN_FILE_IMPORT_MAX_SIZE,
+  GRN_FILE_IMPORT_HEADERS,
 } from "../../../common/configs.common";
-import { formatError, readFileAsDataUrl } from "../../../common/utils.common";
+import {
+  formatError,
+  readFileAsDataUrl,
+  removeOddSpaces,
+} from "../../../common/utils.common";
 import { REFRESH_TOKEN_URL } from "../configs";
+import ExcelJS from "exceljs";
 
 let isRefreshingToken = false; // Prevent "thundering herd" problem where multiple failed requests would all try to refresh the token simultaneously
 let failedReqQueue: {
@@ -291,4 +299,252 @@ export function exportToCsv<T>(
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+export async function getExcelFileErrs(
+  file: File,
+  category: "grn"
+): Promise<string[]> {
+  const errors = [];
+
+  // 1. Basic file validation (type and size)
+  // Note: file.type might be empty for some .xlsx files on Windows, so we check extension as well
+  const fileName = file.name.toLowerCase();
+  const hasValidExtension = GRN_FILE_IMPORT_EXTENSIONS.some((ext) =>
+    fileName.endsWith(ext)
+  );
+  if (!hasValidExtension) {
+    errors.push(
+      `Invalid file type. Allowed types are: ${GRN_FILE_IMPORT_EXTENSIONS.join(
+        ", "
+      )}`
+    );
+    return errors;
+  }
+
+  if (file.size > GRN_FILE_IMPORT_MAX_SIZE) {
+    errors.push(
+      `File size exceeds the maximum of ${
+        GRN_FILE_IMPORT_MAX_SIZE / (1024 * 1024)
+      }MB`
+    );
+    return errors;
+  }
+
+  // 2. Content validation (headers & duplicates)
+  // At the moment we only have GRN excel import, so we directly implement here...
+  try {
+    const buffer = await file.arrayBuffer();
+    const fileExt = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+
+    let fileHeaders: string[] = [];
+    const serials = new Set<string>();
+    const imeis = new Set<string>();
+    let hasDataRows = false;
+
+    if (fileExt === ".csv") {
+      // Handle CSV files
+      const text = new TextDecoder().decode(buffer);
+      const lines = text
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => !!line);
+
+      if (lines.length === 0) {
+        errors.push("The uploaded file is empty.");
+        return errors;
+      }
+
+      // Parse header row
+      fileHeaders = lines[0].split(",").map((h) => removeOddSpaces(h));
+
+      // Check if all required headers are present
+      const missingHeaders = GRN_FILE_IMPORT_HEADERS.filter(
+        (requiredHeader) => !fileHeaders.includes(requiredHeader)
+      );
+      if (missingHeaders.length > 0) {
+        errors.push(
+          `Missing required headers: ${missingHeaders.join(
+            ", "
+          )}. Please use the provided template for importing GRNs.`
+        );
+        return errors;
+      }
+
+      // Check for unknown headers
+      const unknownHeaders = fileHeaders.filter(
+        (header) =>
+          header &&
+          !(GRN_FILE_IMPORT_HEADERS as readonly string[]).includes(header)
+      );
+      if (unknownHeaders.length > 0) {
+        errors.push(
+          `Unknown headers found: ${unknownHeaders.join(
+            ", "
+          )}. Please use the provided template for importing GRNs.`
+        );
+        return errors;
+      }
+
+      // Validate data rows
+      for (let i = 1; i < lines.length; i++) {
+        hasDataRows = true;
+        const values = lines[i].split(",").map((v) => removeOddSpaces(v));
+
+        let serial: string | null = null;
+        let imei: string | null = null;
+
+        fileHeaders.forEach((header, index) => {
+          if (header === "supplierSerialNumber") serial = values[index] || null;
+          else if (header === "supplierImeiNumber")
+            imei = values[index] || null;
+        });
+
+        if (!serial) {
+          errors.push(`Row ${i + 1}: Missing 'supplierSerialNumber'.`);
+        } else if (serials.has(serial)) {
+          errors.push(
+            `Row ${i + 1}: Duplicate 'supplierSerialNumber' "${serial}".`
+          );
+        } else {
+          serials.add(serial);
+        }
+
+        if (imei) {
+          if (imeis.has(imei)) {
+            errors.push(`Row ${i + 1}: Duplicate 'imei' "${imei}".`);
+          } else {
+            imeis.add(imei);
+          }
+        }
+      }
+    } else {
+      // Handle .xlsx, .xls files
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      const worksheet = workbook.getWorksheet(1); // Get the first worksheet
+      if (!worksheet) {
+        errors.push("The uploaded file is empty or has no sheets.");
+        return errors;
+      }
+
+      // A. Validate headers
+      const headerRow = worksheet.getRow(1);
+      const fileHeaders: string[] = [];
+
+      headerRow.eachCell((cell, colNumber) => {
+        const header = removeOddSpaces(cell.text);
+        fileHeaders[colNumber] = header;
+      });
+
+      // Check if all required headers are present
+      const missingHeaders = GRN_FILE_IMPORT_HEADERS.filter(
+        (requiredHeader) => !fileHeaders.includes(requiredHeader)
+      );
+      if (missingHeaders.length > 0) {
+        errors.push(
+          `Missing required headers: ${missingHeaders.join(
+            ", "
+          )}. Please use the provided template for importing GRNs.`
+        );
+        return errors;
+      }
+
+      // Check for unknown headers (optional, strict mode)
+      const unknownHeaders = fileHeaders.filter(
+        (header) =>
+          header &&
+          !(GRN_FILE_IMPORT_HEADERS as readonly string[]).includes(header)
+      );
+      if (unknownHeaders.length > 0) {
+        errors.push(
+          `Unknown headers found: ${unknownHeaders.join(
+            ", "
+          )}. Please use the provided template for importing GRNs.`
+        );
+        return errors;
+      }
+
+      // B. Validate data & check duplicates
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // Skip header row
+        hasDataRows = true;
+
+        let serial: string | null = null;
+        let imei: string | null = null;
+
+        row.eachCell((cell, colNumber) => {
+          const header = fileHeaders[colNumber];
+          const cellVal = cell.text ? removeOddSpaces(cell.text) : "";
+
+          if (header === "supplierSerialNumber") serial = cellVal;
+          else if (header === "supplierImeiNumber") imei = cellVal;
+        });
+
+        // Check serial
+        if (!serial) {
+          errors.push(`Row ${rowNumber}: Missing 'supplierSerialNumber'.`);
+        } else if (serials.has(serial)) {
+          errors.push(
+            `Row ${rowNumber}: Duplicate 'supplierSerialNumber' "${serial}".`
+          );
+        } else {
+          serials.add(serial);
+        }
+
+        // Check IMEI (if present)
+        if (imei) {
+          if (imeis.has(imei)) {
+            errors.push(`Row ${rowNumber}: Duplicate 'imei' "${imei}".`);
+          } else {
+            imeis.add(imei);
+          }
+        }
+      });
+    }
+
+    if (!hasDataRows) {
+      errors.push("The uploaded file contains no data rows.");
+    }
+  } catch (error) {
+    console.error("Excel parsing error:", error);
+    errors.push(
+      `Error parsing Excel file. Please ensure the file is a valid .xlsx format.`
+    );
+  }
+
+  return errors;
+}
+
+export async function countExcelFileRows(file: File): Promise<number> {
+  try {
+    const buffer = await file.arrayBuffer();
+    const fileName = file.name.toLowerCase();
+    const fileExt = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+
+    if (fileExt === ".csv") {
+      // Handle CSV files
+      const text = new TextDecoder().decode(buffer);
+      const lines = text
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => !!line);
+      return lines.length;
+    }
+
+    // Handle .xlsx, .xls files
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+
+    const worksheet = workbook.getWorksheet(1); // Get the first worksheet
+    if (!worksheet) {
+      return 0;
+    }
+
+    return worksheet.rowCount;
+  } catch (error) {
+    console.error("Excel parsing error:", error);
+    return 0;
+  }
 }

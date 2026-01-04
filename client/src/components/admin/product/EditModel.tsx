@@ -41,6 +41,7 @@ import ApiError from "../../common/ApiError";
 import TxtListInput from "../TxtListInput";
 import useProductOsStore from "../../../store/common/product/osStore";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
+import Title from "../Title";
 
 type Process = {
   isProcessing: boolean;
@@ -1378,18 +1379,12 @@ export function EditModel() {
       ) : (
         <>
           {/* Heading */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="fs-2 mb-0 d-flex gap-2">
-              <Link
-                to={"/admin/products"}
-                className="text-decoration-none text-black"
-              >
-                Model Management
-              </Link>
-              <p className="mb-0 fw-light">/</p>
-              Update Model #ID {model.id}
-            </h1>
-          </div>
+          <Title
+            title={`Edit Model #ID ${model.id}`}
+            parentTitle="Model Management"
+            parentLink="/admin/product-models"
+            className="mb-4"
+          />
 
           {/* Form */}
           <form onSubmit={handleSubmit}>

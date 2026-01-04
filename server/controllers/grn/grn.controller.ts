@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { HttpError } from "../utils/errorHandler";
+import { HttpError } from "../../utils/errorHandler";
 import {
   GrnCreateReceived,
   GrnResponse,
   SuccessResponse,
-} from "../../common/types.common";
+} from "../../../common/types.common";
 import {
   formatGrnResponse,
   genInstanceSkuSync,
@@ -14,14 +14,14 @@ import {
   getMovementTypeId,
   getPropsForInstanceSkuGen,
   isPresent,
-} from "../utils/utils";
+} from "../../utils/utils";
 import mongoose, { Types } from "mongoose";
-import Grn from "../models/inventory/grn.model";
-import VariationInstance from "../models/product/variationInstance.model";
-import ModelVariation from "../models/product/modelVariation.model";
-import Provider from "../models/inventory/provider.model";
-import InventoryMovement from "../models/inventory/inventoryMovement.model";
-import User from "../models/user/user.model";
+import Grn from "../../models/inventory/grn.model";
+import VariationInstance from "../../models/product/variationInstance.model";
+import ModelVariation from "../../models/product/modelVariation.model";
+import Provider from "../../models/inventory/provider.model";
+import InventoryMovement from "../../models/inventory/inventoryMovement.model";
+import User from "../../models/user/user.model";
 
 export async function create(
   req: Request,
@@ -84,7 +84,9 @@ export async function create(
     // Create GRN
     const createdGrn = new Grn({
       ...grn,
+      providerId,
       stateId: grn.stateId || getGrnStateId("1"), // completed
+      createdBy: userId,
     });
 
     await createdGrn.save({ session });

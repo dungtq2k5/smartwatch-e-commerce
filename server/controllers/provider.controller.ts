@@ -4,6 +4,7 @@ import { HttpError } from "../utils/errorHandler";
 import { formatProviderResponse, isPresent } from "../utils/utils";
 import {
   ProviderCreate,
+  ProviderListResponse,
   ProviderResponse,
   ProviderUpdate,
   SuccessResponse,
@@ -94,6 +95,30 @@ export async function get(
       data: formatProviderResponse(provider),
     } as SuccessResponse<ProviderResponse>);
     console.log("✅ ", "Provider fetched successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAll(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Fetching all providers...");
+
+  try {
+    const providers = await Provider.find({ isDeleted: false }).lean();
+
+    res.status(200).json({
+      success: true,
+      message: "Providers fetched successfully.",
+      data: {
+        total: providers.length,
+        providers: providers.map(formatProviderResponse),
+      },
+    } as SuccessResponse<ProviderListResponse>);
+    console.log("✅ ", "Providers fetched successfully.");
   } catch (error) {
     next(error);
   }

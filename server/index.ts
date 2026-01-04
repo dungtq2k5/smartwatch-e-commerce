@@ -42,14 +42,15 @@ import returnStateRoute from "./routes/returnRefund/returnState.route";
 import refundStateRoute from "./routes/returnRefund/refundState.route";
 import returnReasonRoute from "./routes/returnRefund/returnReason.route";
 
-import grnRouter from "./routes/grn.route";
+import grnRoute from "./routes/grn/grn.route";
+import grnStateRoute from "./routes/grn/grnState.route";
 
 import { errorHandler as errorHandlerMiddleware } from "./utils/middlewares/error.middleware";
 import connectDB from "./db/connectDB";
 import { initAppCache } from "./configs/cache";
 import { HttpError } from "./utils/errorHandler";
 import { ROOT_URL } from "./configs/configs";
-import { mockAllData, mockPendingOrder } from "./utils/mock";
+import { mockAllData, mockPendingOrder, mockProviderAddresses, mockProviders } from "./utils/mock";
 import mongoose from "mongoose";
 
 dotenv.config();
@@ -143,7 +144,8 @@ app.use(`${ROOT_URL}/return-states`, returnStateRoute);
 app.use(`${ROOT_URL}/return-reasons`, returnReasonRoute);
 app.use(`${ROOT_URL}/refund-states`, refundStateRoute);
 
-app.use(`${ROOT_URL}/grns`, grnRouter);
+app.use(`${ROOT_URL}/grns`, grnRoute);
+app.use(`${ROOT_URL}/grn-states`, grnStateRoute);
 
 app.use((req, res, next) => {
   next(

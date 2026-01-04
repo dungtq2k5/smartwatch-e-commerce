@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import type { FormInput } from "../../../utils/types";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import useProductOsStore from "../../../store/common/product/osStore";
 import useModelStore from "../../../store/admin/product/modelStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
@@ -40,6 +40,8 @@ import useProductStore from "../../../store/admin/product/productStore";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import TxtListInput from "../TxtListInput";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
+import useCreationWizardStore from "../../../store/admin/creationWizardStore";
+import WizardStepHeader from "../WizardStepHeader";
 
 type Process = {
   isProcessing: boolean;
@@ -135,9 +137,7 @@ export default function CreateModel() {
   const { productId } = useParams();
 
   const navigate = useNavigate();
-  const location = useLocation();
-  const isFromContinueToCreate: boolean =
-    location.state?.fromCreateProduct || false;
+  const wizard = useCreationWizardStore();
 
   const { oses, fetchOses } = useProductOsStore();
   const { fetchProductLite } = useProductStore();
@@ -1114,7 +1114,12 @@ export default function CreateModel() {
             stopSelling: stopSelling.val,
           };
 
-          await createModel(model);
+          const createdModel = await createModel(model);
+
+          wizard.setContext({
+            modelId: createdModel.id,
+            modelName: createdModel.name,
+          });
           toast.success("Product model updated successfully.");
           setContinueToCreateVariation(true);
         } catch (error) {
@@ -1135,6 +1140,7 @@ export default function CreateModel() {
       formData,
       getRequiredNumFieldErr,
       createModel,
+      wizard,
     ]
   );
 
@@ -1146,14 +1152,9 @@ export default function CreateModel() {
       return;
     }
 
-    if (isFromContinueToCreate) {
-      navigate("/admin/products", {
-        replace: true,
-      });
-      return;
-    }
+    if (wizard.isActive) wizard.reset();
     navigate(-1);
-  }, [isFromContinueToCreate, navigate, process.isProcessing]);
+  }, [navigate, process.isProcessing, wizard]);
 
   const handleContinueToCreate = useCallback((): void => {
     if (process.isProcessing) {
@@ -1162,15 +1163,19 @@ export default function CreateModel() {
       });
       return;
     }
+    const modelId = wizard.context.modelId;
+    if (!modelId) {
+      toast.error("Created model ID not found in context.");
+      return;
+    }
 
-    navigate("/admin/variation-models/create", {
-      state: {
-        fromCreateProduct: isFromContinueToCreate,
-        fromCreateVariation: true,
-      },
+    if (!wizard.isActive) wizard.startFlow("model");
+    wizard.nextStep("variation");
+
+    navigate(`/admin/model-variations/create/${modelId}`, {
       replace: true,
     });
-  }, [isFromContinueToCreate, navigate, process.isProcessing]);
+  }, [navigate, process.isProcessing, wizard]);
 
   /*
     TODO:
@@ -1180,7 +1185,7 @@ export default function CreateModel() {
 
   return (
     <>
-      {process.isProcessing ? (
+      {process.isInitializing ? (
         <p>Loading...</p>
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
@@ -1191,28 +1196,13 @@ export default function CreateModel() {
       ) : (
         <>
           {/* Heading */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="fs-2 mb-0 d-flex gap-2">
-              {isFromContinueToCreate ? (
-                <>
-                  <span className="text-muted text-small">Step: 2/N</span>
-                  <p className="mb-0 fw-light">/</p>
-                  Create Model for product {product.name}
-                </>
-              ) : (
-                <>
-                  <Link
-                    to={"/admin/products"}
-                    className="text-decoration-none text-black"
-                  >
-                    Model Management
-                  </Link>
-                  <p className="mb-0 fw-light">/</p>
-                  Create Model for product {product.name}
-                </>
-              )}
-            </h1>
-          </div>
+          <WizardStepHeader
+            currStep="model"
+            title={`Create new Model for ${product.name}`}
+            parentTitle="Model Management"
+            parentLink="/admin/product-models"
+            className="mb-4"
+          />
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
@@ -2399,7 +2389,7 @@ export default function CreateModel() {
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => navigate(-1)}
+                onClick={handleDiscard}
                 disabled={process.isProcessing}
               >
                 Cancel

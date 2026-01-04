@@ -137,3 +137,5 @@ export type AdminConfig = {
   modelVariationManagementDisplayFields: ModelVariationDisplayField[];
   variationInstanceManagementDisplayFields: VariationInstanceDisplayField[];
 };
+
+export type ProductCreationWizardStep = "product" | "model" | "variation" | "grn";

@@ -102,7 +102,7 @@ export function verifyGrnInput(
           }
         }
         if (!Array.isArray(instances) || instances.length === 0) {
-          errors.push("At least one instance row is required.");
+          errors.push("At least one instance is required.");
         } else {
           // For checking duplicate, use Set instead of normal array for better performance "O(n^2)" to "O(n)"
           const validSerialNumbers = new Set<string>();
@@ -167,71 +167,129 @@ export async function parseExcelToJson(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  console.log("▶️ ", "Parsing Excel file to JSON...");
+  console.log("▶️ ", "Parsing file to JSON...");
 
   try {
     if (!req.file) {
       throw new HttpError(500, "File not found during parsing.");
     }
 
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(req.file.buffer as any);
+    const fileName = req.file.originalname.toLowerCase();
+    const isCsv = fileName.endsWith(".csv");
 
-    const worksheet = workbook.getWorksheet(1); // Get the first worksheet
-    if (!worksheet) {
-      throw new HttpError(400, "The uploaded file is empty or has no sheets.");
-    }
+    const instances: any[] = isCsv
+      ? await parseCSVToJson(req.file.buffer)
+      : await parseExcelFileToJson(req.file.buffer);
 
-    const rawRows: any[] = [];
-    const headers: string[] = [];
-
-    // Get headers from Row 1
-    worksheet.getRow(1).eachCell((cell, colNumber) => {
-      const header = removeOddSpaces(cell.text);
-      if (!GRN_FILE_IMPORT_HEADERS.includes(header as any)) {
-        throw new HttpError(
-          400,
-          `Invalid header found: "${header}". Please use the provided template for importing GRNs.`
-        );
-      }
-
-      headers[colNumber] = header;
-    });
-
-    // Iterate data from Row 2 onwards
-    worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return; // Skip header row
-
-      const rowData: any = {};
-      let hasData = false;
-
-      row.eachCell((cell, colNumber) => {
-        const header = headers[colNumber];
-        if (header) {
-          // Handle rich text or simple values
-          const val =
-            cell.value && typeof cell.value === "object" && "text" in cell.value
-              ? (cell.value as any).text
-              : cell.value;
-
-          rowData[header] = val;
-          hasData = true;
-        }
-      });
-
-      if (hasData) {
-        rawRows.push(rowData);
-      }
-    });
-
-    if (rawRows.length === 0) {
+    if (instances.length === 0) {
       throw new HttpError(400, "The uploaded file contains no data rows.");
     }
 
-    // Attach parsed data to req.body for next middleware/controller
-    req.body.instances = rawRows;
+    req.body.instances = instances;
     next();
   } catch (error) {
     next(error);
   }
+}
+
+async function parseExcelFileToJson(buffer: Buffer): Promise<any[]> {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer as any);
+
+  const worksheet = workbook.getWorksheet(1);
+  if (!worksheet) {
+    throw new HttpError(400, "The uploaded file is empty or has no sheets.");
+  }
+
+  const rawRows: any[] = [];
+  const headers: string[] = [];
+
+  // Get headers from Row 1
+  worksheet.getRow(1).eachCell((cell, colNumber) => {
+    const header = removeOddSpaces(cell.text);
+    if (!GRN_FILE_IMPORT_HEADERS.includes(header as any)) {
+      throw new HttpError(
+        400,
+        `Invalid header found: "${header}". Please use the provided template for importing GRNs.`
+      );
+    }
+    headers[colNumber] = header;
+  });
+
+  // Iterate data from Row 2 onwards
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+
+    const rowData: any = {};
+    let hasData = false;
+
+    row.eachCell((cell, colNumber) => {
+      const header = headers[colNumber];
+      if (header) {
+        const val =
+          cell.value && typeof cell.value === "object" && "text" in cell.value
+            ? (cell.value as any).text
+            : cell.value;
+
+        rowData[header] = val;
+        hasData = true;
+      }
+    });
+
+    if (hasData) {
+      rawRows.push(rowData);
+    }
+  });
+
+  return rawRows;
+}
+
+async function parseCSVToJson(buffer: Buffer): Promise<any[]> {
+  const text = buffer.toString("utf-8");
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => !!line);
+
+  if (lines.length === 0) {
+    throw new HttpError(400, "The uploaded file is empty.");
+  }
+
+  const headers = lines[0].split(",").map((h) => removeOddSpaces(h));
+
+  // Validate headers
+  const invalidHeaders = headers.filter(
+    (header) => !GRN_FILE_IMPORT_HEADERS.includes(header as any)
+  );
+  if (invalidHeaders.length > 0) {
+    throw new HttpError(
+      400,
+      `Invalid headers found: "${invalidHeaders.join(
+        ", "
+      )}". Please use the provided template for importing GRNs.`
+    );
+  }
+
+  const rawRows: any[] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(",").map((v) => removeOddSpaces(v));
+
+    const rowData: any = {};
+    let hasData = false;
+
+    headers.forEach((header, index) => {
+      const val = values[index] || null;
+      if (val) {
+        rowData[header] = val;
+        hasData = true;
+      }
+    });
+
+    if (hasData) {
+      rawRows.push(rowData);
+    }
+  }
+
+  return rawRows;
 }
