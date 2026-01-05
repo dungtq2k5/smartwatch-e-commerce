@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import useProviderStore from "../../../store/admin/providerStore";
 import useGrnStore from "../../../store/admin/grn/grnStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
@@ -95,7 +95,7 @@ export default function CreateGrn() {
 
   const [restartWizard, setRestartWizard] = useState<boolean>(false);
 
-  // Fetch set data on initial load: providers, grnStates
+  // Fetch set data on initial load: variation, providers, grnStates
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       setProcess((prev) => ({
@@ -626,7 +626,7 @@ export default function CreateGrn() {
                 </div>
 
                 {/* Status Card */}
-                <div className="card shadow-sm mb-4">
+                <div className="card shadow-sm mb-3">
                   <div className="card-header">
                     <h2 className="fs-5 mb-0">Status</h2>
                   </div>

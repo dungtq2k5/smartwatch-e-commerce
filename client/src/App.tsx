@@ -52,6 +52,7 @@ import CreateProduct from "./components/admin/product/CreateProduct.tsx";
 import CreateModel from "./components/admin/product/CreateModel.tsx";
 import CreateVariation from "./components/admin/product/CreateVariation.tsx";
 import CreateGrn from "./components/admin/grn/CreateGrn.tsx";
+import CreateInstance from "./components/admin/product/CreateInstance.tsx";
 
 export default function App() {
   // DEV for testing

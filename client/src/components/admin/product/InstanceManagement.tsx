@@ -142,7 +142,7 @@ export default function InstanceManagement() {
             to={`/admin/model-variations?searchTerm=${instance.modelVariationId}`}
             title="View detail model"
             disabled={!canReadModel}
-            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {instance.modelVariationId}
           </LinkBtn>
@@ -245,7 +245,7 @@ export default function InstanceManagement() {
               to={`${instance.id}/edit`}
               title="Edit instance"
               disabled={!canEditInstance}
-              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
           </div>
         ),

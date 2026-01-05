@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
-import {
-  Link,
-  useParams,
-  useSearchParams,
-} from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import useUserStore from "../../../store/admin/userStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import type {
@@ -41,6 +37,8 @@ import type { ItemPicked } from "../../../utils/types";
 import { Accordion, Tab, Tabs } from "react-bootstrap";
 import DetailUserLink from "../DetailUserLink";
 import DetailProductSkeleton from "../skeleton/DetailProductSkeleton";
+import useHasPermission from "../../../hooks/admin/useHasPermission";
+import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
 
 export default function DetailProduct() {
   // DEV temp for testing
@@ -53,6 +51,8 @@ export default function DetailProduct() {
   const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchProductDetail } = useProductStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
+
+  const canReadUser = useHasPermission("r_usr");
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [productDetail, setProductDetail] =
@@ -287,8 +287,11 @@ export default function DetailProduct() {
                 Created: {new Date(productDetail.createdAt).toLocaleString()} by{" "}
                 <DetailUserLink
                   userId={productDetail.createdBy.id}
-                  displayName={productDetail.createdBy.fullName}
-                />
+                  disabled={!canReadUser}
+                  disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+                >
+                  {productDetail.createdBy.fullName}
+                </DetailUserLink>
               </span>
               <span className="text-muted">|</span>
               <span className="small">
@@ -1252,10 +1255,11 @@ export default function DetailProduct() {
                               by{" "}
                               <DetailUserLink
                                 userId={modelPicked.data.createdBy.id}
-                                displayName={
-                                  modelPicked.data.createdBy.fullName
-                                }
-                              />
+                                disabled={!canReadUser}
+                                disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+                              >
+                                {modelPicked.data.createdBy.fullName}
+                              </DetailUserLink>
                             </td>
                           </tr>
                           <tr>
@@ -1275,10 +1279,11 @@ export default function DetailProduct() {
                               by{" "}
                               <DetailUserLink
                                 userId={variationPicked.data.createdBy.id}
-                                displayName={
-                                  variationPicked.data.createdBy.fullName
-                                }
-                              />
+                                disabled={!canReadUser}
+                                disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+                              >
+                                {variationPicked.data.createdBy.fullName}
+                              </DetailUserLink>
                             </td>
                           </tr>
                           <tr>

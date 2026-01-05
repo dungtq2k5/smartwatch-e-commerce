@@ -295,7 +295,7 @@ export default function UserManagement() {
                 to={`${user.id}/edit`}
                 title="Edit user"
                 disabled={!canEditUser}
-                disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+                disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
               />
               <DeleteBtn
                 title="Delete user"
@@ -303,7 +303,7 @@ export default function UserManagement() {
                   setModal((prev) => ({ ...prev, userIdToDelete: user.id }))
                 }
                 disabled={!canDeleteUser}
-                disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+                disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
               />
             </div>
           ),
@@ -967,7 +967,7 @@ export default function UserManagement() {
             to="create"
             className="text-decoration-none border-0 p-0 bg-transparent text-primary"
             disabled={!canCreateUser}
-            disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+            disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
           >
             <FontAwesomeIcon icon={faPlus} size="sm" className="me-2" />
             Create new user

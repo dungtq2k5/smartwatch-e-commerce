@@ -152,7 +152,7 @@ export default function ModelManagement() {
             to={`/admin/products/${model.productId}`}
             title="View detail product"
             disabled={!canReadProduct}
-            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {model.productId}
           </LinkBtn>
@@ -205,7 +205,7 @@ export default function ModelManagement() {
             to={`/admin/model-variations?searchTerm=${model.id}`}
             title="View variations of this model"
             disabled={!canReadVariation}
-            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {model.totalVariations}
           </LinkBtn>
@@ -249,7 +249,7 @@ export default function ModelManagement() {
           <DetailUserLink
             userId={model.createdBy.id}
             disabled={!canReadUser}
-            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {model.createdBy.fullName}
           </DetailUserLink>
@@ -278,13 +278,13 @@ export default function ModelManagement() {
               to={`${model.id}/edit`}
               title="Edit model"
               disabled={!canEditModel}
-              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
             <CreateBtnLink
               to={`/admin/model-variations/create/${model.id}`}
               title="Create variation for this model"
               disabled={!canCreateVariation}
-              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
             <DeleteBtn
               onClick={() => {
@@ -295,7 +295,7 @@ export default function ModelManagement() {
               }}
               title="Delete model"
               disabled={!canDeleteModel}
-              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
           </div>
         ),

@@ -222,7 +222,7 @@ export default function ProductManagement() {
             to={`/admin/product-models?searchTerm=${product.id}`}
             title="View models of this product"
             disabled={!canReadModel}
-            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {product.totalModels}
           </LinkBtn>
@@ -238,7 +238,7 @@ export default function ProductManagement() {
             to={`/admin/product-variations?searchTerm=${product.id}`}
             title="View variations of this product"
             disabled={!canReadVariation}
-            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {product.totalVariations}
           </LinkBtn>
@@ -256,7 +256,7 @@ export default function ProductManagement() {
           <DetailUserLink
             userId={product.createdBy.id}
             disabled={!canReadUser}
-            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {product.createdBy.fullName}
           </DetailUserLink>
@@ -289,13 +289,13 @@ export default function ProductManagement() {
               to={`${product.id}/edit`}
               title="Edit product"
               disabled={!canEditProduct}
-              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
             <CreateBtnLink
               to={`/admin/product-models/create/${product.id}`}
               title="Create model for this product"
               disabled={!canReadModel}
-              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
             <DeleteBtn
               onClick={() => {
@@ -306,7 +306,7 @@ export default function ProductManagement() {
               }}
               title="Delete product"
               disabled={!canDeleteProduct}
-              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
           </div>
         ),
@@ -1011,7 +1011,7 @@ export default function ProductManagement() {
             to="create"
             className="text-decoration-none border-0 p-0 bg-transparent text-primary"
             disabled={!canCreateProduct}
-            disabledTitle="You don't have permission to perform"
+            disabledtitle="You don't have permission to perform"
           >
             <FontAwesomeIcon icon={faPlus} size="sm" className="me-2" />
             Create new product

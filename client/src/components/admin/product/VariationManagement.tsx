@@ -154,7 +154,7 @@ export default function VariationManagement() {
             to={`/admin/products/${variation.productId}`}
             title="View detail product"
             disabled={!canReadProduct}
-            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {variation.productId}
           </LinkBtn>
@@ -168,7 +168,7 @@ export default function VariationManagement() {
             to={`/admin/products/${variation.productId}?modelId=${variation.productModelId}`}
             title="View detail model"
             disabled={!canReadModel}
-            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {variation.productModelId}
           </LinkBtn>
@@ -254,7 +254,7 @@ export default function VariationManagement() {
             to={`/admin/variation-instances?variationId=${variation.id}`}
             title="View stock instances"
             disabled={!canReadInstance}
-            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {variation.stockQuantity}
           </LinkBtn>
@@ -267,7 +267,7 @@ export default function VariationManagement() {
           <DetailUserLink
             userId={variation.createdBy.id}
             disabled={!canReadUser}
-            disabledTitle={DISABLED_TITLE_FOR_VIEWING}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {variation.createdBy.fullName}
           </DetailUserLink>
@@ -307,13 +307,13 @@ export default function VariationManagement() {
               to={`${variation.id}/edit`}
               title="Edit variation"
               disabled={!canEditVariation}
-              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
             <CreateBtnLink
               to={`/admin/grn/create/${variation.id}`}
               title="Import GRN for this variation"
               disabled={!canCreateGrn}
-              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
             <DeleteBtn
               onClick={() => {
@@ -324,7 +324,7 @@ export default function VariationManagement() {
               }}
               title="Delete variation"
               disabled={!canDeleteVariation}
-              disabledTitle={DISABLED_TITLE_FOR_PERFORMING}
+              disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
           </div>
         ),
