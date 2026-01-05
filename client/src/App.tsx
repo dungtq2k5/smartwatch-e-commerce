@@ -139,6 +139,7 @@ export default function App() {
 
                 <Route path="variation-instances">
                   <Route index element={<InstanceManagement />} />
+                  <Route path="create/:variationId" element={<CreateInstance />} />
                 </Route>
 
                 <Route path="grn">

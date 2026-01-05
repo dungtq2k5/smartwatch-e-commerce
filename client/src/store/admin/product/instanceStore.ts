@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type {
+  VariationInstanceCreate,
   VariationInstanceListResponse,
+  VariationInstanceResponse,
   VariationInstanceSearchQuery,
 } from "../../../../../common/types.common";
 import {
@@ -8,12 +10,16 @@ import {
   removeOddSpaces,
 } from "../../../../../common/utils.common";
 import { VARIATION_INSTANCE_URL } from "../../../configs";
-import { retrieve } from "../../../utils/utils";
+import { post, retrieve } from "../../../utils/utils";
 
 type InstanceState = {
   fetchInstances: (
     query?: VariationInstanceSearchQuery
   ) => Promise<VariationInstanceListResponse>;
+
+  createInstance: (
+    instance: VariationInstanceCreate
+  ) => Promise<VariationInstanceResponse>;
 };
 
 const useInstanceStore = create<InstanceState>(() => ({
@@ -39,6 +45,19 @@ const useInstanceStore = create<InstanceState>(() => ({
       if (!res.success) throw new Error(res.message);
 
       return res.data as VariationInstanceListResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async createInstance(
+    instance: VariationInstanceCreate
+  ): Promise<VariationInstanceResponse> {
+    try {
+      const res = await post(VARIATION_INSTANCE_URL, instance);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as VariationInstanceResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }

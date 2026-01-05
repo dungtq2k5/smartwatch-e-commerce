@@ -657,6 +657,16 @@ export default function CreateGrn() {
                     </div>
                   </div>
                 </div>
+
+                {/* Manually create link */}
+                <div className="w-100 d-flex justify-content-end">
+                  <Link
+                    to={`/admin/variation-instances/create/${variationId}`}
+                    className="btn btn-link p-0"
+                  >
+                    Or manually create variation instances
+                  </Link>
+                </div>
               </div>
             </div>
 
