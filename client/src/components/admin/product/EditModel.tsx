@@ -45,6 +45,7 @@ import InvalidInputMsg from "../../common/InvalidInputMsg";
 import Title from "../Title";
 import DetailUserLink from "../DetailUserLink";
 import LinkBtn from "../../common/LinkBtn";
+import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
@@ -2562,27 +2563,16 @@ export function EditModel() {
                         ref={fileInputRef}
                         disabled={process.isProcessing}
                       />
-                      <button
+                      <Btn
                         type="button"
                         className="btn btn-outline-primary mt-2 w-100"
                         onClick={handleUploadImgs}
                         disabled={process.isProcessing}
+                        loading={process.isUploadingImages}
+                        icon={<FontAwesomeIcon icon={faUpload} />}
                       >
-                        {process.isUploadingImages ? (
-                          <>
-                            <span
-                              className="spinner-border spinner-border-sm me-2"
-                              aria-hidden="true"
-                            ></span>
-                            <output>Uploading...</output>
-                          </>
-                        ) : (
-                          <>
-                            <FontAwesomeIcon icon={faUpload} className="me-2" />
-                            Upload Images
-                          </>
-                        )}
-                      </button>
+                        Upload Images
+                      </Btn>
                       {formData.imageUrls.err && (
                         <InvalidInputMsg msg={formData.imageUrls.err} />
                       )}
@@ -2706,23 +2696,14 @@ export function EditModel() {
               >
                 Discard
               </button>
-              <button
+              <Btn
                 type="submit"
                 className="btn btn-primary"
                 disabled={process.isProcessing}
+                loading={process.isUpdating}
               >
-                {process.isUpdating ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      aria-hidden="true"
-                    ></span>
-                    <output>Saving...</output>
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
-              </button>
+                Update
+              </Btn>
             </div>
           </form>
         </>

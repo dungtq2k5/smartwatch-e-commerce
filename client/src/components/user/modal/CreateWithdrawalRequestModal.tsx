@@ -17,6 +17,7 @@ import { WAITING_EMOJI } from "../../../configs";
 import toast from "react-hot-toast";
 import useUserWithdrawalRequestStore from "../../../store/user/userWithdrawalRequestStore";
 import type { SelfWithdrawalRequestResponse } from "../../../../../common/types.common";
+import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
@@ -200,7 +201,15 @@ const CreateWithdrawalRequestModal = memo(
           }
         }
       },
-      [createWithdrawalRequest, formData, onHide, onSuccess, process.isProcessing, updateUserBalanceCli, userBalanceCents]
+      [
+        createWithdrawalRequest,
+        formData,
+        onHide,
+        onSuccess,
+        process.isProcessing,
+        updateUserBalanceCli,
+        userBalanceCents,
+      ]
     );
 
     return (
@@ -350,31 +359,16 @@ const CreateWithdrawalRequestModal = memo(
 
                 <hr />
 
-                <button
+                <Btn
                   type="button"
                   className="btn btn-outline-primary w-100"
                   onClick={handleCreateBankAccount}
                   disabled={process.isProcessing}
+                  loading={process.isCreatingAccount}
+                  icon={<FontAwesomeIcon icon={faPlus} size="sm" />}
                 >
-                  {process.isCreatingAccount ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        aria-hidden="true"
-                      ></span>
-                      <output>Adding...</output>
-                    </>
-                  ) : (
-                    <>
-                      <FontAwesomeIcon
-                        icon={faPlus}
-                        size="sm"
-                        className="me-2"
-                      />
-                      Add New Bank Account
-                    </>
-                  )}
-                </button>
+                  Add New Bank Account
+                </Btn>
               </>
             )}
           </Modal.Body>
@@ -388,23 +382,14 @@ const CreateWithdrawalRequestModal = memo(
             >
               Close
             </Button>
-            <Button
+            <Btn
               type="submit"
-              variant="primary"
+              className="btn btn-primary"
               disabled={!formData.bankAccountId || process.isProcessing}
+              loading={process.isSubmitting}
             >
-              {process.isSubmitting ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                  ></span>
-                  <output>Sending...</output>
-                </>
-              ) : (
-                <>Send withdrawal request</>
-              )}
-            </Button>
+              Send withdrawal request
+            </Btn>
           </Modal.Footer>
         </form>
       </Modal>

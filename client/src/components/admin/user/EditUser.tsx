@@ -41,6 +41,7 @@ import useHasPermission from "../../../hooks/admin/useHasPermission";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import EditUserSkeleton from "../skeleton/EditUserSkeleton";
 import Title from "../Title";
+import Btn from "../../common/Btn";
 
 type FormData = {
   fullName: FormInput;
@@ -521,7 +522,7 @@ export default function EditUser() {
           isProcessing: true,
           isUpdatingContactInfo: true,
         }));
-        
+
         try {
           const { emailData, phoneData } = getChangedData();
           const emailChanged = Object.keys(emailData).length > 0;
@@ -780,23 +781,14 @@ export default function EditUser() {
                 </div>
               </div>
               <div className="card-footer text-end">
-                <button
+                <Btn
                   type="submit"
                   className="btn btn-primary"
                   disabled={process.isProcessing}
+                  loading={process.isUpdatingGeneralInfo}
                 >
-                  {process.isUpdatingGeneralInfo ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        aria-hidden="true"
-                      ></span>
-                      <output>Saving...</output>
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </button>
+                  Update
+                </Btn>
               </div>
             </div>
           </form>
@@ -905,23 +897,14 @@ export default function EditUser() {
                 </div>
               </div>
               <div className="card-footer text-end">
-                <button
+                <Btn
                   type="submit"
                   className="btn btn-primary"
                   disabled={process.isProcessing}
+                  loading={process.isUpdatingContactInfo}
                 >
-                  {process.isUpdatingContactInfo ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        aria-hidden="true"
-                      ></span>
-                      <output>Saving...</output>
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </button>
+                  Update
+                </Btn>
               </div>
             </div>
           </form>

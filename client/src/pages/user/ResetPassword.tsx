@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import toast from "react-hot-toast";
 import useAuthStore from "../../store/user/authStore";
 import { WAITING_EMOJI } from "../../configs";
+import Btn from "../../components/common/Btn";
 
 type FormData = {
   password: FormInput;
@@ -168,23 +169,14 @@ export default function ResetPassword() {
           )}
         </div>
 
-        <button
-          className="w-100 btn btn-primary mt-3 mb-3"
+        <Btn
           type="submit"
+          className="w-100 btn btn-primary mt-3 mb-3"
           disabled={isSubmitting}
+          loading={isSubmitting}
         >
-          {isSubmitting ? (
-            <>
-              <span
-                className="spinner-border spinner-border-sm me-2"
-                aria-hidden="true"
-              ></span>
-              <output>Resetting password...</output>
-            </>
-          ) : (
-            "Reset my password"
-          )}
-        </button>
+          Reset my password
+        </Btn>
 
         <p className="mb-0 text-muted">
           Remembered your password? <a href="/login">Log in now</a>

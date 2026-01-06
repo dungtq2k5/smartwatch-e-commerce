@@ -34,6 +34,7 @@ import useCreationWizardStore from "../../../store/admin/creationWizardStore";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import WizardStepHeader from "../WizardStepHeader";
 import CreateGrnSkeleton from "../skeleton/CreateGrnSkeleton";
+import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
@@ -555,30 +556,16 @@ export default function CreateGrn() {
                 <div className="card shadow-sm mb-4">
                   <div className="card-header d-flex justify-content-between align-items-center">
                     <h2 className="fs-5 mb-0">Import File</h2>
-                    <button
+                    <Btn
                       type="button"
                       className="btn btn-sm btn-outline-secondary"
                       onClick={handleDownloadTemplate}
                       disabled={process.isDownloadingTemplate}
+                      loading={process.isDownloadingTemplate}
+                      icon={<FontAwesomeIcon icon={faFileArrowDown} />}
                     >
-                      {process.isDownloadingTemplate ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            aria-hidden="true"
-                          ></span>
-                          <output>Downloading...</output>
-                        </>
-                      ) : (
-                        <>
-                          <FontAwesomeIcon
-                            icon={faFileArrowDown}
-                            className="me-2"
-                          />
-                          Download Template
-                        </>
-                      )}
-                    </button>
+                      Download Template
+                    </Btn>
                   </div>
                   <div className="card-body">
                     <div className="mb-3">
@@ -680,26 +667,15 @@ export default function CreateGrn() {
               >
                 Discard
               </button>
-              <button
+              <Btn
                 type="submit"
                 className="btn btn-primary"
                 disabled={process.isProcessing}
+                loading={process.isCreating}
+                icon={<FontAwesomeIcon icon={faFileArrowUp} />}
               >
-                {process.isCreating ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      aria-hidden="true"
-                    ></span>
-                    <output>Importing...</output>
-                  </>
-                ) : (
-                  <>
-                    <FontAwesomeIcon icon={faFileArrowUp} className="me-2" />
-                    Import GRN
-                  </>
-                )}
-              </button>
+                Import GRN
+              </Btn>
             </div>
           </form>
 

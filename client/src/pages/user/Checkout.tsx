@@ -29,10 +29,10 @@ import SelectAddressModal from "../../components/user/modal/SelectAddressModal";
 import { faCcStripe } from "@fortawesome/free-brands-svg-icons";
 import useOrderStore from "../../store/user/orderStore";
 import toast from "react-hot-toast";
-import SmallSpinner from "../../components/common/SmallSpinner";
 import { WAITING_EMOJI } from "../../configs";
 import CheckoutSkeleton from "../../components/user/skeleton/CheckoutSkeleton";
 import type { BuyNowItem } from "../../utils/types";
+import Btn from "../../components/common/Btn";
 
 // Handle both UserCartListResponse and BuyNowItem
 type CheckoutCart =
@@ -565,42 +565,24 @@ export default function Checkout() {
                         : centsToUSD(totalCents)}
                     </span>
                   </div>
-                  <button
+                  <Btn
                     type="button"
-                    className="btn-premium--g w-100"
+                    className="btn btn-primary w-100"
                     disabled={process.isProcessing}
                     onClick={handleCheckout}
+                    loading={process.isCreatingOrder}
+                    icon={
+                      selectedPaymentMethod.name === "stripe" ? (
+                        <FontAwesomeIcon icon={faCcStripe} />
+                      ) : undefined
+                    }
                   >
-                    {selectedPaymentMethod.name === "cash" ? (
-                      process.isCreatingOrder ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            aria-hidden="true"
-                          ></span>
-                          <output>Processing order...</output>
-                        </>
-                      ) : (
-                        "Submit & Order"
-                      )
-                    ) : (
-                      selectedPaymentMethod.name === "stripe" && (
-                        <>
-                          {process.isCreatingOrder ? (
-                            <>
-                              <SmallSpinner />{" "}
-                            </>
-                          ) : (
-                            <FontAwesomeIcon
-                              icon={faCcStripe}
-                              className="me-2"
-                            />
-                          )}
-                          Continue with Stripe
-                        </>
-                      )
-                    )}
-                  </button>
+                    {selectedPaymentMethod.name === "cash"
+                      ? "Submit & Order"
+                      : selectedPaymentMethod.name === "stripe"
+                      ? "Continue with Stripe"
+                      : "Proceed to Payment"}
+                  </Btn>
                 </div>
                 {/* Checkout items */}
                 {genItemsList(checkoutCart)}

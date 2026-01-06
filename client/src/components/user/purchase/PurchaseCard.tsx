@@ -23,7 +23,7 @@ import useDeliveryStateStore from "../../../store/common/order/deliveryStateStor
 import usePaymentMethodStore from "../../../store/common/order/paymentMethodStore";
 import ApiError from "../../common/ApiError";
 import PurchaseCardSkeleton from "../skeleton/PurchaseCardSkeleton";
-import SmallSpinner from "../../common/SmallSpinner";
+import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
@@ -361,39 +361,26 @@ const PurchaseCard = memo(
                     </button>
                   )}
                   {canBuyAgain && (
-                    <button
+                    <Btn
                       type="button"
                       className="btn btn-primary"
                       onClick={handleBuyAgain}
                       disabled={process.isProcessing}
+                      loading={process.isCreatingCart}
                     >
-                      {process.isCreatingCart ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            aria-hidden="true"
-                          ></span>
-                          <output>Adding to cart...</output>
-                        </>
-                      ) : (
-                        "Buy Again"
-                      )}
-                    </button>
+                      Buy Again
+                    </Btn>
                   )}
                   {notPaidYet && (
-                    <button
+                    <Btn
                       type="button"
                       className="btn btn-primary"
                       onClick={handlePayNow}
                       disabled={process.isProcessing}
+                      loading={process.isCreatingCheckoutSession}
                     >
-                      {process.isCreatingCheckoutSession && (
-                        <>
-                          <SmallSpinner />{" "}
-                        </>
-                      )}
                       Pay Now with <span className="fw-bold">Stripe</span>
-                    </button>
+                    </Btn>
                   )}
                 </div>
               </div>

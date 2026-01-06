@@ -4,15 +4,17 @@ import type {
   VariationInstanceListResponse,
   VariationInstanceResponse,
   VariationInstanceSearchQuery,
+  VariationInstanceUpdate,
 } from "../../../../../common/types.common";
 import {
   formatError,
   removeOddSpaces,
 } from "../../../../../common/utils.common";
 import { VARIATION_INSTANCE_URL } from "../../../configs";
-import { post, retrieve } from "../../../utils/utils";
+import { patch, post, retrieve } from "../../../utils/utils";
 
 type InstanceState = {
+  fetchInstance: (id: string) => Promise<VariationInstanceResponse>;
   fetchInstances: (
     query?: VariationInstanceSearchQuery
   ) => Promise<VariationInstanceListResponse>;
@@ -20,9 +22,25 @@ type InstanceState = {
   createInstance: (
     instance: VariationInstanceCreate
   ) => Promise<VariationInstanceResponse>;
+
+  updateInstance: (
+    id: string,
+    instance: VariationInstanceUpdate
+  ) => Promise<VariationInstanceResponse>;
 };
 
 const useInstanceStore = create<InstanceState>(() => ({
+  async fetchInstance(id: string): Promise<VariationInstanceResponse> {
+    try {
+      const res = await retrieve(`${VARIATION_INSTANCE_URL}/${id}`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as VariationInstanceResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
   async fetchInstances(
     query?: VariationInstanceSearchQuery
   ): Promise<VariationInstanceListResponse> {
@@ -55,6 +73,20 @@ const useInstanceStore = create<InstanceState>(() => ({
   ): Promise<VariationInstanceResponse> {
     try {
       const res = await post(VARIATION_INSTANCE_URL, instance);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as VariationInstanceResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async updateInstance(
+    id: string,
+    instance: VariationInstanceUpdate
+  ): Promise<VariationInstanceResponse> {
+    try {
+      const res = await patch(VARIATION_INSTANCE_URL, id, instance);
       if (!res.success) throw new Error(res.message);
 
       return res.data as VariationInstanceResponse;

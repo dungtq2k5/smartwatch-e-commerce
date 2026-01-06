@@ -2,6 +2,7 @@ import { Modal, Button } from "react-bootstrap";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { WAITING_EMOJI } from "../../../configs";
+import Btn from "../../common/Btn";
 
 const ConfirmSubmitModal = memo(
   ({
@@ -81,24 +82,17 @@ const ConfirmSubmitModal = memo(
           >
             {cancelText}
           </Button>
-          <Button
+          <Btn
             type="button"
-            variant={`${custom?.action === "delete" ? "danger" : "primary"}`}
+            className={`btn ${
+              custom?.action === "delete" ? "btn-danger" : "btn-primary"
+            }`}
             onClick={handleSubmit}
             disabled={isSubmitting}
+            loading={isSubmitting}
           >
-            {isSubmitting ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  aria-hidden="true"
-                ></span>
-                <output>{submitText}...</output>
-              </>
-            ) : (
-              submitText
-            )}
-          </Button>
+            {submitText}
+          </Btn>
         </Modal.Footer>
       </Modal>
     );

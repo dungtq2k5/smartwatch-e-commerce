@@ -62,6 +62,7 @@ import DeleteBtn from "../DeleteBtn";
 import TableHeadSortBtn from "../TableHeadSortBtn";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import LinkBtn from "../../common/LinkBtn";
+import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
@@ -982,32 +983,17 @@ export default function UserManagement() {
             <FontAwesomeIcon icon={faSliders} size="sm" className="me-2" />
             Config display
           </button>
-          <button
+          <Btn
             type="button"
             className="border-0 p-0 bg-transparent text-primary"
             title="Export current list to CSV file"
             onClick={handleExportList}
             disabled={process.isProcessing}
+            loading={process.isExportingList}
+            icon={<FontAwesomeIcon icon={faFileExport} size="sm" />}
           >
-            {process.isExportingList ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  aria-hidden="true"
-                ></span>
-                <output>Exporting...</output>
-              </>
-            ) : (
-              <>
-                <FontAwesomeIcon
-                  icon={faFileExport}
-                  size="sm"
-                  className="me-2"
-                />
-                Export this list
-              </>
-            )}
-          </button>
+            Export this list
+          </Btn>
         </div>
       </div>
 

@@ -25,6 +25,7 @@ import {
   PRODUCT_SEARCH_SORT_OPTIONS,
   PRODUCT_TYPES,
 } from "../../../../common/configs.common";
+import Btn from "../../components/common/Btn";
 
 type process = {
   isProcessing: boolean;
@@ -512,23 +513,14 @@ export default function Home() {
                       </>
                     )}
                   </div>
-                  <button
+                  <Btn
                     type="submit"
-                    className="btn btn-primary w-100"
+                    className="w-100 btn btn-primary"
                     disabled={process.isProcessing}
+                    loading={process.isSearchingProducts}
                   >
-                    {process.isSearchingProducts ? (
-                      <>
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          aria-hidden="true"
-                        ></span>
-                        <output>Applying Filters...</output>
-                      </>
-                    ) : (
-                      "Apply Filters"
-                    )}
-                  </button>
+                    Apply Filters
+                  </Btn>
                   <div className="my-3">
                     <HorizontalDivider />
                   </div>

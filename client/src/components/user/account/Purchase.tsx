@@ -21,6 +21,7 @@ import ReturnCard from "../purchase/ReturnCard";
 import { useSearchParams } from "react-router-dom";
 import Loading from "../../common/Loading";
 import usePaymentMethodStore from "../../../store/common/order/paymentMethodStore";
+import Btn from "../../common/Btn";
 
 type SearchForm = {
   activeTab: PurchaseTab;
@@ -745,24 +746,15 @@ export default function Purchase() {
           {/* Show more */}
           <div className="text-center">
             {canShowMore ? (
-              <button
+              <Btn
                 type="button"
                 className="btn btn-link p-0"
                 onClick={handleShowMore}
                 disabled={process.isProcessing}
+                loading={process.isShowingMore}
               >
-                {process.isShowingMore ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      aria-hidden="true"
-                    ></span>
-                    <output>Loading...</output>
-                  </>
-                ) : (
-                  "Show more"
-                )}
-              </button>
+                Show more
+              </Btn>
             ) : (
               <p className="text-muted mb-0">No more order to display.</p>
             )}

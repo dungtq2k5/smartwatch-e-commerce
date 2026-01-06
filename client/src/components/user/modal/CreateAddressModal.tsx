@@ -23,6 +23,7 @@ import debounce from "lodash.debounce";
 import AddressMapInput from "../../user/AddressMapInput";
 import { VN_COUNTRY_CODE } from "../../../../../common/configs.common";
 import { WAITING_EMOJI } from "../../../configs";
+import Btn from "../../common/Btn";
 
 const defaultCityProvinceCode = provinces.data[0].code;
 const defaultDistrictCode = getDistrictsByProvinceCode(defaultCityProvinceCode)
@@ -527,19 +528,12 @@ const CreateAddressModal = memo(
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                  ></span>
-                  <output>Creating address...</output>
-                </>
-              ) : (
-                "Create address"
-              )}
-            </Button>
+            <Btn
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+              loading={isSubmitting}
+            >Create address</Btn>
           </Modal.Footer>
         </form>
       </Modal>

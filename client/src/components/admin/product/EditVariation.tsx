@@ -44,6 +44,7 @@ import Title from "../Title";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import ColorListInput from "../ColorListInput";
 import DetailUserLink from "../DetailUserLink";
+import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
@@ -1250,27 +1251,16 @@ export default function EditVariation() {
                         ref={fileInputRef}
                         disabled={process.isProcessing}
                       />
-                      <button
+                      <Btn
                         type="button"
-                        className="btn btn-outline-primary mt-2 w-100"
+                        className="btn btn-outline-secondary mt-2 w-100"
                         onClick={handleUploadImgs}
                         disabled={process.isProcessing}
+                        loading={process.isUploadingImages}
+                        icon={<FontAwesomeIcon icon={faUpload} />}
                       >
-                        {process.isUploadingImages ? (
-                          <>
-                            <span
-                              className="spinner-border spinner-border-sm me-2"
-                              aria-hidden="true"
-                            ></span>
-                            <output>Uploading...</output>
-                          </>
-                        ) : (
-                          <>
-                            <FontAwesomeIcon icon={faUpload} className="me-2" />
-                            Upload Images
-                          </>
-                        )}
-                      </button>
+                        Upload Images
+                      </Btn>
                       {formData.imageUrls.err && (
                         <InvalidInputMsg msg={formData.imageUrls.err} />
                       )}
@@ -1395,23 +1385,14 @@ export default function EditVariation() {
               >
                 Discard
               </button>
-              <button
+              <Btn
                 type="submit"
                 className="btn btn-primary"
                 disabled={process.isProcessing}
+                loading={process.isUpdating}
               >
-                {process.isUpdating ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      aria-hidden="true"
-                    ></span>
-                    <output>Updating...</output>
-                  </>
-                ) : (
-                  "Update"
-                )}
-              </button>
+                Update
+              </Btn>
             </div>
           </form>
         </>

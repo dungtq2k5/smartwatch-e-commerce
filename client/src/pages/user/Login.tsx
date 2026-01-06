@@ -14,6 +14,7 @@ import AuthByGoogleBtn from "../../components/user/AuthByGoogleBtn";
 import HorizontalDivider from "../../components/user/HorizontalDivider";
 import { WAITING_EMOJI } from "../../configs";
 import InvalidInputMsg from "../../components/common/InvalidInputMsg";
+import Btn from "../../components/common/Btn";
 
 type FormData = {
   emailOrPhone: FormInput;
@@ -163,23 +164,14 @@ export default function Login() {
         </div>
 
         <div className="d-flex gap-2 flex-column mb-4">
-          <button
-            className="btn btn-primary"
+          <Btn
             type="submit"
+            className="btn btn-primary"
             disabled={isSubmitting}
+            loading={isSubmitting}
           >
-            {isSubmitting ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  aria-hidden="true"
-                ></span>
-                <output>Logging in...</output>
-              </>
-            ) : (
-              "Log me in"
-            )}
-          </button>
+            Log me in
+          </Btn>
           <HorizontalDivider text="or" />
           <AuthByGoogleBtn />
         </div>

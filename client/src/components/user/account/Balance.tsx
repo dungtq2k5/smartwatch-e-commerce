@@ -30,6 +30,7 @@ import WithdrawalDetailModal from "../modal/WithdrawalDetailModal";
 import RefundDetailModal from "../modal/RefundDetailModal";
 import PaymentDetailModal from "../modal/PaymentDetailModal";
 import Loading from "../../common/Loading";
+import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
@@ -488,24 +489,15 @@ export default function Balance() {
               </ul>
               <div className="text-center mt-4">
                 {balanceHistories.total > balanceHistories.histories.total ? (
-                  <button
+                  <Btn
                     type="button"
                     className="btn btn-link p-0"
                     onClick={handleShowMore}
                     disabled={process.isProcessing}
+                    loading={process.isShowingMore}
                   >
-                    {process.isShowingMore ? (
-                      <>
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          aria-hidden="true"
-                        ></span>
-                        <output>Loading...</output>
-                      </>
-                    ) : (
-                      "Show more"
-                    )}
-                  </button>
+                    Show more
+                  </Btn>
                 ) : (
                   <p className="text-muted mb-0">No more history to display.</p>
                 )}

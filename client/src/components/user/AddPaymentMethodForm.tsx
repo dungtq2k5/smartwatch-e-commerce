@@ -14,6 +14,7 @@ import ConfirmSubmitModal from "./modal/ConfirmSubmitModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { LINK_FAST_CHECKOUT_URL, STRIPE_URL } from "../../configs";
+import Btn from "../common/Btn";
 
 export default function AddPaymentMethodForm() {
   const stripe = useStripe();
@@ -119,23 +120,14 @@ export default function AddPaymentMethodForm() {
           >
             Cancel
           </button>
-          <button
+          <Btn
             type="submit"
             className="btn btn-primary w-100"
             disabled={!stripe || !elements || isProcessing}
+            loading={isProcessing}
           >
-            {isProcessing ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  aria-hidden="true"
-                ></span>
-                <output>Saving...</output>
-              </>
-            ) : (
-              "Save Card"
-            )}
-          </button>
+            Save Card
+          </Btn>
         </div>
       </form>
 

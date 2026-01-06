@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import VerifyForm from "../../user/VerifyForm";
 import { WAITING_EMOJI } from "../../../configs";
+import Btn from "../../common/Btn";
 
 const UpdateSelfPhoneModal = memo(
   ({
@@ -153,19 +154,14 @@ const UpdateSelfPhoneModal = memo(
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      aria-hidden="true"
-                    ></span>
-                    <output>Updating phone...</output>
-                  </>
-                ) : (
-                  "Update phone"
-                )}
-              </Button>
+              <Btn
+                type="submit"
+                className="btn btn-primary"
+                disabled={isSubmitting}
+                loading={isSubmitting}
+              >
+                Update Phone Number
+              </Btn>
             </Modal.Footer>
           </form>
         ) : (

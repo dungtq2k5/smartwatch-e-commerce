@@ -27,6 +27,7 @@ import {
 } from "../../../utils/utils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faPlus,
   faQuestionCircle,
   faUpload,
   faXmark,
@@ -38,6 +39,7 @@ import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import useCreationWizardStore from "../../../store/admin/creationWizardStore";
 import WizardStepHeader from "../WizardStepHeader";
 import CreateProductSkeleton from "../skeleton/CreateProductSkeleton";
+import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
@@ -647,27 +649,16 @@ export default function CreateProduct() {
                         ref={fileInputRef}
                         disabled={process.isProcessing}
                       />
-                      <button
+                      <Btn
                         type="button"
                         className="btn btn-outline-primary mt-2 w-100"
                         onClick={handleUploadImgs}
                         disabled={process.isProcessing}
+                        loading={process.isUploadingImages}
+                        icon={<FontAwesomeIcon icon={faUpload} />}
                       >
-                        {process.isUploadingImages ? (
-                          <>
-                            <span
-                              className="spinner-border spinner-border-sm me-2"
-                              aria-hidden="true"
-                            ></span>
-                            <output>Uploading...</output>
-                          </>
-                        ) : (
-                          <>
-                            <FontAwesomeIcon icon={faUpload} className="me-2" />
-                            Upload Images
-                          </>
-                        )}
-                      </button>
+                        Upload Images
+                      </Btn>
                       {formData.imageUrls.err && (
                         <InvalidInputMsg msg={formData.imageUrls.err} />
                       )}
@@ -690,23 +681,15 @@ export default function CreateProduct() {
               >
                 Discard
               </button>
-              <button
+              <Btn
                 type="submit"
                 className="btn btn-primary"
                 disabled={process.isProcessing}
+                loading={process.isCreating}
+                icon={<FontAwesomeIcon icon={faPlus} />}
               >
-                {process.isCreating ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      aria-hidden="true"
-                    ></span>
-                    <output>Creating...</output>
-                  </>
-                ) : (
-                  "Create"
-                )}
-              </button>
+                Create
+              </Btn>
             </div>
           </form>
 

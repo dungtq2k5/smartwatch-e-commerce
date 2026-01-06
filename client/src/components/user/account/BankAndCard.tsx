@@ -20,6 +20,7 @@ import {
 import toast from "react-hot-toast";
 import SmallSpinner from "../../common/SmallSpinner";
 import useUserBankAccountStore from "../../../store/user/userBankAccountStore";
+import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
@@ -447,27 +448,16 @@ export default function BankAndCard() {
             <div className="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
               <h2 className="h3 card-title">My Bank Accounts</h2>
 
-              <button
+              <Btn
                 type="button"
                 className="btn btn-primary"
                 onClick={handleCreateBankAccount}
                 disabled={process.isProcessing}
+                loading={process.isCreatingBankAccount}
+                icon={<FontAwesomeIcon icon={faPlus} />}
               >
-                {process.isCreatingBankAccount ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      aria-hidden="true"
-                    ></span>
-                    <output>Adding...</output>
-                  </>
-                ) : (
-                  <>
-                    <FontAwesomeIcon icon={faPlus} size="sm" className="me-2" />
-                    Add new bank account
-                  </>
-                )}
-              </button>
+                Add new bank account
+              </Btn>
             </div>
 
             {bankAccounts.total === 0 ? (
@@ -475,24 +465,15 @@ export default function BankAndCard() {
                 <p className="text-muted">
                   You have not added any bank accounts yet.
                 </p>
-                <button
+                <Btn
                   type="button"
                   className="btn btn-link p-0"
                   onClick={handleCreateBankAccount}
                   disabled={process.isProcessing}
+                  loading={process.isCreatingBankAccount}
                 >
-                  {process.isCreatingBankAccount ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        aria-hidden="true"
-                      ></span>
-                      <output>Adding...</output>
-                    </>
-                  ) : (
-                    "Add a bank account"
-                  )}
-                </button>
+                  Add a bank account
+                </Btn>
               </div>
             ) : (
               <div className="list-group">

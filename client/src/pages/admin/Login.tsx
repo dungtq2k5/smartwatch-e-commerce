@@ -8,6 +8,7 @@ import {
   isValidPassword,
 } from "../../../../common/utils.common";
 import { useNavigate } from "react-router-dom";
+import Btn from "../../components/common/Btn";
 
 export default function Login() {
   // DEV for testing
@@ -39,7 +40,8 @@ export default function Login() {
           !password ||
           !isValidEmail(email) ||
           !isValidPassword(password)
-        ) throw new Error("Invalid credentials");
+        )
+          throw new Error("Invalid credentials");
 
         setIsSubmitting(true);
         await login({ email: email as string, password: password as string });
@@ -58,7 +60,7 @@ export default function Login() {
       <form
         className="border rounded-3 shadow-sm p-4"
         autoComplete="on"
-        style={{ minWidth: "400px"}}
+        style={{ minWidth: "400px" }}
         onSubmit={handleSubmit}
       >
         <h1 className="h3 mb-4 fw-normal">Admin Log in</h1>
@@ -87,23 +89,14 @@ export default function Login() {
           <label htmlFor="password">Password</label>
         </div>
 
-        <button
+        <Btn
           type="submit"
-          className="btn btn-primary w-100"
+          className="w-100 btn btn-primary"
           disabled={isSubmitting}
+          loading={isSubmitting}
         >
-          {isSubmitting ? (
-            <>
-              <span
-                className="spinner-border spinner-border-sm me-2"
-                aria-hidden="true"
-              ></span>
-              <output>Logging in...</output>
-            </>
-          ) : (
-            "Log in as Admin"
-          )}
-        </button>
+          Log in as Admin
+        </Btn>
       </form>
     </main>
   );

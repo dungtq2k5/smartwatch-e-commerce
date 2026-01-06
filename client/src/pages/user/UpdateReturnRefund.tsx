@@ -38,6 +38,7 @@ import useReturnStateStore from "../../store/common/returnRefund/returnStateStor
 import ConfirmSubmitModal from "../../components/user/modal/ConfirmSubmitModal";
 import ReturnUpdateSkeleton from "../../components/user/skeleton/ReturnUpdateSkeleton";
 import InvalidInputMsg from "../../components/common/InvalidInputMsg";
+import Btn from "../../components/common/Btn";
 
 type FormData = {
   reasonId: string;
@@ -702,31 +703,17 @@ export default function ReturnRefundUpdate() {
                             multiple
                             disabled={process.isProcessing}
                           />
-                          <button
+                          <Btn
                             type="button"
                             className="btn btn-outline-primary"
                             style={{ whiteSpace: "nowrap" }}
                             onClick={handleUploadImgs}
                             disabled={process.isProcessing}
+                            loading={process.isUploadingImgs}
+                            icon={<FontAwesomeIcon icon={faUpload} />}
                           >
-                            {process.isUploadingImgs ? (
-                              <>
-                                <span
-                                  className="spinner-border spinner-border-sm me-2"
-                                  aria-hidden="true"
-                                ></span>
-                                <output>Uploading...</output>
-                              </>
-                            ) : (
-                              <>
-                                <FontAwesomeIcon
-                                  icon={faUpload}
-                                  className="me-2"
-                                />
-                                Upload Images
-                              </>
-                            )}
-                          </button>
+                            Upload Images
+                          </Btn>
                         </div>
                         {formData.imageUrls.err && (
                           <InvalidInputMsg msg={formData.imageUrls.err} />
@@ -905,23 +892,14 @@ export default function ReturnRefundUpdate() {
                     </div>
 
                     <div className="card-footer d-flex gap-2">
-                      <button
+                      <Btn
                         type="submit"
                         className="btn btn-primary w-100"
                         disabled={process.isProcessing}
+                        loading={process.isUpdating}
                       >
-                        {process.isUpdating ? (
-                          <>
-                            <span
-                              className="spinner-border spinner-border-sm me-2"
-                              aria-hidden="true"
-                            ></span>
-                            <output>Updating...</output>
-                          </>
-                        ) : (
-                          "Update"
-                        )}
-                      </button>
+                        Update
+                      </Btn>
                       <button
                         type="button"
                         className="btn btn-secondary w-100"

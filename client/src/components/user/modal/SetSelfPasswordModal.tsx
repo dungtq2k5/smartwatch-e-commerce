@@ -1,13 +1,17 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
 import toast from "react-hot-toast";
-import { formatError, isValidPassword } from "../../../../../common/utils.common";
+import {
+  formatError,
+  isValidPassword,
+} from "../../../../../common/utils.common";
 import useAuthStore from "../../../store/user/authStore";
 import { PASSWORD_HINT_MESSAGE } from "../../../../../common/configs.common";
 import type { FormInput } from "../../../utils/types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { WAITING_EMOJI } from "../../../configs";
+import Btn from "../../common/Btn";
 
 type FormData = {
   password: FormInput;
@@ -211,19 +215,14 @@ const SetSelfPasswordModal = memo(
             >
               Close
             </Button>
-            <Button type="submit" variant="primary" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                  ></span>
-                  <output>Setting password...</output>
-                </>
-              ) : (
-                "Set Password"
-              )}
-            </Button>
+            <Btn
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+              loading={isSubmitting}
+            >
+              Set Password
+            </Btn>
           </Modal.Footer>
         </form>
       </Modal>

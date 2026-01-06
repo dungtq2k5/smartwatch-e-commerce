@@ -27,6 +27,9 @@ import useUserStore from "../../../store/admin/userStore";
 import type { UserCreate } from "../../../../../common/types.common";
 import CreateUserSkeleton from "../skeleton/CreateUserSkeleton";
 import Title from "../Title";
+import Btn from "../../common/Btn";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 
 type FormData = {
   fullName: FormInput;
@@ -689,23 +692,15 @@ export default function CreateUser() {
                   >
                     Discard
                   </button>
-                  <button
+                  <Btn
                     type="submit"
                     className="btn btn-primary"
                     disabled={process.isProcessing}
+                    loading={process.isCreating}
+                    icon={<FontAwesomeIcon icon={faPlus} />}
                   >
-                    {process.isCreating ? (
-                      <>
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          aria-hidden="true"
-                        ></span>
-                        <output>Creating...</output>
-                      </>
-                    ) : (
-                      "Create User"
-                    )}
-                  </button>
+                    Create
+                  </Btn>
                 </div>
               </div>
             </div>

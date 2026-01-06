@@ -1,74 +1,66 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import useInstanceStore from "../../../store/admin/product/instanceStore";
-import useInstanceConditionStore from "../../../store/admin/product/instanceConditionStore";
-import useVariationStore from "../../../store/admin/product/variationStore";
+import { type FormData } from "./CreateInstance";
+import useRefreshStore from "../../../store/admin/refreshStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
-import type { FormInput } from "../../../utils/types";
 import type {
-  ModelVariationResponse,
-  VariationInstanceCreate,
+  VariationInstanceResponse,
+  VariationInstanceUpdate,
 } from "../../../../../common/types.common";
+import useInstanceConditionStore from "../../../store/admin/product/instanceConditionStore";
 import {
   formatError,
   removeOddSpaces,
 } from "../../../../../common/utils.common";
-import { WAITING_EMOJI } from "../../../configs";
 import toast from "react-hot-toast";
+import { WAITING_EMOJI } from "../../../configs";
+import CreateInstanceSkeleton from "../skeleton/CreateInstanceSkeleton";
 import ApiError from "../../common/ApiError";
 import Title from "../Title";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
-import CreateInstanceSkeleton from "../skeleton/CreateInstanceSkeleton";
+import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
   isInitializing: boolean;
-  isCreating: boolean;
+  isUpdating: boolean;
 };
 
-export type FormData = {
-  supplierSerialNumber: FormInput;
-  supplierImeiNumber: FormInput;
-  conditionId: FormInput<string, undefined>;
-  isActive: FormInput<boolean, undefined>;
-};
-
-export default function CreateInstance() {
+export default function EditInstance() {
   // DEV temp for testing
   const renderCount = useRef(0);
   renderCount.current += 1;
-  console.log("CreateInstance render count:", renderCount.current);
+  console.log("EditInstance render count:", renderCount.current);
 
-  const { variationId } = useParams();
+  const { id } = useParams();
 
   const navigate = useNavigate();
 
-  const { createInstance } = useInstanceStore();
   const { instanceConditions, fetchInstanceConditions } =
     useInstanceConditionStore();
-  const { fetchVariationLite } = useVariationStore();
+  const { fetchInstance, updateInstance } = useInstanceStore();
+  const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
-  const canCreateInstance = useHasPermission("c_variation_instance");
+  const canEditInstance = useHasPermission("u_variation_instance");
 
+  const [instance, setInstance] = useState<VariationInstanceResponse | null>(
+    null
+  );
   const [process, setProcess] = useState<Process>({
     isProcessing: true,
     isInitializing: true,
-    isCreating: false,
+    isUpdating: false,
   });
-
-  const [variation, setVariation] = useState<ModelVariationResponse | null>(
-    null
-  );
+  const [apiErr, setApiErr] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     supplierSerialNumber: { val: "" },
     supplierImeiNumber: { val: "" },
     conditionId: { val: "" },
-    isActive: { val: true },
+    isActive: { val: false },
   });
-  const [apiErr, setApiErr] = useState<string | null>(null);
 
   // Fetch set data on initial load: instance conditions, variation
   useEffect(() => {
@@ -81,24 +73,15 @@ export default function CreateInstance() {
       setApiErr(null);
 
       try {
-        if (!variationId) throw new Error("Variation ID is missing.");
+        if (!id) throw new Error("Instance ID is missing.");
 
-        const [fetchedVariation, fetchedInstanceConditions] = await Promise.all(
-          [
-            fetchVariationLite(variationId),
-            instanceConditions
-              ? Promise.resolve(instanceConditions)
-              : fetchInstanceConditions(),
-          ]
-        );
+        const [fetchedInstance] = await Promise.all([
+          fetchInstance(id),
+          instanceConditions ? Promise.resolve() : fetchInstanceConditions(),
+        ]);
 
-        setVariation(fetchedVariation);
-        setFormData((prev) => ({
-          ...prev,
-          conditionId: {
-            val: fetchedInstanceConditions.conditions[0]?.id || "",
-          },
-        }));
+        setInstance(fetchedInstance);
+        updateFormData(fetchedInstance);
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
@@ -112,7 +95,20 @@ export default function CreateInstance() {
 
     handleFetchSetInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [id, refreshSignal]);
+
+  const updateFormData = useCallback(
+    (instance: VariationInstanceResponse): void => {
+      setFormData((prev) => ({
+        ...prev,
+        supplierSerialNumber: { val: instance.supplierSerialNumber },
+        supplierImeiNumber: { val: instance.supplierImeiNumber || "" },
+        conditionId: { val: instance.conditionId },
+        isActive: { val: instance.isActive },
+      }));
+    },
+    []
+  );
 
   const handleChange = useCallback(
     (e: React.FormEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -158,12 +154,12 @@ export default function CreateInstance() {
         });
         return;
       }
-      if (!variationId) {
-        setApiErr("Variation ID is missing.");
+      if (!instance) {
+        toast.error("Instance data not found.");
         return;
       }
-      if (!canCreateInstance) {
-        setApiErr("You do not have permission to create a variation instance.");
+      if (!canEditInstance) {
+        setApiErr("You do not have permission to edit instance.");
         return;
       }
 
@@ -201,20 +197,48 @@ export default function CreateInstance() {
       }));
 
       if (validateForm()) {
-        try {
-          const instance: VariationInstanceCreate = {
-            modelVariationId: variationId,
-            supplierSerialNumber: formData.supplierSerialNumber.val,
-            supplierImeiNumber: formData.supplierImeiNumber.val || null,
-            conditionId: formData.conditionId.val,
-            isActive: formData.isActive.val,
-          };
+        const getChangedData = (): VariationInstanceUpdate => {
+          const changedData: VariationInstanceUpdate = {};
 
-          const createdInstance = await createInstance(instance);
-          toast.success("Variation instance created successfully.");
-          navigate(
-            `/admin/variation-instances?searchTerm=${createdInstance.id}`
+          if (
+            formData.supplierSerialNumber.val !== instance.supplierSerialNumber
+          ) {
+            changedData.supplierSerialNumber =
+              formData.supplierSerialNumber.val;
+          }
+          if (
+            formData.supplierImeiNumber.val !==
+            (instance.supplierImeiNumber || "")
+          ) {
+            changedData.supplierImeiNumber =
+              formData.supplierImeiNumber.val || null;
+          }
+          if (formData.conditionId.val !== instance.conditionId) {
+            changedData.conditionId = formData.conditionId.val;
+          }
+          if (formData.isActive.val !== instance.isActive) {
+            changedData.isActive = formData.isActive.val;
+          }
+
+          return changedData;
+        };
+
+        try {
+          const changedData = getChangedData();
+          if (Object.keys(changedData).length === 0) {
+            toast.success("No changes made. No update needed.");
+            return;
+          }
+
+          const updatedInstance = await updateInstance(
+            instance.id,
+            changedData
           );
+
+          setInstance(updatedInstance);
+          updateFormData(updatedInstance);
+
+          toast.success("Instance updated successfully.");
         } catch (error) {
           toast.error(formatError(error));
         }
@@ -227,12 +251,12 @@ export default function CreateInstance() {
       }));
     },
     [
-      canCreateInstance,
-      createInstance,
+      canEditInstance,
       formData,
-      navigate,
+      instance,
       process.isProcessing,
-      variationId,
+      updateFormData,
+      updateInstance,
     ]
   );
 
@@ -244,13 +268,13 @@ export default function CreateInstance() {
         <ApiError errMsg={apiErr} />
       ) : !instanceConditions ? (
         <ApiError errMsg="Instance conditions data not found." />
-      ) : !variation ? (
-        <ApiError errMsg="Variation data not found." />
+      ) : !instance ? (
+        <ApiError errMsg="Instance data not found." />
       ) : (
         <>
           {/* Heading */}
           <Title
-            title={`Manually create Instance for ${variation.name}`}
+            title={`Edit Instance #ID ${instance.id}`}
             parentTitle="Instance Management"
             parentLink="/admin/variation-instances"
             className="mb-4"
@@ -278,7 +302,7 @@ export default function CreateInstance() {
                         name="supplierSerialNumber"
                         id="supplierSerialNumber"
                         className="form-control"
-                        placeholder="A90X-U234PQR500"
+                        placeholder={instance.supplierSerialNumber}
                         value={formData.supplierSerialNumber.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
@@ -302,7 +326,7 @@ export default function CreateInstance() {
                         name="supplierImeiNumber"
                         id="supplierImeiNumber"
                         className="form-control"
-                        placeholder="356938035643809"
+                        placeholder={instance.supplierImeiNumber || "None"}
                         value={formData.supplierImeiNumber.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
@@ -384,10 +408,9 @@ export default function CreateInstance() {
                 type="submit"
                 className="btn btn-primary"
                 disabled={process.isProcessing}
-                loading={process.isCreating}
-                icon={<FontAwesomeIcon icon={faPlus} />}
+                loading={process.isUpdating}
               >
-                Create
+                Update
               </Btn>
             </div>
           </form>

@@ -27,6 +27,7 @@ import HorizontalDivider from "../HorizontalDivider";
 import { useNavigate } from "react-router-dom";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import ApiError from "../../common/ApiError";
+import Btn from "../../common/Btn";
 
 type FormData = {
   fullName: FormInput;
@@ -605,23 +606,14 @@ export default function Profile() {
               </div>
             </div>
 
-            <button
+            <Btn
               type="submit"
               className="btn btn-primary mt-4"
               disabled={process.isProcessing}
+              loading={process.isUpdatingSelfGeneralInfo}
             >
-              {process.isUpdatingSelfGeneralInfo ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                  ></span>
-                  <output>Saving...</output>
-                </>
-              ) : (
-                "Save Changes"
-              )}
-            </button>
+              Save Changes
+            </Btn>
           </form>
 
           {/* Danger Zone */}
@@ -634,24 +626,15 @@ export default function Profile() {
               Once you delete your account, there is no going back. Please be
               certain.
             </p>
-            <button
+            <Btn
               type="button"
               className="btn btn-outline-danger"
               onClick={handleDeleteAccount}
               disabled={process.isProcessing}
+              loading={process.isDeletingAccount}
             >
-              {process.isDeletingAccount ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                  ></span>
-                  <output>Deleting...</output>
-                </>
-              ) : (
-                "Delete My Account"
-              )}
-            </button>
+              Delete My Account
+            </Btn>
           </div>
 
           {/* Modals for changing email, phone number, password and set password */}

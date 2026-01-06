@@ -31,6 +31,7 @@ import ProductCard from "../../components/user/product/ProductCard";
 import defaultProductImg from "../../assets/default-product.webp";
 import HorizontalDivider from "../../components/user/HorizontalDivider";
 import { MAX_PRODUCTS_SUGGEST_DISPLAY, WAITING_EMOJI } from "../../configs";
+import Btn from "../../components/common/Btn";
 
 type process = {
   isProcessing: boolean;
@@ -498,30 +499,16 @@ export default function ProductDetail() {
                 {/* Purchase Actions */}
                 {variationPicked.data.stockQuantity > 0 ? (
                   <div className="d-grid gap-3">
-                    <button
+                    <Btn
                       type="button"
                       className="btn btn-outline-primary"
                       onClick={handleAddToCart}
                       disabled={process.isProcessing}
+                      loading={process.isCreatingCart}
+                      icon={<FontAwesomeIcon icon={faCartArrowDown} />}
                     >
-                      {process.isCreatingCart ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            aria-hidden="true"
-                          ></span>
-                          <output>Adding to Cart...</output>
-                        </>
-                      ) : (
-                        <>
-                          <FontAwesomeIcon
-                            icon={faCartArrowDown}
-                            className="me-2"
-                          />
-                          Add to Cart
-                        </>
-                      )}
-                    </button>
+                      Add to Cart
+                    </Btn>
                     <button
                       type="button"
                       className="btn-premium--g"

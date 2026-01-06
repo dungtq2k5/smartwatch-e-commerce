@@ -12,6 +12,7 @@ import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import toast from "react-hot-toast";
 import { WAITING_EMOJI } from "../../configs";
+import Btn from "../../components/common/Btn";
 
 export default function ForgotPassword() {
   const { forgotPassword } = useAuthStore();
@@ -135,23 +136,14 @@ export default function ForgotPassword() {
             )}
           </div>
 
-          <button
-            className="w-100 btn btn-lg btn-primary mt-3"
+          <Btn
             type="submit"
+            className="w-100 btn btn-primary mt-3"
             disabled={isSubmitting}
+            loading={isSubmitting}
           >
-            {isSubmitting ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  aria-hidden="true"
-                ></span>
-                <output>Sending link...</output>
-              </>
-            ) : (
-              "Send reset link"
-            )}
-          </button>
+            Send reset link
+          </Btn>
 
           <p className="mt-4 mb-0 text-muted">
             Remembered your password? <Link to="/login">Log in now</Link>

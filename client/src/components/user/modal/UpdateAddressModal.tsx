@@ -27,6 +27,7 @@ import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";
 import AddressMapInput from "../../user/AddressMapInput";
 import { WAITING_EMOJI } from "../../../configs";
+import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
@@ -634,23 +635,14 @@ const UpdateAddressModal = memo(
               >
                 Cancel
               </Button>
-              <Button
+              <Btn
                 type="submit"
-                variant="primary"
+                className="btn btn-primary"
                 disabled={process.isProcessing}
+                loading={process.isUpdating}
               >
-                {process.isUpdating ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      aria-hidden="true"
-                    ></span>
-                    <output>Updating address...</output>
-                  </>
-                ) : (
-                  "Update address"
-                )}
-              </Button>
+                Update address
+              </Btn>
             </Modal.Footer>
           </form>
         )}

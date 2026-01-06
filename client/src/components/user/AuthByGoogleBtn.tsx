@@ -7,6 +7,7 @@ import { auth, googleProvider } from "../../utils/firebase.config";
 import useAuthStore from "../../store/user/authStore";
 import { useNavigate } from "react-router-dom";
 import { formatError } from "../../../../common/utils.common";
+import Btn from "../common/Btn";
 
 const AuthByGoogleBtn = memo(() => {
   // DEV for testing
@@ -49,27 +50,16 @@ const AuthByGoogleBtn = memo(() => {
   };
 
   return (
-    <button
+    <Btn
       type="button"
       className="btn btn-danger"
       onClick={handleGoogleAuth}
       disabled={isSubmitting}
+      loading={isSubmitting}
+      icon={<FontAwesomeIcon icon={faGoogle} />}
     >
-      {isSubmitting ? (
-        <>
-          <span
-            className="spinner-border spinner-border-sm me-2"
-            aria-hidden="true"
-          ></span>
-          <output>Authenticating...</output>
-        </>
-      ) : (
-        <>
-          <FontAwesomeIcon icon={faGoogle} className="me-2" />
-          Authenticate with Google
-        </>
-      )}
-    </button>
+      Authenticate with Google
+    </Btn>
   );
 });
 

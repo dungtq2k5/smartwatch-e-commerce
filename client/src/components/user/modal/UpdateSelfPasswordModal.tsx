@@ -8,6 +8,7 @@ import type { FormInput } from "../../../utils/types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { WAITING_EMOJI } from "../../../configs";
+import Btn from "../../common/Btn";
 
 type FormData = {
   currentPassword: FormInput;
@@ -253,19 +254,14 @@ const UpdateSelfPasswordModal = memo(
             >
               Close
             </Button>
-            <Button type="submit" variant="primary" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                  ></span>
-                  <output>Updating password...</output>
-                </>
-              ) : (
-                "Update Password"
-              )}
-            </Button>
+            <Btn
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+              loading={isSubmitting}
+            >
+              Update Password
+            </Btn>
           </Modal.Footer>
         </form>
       </Modal>

@@ -43,6 +43,7 @@ import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import useCreationWizardStore from "../../../store/admin/creationWizardStore";
 import WizardStepHeader from "../WizardStepHeader";
 import CreateModelSkeleton from "../skeleton/CreateModelSkeleton";
+import Btn from "../../common/Btn";
 
 type Process = {
   isProcessing: boolean;
@@ -2317,27 +2318,16 @@ export default function CreateModel() {
                         ref={fileInputRef}
                         disabled={process.isProcessing}
                       />
-                      <button
+                      <Btn
                         type="button"
                         className="btn btn-outline-primary mt-2 w-100"
                         onClick={handleUploadImgs}
                         disabled={process.isProcessing}
+                        loading={process.isUploadingImages}
+                        icon={<FontAwesomeIcon icon={faUpload} />}
                       >
-                        {process.isUploadingImages ? (
-                          <>
-                            <span
-                              className="spinner-border spinner-border-sm me-2"
-                              aria-hidden="true"
-                            ></span>
-                            <output>Uploading...</output>
-                          </>
-                        ) : (
-                          <>
-                            <FontAwesomeIcon icon={faUpload} className="me-2" />
-                            Upload Images
-                          </>
-                        )}
-                      </button>
+
+                      </Btn>
                       {formData.imageUrls.err && (
                         <InvalidInputMsg msg={formData.imageUrls.err} />
                       )}

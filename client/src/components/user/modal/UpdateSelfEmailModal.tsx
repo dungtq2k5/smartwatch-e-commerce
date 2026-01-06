@@ -9,6 +9,7 @@ import type { UserContactInfoUpdate } from "../../../../../common/types.common";
 import toast from "react-hot-toast";
 import VerifyForm from "../../user/VerifyForm";
 import { WAITING_EMOJI } from "../../../configs";
+import Btn from "../../common/Btn";
 
 const UpdateSelfEmailModal = memo(
   ({
@@ -141,19 +142,14 @@ const UpdateSelfEmailModal = memo(
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      aria-hidden="true"
-                    ></span>
-                    <output>Updating email...</output>
-                  </>
-                ) : (
-                  "Update email"
-                )}
-              </Button>
+              <Btn
+                type="submit"
+                className="btn btn-primary"
+                disabled={isSubmitting}
+                loading={isSubmitting}
+              >
+                Update Email
+              </Btn>
             </Modal.Footer>
           </form>
         ) : (

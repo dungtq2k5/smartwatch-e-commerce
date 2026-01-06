@@ -7,6 +7,7 @@ import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { formatError } from "../../../../common/utils.common";
 import { WAITING_EMOJI } from "../../configs";
+import Btn from "../common/Btn";
 
 const VerifyForm = memo(
   ({
@@ -168,23 +169,14 @@ const VerifyForm = memo(
           )}
         </div>
 
-        <button
-          className="w-100 btn btn-primary"
+        <Btn
           type="submit"
+          className="w-100 btn btn-primary"
           disabled={isSubmitting}
+          loading={isSubmitting}
         >
-          {isSubmitting ? (
-            <>
-              <span
-                className="spinner-border spinner-border-sm me-2"
-                aria-hidden="true"
-              ></span>
-              <output>Verifying...</output>
-            </>
-          ) : (
-            `Verify my ${verifyTypeName}`
-          )}
-        </button>
+          Verify my {verifyTypeName}
+        </Btn>
       </form>
     );
   }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import useUserStore from "../../../store/admin/userStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import type {
@@ -38,7 +38,12 @@ import { Accordion, Tab, Tabs } from "react-bootstrap";
 import DetailUserLink from "../DetailUserLink";
 import DetailProductSkeleton from "../skeleton/DetailProductSkeleton";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
-import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
+import {
+  DISABLED_TITLE_FOR_PERFORMING,
+  DISABLED_TITLE_FOR_VIEWING,
+} from "../../../configs";
+import Title from "../Title";
+import LinkBtn from "../../common/LinkBtn";
 
 export default function DetailProduct() {
   // DEV temp for testing
@@ -52,7 +57,12 @@ export default function DetailProduct() {
   const { fetchProductDetail } = useProductStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
-  const canReadUser = useHasPermission("r_usr");
+  const [canReadUser, canCreateModel, canCreateVariation, canReadInstance] = [
+    useHasPermission("r_usr"),
+    useHasPermission("c_product_model"),
+    useHasPermission("c_model_variation"),
+    useHasPermission("r_variation_instance"),
+  ];
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [productDetail, setProductDetail] =
@@ -211,12 +221,7 @@ export default function DetailProduct() {
     variationPicked?.data.imageUrls,
   ]);
 
-  /*
-    TODO:
-      - Links to create model/variation.
-      - Click to stock quantity to view instances.
-      - Buttons to view brand/os management pages with filter.
-  */
+  // TODO Buttons to view brand/os management pages with filter.
 
   return (
     <>
@@ -366,7 +371,13 @@ export default function DetailProduct() {
                       className="me-2"
                     />
                     No models found for this product,{" "}
-                    <Link to="#">create one</Link>.
+                    <LinkBtn
+                      to={`/admin/product-models/create/${productDetail.id}`}
+                      disabled={!canCreateModel}
+                      disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
+                    >
+                      create one
+                    </LinkBtn>
                   </div>
                 )}
               </div>
@@ -426,7 +437,13 @@ export default function DetailProduct() {
                         className="me-2"
                       />
                       No variations found for this models,{" "}
-                      <Link to="#">create one</Link>.
+                      <LinkBtn
+                        to={`/admin/model-variations/create/${modelPicked.data.id}`}
+                        disabled={!canCreateVariation}
+                        disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
+                      >
+                        create one
+                      </LinkBtn>
                     </div>
                   )}
                 </div>
@@ -563,7 +580,16 @@ export default function DetailProduct() {
                           </tr>
                           <tr>
                             <th scope="row">Stock Quantity</th>
-                            <td>{variationPicked.data.stockQuantity}</td>
+                            <td>
+                              <LinkBtn
+                                to={`/admin/variation-instances?searchTerm=${variationPicked.data.id}`}
+                                title="View instances for this variation"
+                                disabled={!canReadInstance}
+                                disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+                              >
+                                {variationPicked.data.stockQuantity}
+                              </LinkBtn>
+                            </td>
                           </tr>
                         </tbody>
                       </table>

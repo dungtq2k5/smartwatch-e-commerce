@@ -93,7 +93,7 @@ export default function App() {
       {isAdminPage ? (
         <Routes>
           <Route path="/admin">
-            {/* TODO: CRUD
+            {/* TODO CRUD:
               - dashboard
               - product/model/variation/instance management (read, create, edit)
               - brand management
