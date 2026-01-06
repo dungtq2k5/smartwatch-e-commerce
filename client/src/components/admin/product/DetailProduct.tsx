@@ -229,18 +229,12 @@ export default function DetailProduct() {
       ) : (
         <>
           {/* Heading */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="fs-2 mb-0 d-flex gap-2">
-              <Link
-                to={"/admin/users"}
-                className="text-decoration-none text-black"
-              >
-                Product Management
-              </Link>
-              <p className="mb-0 fw-light">/</p>
-              Product #ID {productDetail.id}
-            </h1>
-          </div>
+          <Title
+            title={`Detail product #ID ${productDetail.id}`}
+            parentTitle="Product Management"
+            parentLink="/admin/products"
+            className="mb-4"
+          />
 
           {/* Sub-Info */}
           <div className="mb-3">
