@@ -539,17 +539,6 @@ export function EditProduct() {
     ]
   );
 
-  const handleDiscard = useCallback((): void => {
-    if (process.isProcessing) {
-      toast("Another request is being processed. Please wait.", {
-        icon: WAITING_EMOJI,
-      });
-      return;
-    }
-
-    navigate("/admin/products");
-  }, [navigate, process.isProcessing]);
-
   return (
     <>
       {process.isInitializing ? (
@@ -894,7 +883,7 @@ export function EditProduct() {
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={handleDiscard}
+                onClick={() => navigate(-1)}
                 disabled={process.isProcessing}
               >
                 Discard

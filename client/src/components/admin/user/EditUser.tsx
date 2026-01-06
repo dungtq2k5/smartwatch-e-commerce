@@ -563,17 +563,6 @@ export default function EditUser() {
     ]
   );
 
-  const handleDiscard = useCallback((): void => {
-    if (process.isProcessing) {
-      toast("Another action is in progress. Please wait.", {
-        icon: WAITING_EMOJI,
-      });
-      return;
-    }
-
-    navigate(-1);
-  }, [navigate, process.isProcessing]);
-
   return (
     <>
       {process.isInitializing ? (
@@ -941,7 +930,7 @@ export default function EditUser() {
             <button
               type="button"
               className="btn btn-secondary"
-              onClick={handleDiscard}
+              onClick={() => navigate(-1)}
               disabled={process.isProcessing}
             >
               Discard
