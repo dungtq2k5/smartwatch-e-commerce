@@ -12,6 +12,7 @@ import {
   update,
   remove,
   removeBulk,
+  adminGet,
 } from "../../controllers/product/modelVariation.controller";
 
 const router = express.Router();
@@ -31,6 +32,12 @@ router.get(
   inputSanitizer("admin search"),
   verifyVariationInput("admin search"),
   adminSearch
+);
+
+router.get(
+  "/:variationId/admin",
+  verifyPermission("r_model_variation"),
+  adminGet
 );
 
 router.get("/:variationId", get);

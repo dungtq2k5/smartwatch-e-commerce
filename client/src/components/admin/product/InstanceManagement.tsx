@@ -811,8 +811,6 @@ export default function InstanceManagement() {
     );
   }, [canCreateInstance, navigate]);
 
-  // TODO create instance component
-
   return (
     <>
       {/* Heading */}

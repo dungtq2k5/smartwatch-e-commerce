@@ -53,6 +53,7 @@ import CreateModel from "./components/admin/product/CreateModel.tsx";
 import CreateVariation from "./components/admin/product/CreateVariation.tsx";
 import CreateGrn from "./components/admin/grn/CreateGrn.tsx";
 import CreateInstance from "./components/admin/product/CreateInstance.tsx";
+import EditVariation from "./components/admin/product/EditVariation.tsx";
 
 export default function App() {
   // DEV for testing
@@ -92,9 +93,9 @@ export default function App() {
       {isAdminPage ? (
         <Routes>
           <Route path="/admin">
-            {/* TODO:CRUD
+            {/* TODO: CRUD
               - dashboard
-              - product/model/variation management (read, create, edit)
+              - product/model/variation/instance management (read, create, edit)
               - brand management
               - category management
               - order management
@@ -136,6 +137,7 @@ export default function App() {
                 <Route path="model-variations">
                   <Route index element={<VariationManagement />} />
                   <Route path="create/:modelId" element={<CreateVariation />} />
+                  <Route path=":id/edit" element={<EditVariation />} />
                 </Route>
 
                 <Route path="variation-instances">

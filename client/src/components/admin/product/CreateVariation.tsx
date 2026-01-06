@@ -49,7 +49,7 @@ type Process = {
   isCreating: boolean;
 };
 
-type FormData = {
+export type FormData = {
   name: FormInput;
   color: {
     hex: FormInput;

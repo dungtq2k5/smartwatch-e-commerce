@@ -1,21 +1,26 @@
 import { create } from "zustand";
 import type {
   AdminModelVariationListResponse,
+  AdminModelVariationResponse,
   ModelVariationBulkDelete,
   ModelVariationCreate,
   ModelVariationResponse,
   ModelVariationSearchQuery,
+  ModelVariationUpdate,
 } from "../../../../../common/types.common";
 import {
   formatError,
   removeOddSpaces,
 } from "../../../../../common/utils.common";
-import { post, remove, retrieve } from "../../../utils/utils";
+import { patch, post, remove, retrieve } from "../../../utils/utils";
 import { MODEL_VARIATION_URL } from "../../../configs";
 import { MAX_MODEL_VARIATIONS_TO_DELETE_BULK } from "../../../../../common/configs.common";
 
 type VariationState = {
   fetchVariationLite: (variationId: string) => Promise<ModelVariationResponse>; // Less detailed version than fetchVariation
+  fetchVariation: (
+    variationId: string
+  ) => Promise<AdminModelVariationResponse>;
   fetchVariations: (
     query?: ModelVariationSearchQuery
   ) => Promise<AdminModelVariationListResponse>;
@@ -25,6 +30,11 @@ type VariationState = {
 
   createVariation: (
     variation: ModelVariationCreate
+  ) => Promise<ModelVariationResponse>;
+
+  updateVariation: (
+    id: string,
+    variation: ModelVariationUpdate
   ) => Promise<ModelVariationResponse>;
 };
 
@@ -37,6 +47,19 @@ const useVariationStore = create<VariationState>(() => ({
       if (!res.success) throw new Error(res.message);
 
       return res.data as ModelVariationResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async fetchVariation(
+    variationId: string
+  ): Promise<AdminModelVariationResponse> {
+    try {
+      const res = await retrieve(`${MODEL_VARIATION_URL}/${variationId}/admin`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as AdminModelVariationResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -145,6 +168,20 @@ const useVariationStore = create<VariationState>(() => ({
   ): Promise<ModelVariationResponse> {
     try {
       const res = await post(MODEL_VARIATION_URL, variation);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as ModelVariationResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async updateVariation(
+    id: string,
+    variation: ModelVariationUpdate
+  ): Promise<ModelVariationResponse> {
+    try {
+      const res = await patch(MODEL_VARIATION_URL, id, variation);
       if (!res.success) throw new Error(res.message);
 
       return res.data as ModelVariationResponse;

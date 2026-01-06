@@ -1007,8 +1007,6 @@ export default function ModelManagement() {
     );
   }, [canCreateModel, navigate]);
 
-  // TODO: Edit model component.
-
   return (
     <>
       {/* Heading */}

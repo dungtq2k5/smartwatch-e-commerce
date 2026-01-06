@@ -37,6 +37,8 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - Ctrl+K to focus search input box ❌.
     - Create a button component with isLoading as props ❌.
     - Better ApiErr UI component to display error message and status code from API ❌.
+    - export FormData type from create component to reuse in edit component ❌.
+    - use lazy import of needed ❌.
 
   - Backend - API: (remember isDeleted field)
     - Because __v field is only activated with doc.save() so stick with find-modify-save method when modifying data 📝.

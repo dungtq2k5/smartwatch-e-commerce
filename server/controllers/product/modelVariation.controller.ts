@@ -212,6 +212,83 @@ export async function getAll(
   }
 }
 
+export async function adminGet(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Admin getting product model variation...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares."
+      )
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action.")
+    );
+  }
+
+  const { variationId } = req.params;
+
+  try {
+    // Check variation exists
+    if (!Types.ObjectId.isValid(variationId)) {
+      throw new HttpError(404, "Product model variation not found.");
+    }
+    const variation = await ModelVariation.aggregate([
+      { $match: { isDeleted: false, _id: new Types.ObjectId(variationId) } },
+      { ...OPTIMIZE_PIPELINE },
+      {
+        $lookup: {
+          from: "productmodels",
+          localField: "productModelId",
+          foreignField: "_id",
+          as: "productModel",
+          pipeline: [{ $project: { productId: 1 } }],
+        },
+      },
+      { $unwind: "$productModel" },
+      {
+        $addFields: {
+          productId: "$productModel.productId",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+    ]).then((results) => results[0]);
+
+    if (!variation) {
+      throw new HttpError(404, "Product model variation not found.");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Product model variation retrieved successfully.",
+      data: formatAdminModelVariationResponse(variation),
+    } as SuccessResponse<AdminModelVariationResponse>);
+    console.log("✅ ", "Product model variation retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function adminSearch(
   req: Request,
   res: Response,

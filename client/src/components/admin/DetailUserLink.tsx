@@ -10,47 +10,47 @@ type DetailUserLinkProps = Readonly<{
 }> &
   Omit<LinkBtnProps, "to">;
 
-const DetailUserLink = memo(
-  ({ userId, ...props }: DetailUserLinkProps) => {
-    const { sysUserId, fetchSysUserId } = useUserStore();
+const DetailUserLink = memo(({ userId, ...props }: DetailUserLinkProps) => {
+  const { sysUserId, fetchSysUserId } = useUserStore();
 
-    const [isInitializing, setIsInitializing] = useState<boolean>(
-      sysUserId === null
-    );
+  const [isInitializing, setIsInitializing] = useState<boolean>(
+    sysUserId === null
+  );
 
-    useEffect(() => {
-      const handleFetchSetInitialData = async () => {
-        if (sysUserId !== null) return;
+  useEffect(() => {
+    const handleFetchSetInitialData = async () => {
+      if (sysUserId !== null) return;
 
-        setIsInitializing(true);
+      setIsInitializing(true);
 
-        try {
-          if (!sysUserId) await fetchSysUserId();
-        } catch (error) {
-          console.error("DetailUserLink: ", formatError(error));
-        } finally {
-          setIsInitializing(false);
-        }
-      };
+      try {
+        if (!sysUserId) await fetchSysUserId();
+      } catch (error) {
+        console.error("DetailUserLink: ", formatError(error));
+      } finally {
+        setIsInitializing(false);
+      }
+    };
 
-      handleFetchSetInitialData();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    handleFetchSetInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    return (
-      <>
-        {isInitializing ? (
+  return (
+    <>
+      {isInitializing ? (
+        <span className={props.className}>
           <SmallSpinner />
-        ) : !sysUserId ? (
-          "N/A"
-        ) : sysUserId === userId ? (
-          "system"
-        ) : (
-          <LinkBtn {...props} to={`/admin/users/${userId}`} />
-        )}
-      </>
-    );
-  }
-);
+        </span>
+      ) : !sysUserId ? (
+        <span className={props.className}>N/A</span>
+      ) : sysUserId === userId ? (
+        <span className={props.className}>system</span>
+      ) : (
+        <LinkBtn {...props} to={`/admin/users/${userId}`} />
+      )}
+    </>
+  );
+});
 
 export default DetailUserLink;

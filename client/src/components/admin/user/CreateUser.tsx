@@ -6,7 +6,7 @@ import {
   USER_GENDER_OPTIONS,
 } from "../../../../../common/configs.common";
 import { AVATAR_HINT_MESSAGE, WAITING_EMOJI } from "../../../configs";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type { FormFileInput, FormInput } from "../../../utils/types";
 import useRoleStore from "../../../store/admin/roleStore";
 import {
@@ -26,6 +26,7 @@ import InvalidInputMsg from "../../common/InvalidInputMsg";
 import useUserStore from "../../../store/admin/userStore";
 import type { UserCreate } from "../../../../../common/types.common";
 import CreateUserSkeleton from "../skeleton/CreateUserSkeleton";
+import Title from "../Title";
 
 type FormData = {
   fullName: FormInput;
@@ -388,7 +389,6 @@ export default function CreateUser() {
     navigate("/admin/users");
   }, [navigate, process.isProcessing]);
 
-  // TODO creation header component...
   return (
     <>
       {process.isInitializing ? (
