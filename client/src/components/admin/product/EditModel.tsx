@@ -1323,7 +1323,7 @@ export function EditModel() {
           setProcess((prev) => ({
             ...prev,
             isProcessing: false,
-            isUpdatingGeneralInfo: false,
+            isUpdating: false,
           }));
         }
       }
