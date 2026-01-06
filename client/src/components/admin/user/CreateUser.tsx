@@ -400,18 +400,12 @@ export default function CreateUser() {
       ) : (
         <>
           {/* Heading */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="fs-2 mb-0 d-flex gap-2">
-              <Link
-                to={"/admin/users"}
-                className="text-decoration-none text-black"
-              >
-                User Management
-              </Link>
-              <p className="mb-0 fw-light">/</p>
-              Create User
-            </h1>
-          </div>
+          <Title
+            title="Create new User"
+            parentTitle="User Management"
+            parentLink="/admin/users"
+            className="mb-4"
+          />
 
           {/* Form */}
           <form onSubmit={handleSubmit}>

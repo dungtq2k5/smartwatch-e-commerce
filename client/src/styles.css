@@ -658,6 +658,10 @@ body {
   background-color: var(--success-color);
 }
 
+.bg-grey--g, .bg-gray--g {
+  background-color: var(--grey-color);
+}
+
 @keyframes toast-enter {
   from {
     transform: translateY(-8px);

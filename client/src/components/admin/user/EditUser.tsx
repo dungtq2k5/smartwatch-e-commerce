@@ -935,7 +935,7 @@ export default function EditUser() {
               onClick={handleDiscard}
               disabled={process.isProcessing}
             >
-              Go Back
+              Discard
             </button>
           </div>
         </>

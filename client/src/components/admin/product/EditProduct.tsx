@@ -16,7 +16,7 @@ import type {
   AdminProductResponse,
   ProductUpdate,
 } from "../../../../../common/types.common";
-import { WAITING_EMOJI } from "../../../configs";
+import { DISABLED_TITLE_FOR_VIEWING, WAITING_EMOJI } from "../../../configs";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faQuestionCircle,
@@ -40,6 +40,8 @@ import ApiError from "../../common/ApiError";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import useUserStore from "../../../store/admin/userStore";
 import Title from "../Title";
+import DetailUserLink from "../DetailUserLink";
+import LinkBtn from "../../common/LinkBtn";
 
 type Process = {
   isProcessing: boolean;
@@ -75,7 +77,12 @@ export function EditProduct() {
   const { fetchProduct, updateProduct } = useProductStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
-  const canEditProduct = useHasPermission("u_product");
+  const [canEditProduct, canReadUser, canReadModel, canReadVariation] = [
+    useHasPermission("u_product"),
+    useHasPermission("r_usr"),
+    useHasPermission("r_product_model"),
+    useHasPermission("r_model_variation"),
+  ];
 
   const [product, setProduct] = useState<AdminProductResponse | null>(null);
   const [process, setProcess] = useState<Process>({
@@ -386,7 +393,10 @@ export function EditProduct() {
           newFormData.name.err = "Product name is invalid.";
           allValid = false;
         }
-        if (!newFormData.description.val || !removeOddSpaces(newFormData.description.val)) {
+        if (
+          !newFormData.description.val ||
+          !removeOddSpaces(newFormData.description.val)
+        ) {
           newFormData.description.err = "Description is required.";
           allValid = false;
         }
@@ -736,26 +746,16 @@ export function EditProduct() {
                         />
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="createdBy" className="form-label">
-                          Created by
-                        </label>
-                        {product.createdBy.id !== sysUserId ? (
-                          <input
-                            type="text"
-                            id="createdBy"
-                            className="form-control"
-                            value="System"
-                            disabled
-                          />
-                        ) : (
-                          <Link
-                            to={`/admin/users/${product.createdBy.id}`}
-                            title="View user details"
-                            className="form-control"
-                          >
-                            {product.createdBy.fullName}
-                          </Link>
-                        )}
+                        <p className="form-label mb-2">Created by</p>
+                        <DetailUserLink
+                          userId={product.createdBy.id}
+                          title="View user details"
+                          disabled={!canReadUser}
+                          disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+                          className="form-control bg-grey--g"
+                        >
+                          {product.createdBy.fullName}
+                        </DetailUserLink>
                       </div>
                       <div className="col-md-6 mb-3">
                         <label htmlFor="createdAt" className="form-label">
@@ -784,23 +784,27 @@ export function EditProduct() {
                       <div className="col-md-6 mb-3">
                         <p className="form-label mb-0">
                           Total related models:{" "}
-                          <Link
+                          <LinkBtn
                             to={`/admin/product-models?searchTerm=${product.id}`}
                             title="View models of this product"
+                            disabled={!canReadModel}
+                            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
                           >
                             {product.totalModels}
-                          </Link>
+                          </LinkBtn>
                         </p>
                       </div>
                       <div className="col-md-6 mb-3">
                         <p className="form-label mb-0">
                           Total related variations:{" "}
-                          <Link
+                          <LinkBtn
                             to={`/admin/model-variations?searchTerm=${product.id}`}
                             title="View variations of this product"
+                            disabled={!canReadVariation}
+                            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
                           >
                             {product.totalVariations}
-                          </Link>
+                          </LinkBtn>
                         </p>
                       </div>
                     </div>

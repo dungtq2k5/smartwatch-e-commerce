@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import useUserStore from "../../../store/admin/userStore";
 import useModelStore from "../../../store/admin/product/modelStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
@@ -19,7 +19,7 @@ import {
   readFileAsDataUrl,
 } from "../../../../../common/utils.common";
 import toast from "react-hot-toast";
-import { WAITING_EMOJI } from "../../../configs";
+import { DISABLED_TITLE_FOR_VIEWING, WAITING_EMOJI } from "../../../configs";
 import {
   createFileList,
   getImgFilesErrs,
@@ -42,6 +42,8 @@ import TxtListInput from "../TxtListInput";
 import useProductOsStore from "../../../store/common/product/osStore";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import Title from "../Title";
+import DetailUserLink from "../DetailUserLink";
+import LinkBtn from "../../common/LinkBtn";
 
 type Process = {
   isProcessing: boolean;
@@ -143,7 +145,11 @@ export function EditModel() {
   const { fetchModel, updateModel } = useModelStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
-  const canEditModel = useHasPermission("u_product_model");
+  const [canEditModel, canReadUser, canReadVariation] = [
+    useHasPermission("u_product_model"),
+    useHasPermission("r_usr"),
+    useHasPermission("r_model_variation"),
+  ];
 
   const [model, setModel] = useState<AdminProductModelResponse | null>(null);
   const [process, setProcess] = useState<Process>({
@@ -2605,37 +2611,76 @@ export function EditModel() {
                       />
                     </div>
 
-                    <div className="mb-2">
-                      <small className="text-muted d-block">ID</small>
-                      <span>{model.id}</span>
+                    <div className="mb-3">
+                      <label htmlFor="id" className="form-label">
+                        ID
+                      </label>
+                      <input
+                        type="text"
+                        name="id"
+                        id="id"
+                        className="form-control"
+                        value={model.id}
+                        readOnly
+                        disabled
+                      />
                     </div>
-                    <div className="mb-2">
-                      <small className="text-muted d-block">Created By</small>
-                      {model.createdBy.id === sysUserId ? (
-                        <span>system</span>
-                      ) : (
-                        <Link to={`/admin/users/${model.createdBy.id}`}>
-                          {model.createdBy.fullName}
-                        </Link>
-                      )}
+
+                    <div className="mb-3">
+                      <p className="form-label mb-2">Created By</p>
+                      <DetailUserLink
+                        userId={model.createdBy.id}
+                        title="View user details"
+                        disabled={!canReadUser}
+                        disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+                        className="form-control bg-gray--g"
+                      >
+                        {model.createdBy.fullName}
+                      </DetailUserLink>
                     </div>
-                    <div className="mb-2">
-                      <small className="text-muted d-block">Created At</small>
-                      <span>{new Date(model.createdAt).toLocaleString()}</span>
+
+                    <div className="mb-3">
+                      <label htmlFor="createdAt" className="form-label">
+                        Created At
+                      </label>
+                      <input
+                        type="text"
+                        name="createdAt"
+                        id="createdAt"
+                        className="form-control"
+                        value={new Date(model.createdAt).toLocaleString()}
+                        readOnly
+                        disabled
+                      />
                     </div>
-                    <div className="mb-2">
-                      <small className="text-muted d-block">Updated At</small>
-                      <span>{new Date(model.updatedAt).toLocaleString()}</span>
+
+                    <div className="mb-3">
+                      <label htmlFor="updatedAt" className="form-label">
+                        Updated At
+                      </label>
+                      <input
+                        type="text"
+                        name="updatedAt"
+                        id="updatedAt"
+                        className="form-control"
+                        value={new Date(model.updatedAt).toLocaleString()}
+                        readOnly
+                        disabled
+                      />
                     </div>
+
                     <div className="mb-2">
                       <small className="text-muted d-block">
-                        Total Variations
+                        Total related Variations
                       </small>
-                      <Link
+                      <LinkBtn
                         to={`/admin/model-variations?searchTerm=${model.id}`}
+                        title="View variations of this model"
+                        disabled={!canReadVariation}
+                        disabledtitle={DISABLED_TITLE_FOR_VIEWING}
                       >
                         {model.totalVariations}
-                      </Link>
+                      </LinkBtn>
                     </div>
                   </div>
                 </div>
