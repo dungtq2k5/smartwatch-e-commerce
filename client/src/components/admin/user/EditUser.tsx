@@ -368,6 +368,7 @@ export default function EditUser() {
         isProcessing: true,
         isUpdatingGeneralInfo: true,
       }));
+
       if (await validateForm()) {
         const getChangedData = async (): Promise<UserUpdate> => {
           const changedData: UserUpdate = {};
@@ -420,8 +421,15 @@ export default function EditUser() {
           toast.success("User general information updated successfully!");
         } catch (error) {
           toast.error(formatError(error));
+        } finally {
+          setProcess((prev) => ({
+            ...prev,
+            isProcessing: false,
+            isUpdatingGeneralInfo: false,
+          }));
         }
       }
+
       setProcess((prev) => ({
         ...prev,
         isProcessing: false,
@@ -513,6 +521,7 @@ export default function EditUser() {
           isProcessing: true,
           isUpdatingContactInfo: true,
         }));
+        
         try {
           const { emailData, phoneData } = getChangedData();
           const emailChanged = Object.keys(emailData).length > 0;

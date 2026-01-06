@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   MAX_PRODUCT_IMG_UPLOAD,
   PRODUCT_IMAGE_ALLOWED_TYPES,
@@ -513,6 +513,12 @@ export function EditProduct() {
           toast.success("Product updated successfully.");
         } catch (error) {
           toast.error(formatError(error));
+        } finally {
+          setProcess((prev) => ({
+            ...prev,
+            isProcessing: false,
+            isUpdating: false,
+          }));
         }
       }
 
@@ -556,6 +562,8 @@ export function EditProduct() {
         <ApiError errMsg="Product categories data is not found." />
       ) : !product ? (
         <ApiError errMsg="Product data is not found." />
+      ) : !sysUserId ? (
+        <ApiError errMsg="System user ID data not found." />
       ) : (
         <>
           {/* Heading */}

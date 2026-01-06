@@ -27,6 +27,7 @@ import {
 } from "../../../utils/utils";
 import {
   MAX_PRODUCT_IMG_UPLOAD,
+  PRODUCT_IMAGE_ALLOWED_TYPES,
   PRODUCT_IMAGE_HINT_MESSAGE,
 } from "../../../../../common/configs.common";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -1318,6 +1319,12 @@ export function EditModel() {
           toast.success("Product model updated successfully.");
         } catch (error) {
           toast.error(formatError(error));
+        } finally {
+          setProcess((prev) => ({
+            ...prev,
+            isProcessing: false,
+            isUpdatingGeneralInfo: false,
+          }));
         }
       }
 
@@ -1372,6 +1379,17 @@ export function EditModel() {
     [process.isProcessing]
   );
 
+  const handleDiscard = useCallback((): void => {
+    if (process.isProcessing) {
+      toast("Another request is being processed. Please wait.", {
+        icon: WAITING_EMOJI,
+      });
+      return;
+    }
+
+    navigate("/admin/products");
+  }, [navigate, process.isProcessing]);
+
   return (
     <>
       {process.isInitializing ? (
@@ -1382,6 +1400,8 @@ export function EditModel() {
         <ApiError errMsg="Operating system data not found." />
       ) : !model ? (
         <ApiError errMsg="Model data not found." />
+      ) : !sysUserId ? (
+        <ApiError errMsg="System user ID not found." />
       ) : (
         <>
           {/* Heading */}
@@ -2549,7 +2569,7 @@ export function EditModel() {
                         name="imageUrls"
                         className="form-control"
                         multiple
-                        accept="image/*"
+                        accept={PRODUCT_IMAGE_ALLOWED_TYPES.join(",")}
                         ref={fileInputRef}
                         disabled={process.isProcessing}
                       />
@@ -2692,10 +2712,10 @@ export function EditModel() {
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => navigate(-1)}
+                onClick={handleDiscard}
                 disabled={process.isProcessing}
               >
-                Cancel
+                Discard
               </button>
               <button
                 type="submit"
