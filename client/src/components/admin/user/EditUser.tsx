@@ -202,13 +202,15 @@ export default function EditUser() {
           setAvatarPreviewUrl((await readFileAsDataUrl(file)) as string);
 
           const imgFileErrs = await getImgFileErrs(files[0], "avatar");
-          setFormData((prev) => ({
-            ...prev,
-            avatar: {
-              val: file,
-              err: `Avatar file is invalid: ${imgFileErrs.join(", ")}`,
-            },
-          }));
+          if (imgFileErrs.length === 0) {
+            setFormData((prev) => ({
+              ...prev,
+              avatar: {
+                val: file,
+                err: `Avatar file is invalid: ${imgFileErrs.join(", ")}`,
+              },
+            }));
+          }
 
           setProcess((prev) => ({
             ...prev,

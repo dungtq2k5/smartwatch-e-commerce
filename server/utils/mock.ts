@@ -764,7 +764,7 @@ async function mockInventoryMovements(
     for (const instance of variationInstances) {
       const movement = {
         variationInstanceId: instance._id,
-        sku: instance.sku,
+        variationInstanceSku: instance.sku,
         inventoryMovementTypeId: stockAdjustInventoryMovementTypeId,
         createdBy: sysUserId,
         quantity: 1,
@@ -994,7 +994,7 @@ async function mockCompleteOrder(
     const inventoryMovementsToCreate = [
       {
         variationInstanceId: instances1[0]._id,
-        sku: instances1[0].sku,
+        variationInstanceSku: instances1[0].sku,
         inventoryMovementTypeId: getMovementTypeId("3"), // sales out
         createdBy: sysUserId,
         quantity: 1, // Corrected from -1 to 1
@@ -1002,7 +1002,7 @@ async function mockCompleteOrder(
       },
       ...instances2.map((inst) => ({
         variationInstanceId: inst._id,
-        sku: inst.sku,
+        variationInstanceSku: inst.sku,
         inventoryMovementTypeId: getMovementTypeId("3"), // sales out
         createdBy: sysUserId,
         quantity: 1, // Corrected from -1 to 1
@@ -1164,7 +1164,7 @@ export async function mockPendingOrder(
     const inventoryMovementsToCreate = [
       {
         variationInstanceId: instances1[0]._id,
-        sku: instances1[0].sku,
+        variationInstanceSku: instances1[0].sku,
         inventoryMovementTypeId: getMovementTypeId("3"), // sales out
         createdBy: sysUserId,
         quantity: 1, // Corrected from -1 to 1
@@ -1172,7 +1172,7 @@ export async function mockPendingOrder(
       },
       {
         variationInstanceId: instances2[0]._id,
-        sku: instances2[0].sku,
+        variationInstanceSku: instances2[0].sku,
         inventoryMovementTypeId: getMovementTypeId("3"), // sales out
         createdBy: sysUserId,
         quantity: 1, // Corrected from -1 to 1
