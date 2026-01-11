@@ -8,7 +8,7 @@ import {
   type JSX,
 } from "react";
 import {
-  MODEL_VARIATION_SORT_OPTIONS,
+  MODEL_VARIATION_SEARCH_SORT_OPTIONS,
   PROJECT_NAME,
 } from "../../../../../common/configs.common";
 import type {
@@ -55,6 +55,7 @@ import ApiError from "../../common/ApiError";
 import { exportToCsv } from "../../../utils/utils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faBoxOpen,
   faFileExport,
   faPlus,
   faSearch,
@@ -91,7 +92,7 @@ type Modal = {
 type TableColDisplay = {
   [key in AdminModelVariationDisplayableField]: GeneralTableColDisplay<
     AdminModelVariationResponse,
-    (typeof MODEL_VARIATION_SORT_OPTIONS)[number]
+    (typeof MODEL_VARIATION_SEARCH_SORT_OPTIONS)[number]
   >;
 };
 
@@ -430,10 +431,10 @@ export default function VariationManagement() {
             urlStopSelling && isValidBooleanString(urlStopSelling)
               ? urlStopSelling
               : undefined,
-          sortBy: MODEL_VARIATION_SORT_OPTIONS.includes(
-            urlSortBy as (typeof MODEL_VARIATION_SORT_OPTIONS)[number]
+          sortBy: MODEL_VARIATION_SEARCH_SORT_OPTIONS.includes(
+            urlSortBy as (typeof MODEL_VARIATION_SEARCH_SORT_OPTIONS)[number]
           )
-            ? (urlSortBy as (typeof MODEL_VARIATION_SORT_OPTIONS)[number])
+            ? (urlSortBy as (typeof MODEL_VARIATION_SEARCH_SORT_OPTIONS)[number])
             : undefined,
         };
 
@@ -765,6 +766,15 @@ export default function VariationManagement() {
         </td>
       </tr>
     ) : variations.total === 0 ? (
+      <tr>
+        <td colSpan={colSpan} className="p-4">
+          <p className="mb-0 text-muted text-center">
+            <FontAwesomeIcon icon={faBoxOpen} className="me-2" size="sm" />
+            No variations in the system.
+          </p>
+        </td>
+      </tr>
+    ) : variations.variations.total === 0 ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
           <p className="mb-0 text-muted text-center">

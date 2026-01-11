@@ -8,59 +8,61 @@ import {
   type JSX,
 } from "react";
 import {
+  GRN_SEARCH_SORT_OPTIONS,
   PROJECT_NAME,
-  type VARIATION_INSTANCE_SEARCH_SORT_OPTIONS,
 } from "../../../../../common/configs.common";
 import type {
-  VariationInstanceListResponse,
-  VariationInstanceResponse,
-  VariationInstanceSearchQuery,
+  GrnListResponse,
+  GrnDetailResponse,
+  GrnSearchQuery,
 } from "../../../../../common/types.common";
 import {
   DATA_DISPLAY_ROWS_PER_PAGE,
   DEFAULT_DATA_DISPLAY_ROWS_PER_PAGE,
   DISABLED_TITLE_FOR_PERFORMING,
   DISABLED_TITLE_FOR_VIEWING,
-  VARIATION_INSTANCE_FIELD_LABEL_LEGEND as INSTANCE_FIELD_LABEL_LEGEND,
-  INSTRUCTION_EMOJI,
+  GRN_FIELD_LABEL_LEGEND,
   WAITING_EMOJI,
   WARNING_EMOJI,
 } from "../../../configs";
 import type {
-  AdminVariationInstanceDisplayableField,
+  AdminGrnDisplayableField,
   TableColDisplay as GeneralTableColDisplay,
-  VariationInstanceDisplayField,
+  GrnDisplayField,
 } from "../../../utils/types";
 import useUserStore from "../../../store/admin/userStore";
-import useInstanceStore from "../../../store/admin/product/instanceStore";
+import useGrnStateStore from "../../../store/admin/grn/grnStateStore";
+import useGrnStore from "../../../store/admin/grn/grnStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useConfigStore from "../../../store/admin/configStore";
+import LinkBtn from "../../common/LinkBtn";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import useInstanceConditionStore from "../../../store/admin/product/instanceConditionStore";
-import EditBtnLink from "../EditBtnLink";
+import DetailUserLink from "../DetailUserLink";
 import {
+  centsToUSD,
   formatError,
-  isValidBooleanString,
+  getLocalDateString,
+  isValidDateTimeString,
+  isValidNumString,
   removeOddSpaces,
 } from "../../../../../common/utils.common";
+import EditBtnLink from "../EditBtnLink";
+import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import TableHeadSortBtn from "../TableHeadSortBtn";
 import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";
 import { exportToCsv } from "../../../utils/utils";
-import ConfigDisplayModal from "../modal/ConfigDisplayModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBoxOpen,
   faFileExport,
-  faPlus,
   faSearch,
   faSliders,
 } from "@fortawesome/free-solid-svg-icons";
-import Pagination from "../../common/Pagination";
-import LinkBtn from "../../common/LinkBtn";
 import Btn from "../../common/Btn";
+import Pagination from "../../common/Pagination";
+import ConfigDisplayModal from "../modal/ConfigDisplayModal";
 
 type Process = {
   isProcessing: boolean;
@@ -68,10 +70,7 @@ type Process = {
   isExportingList: boolean;
 };
 
-type SearchForm = Omit<
-  VariationInstanceSearchQuery,
-  "limit" | "offset" | "searchTerm"
-> & {
+type SearchForm = Omit<GrnSearchQuery, "limit" | "offset" | "searchTerm"> & {
   limit: string;
   offset: string;
   searchTerm: string;
@@ -79,13 +78,13 @@ type SearchForm = Omit<
 
 type Modal = {
   configDisplay: boolean;
-  selectedInstanceIds: string[] | null;
+  grnIdsSelected: string[] | null;
 };
 
 type TableColDisplay = {
-  [key in AdminVariationInstanceDisplayableField]: GeneralTableColDisplay<
-    VariationInstanceResponse,
-    (typeof VARIATION_INSTANCE_SEARCH_SORT_OPTIONS)[number]
+  [key in AdminGrnDisplayableField]: GeneralTableColDisplay<
+    GrnDetailResponse,
+    (typeof GRN_SEARCH_SORT_OPTIONS)[number]
   >;
 };
 
@@ -95,158 +94,112 @@ const DEFAULT_SEARCH_FORM: SearchForm = {
   searchTerm: "",
 };
 
-const SELECTION_TOAST_ID = "selected-instances-toast";
+const SELECTION_TOAST_ID = "selected-grns-toast";
 
-export default function InstanceManagement() {
+export default function GrnManagement() {
   // DEV temp for testing
   const renderCount = useRef(0);
   renderCount.current += 1;
-  console.log(`InstanceManagement render count: ${renderCount.current}`);
-
-  const navigate = useNavigate();
+  console.log("GrnManagement render count:", renderCount.current);
 
   const { sysUserId, fetchSysUserId } = useUserStore();
-  const { instanceConditions, fetchInstanceConditions, getInstanceCondition } =
-    useInstanceConditionStore();
-  const { fetchInstances } = useInstanceStore();
+  const { grnStates, fetchGrnStates, getGrnState } = useGrnStateStore();
+  const { fetchGrns } = useGrnStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
+
   const {
-    config: { variationInstanceManagementDisplayFields: displayFields },
-    resetVariationInstanceManagementDisplayFields: resetDisplayFields,
-    setVariationInstanceManagementDisplayFields: setDisplayFields,
+    config: { grnManagementDisplayFields: displayFields },
+    resetGrnManagementDisplayFields: resetDisplayFields,
+    setGrnManagementDisplayFields: setDisplayFields,
   } = useConfigStore();
 
-  const [canEditInstance, canCreateInstance, canReadModel] = [
-    useHasPermission("u_variation_instance"),
-    useHasPermission("c_variation_instance"),
-    useHasPermission("r_product_model"),
-  ]; // canReadInstance is handled by ApiErr
+  const [canReadProvider, canReadUser, canEditGrn] = [
+    useHasPermission("r_provider_inventory"),
+    useHasPermission("r_usr"),
+    useHasPermission("u_grn"),
+  ];
 
   const TABLE_COL_DISPLAY = useMemo(
     (): TableColDisplay => ({
       id: {
-        label: INSTANCE_FIELD_LABEL_LEGEND["id"] || "ID",
-        tdContent: (instance) => <>{instance.id}</>,
-        getCsvVal: (instance) => instance.id,
+        label: GRN_FIELD_LABEL_LEGEND["id"] || "ID",
+        tdContent: (grn) => <>{grn.id}</>,
+        getCsvVal: (grn) => grn.id,
       },
-      sku: {
-        label: INSTANCE_FIELD_LABEL_LEGEND["sku"] || "SKU",
-        isSortable: true,
-        sortKey: { asc: "sku_asc", desc: "sku_desc" },
-        tdContent: (instance) => <>{instance.sku}</>,
-        getCsvVal: (instance) => instance.sku,
+      name: {
+        label: GRN_FIELD_LABEL_LEGEND["name"] || "Name",
+        tdContent: (grn) => <>{grn.name}</>,
+        getCsvVal: (grn) => grn.name,
       },
-      modelVariationId: {
-        label:
-          INSTANCE_FIELD_LABEL_LEGEND["modelVariationId"] || "Variation ID",
-        tdContent: (instance) => (
+      provider: {
+        label: GRN_FIELD_LABEL_LEGEND["provider"] || "Provider",
+        tdContent: (grn) => (
           <LinkBtn
-            to={`/admin/model-variations?searchTerm=${instance.modelVariationId}`}
-            title="View detail model"
-            disabled={!canReadModel}
+            to={`/admin/providers/${grn.provider.id}`}
+            title="View this provider"
+            disabled={!canReadProvider}
             disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
-            {instance.modelVariationId}
+            {grn.provider.fullName}
           </LinkBtn>
         ),
-        getCsvVal: (instance) => instance.modelVariationId,
+        getCsvVal: (grn) => grn.provider.fullName,
       },
-      supplierSerialNumber: {
-        label:
-          INSTANCE_FIELD_LABEL_LEGEND["supplierSerialNumber"] ||
-          "Serial Number",
-        tdContent: (instance) => <>{instance.supplierSerialNumber}</>,
-        getCsvVal: (instance) => instance.supplierSerialNumber,
+      createdBy: {
+        label: GRN_FIELD_LABEL_LEGEND["createdBy"] || "Created By",
+        tdContent: (grn) => (
+          <DetailUserLink
+            userId={grn.createdBy.id}
+            disabled={!canReadUser}
+            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+          >
+            {grn.createdBy.fullName}
+          </DetailUserLink>
+        ),
+        getCsvVal: (grn) => grn.createdBy.fullName,
       },
-      supplierImeiNumber: {
-        label:
-          INSTANCE_FIELD_LABEL_LEGEND["supplierImeiNumber"] || "IMEI Number",
-        tdContent: (instance) => <>{instance.supplierImeiNumber || "N/A"}</>,
-        getCsvVal: (instance) => instance.supplierImeiNumber || "N/A",
+      totalPriceCents: {
+        label: GRN_FIELD_LABEL_LEGEND["totalPriceCents"] || "Total Price",
+        isSortable: true,
+        sortKey: { asc: "totalPriceCents_asc", desc: "totalPriceCents_desc" },
+        tdContent: (grn) => <>{centsToUSD(grn.totalPriceCents)}</>,
+        getCsvVal: (grn) => centsToUSD(grn.totalPriceCents),
       },
-      conditionId: {
-        label: INSTANCE_FIELD_LABEL_LEGEND["conditionId"] || "Condition",
-        tdContent: (instance) => {
-          const condition = getInstanceCondition(instance.conditionId);
-          const conditionLookupId = condition?.lookupId || null;
-
-          let className = "text-capitalize badge ";
-          switch (conditionLookupId) {
-            case "1":
-              className += "text-bg-success";
-              break;
-            case "2":
-              className += "text-bg-primary";
-              break;
-            case "3":
-              className += "text-bg-warning";
-              break;
-            case "4":
-              className += "text-bg-danger";
-              break;
-            default:
-              className += "text-bg-secondary";
-          }
-
-          return (
-            <span className={className}>{condition?.name || "unknown"}</span>
-          );
-        },
-        getCsvVal: (instance) => instance.conditionId,
+      quantity: {
+        label: GRN_FIELD_LABEL_LEGEND["quantity"] || "Quantity",
+        tdContent: (grn) => <>{grn.quantity}</>,
+        getCsvVal: (grn) => grn.quantity,
       },
-      isActive: {
-        label: INSTANCE_FIELD_LABEL_LEGEND["isActive"] || "Active Status",
-        tdContent: (instance) =>
-          instance.isActive ? (
-            <span className="badge bg-success">Active</span>
-          ) : (
-            <div className="d-flex align-items-center gap-1">
-              <span className="badge bg-secondary">Inactive</span>
-              <span className="small text-muted">
-                at{" "}
-                {instance.inactiveAt
-                  ? new Date(instance.inactiveAt).toLocaleDateString()
-                  : "unknown"}
-              </span>
-            </div>
-          ),
-        getCsvVal: (instance) =>
-          instance.isActive
-            ? "Active"
-            : `Inactive (at ${
-                instance.inactiveAt
-                  ? new Date(instance.inactiveAt).toLocaleDateString()
-                  : "unknown"
-              })`,
+      notes: {
+        label: GRN_FIELD_LABEL_LEGEND["notes"] || "Notes",
+        tdContent: (grn) => <>{grn.notes || "None"}</>,
+        getCsvVal: (grn) => grn.notes || "None",
       },
       createdAt: {
-        label: INSTANCE_FIELD_LABEL_LEGEND["createdAt"] || "Created At",
+        label: GRN_FIELD_LABEL_LEGEND["createdAt"] || "Created At",
         isSortable: true,
         sortKey: { asc: "createdAt_asc", desc: "createdAt_desc" },
-        tdContent: (instance) => (
-          <>{new Date(instance.createdAt).toLocaleDateString()}</>
-        ),
-        getCsvVal: (instance) =>
-          new Date(instance.createdAt).toLocaleDateString(),
+        tdContent: (grn) => <>{new Date(grn.createdAt).toLocaleString()}</>,
+        getCsvVal: (grn) => new Date(grn.createdAt).toLocaleString(),
       },
-      updatedAt: {
-        label: INSTANCE_FIELD_LABEL_LEGEND["updatedAt"] || "Updated At",
-        isSortable: true,
-        sortKey: { asc: "updatedAt_asc", desc: "updatedAt_desc" },
-        tdContent: (instance) => (
-          <>{new Date(instance.updatedAt).toLocaleDateString()}</>
-        ),
-        getCsvVal: (instance) =>
-          new Date(instance.updatedAt).toLocaleDateString(),
+      state: {
+        label: GRN_FIELD_LABEL_LEGEND["state"] || "State",
+        tdContent: (grn) => <>{getGrnState(grn.stateId)?.name || "Unknown"}</>,
+        getCsvVal: (grn) => getGrnState(grn.stateId)?.name || "Unknown",
+      },
+      reversed: {
+        label: GRN_FIELD_LABEL_LEGEND["reversed"] || "Reversed",
+        tdContent: (grn) => <>{grn.reversedByGrnId ? "Yes" : "No"}</>,
+        getCsvVal: (grn) => (grn.reversedByGrnId ? "Yes" : "No"),
       },
       actions: {
-        label: INSTANCE_FIELD_LABEL_LEGEND["actions"] || "Actions",
-        tdContent: (instance) => (
+        label: GRN_FIELD_LABEL_LEGEND["actions"] || "Actions",
+        tdContent: (grn) => (
           <div className="d-flex gap-2">
             <EditBtnLink
-              to={`${instance.id}/edit`}
-              title="Edit instance"
-              disabled={!canEditInstance}
+              to={`/admin/grns/${grn.id}/edit`}
+              title="Edit this GRN"
+              disabled={!canEditGrn}
               disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
           </div>
@@ -254,59 +207,64 @@ export default function InstanceManagement() {
         getCsvVal: () => null,
       },
     }),
-    [canEditInstance, canReadModel, getInstanceCondition]
+    [canEditGrn, canReadProvider, canReadUser, getGrnState]
   );
 
   const [process, setProcess] = useState<Process>({
     isProcessing: true,
-    isFetching: true,
+    isFetching: false,
     isExportingList: false,
   });
   const [apiErr, setApiErr] = useState<string | null>(null);
 
-  const [instances, setInstances] =
-    useState<VariationInstanceListResponse | null>(null);
+  const [grns, setGrns] = useState<GrnListResponse | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchForm, setSearchForm] = useState<SearchForm>(DEFAULT_SEARCH_FORM);
 
-  const [selectedInstanceIds, setSelectedInstanceIds] = useState<
-    string[] | "all"
-  >([]);
-  const [selectionToastId, setSelectionToastId] = useState<string | null>(null);
+  const [selectedGrnIds, setSelectedGrnIds] = useState<string[] | "all">([]);
+  const [selectionToastId, setSelectionToastId] = useState<
+    typeof SELECTION_TOAST_ID | null
+  >(null);
 
   const [modal, setModal] = useState<Modal>({
     configDisplay: false,
-    selectedInstanceIds: null,
+    grnIdsSelected: null,
   });
 
   const tableRef = useRef<HTMLTableElement | null>(null);
 
-  // Fetch set initial data when first load or search params changed or refresh signal
+  // Fetch set initial data when first load or search params changed or refresh signal triggered
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       setProcess((prev) => ({ ...prev, isProcessing: true, isFetching: true }));
       setApiErr(null);
 
       try {
-        // Pre-fetch sysUserId, instanceConditions for getSync functions
-        await Promise.all([
-          sysUserId ? Promise.resolve() : fetchSysUserId(),
-          instanceConditions ? Promise.resolve() : fetchInstanceConditions(),
-        ]);
+        // Pre-fetch necessary data
+        if (!sysUserId) await fetchSysUserId();
+        if (!grnStates) await fetchGrnStates();
 
         const [
           urlLimit,
           urlOffset,
           urlSearchTerm,
-          urlConditionId,
-          urlIsActive,
+          urlTotalPriceCentsMin,
+          urlTotalPriceCentsMax,
+          urlCreatedAtFrom,
+          urlCreatedAtTo,
+          urlStateId,
+          urlSortBy,
         ] = [
           searchParams.get("limit"),
           searchParams.get("offset"),
           searchParams.get("searchTerm"),
-          searchParams.get("conditionId"),
-          searchParams.get("isActive"),
+          searchParams.get("totalPriceCentsMin"),
+          searchParams.get("totalPriceCentsMax"),
+          searchParams.get("createdAtFrom"),
+          searchParams.get("createdAtTo"),
+          searchParams.get("stateId"),
+          searchParams.get("sortBy"),
         ];
 
         const newSearchForm: SearchForm = {
@@ -314,17 +272,34 @@ export default function InstanceManagement() {
           limit: urlLimit || DEFAULT_SEARCH_FORM.limit,
           offset: urlOffset || DEFAULT_SEARCH_FORM.offset,
           searchTerm: urlSearchTerm || DEFAULT_SEARCH_FORM.searchTerm,
-          conditionId: urlConditionId || undefined,
-          isActive:
-            urlIsActive && isValidBooleanString(urlIsActive)
-              ? urlIsActive
+          totalPriceCentsMin:
+            urlTotalPriceCentsMin && isValidNumString(urlTotalPriceCentsMin)
+              ? urlTotalPriceCentsMin
               : undefined,
+          totalPriceCentsMax:
+            urlTotalPriceCentsMax && isValidNumString(urlTotalPriceCentsMax)
+              ? urlTotalPriceCentsMax
+              : undefined,
+          createdAtFrom:
+            urlCreatedAtFrom && isValidDateTimeString(urlCreatedAtFrom)
+              ? urlCreatedAtFrom
+              : undefined,
+          createdAtTo:
+            urlCreatedAtTo && isValidDateTimeString(urlCreatedAtTo)
+              ? urlCreatedAtTo
+              : undefined,
+          stateId: urlStateId || undefined,
+          sortBy: GRN_SEARCH_SORT_OPTIONS.includes(
+            urlSortBy as (typeof GRN_SEARCH_SORT_OPTIONS)[number]
+          )
+            ? (urlSortBy as (typeof GRN_SEARCH_SORT_OPTIONS)[number])
+            : undefined,
         };
 
-        setSelectedInstanceIds([]);
+        setSelectedGrnIds([]);
         setSelectionToastId(null);
         setSearchForm(newSearchForm);
-        setInstances(await fetchInstances(newSearchForm));
+        setGrns(await fetchGrns(newSearchForm));
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
@@ -342,12 +317,10 @@ export default function InstanceManagement() {
 
   // Handle show/hide the selection action toast
   useEffect(() => {
-    if (!instances) return;
+    if (!grns) return;
 
     const selectedCount =
-      selectedInstanceIds === "all"
-        ? instances.instances.total
-        : selectedInstanceIds.length;
+      selectedGrnIds === "all" ? grns.grns.total : selectedGrnIds.length;
 
     // If nothing selected -> dismiss
     if (selectedCount === 0) {
@@ -371,30 +344,12 @@ export default function InstanceManagement() {
               title="Clear selection"
               aria-label="Close"
               onClick={() => {
-                setSelectedInstanceIds([]);
+                setSelectedGrnIds([]);
                 toast.dismiss(selectionToastId || undefined);
               }}
             />
-            <div className="fw-bold">{selectedCount} model(s) selected</div>
+            <div className="fw-bold">{selectedCount} grn(s) selected</div>
           </div>
-
-          {/* <button
-            type="button"
-            className="text-danger border-0 bg-transparent p-0"
-            onClick={() => {
-              setModal((prev) => ({
-                ...prev,
-                selectedInstanceIds:
-                  selectedInstanceIds === "all"
-                    ? instances.instances.instances.map((p) => p.id)
-                    : selectedInstanceIds,
-              }));
-              setSelectedInstanceIds([]);
-              toast.dismiss(selectionToastId || undefined);
-            }}
-          >
-            Delete selected instances
-          </button> */}
         </div>
       ),
       {
@@ -407,7 +362,7 @@ export default function InstanceManagement() {
     setSelectionToastId(SELECTION_TOAST_ID);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedInstanceIds]);
+  }, [selectedGrnIds]);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
@@ -421,9 +376,13 @@ export default function InstanceManagement() {
           prev.set("offset", "0");
           return prev;
         });
+        return;
       }
 
-      setSearchForm((prev) => ({ ...prev, [name]: value }));
+      setSearchForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     },
     [process.isProcessing, setSearchParams]
   );
@@ -433,7 +392,15 @@ export default function InstanceManagement() {
       e.preventDefault();
       if (process.isProcessing) return;
 
-      const { limit, searchTerm, conditionId, isActive } = searchForm;
+      const {
+        limit,
+        searchTerm,
+        totalPriceCentsMin,
+        totalPriceCentsMax,
+        createdAtFrom,
+        createdAtTo,
+        sortBy,
+      } = searchForm;
 
       setSearchParams((prev) => {
         prev.set("limit", limit);
@@ -443,11 +410,22 @@ export default function InstanceManagement() {
         if (formattedSearchTerm) prev.set("searchTerm", formattedSearchTerm);
         else prev.delete("searchTerm");
 
-        if (conditionId) prev.set("conditionId", conditionId);
-        else prev.delete("conditionId");
+        if (totalPriceCentsMin)
+          prev.set("totalPriceCentsMin", totalPriceCentsMin);
+        else prev.delete("totalPriceCentsMin");
 
-        if (isActive) prev.set("isActive", isActive);
-        else prev.delete("isActive");
+        if (totalPriceCentsMax)
+          prev.set("totalPriceCentsMax", totalPriceCentsMax);
+        else prev.delete("totalPriceCentsMax");
+
+        if (createdAtFrom) prev.set("createdAtFrom", createdAtFrom);
+        else prev.delete("createdAtFrom");
+
+        if (createdAtTo) prev.set("createdAtTo", createdAtTo);
+        else prev.delete("createdAtTo");
+
+        if (sortBy) prev.set("sortBy", sortBy);
+        else prev.delete("sortBy");
 
         return prev;
       });
@@ -500,20 +478,20 @@ export default function InstanceManagement() {
     [process.isProcessing, setSearchParams]
   );
 
-  const handleSelectInstance = useCallback(
+  const handleSelectGrn = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>): void => {
-      if (process.isProcessing || !instances) return;
+      if (process.isProcessing || !grns) return;
 
       const { checked, name } = e.target;
 
-      const instanceId = name.split("select-instance-")[1];
-      if (instanceId === "all") {
-        setSelectedInstanceIds(checked ? "all" : []);
+      const grnId = name.split("select-grn-")[1];
+      if (grnId === "all") {
+        setSelectedGrnIds(checked ? "all" : []);
         return;
       }
 
-      setSelectedInstanceIds((prev) => {
-        let updatedSelectedInstanceIds: string[] | "all" = [];
+      setSelectedGrnIds((prev) => {
+        let updatedSelectedGrnIds: string[] | "all" = [];
 
         /*
           Logic:
@@ -524,31 +502,31 @@ export default function InstanceManagement() {
 
         if (prev === "all") {
           if (!checked) {
-            updatedSelectedInstanceIds = instances.instances.instances
-              .filter((v) => v.id !== instanceId)
+            updatedSelectedGrnIds = grns.grns.grns
+              .filter((v) => v.id !== grnId)
               .map((v) => v.id);
           } else {
             // This case shouldn't happen as all are already selected, but as fallback
-            updatedSelectedInstanceIds = "all";
+            updatedSelectedGrnIds = "all";
           }
         } else {
-          updatedSelectedInstanceIds = [...prev];
+          updatedSelectedGrnIds = [...prev];
 
           if (checked) {
-            updatedSelectedInstanceIds.push(instanceId);
+            updatedSelectedGrnIds.push(grnId);
           } else {
-            updatedSelectedInstanceIds = updatedSelectedInstanceIds.filter(
-              (id) => id !== instanceId
+            updatedSelectedGrnIds = updatedSelectedGrnIds.filter(
+              (id) => id !== grnId
             );
           }
         }
 
-        return updatedSelectedInstanceIds.length === instances.instances.total
+        return updatedSelectedGrnIds.length === grns.grns.total
           ? "all"
-          : updatedSelectedInstanceIds;
+          : updatedSelectedGrnIds;
       });
     },
-    [process.isProcessing, instances]
+    [process.isProcessing, grns]
   );
 
   // Also handle loading effects
@@ -556,16 +534,16 @@ export default function InstanceManagement() {
     // Generate table headers based on displayFields
     const tableHeaders: JSX.Element[] = [
       <th key="th-select-all">
-        <label htmlFor="select-instance-all" hidden aria-hidden>
-          Select all instances
+        <label htmlFor="select-grn-all" hidden aria-hidden>
+          Select all grns
         </label>
         <input
           type="checkbox"
-          id="select-instance-all"
-          name="select-instance-all"
+          id="select-grn-all"
+          name="select-grn-all"
           className="form-check-input"
-          checked={selectedInstanceIds === "all"}
-          onChange={handleSelectInstance}
+          checked={selectedGrnIds === "all"}
+          onChange={handleSelectGrn}
           disabled={process.isProcessing}
         />
       </th>,
@@ -604,7 +582,7 @@ export default function InstanceManagement() {
     const tableRows: JSX.Element = process.isFetching ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <Loading loadingMsg="Searching instances..." />
+          <Loading loadingMsg="Searching grns..." />
         </td>
       </tr>
     ) : apiErr ? (
@@ -613,27 +591,27 @@ export default function InstanceManagement() {
           <ApiError errMsg={apiErr} />
         </td>
       </tr>
-    ) : !instances ? (
+    ) : !grns ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg="Instances data not found." />
+          <ApiError errMsg="Grns data not found." />
         </td>
       </tr>
-    ) : instances.total === 0 ? (
+    ) : grns.total === 0 ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
           <p className="mb-0 text-muted text-center">
             <FontAwesomeIcon icon={faBoxOpen} className="me-2" size="sm" />
-            No instances in the system.
+            No grns in the system.
           </p>
         </td>
       </tr>
-    ) : instances.instances.total === 0 ? (
+    ) : grns.grns.total === 0 ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
           <p className="mb-0 text-muted text-center">
-            Uh oh! No instances found matching your criteria. Try adjust some
-            filters or{" "}
+            Uh oh! No grns found matching your criteria. Try adjust some filters
+            or{" "}
             <button
               type="button"
               className="btn btn-link p-0 mb-1"
@@ -646,22 +624,21 @@ export default function InstanceManagement() {
       </tr>
     ) : (
       <>
-        {instances.instances.instances.map((model) => (
+        {grns.grns.grns.map((model) => (
           <tr key={model.id}>
             <td>
-              <label htmlFor={`select-instance-${model.id}`} hidden aria-hidden>
+              <label htmlFor={`select-grn-${model.id}`} hidden aria-hidden>
                 Select this model
               </label>
               <input
                 type="checkbox"
-                id={`select-instance-${model.id}`}
-                name={`select-instance-${model.id}`}
+                id={`select-grn-${model.id}`}
+                name={`select-grn-${model.id}`}
                 className="form-check-input"
                 checked={
-                  selectedInstanceIds === "all" ||
-                  selectedInstanceIds.includes(model.id)
+                  selectedGrnIds === "all" || selectedGrnIds.includes(model.id)
                 }
-                onChange={handleSelectInstance}
+                onChange={handleSelectGrn}
                 disabled={process.isProcessing}
               />
             </td>
@@ -698,17 +675,17 @@ export default function InstanceManagement() {
     apiErr,
     displayFields,
     handleClearFilters,
-    handleSelectInstance,
+    handleSelectGrn,
     handleSort,
-    instances,
+    grns,
     process.isFetching,
     process.isProcessing,
     searchForm.sortBy,
-    selectedInstanceIds,
+    selectedGrnIds,
   ]);
 
   const handleApplyConfigDisplay = useCallback(
-    (fields: VariationInstanceDisplayField[]): void => {
+    (fields: GrnDisplayField[]): void => {
       setDisplayFields(fields);
       toast.success("Config display has been updated.");
     },
@@ -727,8 +704,8 @@ export default function InstanceManagement() {
       });
       return;
     }
-    if (!instances || instances.total === 0) {
-      toast.error("No instances to export.", { icon: WARNING_EMOJI });
+    if (!grns || grns.total === 0) {
+      toast.error("No grns to export.", { icon: WARNING_EMOJI });
       return;
     }
 
@@ -739,18 +716,18 @@ export default function InstanceManagement() {
     }));
 
     try {
-      // Fetch all instances matching the current filters, ignoring pagination
+      // Fetch all grns matching the current filters, ignoring pagination
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { limit, offset, ...exportQuery } = searchForm;
-      const instancesToExport = (
-        await fetchInstances({
+      const grnsToExport = (
+        await fetchGrns({
           ...exportQuery,
-          limit: instances.total.toString(), // By default limit will be set to 9 at the BackEnd if not provided
+          limit: grns.total.toString(),
         })
-      ).instances;
+      ).grns;
 
-      if (instancesToExport.instances.length === 0) {
-        toast("No instances found to export.", { icon: WARNING_EMOJI });
+      if (grnsToExport.grns.length === 0) {
+        toast("No grns found to export.", { icon: WARNING_EMOJI });
         return;
       }
 
@@ -762,23 +739,21 @@ export default function InstanceManagement() {
         (field) => TABLE_COL_DISPLAY[field.name].label
       );
       const getVals = (
-        instance: VariationInstanceResponse
+        grn: GrnDetailResponse
       ): (string | number | boolean | null)[] => {
         return exportableFields.map((field) => {
-          return TABLE_COL_DISPLAY[field.name].getCsvVal(instance);
+          return TABLE_COL_DISPLAY[field.name].getCsvVal(grn);
         });
       };
 
-      exportToCsv<VariationInstanceResponse>(
-        `${PROJECT_NAME.toLowerCase()}-instances-export-${new Date().toISOString()}.csv`,
+      exportToCsv<GrnDetailResponse>(
+        `${PROJECT_NAME.toLowerCase()}-grns-export-${new Date().toISOString()}.csv`,
         headers,
-        instancesToExport.instances,
+        grnsToExport.grns,
         getVals
       );
 
-      toast.success(
-        `Exported ${instancesToExport.instances.length} instances successfully.`
-      );
+      toast.success(`Exported ${grnsToExport.grns.length} grns successfully.`);
     } catch (error) {
       toast.error(formatError(error));
     } finally {
@@ -791,57 +766,25 @@ export default function InstanceManagement() {
   }, [
     TABLE_COL_DISPLAY,
     displayFields,
-    fetchInstances,
+    fetchGrns,
     process.isProcessing,
     searchForm,
-    instances,
+    grns,
   ]);
 
   const closeModal = useCallback((): void => {
     setModal({
       configDisplay: false,
-      selectedInstanceIds: null,
+      grnIdsSelected: null,
     });
   }, []);
-
-  const handleCreateInstance = useCallback((): void => {
-    if (!canCreateInstance) {
-      toast.error("You do not have permission to create instances.", {
-        icon: WARNING_EMOJI,
-      });
-      return;
-    }
-
-    // Navigate to variation management page and prompt user
-    navigate("/admin/model-variations");
-    toast(
-      "Please click the '+' button at each variation in action column to create.",
-      {
-        icon: INSTRUCTION_EMOJI,
-      }
-    );
-  }, [canCreateInstance, navigate]);
-
-  // TODO instance details (life-cycle)
 
   return (
     <>
       {/* Heading */}
       <div className="d-flex justify-content-between align-items-center mb-2">
-        <h1 className="h2">Instance management</h1>
+        <h1 className="h2">GRN management</h1>
         <div className="d-flex gap-3">
-          <button
-            type="button"
-            className="border-0 p-0 bg-transparent text-primary"
-            onClick={handleCreateInstance}
-            disabled={!canCreateInstance}
-            title={
-              !canCreateInstance ? DISABLED_TITLE_FOR_PERFORMING : undefined
-            }
-          >
-            <FontAwesomeIcon icon={faPlus} size="sm" className="me-2" />
-            Create new instance
-          </button>
           <button
             type="button"
             className="border-0 p-0 bg-transparent text-primary"
@@ -875,14 +818,14 @@ export default function InstanceManagement() {
               <div className="col-lg-4 col-md-6">
                 <div className="input-group">
                   <label htmlFor="searchTerm" hidden aria-hidden>
-                    Search models
+                    Search GRN
                   </label>
                   <input
                     type="text"
-                    id="searchTerm"
                     name="searchTerm"
+                    id="searchTerm"
                     className="form-control rounded"
-                    placeholder="Search by name, ID, Sku, variation ID..."
+                    placeholder="Search by name, ID, provider..."
                     value={searchForm.searchTerm}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
@@ -893,39 +836,35 @@ export default function InstanceManagement() {
                   />
                 </div>
               </div>
-              <div className="col-lg-3 col-md-6">
+              <div className="col-lg-2 col-md-6">
                 <div className="input-group">
-                  <label htmlFor="conditionId" className="input-group-text">
-                    Condition
+                  <label htmlFor="stateId" className="input-group-text">
+                    State
                   </label>
                   <select
-                    name="conditionId"
-                    id="conditionId"
+                    name="stateId"
+                    id="stateId"
                     className="form-select"
-                    value={searchForm.conditionId || ""}
+                    value={searchForm.stateId || ""}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
                   >
-                    {!instanceConditions ? (
+                    {!grnStates ? (
                       <>
                         {process.isFetching ? (
                           <option disabled>Loading...</option>
                         ) : (
-                          <option disabled>Conditions data not found.</option>
+                          <option disabled>Grn states data not found.</option>
                         )}
                       </>
-                    ) : instanceConditions.total === 0 ? (
-                      <option disabled>No conditions found.</option>
+                    ) : grnStates.total === 0 ? (
+                      <option disabled>No grn states found.</option>
                     ) : (
                       <>
                         <option value="">All</option>
-                        {instanceConditions.conditions.map((condition) => (
-                          <option
-                            key={condition.id}
-                            value={condition.id}
-                            className="text-capitalize"
-                          >
-                            {condition.name}
+                        {grnStates.states.map((state) => (
+                          <option key={state.id} value={state.id}>
+                            {state.name}
                           </option>
                         ))}
                       </>
@@ -933,23 +872,71 @@ export default function InstanceManagement() {
                   </select>
                 </div>
               </div>
-              <div className="col-lg-3 col-md-6">
+              <div className="col-lg-4 col-md-6">
                 <div className="input-group">
-                  <label htmlFor="isActive" className="input-group-text">
-                    Active status
+                  <label
+                    htmlFor="totalPriceCentsMin"
+                    className="input-group-text"
+                  >
+                    Total price (&#65504;)
                   </label>
-                  <select
-                    name="isActive"
-                    id="isActive"
-                    className="form-select"
-                    value={searchForm.isActive || ""}
+                  <input
+                    type="number"
+                    name="totalPriceCentsMin"
+                    id="totalPriceCentsMin"
+                    className="form-control"
+                    placeholder="From"
+                    min={0}
+                    value={searchForm.totalPriceCentsMin ?? ""}
                     onChange={handleSearchChange}
                     disabled={process.isProcessing}
-                  >
-                    <option value="">All</option>
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
-                  </select>
+                  />
+                  <span className="input-group-text">-</span>
+                  <input
+                    type="number"
+                    name="totalPriceCentsMax"
+                    id="totalPriceCentsMax"
+                    className="form-control"
+                    placeholder="To"
+                    min={searchForm.totalPriceCentsMin ?? 0}
+                    value={searchForm.totalPriceCentsMax ?? ""}
+                    onChange={handleSearchChange}
+                    disabled={process.isProcessing}
+                  />
+                </div>
+              </div>
+              <div className="col-lg-auto col-md-6">
+                <div className="input-group">
+                  <label htmlFor="createdAtFrom" className="input-group-text">
+                    Created at
+                  </label>
+                  <input
+                    type="date"
+                    name="createdAtFrom"
+                    id="createdAtFrom"
+                    className="form-control"
+                    value={
+                      searchForm.createdAtFrom
+                        ? getLocalDateString(searchForm.createdAtFrom)
+                        : ""
+                    }
+                    onChange={handleSearchChange}
+                    disabled={process.isProcessing}
+                  />
+                  <span className="input-group-text">-</span>
+                  <input
+                    type="date"
+                    name="createdAtTo"
+                    id="createdAtTo"
+                    className="form-control"
+                    value={
+                      searchForm.createdAtTo
+                        ? getLocalDateString(searchForm.createdAtTo)
+                        : ""
+                    }
+                    onChange={handleSearchChange}
+                    disabled={process.isProcessing}
+                  />
                 </div>
               </div>
               <div className="col-12 col-lg-auto ms-lg-auto d-flex justify-content-end gap-2">
@@ -961,7 +948,7 @@ export default function InstanceManagement() {
                   Apply filters
                 </button>
                 <button
-                  type="reset"
+                  type="button"
                   className="btn btn-secondary"
                   onClick={handleClearFilters}
                   disabled={process.isProcessing}
@@ -989,10 +976,10 @@ export default function InstanceManagement() {
                 style={{ width: "auto" }}
                 value={searchForm.limit}
                 onChange={handleSearchChange}
-                disabled={process.isProcessing || !instances}
+                disabled={process.isProcessing || !grns}
               >
                 {DATA_DISPLAY_ROWS_PER_PAGE.map((rowOption) => {
-                  if (instances && instances.total < rowOption) return null;
+                  if (grns && grns.total < rowOption) return null;
 
                   return (
                     <option key={rowOption} value={rowOption}>
@@ -1003,18 +990,17 @@ export default function InstanceManagement() {
               </select>
             </div>
             <p className="mb-0 text-muted">
-              {instances && instances.total > 0
+              {grns && grns.total > 0
                 ? `${Number.parseInt(searchForm.offset, 10) + 1}-${
-                    Number.parseInt(searchForm.offset, 10) +
-                    instances.instances.total
-                  } of ${instances.total}`
+                    Number.parseInt(searchForm.offset, 10) + grns.grns.total
+                  } of ${grns.total}`
                 : `0-0 of 0`}
             </p>
-            {instances && (
+            {grns && (
               <Pagination
-                totalItems={instances.total}
-                itemsPerPage={instances.limit}
-                currentOffset={instances.offset}
+                totalItems={grns.total}
+                itemsPerPage={grns.limit}
+                currentOffset={grns.offset}
                 onOffsetChange={handleOffsetChange}
               />
             )}
@@ -1026,7 +1012,7 @@ export default function InstanceManagement() {
       <ConfigDisplayModal
         show={modal.configDisplay}
         fields={displayFields}
-        legend={INSTANCE_FIELD_LABEL_LEGEND}
+        legend={GRN_FIELD_LABEL_LEGEND}
         onClose={closeModal}
         onReset={handleResetConfigDisplay}
         onApply={handleApplyConfigDisplay}

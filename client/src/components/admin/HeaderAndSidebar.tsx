@@ -29,12 +29,14 @@ const HeaderAndSidebar = memo(() => {
     canReadModel,
     canReadVariation,
     canReadInstance,
+    canReadGrn,
   ] = [
     useHasPermission("r_usr"),
     useHasPermission("r_product"),
     useHasPermission("r_product_model"),
     useHasPermission("r_model_variation"),
     useHasPermission("r_variation_instance"),
+    useHasPermission("r_grn"),
   ];
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
@@ -109,7 +111,7 @@ const HeaderAndSidebar = memo(() => {
                 className="list-group-item list-group-item-action"
               >
                 <FontAwesomeIcon icon={faUser} className="me-2" />
-                User Management
+                User
               </NavLink>
             )}
             {canReadProduct && (
@@ -118,7 +120,7 @@ const HeaderAndSidebar = memo(() => {
                 className="list-group-item list-group-item-action"
               >
                 <FontAwesomeIcon icon={faBox} className="me-2" />
-                Product Management
+                Product
               </NavLink>
             )}
             {canReadModel && (
@@ -127,7 +129,7 @@ const HeaderAndSidebar = memo(() => {
                 className="list-group-item list-group-item-action"
               >
                 <FontAwesomeIcon icon={faBox} className="me-2" />
-                Product Model Management
+                Model
               </NavLink>
             )}
             {canReadVariation && (
@@ -136,7 +138,7 @@ const HeaderAndSidebar = memo(() => {
                 className="list-group-item list-group-item-action"
               >
                 <FontAwesomeIcon icon={faBox} className="me-2" />
-                Model Variation Management
+                Variation
               </NavLink>
             )}
             {canReadInstance && (
@@ -145,7 +147,16 @@ const HeaderAndSidebar = memo(() => {
                 className="list-group-item list-group-item-action"
               >
                 <FontAwesomeIcon icon={faBox} className="me-2" />
-                Variation Instance Management
+                Instance
+              </NavLink>
+            )}
+            {canReadGrn && (
+              <NavLink
+                to="/admin/grns"
+                className="list-group-item list-group-item-action"
+              >
+                <FontAwesomeIcon icon={faBox} className="me-2" />
+                GRN
               </NavLink>
             )}
           </div>

@@ -5,6 +5,7 @@ import type {
   AdminProductResponse,
   AdminUserResponse,
   BaseUserAddress,
+  GrnDetailResponse,
   OrderReturnSearchQuery,
   UserCartResponse,
   VariationInstanceResponse,
@@ -94,6 +95,12 @@ export type AdminVariationInstanceDisplayableField =
   | keyof Omit<VariationInstanceResponse, "inactiveAt">
   | "actions";
 
+export type AdminGrnDisplayableField =
+  | keyof Omit<GrnDetailResponse, "stateId" | "reversedByGrnId" | "reversedAt">
+  | "state"
+  | "reversed"
+  | "actions";
+
 export type TableColDisplay<Item, SortOption> = {
   label: string; // For header display
   thClassName?: string; // Additional className for <th>
@@ -130,12 +137,16 @@ export type ModelVariationDisplayField =
 export type VariationInstanceDisplayField =
   DisplayField<AdminVariationInstanceDisplayableField>;
 
+export type GrnDisplayField =
+  DisplayField<AdminGrnDisplayableField>;
+
 export type AdminConfig = {
   userManagementDisplayFields: UserDisplayField[];
   productManagementDisplayFields: ProductDisplayField[];
   productModelManagementDisplayFields: ProductModelDisplayField[];
   modelVariationManagementDisplayFields: ModelVariationDisplayField[];
   variationInstanceManagementDisplayFields: VariationInstanceDisplayField[];
+  grnManagementDisplayFields: GrnDisplayField[];
 };
 
 export type ProductCreationWizardStep = "product" | "model" | "variation" | "grn";

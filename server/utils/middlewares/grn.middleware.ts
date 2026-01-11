@@ -1,5 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import { removeOddSpaces } from "../../../common/utils.common";
+import {
+  isValidDateTimeString,
+  isValidNumString,
+  removeOddSpaces,
+} from "../../../common/utils.common";
 import { isPresent } from "../utils";
 import { HttpError } from "../errorHandler";
 import { GRN_FILE_IMPORT_HEADERS } from "../../../common/configs.common";
@@ -42,14 +46,33 @@ function sanitizeGrnInput(
   next();
 }
 
+function sanitizeGrnSearchInput(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing GRN search input...");
+
+  // Since req.query can't be modifiable so we create a new query obj for the request
+  const sanitizedQuery = { ...req.query };
+  const { searchTerm } = sanitizedQuery;
+
+  if (typeof searchTerm === "string") {
+    sanitizedQuery.searchTerm = removeOddSpaces(searchTerm);
+  }
+
+  req["sanitizedQuery"] = sanitizedQuery;
+  next();
+}
+
 export function inputSanitizer(
-  type: "create"
+  type: "create" | "search"
 ): (req: Request, res: Response, next: NextFunction) => void {
-  return sanitizeGrnInput;
+  return type === "create" ? sanitizeGrnInput : sanitizeGrnSearchInput;
 }
 
 export function verifyGrnInput(
-  type: "create"
+  type: "create" | "search"
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", `Verifying GRN ${type} input...`);
@@ -148,6 +171,74 @@ export function verifyGrnInput(
           errors.push(
             `GRN quantity (${grn.quantity}) does not match number of instance rows (${instances.length}).`
           );
+        }
+      } else if (type === "search") {
+        const {
+          limit,
+          offset,
+          searchTerm,
+          totalPriceCentsMin,
+          totalPriceCentsMax,
+          createdAtFrom,
+          createdAtTo,
+          stateId,
+        } = req["sanitizedQuery"] || req.query;
+
+        if (limit !== undefined && !isValidNumString(limit)) {
+          errors.push("limit must be a valid number string.");
+        }
+        if (offset !== undefined && !isValidNumString(offset)) {
+          errors.push("offset must be a valid number string.");
+        }
+        if (
+          searchTerm !== undefined &&
+          (typeof searchTerm !== "string" || !searchTerm)
+        ) {
+          errors.push("search term must be a non-empty string.");
+        }
+        if (totalPriceCentsMin !== undefined) {
+          if (!isValidNumString(totalPriceCentsMin)) {
+            errors.push("totalPriceCentsMin must be a valid number string.");
+          } else if (Number.parseInt(totalPriceCentsMin, 10) < 0) {
+            errors.push("totalPriceCentsMin must be a non-negative number.");
+          }
+        }
+        if (totalPriceCentsMax !== undefined) {
+          if (!isValidNumString(totalPriceCentsMax)) {
+            errors.push("totalPriceCentsMax must be a valid number string.");
+          } else if (Number.parseInt(totalPriceCentsMax, 10) < 0) {
+            errors.push("totalPriceCentsMax must be a non-negative number.");
+          }
+        }
+        if (
+          totalPriceCentsMin !== undefined &&
+          totalPriceCentsMax !== undefined &&
+          Number.parseInt(totalPriceCentsMin, 10) >
+            Number.parseInt(totalPriceCentsMax, 10)
+        ) {
+          errors.push(
+            "totalPriceCentsMin cannot be greater than totalPriceCentsMax."
+          );
+        }
+
+        if (
+          createdAtFrom !== undefined &&
+          !isValidDateTimeString(createdAtFrom)
+        ) {
+          errors.push("createdAtFrom must be a valid date-time string.");
+        }
+        if (createdAtTo !== undefined && !isValidDateTimeString(createdAtTo)) {
+          errors.push("createdAtTo must be a valid date-time string.");
+        }
+        if (
+          createdAtFrom !== undefined &&
+          createdAtTo !== undefined &&
+          new Date(createdAtFrom) > new Date(createdAtTo)
+        ) {
+          errors.push("createdAtFrom cannot be later than createdAtTo.");
+        }
+        if (stateId !== undefined && typeof stateId !== "string") {
+          errors.push("stateId must be a string.");
         }
       }
 

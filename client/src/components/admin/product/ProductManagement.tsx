@@ -1,4 +1,5 @@
 import {
+  faBoxOpen,
   faFileExport,
   faPlus,
   faSearch,
@@ -752,6 +753,15 @@ export default function ProductManagement() {
         </td>
       </tr>
     ) : products.total === 0 ? (
+      <tr>
+        <td colSpan={colSpan} className="p-4">
+          <p className="mb-0 text-muted text-center">
+            <FontAwesomeIcon icon={faBoxOpen} className="me-2" size="sm" />
+            No products in the system.
+          </p>
+        </td>
+      </tr>
+    ) : products.products.total === 0 ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
           <p className="mb-0 text-muted text-center">

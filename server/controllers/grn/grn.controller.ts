@@ -2,10 +2,14 @@ import { Request, Response, NextFunction } from "express";
 import { HttpError } from "../../utils/errorHandler";
 import {
   GrnCreateReceived,
+  GrnDetailResponse,
+  GrnListResponse,
   GrnResponse,
+  GrnSearchQuery,
   SuccessResponse,
 } from "../../../common/types.common";
 import {
+  formatGrnDetailResponse,
   formatGrnResponse,
   genInstanceSkuSync,
   getGrnStateId,
@@ -22,6 +26,11 @@ import ModelVariation from "../../models/product/modelVariation.model";
 import Provider from "../../models/inventory/provider.model";
 import InventoryMovement from "../../models/inventory/inventoryMovement.model";
 import User from "../../models/user/user.model";
+import {
+  DEFAULT_SEARCH_LIMIT,
+  OPTIMIZE_CREATED_BY_PIPELINE,
+  OPTIMIZE_PIPELINE,
+} from "../../configs/configs";
 
 export async function create(
   req: Request,
@@ -157,5 +166,143 @@ export async function create(
     next(error);
   } finally {
     session.endSession();
+  }
+}
+
+export async function search(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Search GRNs...");
+
+  const reqQuery = req["sanitizedQuery"] as GrnSearchQuery;
+
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const query: any = {};
+
+  const searchTerm = reqQuery.searchTerm;
+  if (searchTerm) {
+    const isId = Types.ObjectId.isValid(searchTerm);
+
+    const matchingProviders = isId
+      ? [
+          {
+            _id: new Types.ObjectId(searchTerm),
+          },
+        ]
+      : await Provider.find({
+          fullName: { $regex: searchTerm, $options: "i" },
+          isDeleted: false,
+        })
+          .select("_id")
+          .lean();
+    const matchingProviderIds = matchingProviders.map((p) => p._id);
+
+    query.$or = [
+      {
+        _id: isId ? new Types.ObjectId(searchTerm) : undefined,
+      },
+      { name: { $regex: searchTerm, $options: "i" } },
+      {
+        providerId: { $in: matchingProviderIds },
+      },
+      { notes: { $regex: searchTerm, $options: "i" } },
+    ];
+  }
+
+  if (reqQuery.totalPriceCentsMin || reqQuery.totalPriceCentsMax) {
+    query.totalPriceCents = {};
+    if (reqQuery.totalPriceCentsMin) {
+      query.totalPriceCents.$gte = Number.parseInt(
+        reqQuery.totalPriceCentsMin,
+        10
+      );
+    }
+    if (reqQuery.totalPriceCentsMax) {
+      query.totalPriceCents.$lte = Number.parseInt(
+        reqQuery.totalPriceCentsMax,
+        10
+      );
+    }
+  }
+
+  if (reqQuery.createdAtFrom || reqQuery.createdAtTo) {
+    query.createdAt = {};
+    if (reqQuery.createdAtFrom) {
+      query.createdAt.$gte = new Date(reqQuery.createdAtFrom);
+    }
+    if (reqQuery.createdAtTo) {
+      query.createdAt.$lte = new Date(reqQuery.createdAtTo);
+    }
+  }
+
+  if (reqQuery.stateId) {
+    query.stateId = Types.ObjectId.isValid(reqQuery.stateId)
+      ? new Types.ObjectId(reqQuery.stateId)
+      : null;
+  }
+
+  const sort = (reqQuery.sortBy || "createdAt").split("_");
+  const sortField = sort[0];
+  const sortBy = sort[1] === "asc" ? 1 : -1;
+  const sortStage: any = { [sortField]: sortBy, _id: 1 };
+
+  try {
+    const aggregationResult = await Grn.aggregate([
+      { $match: query },
+      OPTIMIZE_PIPELINE,
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+      {
+        $lookup: {
+          from: "providers",
+          localField: "providerId",
+          foreignField: "_id",
+          as: "provider",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$provider" },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $sort: sortStage }, { $skip: offset }, { $limit: limit }],
+        },
+      },
+    ]);
+
+    const grns: GrnDetailResponse[] = aggregationResult[0].data.map(
+      formatGrnDetailResponse
+    );
+    const total = aggregationResult[0].metadata[0]?.total || 0;
+
+    res.status(200).json({
+      success: true,
+      message: "GRNs retrieved successfully.",
+      data: {
+        total,
+        grns: {
+          total: grns.length,
+          grns: grns,
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<GrnListResponse>);
+    console.log("✅ ", "GRNs retrieved successfully.");
+  } catch (error) {
+    next(error);
   }
 }

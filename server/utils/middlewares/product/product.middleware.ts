@@ -440,7 +440,7 @@ export function verifyBrandInput(
           }
           if (
             isPresent(logoUrl) &&
-            !(await isValidImgUrls(logoUrl, "product"))
+          !(await isValidImgUrls(logoUrl, "product"))
           ) {
             errors.push("logo URL must be a valid image URL.");
           }

@@ -1087,6 +1087,20 @@ export function formatGrnResponse(grn: any): commonType.GrnResponse {
   };
 }
 
+export function formatGrnDetailResponse(
+  grn: any
+): commonType.GrnDetailResponse {
+  const { providerId, ...restData } = formatGrnResponse(grn);
+
+  return {
+    ...restData,
+    provider: {
+      id: grn.providerId._id,
+      fullName: grn.providerId.fullName,
+    },
+  };
+}
+
 export function formatGrnStateResponse(
   state: any
 ): commonType.GrnStateResponse {

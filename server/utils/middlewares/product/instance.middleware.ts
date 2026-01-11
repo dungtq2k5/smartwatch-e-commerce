@@ -7,7 +7,7 @@ import {
   isValidNumString,
   removeOddSpaces,
 } from "../../../../common/utils.common";
-import { VARIATION_INSTANCE_SORT_OPTIONS } from "../../../../common/configs.common";
+import { VARIATION_INSTANCE_SEARCH_SORT_OPTIONS } from "../../../../common/configs.common";
 
 function sanitizeVariationSearchInput(
   req: Request,
@@ -154,10 +154,10 @@ export function verifyVariationInstanceInput(
           }
           if (
             sortBy !== undefined &&
-            !VARIATION_INSTANCE_SORT_OPTIONS.includes(sortBy)
+            !VARIATION_INSTANCE_SEARCH_SORT_OPTIONS.includes(sortBy)
           ) {
             errors.push(
-              `sortBy must be one of the following: ${VARIATION_INSTANCE_SORT_OPTIONS.join(
+              `sortBy must be one of the following: ${VARIATION_INSTANCE_SEARCH_SORT_OPTIONS.join(
                 ", "
               )}.`
             );

@@ -54,6 +54,7 @@ import CreateVariation from "./components/admin/product/CreateVariation.tsx";
 import CreateGrn from "./components/admin/grn/CreateGrn.tsx";
 import CreateInstance from "./components/admin/product/CreateInstance.tsx";
 import EditVariation from "./components/admin/product/EditVariation.tsx";
+import GrnManagement from "./components/admin/grn/GrnManagement.tsx";
 
 export default function App() {
   // DEV for testing
@@ -101,6 +102,9 @@ export default function App() {
               - order management
               - role management
               - inventory management
+              - instance management
+              - grn management (create - from variation, edit, detail)
+              - provider management
             */}
             <Route element={<AdminNotAuthRoute />}>
               <Route path="login" element={<AdminLogin />} />
@@ -145,8 +149,8 @@ export default function App() {
                   <Route path="create/:variationId" element={<CreateInstance />} />
                 </Route>
 
-                <Route path="grn">
-                  <Route index element={<div>GRN Management - TODO</div>} />
+                <Route path="grns">
+                  <Route index element={<GrnManagement />} />
                   <Route path="create/:variationId" element={<CreateGrn />} />
                 </Route>
               </Route>

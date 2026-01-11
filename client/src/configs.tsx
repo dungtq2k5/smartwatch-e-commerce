@@ -15,11 +15,13 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import type {
   AdminConfig,
+  AdminGrnDisplayableField,
   AdminModelVariationDisplayableField,
   AdminProductDisplayableField,
   AdminProductModelDisplayableField,
   AdminUserDisplayableField,
   AdminVariationInstanceDisplayableField,
+  GrnDisplayField,
   ModelVariationDisplayField,
   ProductCreationWizardStep,
   ProductDisplayField,
@@ -351,6 +353,22 @@ export const VARIATION_INSTANCE_FIELD_LABEL_LEGEND: Readonly<
   actions: "Actions",
 };
 
+export const GRN_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminGrnDisplayableField, string>
+> = {
+  id: "ID",
+  name: "Name",
+  provider: "Provider",
+  createdBy: "Created By",
+  totalPriceCents: "Total Price",
+  quantity: "Quantity",
+  notes: "Notes",
+  createdAt: "Created At",
+  state: "State",
+  reversed: "Reversed",
+  actions: "Actions",
+};
+
 export const DEFAULT_ADMIN_USER_DISPLAY_FIELDS: UserDisplayField[] = [
   { name: "id", visible: false, exportable: true },
   { name: "fullName", visible: true, exportable: true },
@@ -437,6 +455,20 @@ export const DEFAULT_ADMIN_VARIATION_INSTANCE_DISPLAY_FIELDS: VariationInstanceD
     { name: "actions", visible: true, exportable: false },
   ];
 
+export const DEFAULT_ADMIN_GRN_DISPLAY_FIELDS: GrnDisplayField[] = [
+  { name: "id", visible: true, exportable: true },
+  { name: "name", visible: true, exportable: true },
+  { name: "provider", visible: true, exportable: true },
+  { name: "createdBy", visible: false, exportable: true },
+  { name: "totalPriceCents", visible: true, exportable: true },
+  { name: "quantity", visible: true, exportable: true },
+  { name: "notes", visible: false, exportable: true },
+  { name: "createdAt", visible: true, exportable: true },
+  { name: "state", visible: true, exportable: true },
+  { name: "reversed", visible: true, exportable: true },
+  { name: "actions", visible: true, exportable: false },
+];
+
 export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   visa: (
     <FontAwesomeIcon
@@ -472,6 +504,7 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
     DEFAULT_ADMIN_MODEL_VARIATION_DISPLAY_FIELDS,
   variationInstanceManagementDisplayFields:
     DEFAULT_ADMIN_VARIATION_INSTANCE_DISPLAY_FIELDS,
+  grnManagementDisplayFields: DEFAULT_ADMIN_GRN_DISPLAY_FIELDS,
 };
 
 export const GRN_FILE_IMPORT_WORKSHEET_NAME = "grn-import-template"; // Must match with the worksheet name in the Excel template file

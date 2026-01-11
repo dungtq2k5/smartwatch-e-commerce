@@ -14,9 +14,10 @@ import {
   WITHDRAWAL_METHODS,
   USER_SEARCH_SORT_OPTIONS,
   PRODUCT_MODEL_SEARCH_SORT_OPTIONS,
-  MODEL_VARIATION_SORT_OPTIONS,
-  VARIATION_INSTANCE_SORT_OPTIONS,
+  MODEL_VARIATION_SEARCH_SORT_OPTIONS,
+  VARIATION_INSTANCE_SEARCH_SORT_OPTIONS,
   GRN_FILE_IMPORT_HEADERS,
+  GRN_SEARCH_SORT_OPTIONS,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -846,7 +847,7 @@ export type ModelVariationSearchQuery = Partial<{
   stockAdditionalPriceCentsMin: string;
   stockAdditionalPriceCentsMax: string;
   stopSelling: "true" | "false";
-  sortBy: (typeof MODEL_VARIATION_SORT_OPTIONS)[number];
+  sortBy: (typeof MODEL_VARIATION_SEARCH_SORT_OPTIONS)[number];
 }>;
 
 export type ModelVariationBulkDelete = {
@@ -890,7 +891,7 @@ export type VariationInstanceSearchQuery = Partial<{
   searchTerm: string; // SKU, modelVariationId, supplierSerialNumber, supplierImeiNumber
   conditionId: string;
   isActive: "true" | "false";
-  sortBy: (typeof VARIATION_INSTANCE_SORT_OPTIONS)[number];
+  sortBy: (typeof VARIATION_INSTANCE_SEARCH_SORT_OPTIONS)[number];
 }>;
 export type AdminVariationInstanceDetailResponse = VariationInstanceResponse & {
   // modelVariation: Omit<AdminModelVariationResponse, "productId">;
@@ -1467,6 +1468,32 @@ export type GrnStateListResponse = {
   total: number;
   states: GrnStateResponse[];
 };
+
+export type GrnDetailResponse = Omit<GrnResponse, "providerId"> & {
+  provider: Pick<ProviderResponse, "id" | "fullName">;
+};
+
+export type GrnListResponse = {
+  total: number;
+  grns: {
+    total: number;
+    grns: GrnDetailResponse[];
+  };
+  offset: number;
+  limit: number;
+};
+
+export type GrnSearchQuery = Partial<{
+  limit: string;
+  offset: string;
+  searchTerm: string; // name, ID, provider ID, provider name, notes
+  totalPriceCentsMin: string;
+  totalPriceCentsMax: string;
+  createdAtFrom: string;
+  createdAtTo: string;
+  stateId: string;
+  sortBy: (typeof GRN_SEARCH_SORT_OPTIONS)[number];
+}>;
 
 export type GenSkuProps = {
   productName: string;

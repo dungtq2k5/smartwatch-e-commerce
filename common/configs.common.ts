@@ -391,3 +391,9 @@ export const GRN_FILE_IMPORT_HEADERS = [
   "supplierSerialNumber",
   "supplierImeiNumber",
 ] as const;
+export const GRN_SEARCH_SORT_OPTIONS = [
+  "createdAt_desc",
+  "createdAt_asc",
+  "totalPriceCents_desc",
+  "totalPriceCents_asc",
+] as const;

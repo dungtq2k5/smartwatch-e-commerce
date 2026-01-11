@@ -50,6 +50,7 @@ import DetailUserLink from "../DetailUserLink";
 import toast from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faBoxOpen,
   faFileExport,
   faPlus,
   faSearch,
@@ -742,6 +743,15 @@ export default function ModelManagement() {
         </td>
       </tr>
     ) : models.total === 0 ? (
+      <tr>
+        <td colSpan={colSpan} className="p-4">
+          <p className="mb-0 text-muted text-center">
+            <FontAwesomeIcon icon={faBoxOpen} className="me-2" size="sm" />
+            No models in the system.
+          </p>
+        </td>
+      </tr>
+    ) : models.models.total === 0 ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
           <p className="mb-0 text-muted text-center">

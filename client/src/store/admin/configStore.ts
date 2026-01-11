@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type {
   AdminConfig,
+  GrnDisplayField,
   ModelVariationDisplayField,
   ProductDisplayField,
   ProductModelDisplayField,
@@ -34,6 +35,9 @@ type ConfigState = {
     displayFields: VariationInstanceDisplayField[]
   ) => void;
   resetVariationInstanceManagementDisplayFields: () => void;
+
+  setGrnManagementDisplayFields: (displayFields: GrnDisplayField[]) => void;
+  resetGrnManagementDisplayFields: () => void;
 };
 
 const getInitialState = (): AdminConfig => {
@@ -161,6 +165,26 @@ const useConfigStore = create<ConfigState>((set, get) => ({
         DEFAULT_ADMIN_CONFIG.variationInstanceManagementDisplayFields,
     };
 
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  setGrnManagementDisplayFields: (displayFields: GrnDisplayField[]): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      grnManagementDisplayFields: displayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  resetGrnManagementDisplayFields: (): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      grnManagementDisplayFields:
+        DEFAULT_ADMIN_CONFIG.grnManagementDisplayFields,
+    };
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
     set({ config: newConfig });
   },

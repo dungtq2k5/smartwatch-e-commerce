@@ -10,7 +10,7 @@ import {
   isValidBooleanString,
 } from "../../../../common/utils.common";
 import {
-  MODEL_VARIATION_SORT_OPTIONS,
+  MODEL_VARIATION_SEARCH_SORT_OPTIONS,
   PRODUCT_NAME_MAX_LENGTH,
   PRODUCT_NAME_MIN_LENGTH,
 } from "../../../../common/configs.common";
@@ -570,10 +570,10 @@ export function verifyVariationInput(
           }
           if (
             sortBy !== undefined &&
-            !MODEL_VARIATION_SORT_OPTIONS.includes(sortBy)
+            !MODEL_VARIATION_SEARCH_SORT_OPTIONS.includes(sortBy)
           ) {
             errors.push(
-              `sortBy must be one of the following: ${MODEL_VARIATION_SORT_OPTIONS.join(
+              `sortBy must be one of the following: ${MODEL_VARIATION_SEARCH_SORT_OPTIONS.join(
                 ", "
               )}.`
             );
