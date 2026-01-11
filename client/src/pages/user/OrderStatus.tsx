@@ -63,7 +63,7 @@ export default function OrderStatus() {
             <ApiError errMsg="Couldn't get payment method." />
           )}
 
-          <div className="d-flex gap-2">
+          <div className="d-flex gap-2 justify-content-center">
             <Link to="/" className="btn btn-primary">
               Home
             </Link>
