@@ -363,7 +363,11 @@ export async function search(
   const searchTerm = reqQuery.searchTerm;
   if (searchTerm) {
     query.$or = [
-      { id: { $regex: searchTerm } },
+      {
+        _id: Types.ObjectId.isValid(searchTerm)
+          ? new Types.ObjectId(searchTerm)
+          : undefined,
+      },
       { fullName: { $regex: searchTerm, $options: "i" } },
       { email: { $regex: searchTerm, $options: "i" } },
       { phoneNumber: { $regex: `^${searchTerm}`, $options: "i" } },
