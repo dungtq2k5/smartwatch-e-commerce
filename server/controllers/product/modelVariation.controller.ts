@@ -246,7 +246,7 @@ export async function adminGet(
     }
     const variation = await ModelVariation.aggregate([
       { $match: { isDeleted: false, _id: new Types.ObjectId(variationId) } },
-      { ...OPTIMIZE_PIPELINE },
+      OPTIMIZE_PIPELINE,
       {
         $lookup: {
           from: "productmodels",
@@ -390,7 +390,7 @@ export async function adminSearch(
   try {
     const aggregationResult = await ModelVariation.aggregate([
       { $match: { isDeleted: false, ...query } },
-      { ...OPTIMIZE_PIPELINE },
+      OPTIMIZE_PIPELINE,
       {
         $lookup: {
           from: "productmodels",

@@ -354,7 +354,7 @@ export const MAX_PRODUCT_MODELS_TO_DELETE_BULK = 5;
 
 export const MAX_PRODUCT_IMG_UPLOAD = 8; // Max 8 images per product
 
-export const MODEL_VARIATION_SORT_OPTIONS = [
+export const MODEL_VARIATION_SEARCH_SORT_OPTIONS = [
   "name_desc",
   "name_asc",
   "createdAt_desc",
@@ -371,7 +371,7 @@ export const MODEL_VARIATION_SORT_OPTIONS = [
 
 export const MAX_MODEL_VARIATIONS_TO_DELETE_BULK = 5;
 
-export const VARIATION_INSTANCE_SORT_OPTIONS = [
+export const VARIATION_INSTANCE_SEARCH_SORT_OPTIONS = [
   "sku_desc",
   "sku_asc",
   "createdAt_desc",

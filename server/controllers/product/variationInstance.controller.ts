@@ -207,7 +207,7 @@ export async function adminGetDetails(
   try {
     const aggregationResult = await VariationInstance.aggregate([
       { $match: { _id: new Types.ObjectId(instanceId) } },
-      { ...OPTIMIZE_PIPELINE },
+      OPTIMIZE_PIPELINE,
       {
         $lookup: {
           from: "inventorymovements",
@@ -319,7 +319,7 @@ export async function adminSearch(
   try {
     const aggregationResult = await VariationInstance.aggregate([
       { $match: query },
-      { ...OPTIMIZE_PIPELINE },
+      OPTIMIZE_PIPELINE,
       {
         $facet: {
           metadata: [{ $count: "total" }],

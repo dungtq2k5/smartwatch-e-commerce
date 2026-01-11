@@ -395,8 +395,8 @@ export default function ProductManagement() {
         const newSearchForm: SearchForm = {
           ...searchForm,
           limit: urlLimit || DEFAULT_SEARCH_FORM.limit,
-          offset: urlOffset || "0",
-          searchTerm: urlSearchTerm || "",
+          offset: urlOffset || DEFAULT_SEARCH_FORM.offset,
+          searchTerm: urlSearchTerm || DEFAULT_SEARCH_FORM.searchTerm,
           categoryIds: urlCategoryId ? [urlCategoryId] : undefined,
           brandIds: urlBrandId ? [urlBrandId] : undefined,
           priceCentsMin:
