@@ -55,6 +55,8 @@ import CreateGrn from "./components/admin/grn/CreateGrn.tsx";
 import CreateInstance from "./components/admin/product/CreateInstance.tsx";
 import EditVariation from "./components/admin/product/EditVariation.tsx";
 import GrnManagement from "./components/admin/grn/GrnManagement.tsx";
+import { TOAST_DURATION } from "./configs.tsx";
+import EditGrn from "./components/admin/grn/EditGrn.tsx";
 
 export default function App() {
   // DEV for testing
@@ -152,6 +154,7 @@ export default function App() {
                 <Route path="grns">
                   <Route index element={<GrnManagement />} />
                   <Route path="create/:variationId" element={<CreateGrn />} />
+                  <Route path=":id/edit" element={<EditGrn />} />
                 </Route>
               </Route>
             </Route>

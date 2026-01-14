@@ -8,7 +8,7 @@ import {
   verifyGrnInput,
 } from "../../utils/middlewares/grn.middleware";
 import { GRN_FILE_IMPORT_MAX_SIZE } from "../../../common/configs.common";
-import { create, search } from "../../controllers/grn/grn.controller";
+import { create, get, search, update } from "../../controllers/grn/grn.controller";
 
 const router = express.Router();
 
@@ -31,11 +31,26 @@ router.post(
 );
 
 router.get(
+  "/:id",
+  verifyPermission("r_grn"),
+  get
+);
+
+router.get(
   "/",
   verifyPermission("r_grn"),
   inputSanitizer("search"),
   verifyGrnInput("search"),
   search
+);
+
+router.patch(
+  "/:id",
+  verifyPermission("u_grn"),
+  verifyEmptyBody,
+  inputSanitizer("update"),
+  verifyGrnInput("update"),
+  update
 );
 
 export default router;

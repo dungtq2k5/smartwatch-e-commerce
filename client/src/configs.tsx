@@ -114,6 +114,8 @@ export const GRN_STATES_URL = `${ROOT_URL}/grn-states`;
 
 export const PROVIDER_URL = `${ROOT_URL}/providers`;
 
+export const INVENTORY_MOVEMENT_TYPES_URL = `${ROOT_URL}/inventory-movement-types`;
+
 // --- OTHERS ---
 
 export const TOAST_DURATION = 5000; // in milliseconds

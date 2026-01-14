@@ -1112,6 +1112,17 @@ export function formatGrnStateResponse(
   };
 }
 
+export function formatInventoryMovementTypeResponse(
+  type: any
+): commonType.InventoryMovementTypeResponse {
+  return {
+    id: type._id,
+    lookupId: type.lookupId,
+    name: type.name,
+    description: type.description,
+  };
+}
+
 // --- CACHING FUNCTIONS ---
 export function getInstanceConditionId(lookupId: string): Types.ObjectId {
   const { instanceConditions } = appCache;
@@ -1161,7 +1172,9 @@ export function getDeliveryStateId(lookupId: string): Types.ObjectId {
   return state.id;
 }
 
-export function getDeliveryStateLevel(stateId: Types.ObjectId): number {
+export function getDeliveryStateLevel(
+  stateId: Types.ObjectId | string
+): number {
   const { deliveryStates } = appCache;
   if (!deliveryStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1176,7 +1189,9 @@ export function getDeliveryStateLevel(stateId: Types.ObjectId): number {
   throw new Error(`Delivery state with ID '${stateId}' not found in cache.`);
 }
 
-export function getDeliveryStateLookupId(stateId: Types.ObjectId): string {
+export function getDeliveryStateLookupId(
+  stateId: Types.ObjectId | string
+): string {
   const { deliveryStates } = appCache;
   if (!deliveryStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1206,7 +1221,9 @@ export function getPaymentStateId(lookupId: string): Types.ObjectId {
   return stateId;
 }
 
-export function getPaymentStateLookupId(stateId: Types.ObjectId): string {
+export function getPaymentStateLookupId(
+  stateId: Types.ObjectId | string
+): string {
   const { paymentStates } = appCache;
   if (!paymentStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1237,7 +1254,9 @@ export function getOrderStateId(lookupId: string): Types.ObjectId {
   return state.id;
 }
 
-export function getOrderStateLookupId(stateId: Types.ObjectId): string {
+export function getOrderStateLookupId(
+  stateId: Types.ObjectId | string
+): string {
   const { orderStates } = appCache;
   if (!orderStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1252,7 +1271,7 @@ export function getOrderStateLookupId(stateId: Types.ObjectId): string {
   throw new Error(`Order state with ID '${stateId}' not found in cache.`);
 }
 
-export function getOrderStateLevel(stateId: Types.ObjectId): number {
+export function getOrderStateLevel(stateId: Types.ObjectId | string): number {
   const { orderStates } = appCache;
   if (!orderStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1283,7 +1302,9 @@ export function getPaymentMethodId(lookupId: string): Types.ObjectId {
   return methodId;
 }
 
-export function getPaymentMethodLookupId(methodId: Types.ObjectId): string {
+export function getPaymentMethodLookupId(
+  methodId: Types.ObjectId | string
+): string {
   const { paymentMethods } = appCache;
   if (!paymentMethods) {
     throw new Error("Application cache not initialized properly.");
@@ -1323,7 +1344,9 @@ export function getRefundStateId(lookupId: string): Types.ObjectId {
   return stateId;
 }
 
-export function getRefundStateLookupId(stateId: Types.ObjectId): string {
+export function getRefundStateLookupId(
+  stateId: Types.ObjectId | string
+): string {
   const { refundStates } = appCache;
   if (!refundStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1354,7 +1377,7 @@ export function getReturnStateId(lookupId: string): Types.ObjectId {
   return state.id;
 }
 
-export function getReturnStateLevel(stateId: Types.ObjectId): number {
+export function getReturnStateLevel(stateId: Types.ObjectId | string): number {
   const { returnStates } = appCache;
   if (!returnStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1368,7 +1391,9 @@ export function getReturnStateLevel(stateId: Types.ObjectId): number {
   throw new Error(`Return state with ID '${stateId}' not found in cache.`);
 }
 
-export function getReturnStateLookupId(stateId: Types.ObjectId): string {
+export function getReturnStateLookupId(
+  stateId: Types.ObjectId | string
+): string {
   const { returnStates } = appCache;
   if (!returnStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1398,7 +1423,7 @@ export function getPickupStateId(lookupId: string): Types.ObjectId {
   return state.id;
 }
 
-export function getPickupStateLevel(stateId: Types.ObjectId): number {
+export function getPickupStateLevel(stateId: Types.ObjectId | string): number {
   const { pickupStates } = appCache;
   if (!pickupStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1412,7 +1437,9 @@ export function getPickupStateLevel(stateId: Types.ObjectId): number {
   throw new Error(`Pickup state with ID '${stateId}' not found in cache.`);
 }
 
-export function getPickupStateLookupId(stateId: Types.ObjectId): string {
+export function getPickupStateLookupId(
+  stateId: Types.ObjectId | string
+): string {
   const { pickupStates } = appCache;
   if (!pickupStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1460,7 +1487,9 @@ export function getWithdrawalStateId(lookupId: string): Types.ObjectId {
   return state.id;
 }
 
-export function getWithdrawalStateLevel(stateId: Types.ObjectId): number {
+export function getWithdrawalStateLevel(
+  stateId: Types.ObjectId | string
+): number {
   const { withdrawalStates } = appCache;
   if (!withdrawalStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1475,7 +1504,9 @@ export function getWithdrawalStateLevel(stateId: Types.ObjectId): number {
   throw new Error(`Withdrawal state with ID '${stateId}' not found in cache.`);
 }
 
-export function getWithdrawalStateLookupId(stateId: Types.ObjectId): string {
+export function getWithdrawalStateLookupId(
+  stateId: Types.ObjectId | string
+): string {
   const { withdrawalStates } = appCache;
   if (!withdrawalStates) {
     throw new Error("Application cache not initialized properly.");
@@ -1506,7 +1537,7 @@ export function getGrnStateId(lookupId: string): Types.ObjectId {
   return stateId;
 }
 
-export function getGrnStateLookupId(stateId: Types.ObjectId): string {
+export function getGrnStateLookupId(stateId: Types.ObjectId | string): string {
   const { grnStates } = appCache;
   if (!grnStates) {
     throw new Error("Application cache not initialized properly.");

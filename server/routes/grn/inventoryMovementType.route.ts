@@ -1,5 +1,5 @@
 import express from "express";
-import { getAll } from "../../controllers/grn/grnState.controller";
+import { getAll } from "../../controllers/grn/inventoryMovementType.controller";
 
 const router = express.Router();
 

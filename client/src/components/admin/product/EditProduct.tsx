@@ -197,7 +197,7 @@ export function EditProduct() {
       e: React.ChangeEvent<
         HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
       >
-    ) => {
+    ): void => {
       if (process.isProcessing) return;
 
       const { name, value: val, type } = e.target;
@@ -373,7 +373,12 @@ export function EditProduct() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
-      if (process.isProcessing) return;
+      if (process.isProcessing) {
+        toast("Another request is being processed. Please wait.", {
+          icon: WAITING_EMOJI,
+        });
+        return;
+      }
       if (!product) {
         toast.error("Product data is not found. Please refresh and try again.");
         return;

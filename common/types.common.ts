@@ -1495,10 +1495,34 @@ export type GrnSearchQuery = Partial<{
   sortBy: (typeof GRN_SEARCH_SORT_OPTIONS)[number];
 }>;
 
+export type GrnUpdate = Partial<
+  Pick<GrnResponse, "name" | "providerId" | "totalPriceCents" | "stateId"> & {
+    notes: string | null;
+  }
+> & {
+  inventoryMovement: {
+    typeId: string;
+    quantity: 1 | -1;
+    notes?: string | null;
+  };
+};
+
 export type GenSkuProps = {
   productName: string;
   modelName: string;
   variationColor: string;
+};
+
+export type InventoryMovementTypeResponse = {
+  id: string;
+  lookupId: string;
+  name: string;
+  description: string | null;
+};
+
+export type InventoryMovementTypeListResponse = {
+  total: number;
+  types: InventoryMovementTypeResponse[];
 };
 
 // --- HELPER TYPES ---

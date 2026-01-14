@@ -6,6 +6,7 @@ import {
   GrnListResponse,
   GrnResponse,
   GrnSearchQuery,
+  GrnUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
 import {
@@ -25,7 +26,6 @@ import VariationInstance from "../../models/product/variationInstance.model";
 import ModelVariation from "../../models/product/modelVariation.model";
 import Provider from "../../models/inventory/provider.model";
 import InventoryMovement from "../../models/inventory/inventoryMovement.model";
-import User from "../../models/user/user.model";
 import {
   DEFAULT_SEARCH_LIMIT,
   OPTIMIZE_CREATED_BY_PIPELINE,
@@ -157,6 +157,47 @@ export async function create(
     next(error);
   } finally {
     session.endSession();
+  }
+}
+
+export async function get(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Get GRN...");
+  const { id } = req.params;
+
+  try {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new HttpError(404, "GRN not found.");
+    }
+    const grn = await Grn.aggregate([
+      { $match: { _id: new Types.ObjectId(id) } },
+      OPTIMIZE_PIPELINE,
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+    ]).then((results) => results[0]);
+    if (!grn) {
+      throw new HttpError(404, "GRN not found.");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "GRN retrieved successfully.",
+      data: formatGrnResponse(grn),
+    } as SuccessResponse<GrnResponse>);
+    console.log("✅ ", "GRN retrieved successfully.");
+  } catch (error) {
+    next(error);
   }
 }
 
@@ -293,6 +334,144 @@ export async function search(
       },
     } as SuccessResponse<GrnListResponse>);
     console.log("✅ ", "GRNs retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function update(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Update GRN...");
+
+  const reqUser = req["user"];
+  if (!isPresent(reqUser)) {
+    return next(
+      new HttpError(
+        500,
+        "Request user not found, this should be handled in middlewares."
+      )
+    );
+  }
+
+  const { id } = req.params;
+  const {
+    name,
+    providerId,
+    totalPriceCents,
+    notes,
+    stateId,
+    inventoryMovement,
+  } = req.body as GrnUpdate;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    /*
+      Business logic:
+        - If GRN to update not found or is reversed -> throw error.
+        - Create new grn and link to current grn.
+        - Create new inventory movements and link to new grn.
+    */
+
+    // Check GRN exists
+    if (!Types.ObjectId.isValid(id)) {
+      throw new HttpError(404, "GRN not found.");
+    }
+    const existingGrn = await Grn.findById(id).session(session);
+    if (!existingGrn) {
+      throw new HttpError(404, "GRN not found.");
+    }
+    if (existingGrn.reversedByGrnId) {
+      throw new HttpError(400, "Cannot update a reversed GRN.");
+    }
+
+    // Check provider exists - if provided
+    if (providerId) {
+      if (!Types.ObjectId.isValid(providerId)) {
+        throw new HttpError(404, "Provider not found.");
+      }
+      const provider = await Provider.findById(providerId)
+        .select("isDeleted")
+        .lean()
+        .session(session);
+      if (!provider || provider.isDeleted) {
+        throw new HttpError(404, "Provider not found.");
+      }
+    }
+
+    // Check grn.stateId exists - if provided
+    if (stateId) {
+      try {
+        getGrnStateLookupId(stateId); // Throw error if not found
+      } catch {
+        throw new HttpError(404, "GRN state not found.");
+      }
+    }
+
+    // Check inventoryMovement.typeId exists
+    try {
+      getMovementTypeId(inventoryMovement.typeId); // Throw error if not found
+    } catch {
+      throw new HttpError(404, "Inventory movement type not found.");
+    }
+
+    // Create new GRN and link to existing GRN
+    const newGrn = new Grn({
+      name: name || existingGrn.name,
+      providerId: providerId || existingGrn.providerId,
+      createdBy: reqUser._id,
+      totalPriceCents: totalPriceCents ?? existingGrn.totalPriceCents,
+      notes: notes === null ? notes : notes || existingGrn.notes,
+      stateId: stateId || existingGrn.stateId,
+    });
+    await newGrn.save({ session });
+
+    existingGrn.reversedByGrnId = newGrn._id;
+    existingGrn.reversedAt = new Date();
+    await existingGrn.save({ session });
+
+    // Create inventory movements for new GRN
+    const existingMovements = await InventoryMovement.find({
+      grnId: existingGrn._id,
+    })
+      .lean()
+      .session(session);
+
+    const movementsToCreate: any[] = [];
+    for (const movement of existingMovements) {
+      movementsToCreate.push({
+        variationInstanceId: movement.variationInstanceId,
+        variationInstanceSku: movement.variationInstanceSku,
+        inventoryMovementTypeId: inventoryMovement.typeId,
+        grnId: newGrn._id,
+        createdBy: reqUser._id,
+        quantity: inventoryMovement.quantity,
+        notes: inventoryMovement.notes || null,
+      });
+    }
+
+    await InventoryMovement.insertMany(movementsToCreate, { session });
+
+    await session.commitTransaction();
+
+    const grnResponse: GrnResponse = formatGrnResponse({
+      ...newGrn.toObject(),
+      createdBy: {
+        _id: reqUser._id,
+        fullName: reqUser.fullName,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "GRN updated successfully.",
+      data: grnResponse,
+    } as SuccessResponse<GrnResponse>);
+    console.log("✅ ", "GRN updated successfully.");
   } catch (error) {
     next(error);
   }

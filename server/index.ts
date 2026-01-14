@@ -45,6 +45,8 @@ import returnReasonRoute from "./routes/returnRefund/returnReason.route";
 import grnRoute from "./routes/grn/grn.route";
 import grnStateRoute from "./routes/grn/grnState.route";
 
+import inventoryMovementTypeRoute from "./routes/grn/inventoryMovementType.route";
+
 import { errorHandler as errorHandlerMiddleware } from "./utils/middlewares/error.middleware";
 import connectDB from "./db/connectDB";
 import { initAppCache } from "./configs/cache";
@@ -146,6 +148,8 @@ app.use(`${ROOT_URL}/refund-states`, refundStateRoute);
 
 app.use(`${ROOT_URL}/grns`, grnRoute);
 app.use(`${ROOT_URL}/grn-states`, grnStateRoute);
+
+app.use(`${ROOT_URL}/inventory-movement-types`, inventoryMovementTypeRoute);
 
 app.use((req, res, next) => {
   next(

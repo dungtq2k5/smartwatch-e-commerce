@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import {
+  isNoneArrObj,
   isValidDateTimeString,
   isValidNumString,
   removeOddSpaces,
@@ -65,180 +66,290 @@ function sanitizeGrnSearchInput(
   next();
 }
 
+function sanitizeGrnUpdateInput(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  console.log("▶️ ", "Sanitizing GRN update input...");
+  const { name, notes, inventoryMovement } = req.body;
+
+  if (typeof name === "string") {
+    req.body.name = removeOddSpaces(name);
+  }
+  if (typeof notes === "string") {
+    req.body.notes = removeOddSpaces(notes);
+  }
+  if (typeof inventoryMovement?.notes === "string") {
+    req.body.inventoryMovement.notes = removeOddSpaces(inventoryMovement.notes);
+  }
+
+  next();
+}
+
 export function inputSanitizer(
-  type: "create" | "search"
+  type: "create" | "search" | "update"
 ): (req: Request, res: Response, next: NextFunction) => void {
-  return type === "create" ? sanitizeGrnInput : sanitizeGrnSearchInput;
+  switch (type) {
+    case "create":
+      return sanitizeGrnInput;
+    case "search":
+      return sanitizeGrnSearchInput;
+    case "update":
+      return sanitizeGrnUpdateInput;
+  }
 }
 
 export function verifyGrnInput(
-  type: "create" | "search"
+  type: "create" | "search" | "update"
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", `Verifying GRN ${type} input...`);
 
     const errors: string[] = [];
     try {
-      if (type === "create") {
-        const { modelVariationId, providerId, grn, instances } = req.body;
+      switch (type) {
+        case "create": {
+          const { modelVariationId, providerId, grn, instances } = req.body;
 
-        if (modelVariationId === undefined) {
-          errors.push("Model Variation ID is required.");
-        } else if (typeof modelVariationId !== "string" || !modelVariationId) {
-          errors.push("Model Variation ID must be a non-empty string.");
-        }
-        if (providerId === undefined) {
-          errors.push("Provider ID is required.");
-        } else if (typeof providerId !== "string" || !providerId) {
-          errors.push("Provider ID must be a non-empty string.");
-        }
-        if (!grn) {
-          errors.push("GRN data is required.");
-        } else if (typeof grn !== "object" || Object.keys(grn).length === 0) {
-          errors.push("GRN data must be a non-empty object.");
-        } else {
-          const { name, totalPriceCents, quantity, notes, stateId } = grn;
-
-          if (!name) {
-            errors.push("GRN name is required.");
-          } else if (typeof name !== "string") {
-            errors.push("GRN name must be a string.");
-          }
-          if (totalPriceCents === undefined) {
-            errors.push("Total price is required.");
+          if (modelVariationId === undefined) {
+            errors.push("Model Variation ID is required.");
           } else if (
-            typeof totalPriceCents !== "number" ||
-            totalPriceCents < 0
+            typeof modelVariationId !== "string" ||
+            !modelVariationId
           ) {
-            errors.push("Total price must be a non-negative number.");
+            errors.push("Model Variation ID must be a non-empty string.");
           }
-          if (quantity === undefined) {
-            errors.push("Quantity is required.");
-          } else if (typeof quantity !== "number" || quantity < 0) {
-            errors.push("Quantity must be a non-negative number.");
+          if (providerId === undefined) {
+            errors.push("Provider ID is required.");
+          } else if (typeof providerId !== "string" || !providerId) {
+            errors.push("Provider ID must be a non-empty string.");
           }
-          if (isPresent(notes) && typeof notes !== "string") {
-            errors.push("Notes must be a string.");
-          }
-          if (isPresent(stateId) && typeof stateId !== "string") {
-            errors.push("State ID must be a string.");
-          }
-        }
-        if (!Array.isArray(instances) || instances.length === 0) {
-          errors.push("At least one instance is required.");
-        } else {
-          // For checking duplicate, use Set instead of normal array for better performance "O(n^2)" to "O(n)"
-          const validSerialNumbers = new Set<string>();
-          const validImeiNumbers = new Set<string>();
+          if (!grn) {
+            errors.push("GRN data is required.");
+          } else if (typeof grn !== "object" || Object.keys(grn).length === 0) {
+            errors.push("GRN data must be a non-empty object.");
+          } else {
+            const { name, totalPriceCents, quantity, notes, stateId } = grn;
 
-          instances.forEach((instance, idx) => {
-            const { supplierSerialNumber, supplierImeiNumber } = instance;
-
-            if (!supplierSerialNumber) {
-              errors.push(
-                "Supplier Serial Number is required for each instance."
-              );
-            } else if (typeof supplierSerialNumber !== "string") {
-              errors.push("Supplier Serial Number must be a string.");
-            } else if (validSerialNumbers.has(supplierSerialNumber)) {
-              errors.push(
-                `Duplicate Supplier Serial Number found: "${supplierSerialNumber}" at row ${
-                  idx + 2
-                }.`
-              );
-            } else {
-              validSerialNumbers.add(supplierSerialNumber);
+            if (!name) {
+              errors.push("GRN name is required.");
+            } else if (typeof name !== "string") {
+              errors.push("GRN name must be a string.");
             }
+            if (totalPriceCents === undefined) {
+              errors.push("Total price is required.");
+            } else if (
+              typeof totalPriceCents !== "number" ||
+              totalPriceCents < 0
+            ) {
+              errors.push("Total price must be a non-negative number.");
+            }
+            if (quantity === undefined) {
+              errors.push("Quantity is required.");
+            } else if (typeof quantity !== "number" || quantity < 0) {
+              errors.push("Quantity must be a non-negative number.");
+            }
+            if (isPresent(notes) && typeof notes !== "string") {
+              errors.push("Notes must be a string.");
+            }
+            if (isPresent(stateId) && typeof stateId !== "string") {
+              errors.push("State ID must be a string.");
+            }
+          }
+          if (!Array.isArray(instances) || instances.length === 0) {
+            errors.push("At least one instance is required.");
+          } else {
+            // For checking duplicate, use Set instead of normal array for better performance "O(n^2)" to "O(n)"
+            const validSerialNumbers = new Set<string>();
+            const validImeiNumbers = new Set<string>();
 
-            if (isPresent(supplierImeiNumber)) {
-              if (typeof supplierImeiNumber !== "string") {
-                errors.push("Supplier IMEI Number must be a string.");
-              } else if (validImeiNumbers.has(supplierImeiNumber)) {
+            instances.forEach((instance, idx) => {
+              const { supplierSerialNumber, supplierImeiNumber } = instance;
+
+              if (!supplierSerialNumber) {
                 errors.push(
-                  `Duplicate Supplier IMEI Number found: "${supplierImeiNumber}" at row ${
+                  "Supplier Serial Number is required for each instance."
+                );
+              } else if (typeof supplierSerialNumber !== "string") {
+                errors.push("Supplier Serial Number must be a string.");
+              } else if (validSerialNumbers.has(supplierSerialNumber)) {
+                errors.push(
+                  `Duplicate Supplier Serial Number found: "${supplierSerialNumber}" at row ${
                     idx + 2
                   }.`
                 );
               } else {
-                validImeiNumbers.add(supplierImeiNumber);
+                validSerialNumbers.add(supplierSerialNumber);
               }
+
+              if (isPresent(supplierImeiNumber)) {
+                if (typeof supplierImeiNumber !== "string") {
+                  errors.push("Supplier IMEI Number must be a string.");
+                } else if (validImeiNumbers.has(supplierImeiNumber)) {
+                  errors.push(
+                    `Duplicate Supplier IMEI Number found: "${supplierImeiNumber}" at row ${
+                      idx + 2
+                    }.`
+                  );
+                } else {
+                  validImeiNumbers.add(supplierImeiNumber);
+                }
+              }
+            });
+          }
+
+          // If not errors -> check grn.quantity matches instances.length
+          if (errors.length === 0 && grn.quantity !== instances.length) {
+            errors.push(
+              `GRN quantity (${grn.quantity}) does not match number of instance rows (${instances.length}).`
+            );
+          }
+          break;
+        }
+        case "search": {
+          const {
+            limit,
+            offset,
+            searchTerm,
+            totalPriceCentsMin,
+            totalPriceCentsMax,
+            createdAtFrom,
+            createdAtTo,
+            stateId,
+          } = req["sanitizedQuery"] || req.query;
+
+          if (limit !== undefined && !isValidNumString(limit)) {
+            errors.push("limit must be a valid number string.");
+          }
+          if (offset !== undefined && !isValidNumString(offset)) {
+            errors.push("offset must be a valid number string.");
+          }
+          if (
+            searchTerm !== undefined &&
+            (typeof searchTerm !== "string" || !searchTerm)
+          ) {
+            errors.push("search term must be a non-empty string.");
+          }
+          if (totalPriceCentsMin !== undefined) {
+            if (!isValidNumString(totalPriceCentsMin)) {
+              errors.push("totalPriceCentsMin must be a valid number string.");
+            } else if (Number.parseInt(totalPriceCentsMin, 10) < 0) {
+              errors.push("totalPriceCentsMin must be a non-negative number.");
             }
-          });
-        }
-
-        // If not errors -> check grn.quantity matches instances.length
-        if (errors.length === 0 && grn.quantity !== instances.length) {
-          errors.push(
-            `GRN quantity (${grn.quantity}) does not match number of instance rows (${instances.length}).`
-          );
-        }
-      } else if (type === "search") {
-        const {
-          limit,
-          offset,
-          searchTerm,
-          totalPriceCentsMin,
-          totalPriceCentsMax,
-          createdAtFrom,
-          createdAtTo,
-          stateId,
-        } = req["sanitizedQuery"] || req.query;
-
-        if (limit !== undefined && !isValidNumString(limit)) {
-          errors.push("limit must be a valid number string.");
-        }
-        if (offset !== undefined && !isValidNumString(offset)) {
-          errors.push("offset must be a valid number string.");
-        }
-        if (
-          searchTerm !== undefined &&
-          (typeof searchTerm !== "string" || !searchTerm)
-        ) {
-          errors.push("search term must be a non-empty string.");
-        }
-        if (totalPriceCentsMin !== undefined) {
-          if (!isValidNumString(totalPriceCentsMin)) {
-            errors.push("totalPriceCentsMin must be a valid number string.");
-          } else if (Number.parseInt(totalPriceCentsMin, 10) < 0) {
-            errors.push("totalPriceCentsMin must be a non-negative number.");
           }
-        }
-        if (totalPriceCentsMax !== undefined) {
-          if (!isValidNumString(totalPriceCentsMax)) {
-            errors.push("totalPriceCentsMax must be a valid number string.");
-          } else if (Number.parseInt(totalPriceCentsMax, 10) < 0) {
-            errors.push("totalPriceCentsMax must be a non-negative number.");
+          if (totalPriceCentsMax !== undefined) {
+            if (!isValidNumString(totalPriceCentsMax)) {
+              errors.push("totalPriceCentsMax must be a valid number string.");
+            } else if (Number.parseInt(totalPriceCentsMax, 10) < 0) {
+              errors.push("totalPriceCentsMax must be a non-negative number.");
+            }
           }
-        }
-        if (
-          totalPriceCentsMin !== undefined &&
-          totalPriceCentsMax !== undefined &&
-          Number.parseInt(totalPriceCentsMin, 10) >
-            Number.parseInt(totalPriceCentsMax, 10)
-        ) {
-          errors.push(
-            "totalPriceCentsMin cannot be greater than totalPriceCentsMax."
-          );
-        }
+          if (
+            totalPriceCentsMin !== undefined &&
+            totalPriceCentsMax !== undefined &&
+            Number.parseInt(totalPriceCentsMin, 10) >
+              Number.parseInt(totalPriceCentsMax, 10)
+          ) {
+            errors.push(
+              "totalPriceCentsMin cannot be greater than totalPriceCentsMax."
+            );
+          }
 
-        if (
-          createdAtFrom !== undefined &&
-          !isValidDateTimeString(createdAtFrom)
-        ) {
-          errors.push("createdAtFrom must be a valid date-time string.");
+          if (
+            createdAtFrom !== undefined &&
+            !isValidDateTimeString(createdAtFrom)
+          ) {
+            errors.push("createdAtFrom must be a valid date-time string.");
+          }
+          if (
+            createdAtTo !== undefined &&
+            !isValidDateTimeString(createdAtTo)
+          ) {
+            errors.push("createdAtTo must be a valid date-time string.");
+          }
+          if (
+            createdAtFrom !== undefined &&
+            createdAtTo !== undefined &&
+            new Date(createdAtFrom) > new Date(createdAtTo)
+          ) {
+            errors.push("createdAtFrom cannot be later than createdAtTo.");
+          }
+          if (stateId !== undefined && typeof stateId !== "string") {
+            errors.push("stateId must be a string.");
+          }
+
+          break;
         }
-        if (createdAtTo !== undefined && !isValidDateTimeString(createdAtTo)) {
-          errors.push("createdAtTo must be a valid date-time string.");
-        }
-        if (
-          createdAtFrom !== undefined &&
-          createdAtTo !== undefined &&
-          new Date(createdAtFrom) > new Date(createdAtTo)
-        ) {
-          errors.push("createdAtFrom cannot be later than createdAtTo.");
-        }
-        if (stateId !== undefined && typeof stateId !== "string") {
-          errors.push("stateId must be a string.");
+        case "update": {
+          const {
+            name,
+            providerId,
+            totalPriceCents,
+            notes,
+            stateId,
+            inventoryMovement,
+          } = req.body;
+
+          if (name !== undefined && (typeof name !== "string" || !name)) {
+            errors.push("Name must be a non-empty string.");
+          }
+          if (
+            providerId !== undefined &&
+            (typeof providerId !== "string" || !providerId)
+          ) {
+            errors.push("Provider ID must be a non-empty string.");
+          }
+          if (
+            totalPriceCents !== undefined &&
+            (typeof totalPriceCents !== "number" || totalPriceCents < 0)
+          ) {
+            errors.push("Total price must be a non-negative number.");
+          }
+          if (isPresent(notes) && (typeof notes !== "string" || !notes)) {
+            errors.push("Notes must be a non-empty string.");
+          }
+          if (
+            stateId !== undefined &&
+            (typeof stateId !== "string" || !stateId)
+          ) {
+            errors.push("State ID must be a non-empty string.");
+          }
+          if (inventoryMovement === undefined) {
+            errors.push("Inventory Movement data is required.");
+          } else if (
+            !isNoneArrObj(inventoryMovement) ||
+            Object.keys(inventoryMovement).length === 0
+          ) {
+            errors.push("Inventory Movement must be a non-empty object.");
+          } else {
+            const { typeId, quantity, notes } = inventoryMovement;
+
+            if (typeId === undefined) {
+              errors.push("Inventory Movement type ID is required.");
+            } else if (typeof typeId !== "string" || !typeId) {
+              errors.push(
+                "Inventory Movement type ID must be a non-empty string."
+              );
+            }
+            if (quantity === undefined) {
+              errors.push("Inventory Movement quantity is required.");
+            } else if (
+              typeof quantity !== "number" ||
+              ![-1, 1].includes(quantity)
+            ) {
+              errors.push(
+                "Inventory Movement quantity must be either 1 or -1."
+              );
+            }
+            if (isPresent(notes) && (typeof notes !== "string" || !notes)) {
+              errors.push(
+                "Inventory Movement notes must be a non-empty string."
+              );
+            }
+          }
+
+          break;
         }
       }
 
