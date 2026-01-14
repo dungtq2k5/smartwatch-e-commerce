@@ -116,6 +116,8 @@ export const PROVIDER_URL = `${ROOT_URL}/providers`;
 
 // --- OTHERS ---
 
+export const TOAST_DURATION = 5000; // in milliseconds
+
 export const AVATAR_HINT_MESSAGE = `
   File size: maximum 5MB.
   File extensions: JPG, PNG.

@@ -225,7 +225,7 @@ export default function App() {
       <Toaster
         toastOptions={{
           style: { minWidth: "max-content" },
-          duration: 5000,
+          duration: TOAST_DURATION,
         }}
       />
     </>
