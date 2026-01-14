@@ -39,14 +39,12 @@ export async function create(
 ): Promise<void> {
   console.log("▶️ ", "Create GRN...");
 
-  const userId = req["auth"]?.userId
-    ? new Types.ObjectId(req["auth"].userId)
-    : null;
-  if (!isPresent(userId)) {
+  const reqUser = req["user"];
+  if (!isPresent(reqUser)) {
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled in middlewares."
+        "Request user not found, this should be handled in middlewares."
       )
     );
   }
@@ -84,7 +82,7 @@ export async function create(
     // Check grn.stateId exists - if provided
     if (isPresent(grn.stateId)) {
       try {
-        getGrnStateLookupId(new Types.ObjectId(grn.stateId)); // Throw error if not found
+        getGrnStateLookupId(grn.stateId); // Throw error if not found
       } catch {
         throw new HttpError(404, "GRN state not found.");
       }
@@ -95,7 +93,7 @@ export async function create(
       ...grn,
       providerId,
       stateId: grn.stateId || getGrnStateId("1"), // completed
-      createdBy: userId,
+      createdBy: reqUser._id,
     });
 
     await createdGrn.save({ session });
@@ -131,30 +129,22 @@ export async function create(
         variationInstanceSku: instance.sku,
         inventoryMovementTypeId: stockAdjustInventoryMovementTypeId,
         grnId: createdGrn._id,
-        createdBy: userId,
+        createdBy: reqUser._id,
         quantity: 1,
         notes: `Auto created by system from GRN ${createdGrn._id.toString()}`,
       });
     }
     await InventoryMovement.insertMany(inventoryMovementsToCreate, { session });
 
-    // Prepare data for GRN response
-    const user = await User.findById(userId)
-      .select("fullName isDeleted")
-      .lean()
-      .session(session);
-    if (!user || user.isDeleted) {
-      throw new HttpError(404, "Request user not found.");
-    }
+    await session.commitTransaction();
+
     const grnResponse: GrnResponse = formatGrnResponse({
       ...createdGrn.toObject(),
       createdBy: {
-        _id: userId,
-        fullName: user.fullName,
+        _id: reqUser._id,
+        fullName: reqUser.fullName,
       },
     });
-
-    await session.commitTransaction();
 
     res.status(201).json({
       message: "GRN created successfully.",
