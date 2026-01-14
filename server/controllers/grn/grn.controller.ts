@@ -147,6 +147,7 @@ export async function create(
     });
 
     res.status(201).json({
+      success: true,
       message: "GRN created successfully.",
       data: grnResponse,
     } as SuccessResponse<GrnResponse>);
