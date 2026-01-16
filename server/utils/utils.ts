@@ -1095,8 +1095,8 @@ export function formatGrnDetailResponse(
   return {
     ...restData,
     provider: {
-      id: grn.providerId._id,
-      fullName: grn.providerId.fullName,
+      id: grn.provider._id,
+      fullName: grn.provider.fullName,
     },
   };
 }

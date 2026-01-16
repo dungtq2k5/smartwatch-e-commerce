@@ -158,10 +158,7 @@ export async function get(
     if (!Types.ObjectId.isValid(instanceId)) {
       throw new HttpError(404, "Variation instance not found.");
     }
-    const instance = await VariationInstance.findOne({
-      isDeleted: false,
-      _id: instanceId,
-    }).lean();
+    const instance = await VariationInstance.findById(instanceId).lean();
     if (!instance) {
       throw new HttpError(404, "Variation instance not found.");
     }
@@ -364,10 +361,7 @@ export async function update(
     if (!Types.ObjectId.isValid(instanceId)) {
       throw new HttpError(404, "Variation instance not found.");
     }
-    const instance = await VariationInstance.findOne({
-      isDeleted: false,
-      _id: instanceId,
-    });
+    const instance = await VariationInstance.findById(instanceId);
     if (!instance) {
       throw new HttpError(404, "Variation instance not found.");
     }

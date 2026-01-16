@@ -193,7 +193,7 @@ export default function EditInstance() {
       setProcess((prev) => ({
         ...prev,
         isProcessing: true,
-        isCreating: true,
+        isUpdating: true,
       }));
 
       if (validateForm()) {
@@ -241,13 +241,19 @@ export default function EditInstance() {
           toast.success("Instance updated successfully.");
         } catch (error) {
           toast.error(formatError(error));
+        } finally {
+          setProcess((prev) => ({
+            ...prev,
+            isProcessing: false,
+            isUpdating: false,
+          }));
         }
       }
 
       setProcess((prev) => ({
         ...prev,
         isProcessing: false,
-        isCreating: false,
+        isUpdating: false,
       }));
     },
     [

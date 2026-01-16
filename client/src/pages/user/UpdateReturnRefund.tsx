@@ -627,10 +627,7 @@ export default function ReturnRefundUpdate() {
                               >
                                 {returnReasons.reasons.map((reason) => (
                                   <option key={reason.id} value={reason.id}>
-                                    <span className="text-capitalize">
-                                      {reason.name}
-                                    </span>{" "}
-                                    ({reason.description?.toLowerCase()})
+                                    {reason.name} ({reason.description?.toLowerCase()})
                                   </option>
                                 ))}
                               </select>
