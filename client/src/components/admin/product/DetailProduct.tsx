@@ -4,7 +4,7 @@ import useUserStore from "../../../store/admin/userStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import type {
   AdminModelVariationResponse,
-  AdminProductDetailResponse,
+  AdminProductDetailsResponse,
   AdminProductModelResponse,
 } from "../../../../../common/types.common";
 import useProductStore from "../../../store/admin/product/productStore";
@@ -54,7 +54,7 @@ export default function DetailProduct() {
   const { id } = useParams();
 
   const { sysUserId, fetchSysUserId } = useUserStore();
-  const { fetchProductDetail } = useProductStore();
+  const { fetchProductDetails } = useProductStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
   const [canReadUser, canCreateModel, canCreateVariation, canReadInstance] = [
@@ -66,7 +66,7 @@ export default function DetailProduct() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [productDetail, setProductDetail] =
-    useState<AdminProductDetailResponse | null>(null);
+    useState<AdminProductDetailsResponse | null>(null);
   const [modelPicked, setModelPicked] =
     useState<ItemPicked<AdminProductModelResponse>>(null);
   const [variationPicked, setVariationPicked] =
@@ -93,7 +93,7 @@ export default function DetailProduct() {
         if (!id) throw new Error("Product ID is missing.");
 
         const [productDetail] = await Promise.all([
-          fetchProductDetail(id),
+          fetchProductDetails(id),
           sysUserId ? Promise.resolve() : fetchSysUserId(),
         ]);
 

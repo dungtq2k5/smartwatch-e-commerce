@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type {
-  AdminUserDetailResponse,
+  AdminUserDetailsResponse,
   AdminUserListResponse,
   AdminUserResponse,
   UserBulkDelete,
@@ -21,7 +21,7 @@ type UserState = {
   fetchUsers: (query?: UserSearchQuery) => Promise<AdminUserListResponse>;
   fetchSysUserId: () => Promise<string>;
   fetchUser: (userId: string) => Promise<AdminUserResponse>;
-  fetchUserDetail: (userId: string) => Promise<AdminUserDetailResponse>;
+  fetchUserDetails: (userId: string) => Promise<AdminUserDetailsResponse>;
 
   createUser: (userData: UserCreate) => Promise<AdminUserResponse>;
 
@@ -102,12 +102,12 @@ const useUserStore = create<UserState>((set, get) => ({
     }
   },
 
-  async fetchUserDetail(userId: string): Promise<AdminUserDetailResponse> {
+  async fetchUserDetails(userId: string): Promise<AdminUserDetailsResponse> {
     try {
       const res = await retrieve(`${USER_URL}/${userId}/details`);
       if (!res.success) throw new Error(res.message);
 
-      return res.data as AdminUserDetailResponse;
+      return res.data as AdminUserDetailsResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }

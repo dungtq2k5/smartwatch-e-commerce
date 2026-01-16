@@ -13,7 +13,7 @@ import {
 } from "../../../../../common/configs.common";
 import type {
   GrnListResponse,
-  GrnDetailResponse,
+  GrnDetailsResponse,
   GrnSearchQuery,
 } from "../../../../../common/types.common";
 import {
@@ -83,7 +83,7 @@ type Modal = {
 
 type TableColDisplay = {
   [key in AdminGrnDisplayableField]: GeneralTableColDisplay<
-    GrnDetailResponse,
+    GrnDetailsResponse,
     (typeof GRN_SEARCH_SORT_OPTIONS)[number]
   >;
 };
@@ -739,14 +739,14 @@ export default function GrnManagement() {
         (field) => TABLE_COL_DISPLAY[field.name].label
       );
       const getVals = (
-        grn: GrnDetailResponse
+        grn: GrnDetailsResponse
       ): (string | number | boolean | null)[] => {
         return exportableFields.map((field) => {
           return TABLE_COL_DISPLAY[field.name].getCsvVal(grn);
         });
       };
 
-      exportToCsv<GrnDetailResponse>(
+      exportToCsv<GrnDetailsResponse>(
         `${PROJECT_NAME.toLowerCase()}-grns-export-${new Date().toISOString()}.csv`,
         headers,
         grnsToExport.grns,

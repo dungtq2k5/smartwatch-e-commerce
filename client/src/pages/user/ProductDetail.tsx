@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   ModelVariationResponse,
-  ProductDetailResponse,
+  ProductDetailsResponse,
   ProductListResponse,
   ProductModelResponse,
   UserCartCreate,
@@ -46,7 +46,7 @@ type ApiErr = {
 };
 
 type Product = {
-  productDetail: ProductDetailResponse | null;
+  productDetail: ProductDetailsResponse | null;
   productsSuggest: ProductListResponse | null;
 };
 
@@ -110,7 +110,7 @@ export default function ProductDetail() {
       setMainImgIdx(0);
       setModalSpecs(false);
 
-      let productDetail: ProductDetailResponse | null = null;
+      let productDetail: ProductDetailsResponse | null = null;
 
       try {
         if (!id) {

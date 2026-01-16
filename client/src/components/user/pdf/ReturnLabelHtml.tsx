@@ -1,10 +1,10 @@
 import { forwardRef, useRef } from "react";
-import type { OrderReturnDetailResponse } from "../../../../../common/types.common";
+import type { OrderReturnDetailsResponse } from "../../../../../common/types.common";
 import { PROJECT_NAME } from "../../../../../common/configs.common";
 
 const ReturnLabelHtml = forwardRef<
   HTMLDivElement,
-  { returnDetail: OrderReturnDetailResponse }
+  { returnDetail: OrderReturnDetailsResponse }
 >(({ returnDetail }, ref) => {
   // DEV temp for testing
   const renderCount = useRef(0);

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import User, { IUser } from "../../models/user/user.model";
 import {
-  formatAdminUserDetailResponse,
+  formatAdminUserDetailsResponse,
   formatAdminUserResponse,
   formatUserResponse,
   genVerificationCode,
@@ -9,7 +9,7 @@ import {
   isPresent,
 } from "../../utils/utils";
 import type {
-  AdminUserDetailResponse,
+  AdminUserDetailsResponse,
   AdminUserListResponse,
   AdminUserResponse,
   SuccessResponse,
@@ -321,8 +321,8 @@ export async function getDetails(
     res.status(200).json({
       success: true,
       message: "User details retrieved successfully",
-      data: formatAdminUserDetailResponse(user),
-    } as SuccessResponse<AdminUserDetailResponse>);
+      data: formatAdminUserDetailsResponse(user),
+    } as SuccessResponse<AdminUserDetailsResponse>);
     console.log("✅", "User details retrieved successfully.");
   } catch (error) {
     next(error);

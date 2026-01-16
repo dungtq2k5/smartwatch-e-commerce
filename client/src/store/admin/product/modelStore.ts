@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type {
-  AdminProductModelDetailResponse,
+  AdminProductModelDetailsResponse,
   AdminProductModelListResponse,
   AdminProductModelResponse,
   ProductModelBulkDelete,
@@ -25,10 +25,10 @@ type ModelState = {
 
   fetchModel: (modelId: string) => Promise<AdminProductModelResponse>;
   fetchModelLite: (modelId: string) => Promise<ProductModelResponse>; // Less detailed version than fetchModel
-  fetchModelDetail: (
+  fetchModelDetails: (
     modelId: string,
     query?: ProductModelDetailQuery
-  ) => Promise<AdminProductModelDetailResponse>;
+  ) => Promise<AdminProductModelDetailsResponse>;
 
   updateModel: (
     modelId: string,
@@ -137,10 +137,10 @@ const useModelStore = create<ModelState>(() => ({
     }
   },
 
-  async fetchModelDetail(
+  async fetchModelDetails(
     modelId: string,
     query?: ProductModelDetailQuery
-  ): Promise<AdminProductModelDetailResponse> {
+  ): Promise<AdminProductModelDetailsResponse> {
     const queryString = new URLSearchParams();
     if (query) {
       if (query.variationStopSelling !== undefined) {
@@ -154,7 +154,7 @@ const useModelStore = create<ModelState>(() => ({
       );
       if (!res.success) throw new Error(res.message);
 
-      return res.data as AdminProductModelDetailResponse;
+      return res.data as AdminProductModelDetailsResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import type {
   OrderCreate,
-  OrderDetailResponse,
+  OrderDetailsResponse,
   OrderListResponse,
   OrderResponse,
   OrderSearchQuery,
@@ -17,7 +17,7 @@ import ModelVariation from "../../models/product/modelVariation.model";
 import VariationInstance from "../../models/product/variationInstance.model";
 import InventoryMovement from "../../models/inventory/inventoryMovement.model";
 import {
-  formatOrderDetailResponse,
+  formatOrderDetailsResponse,
   formatOrderResponse,
   getDeliveryStateId,
   getDeliveryStateLevel,
@@ -389,8 +389,8 @@ export async function getDetails(
     res.status(200).json({
       success: true,
       message: "Order details retrieved successfully.",
-      data: formatOrderDetailResponse(order),
-    } as SuccessResponse<OrderDetailResponse>);
+      data: formatOrderDetailsResponse(order),
+    } as SuccessResponse<OrderDetailsResponse>);
     console.log("✅ ", "Order details retrieved successfully.");
   } catch (error) {
     next(error);

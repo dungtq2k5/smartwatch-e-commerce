@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type {
-  AdminProductDetailResponse,
+  AdminProductDetailsResponse,
   AdminProductListResponse,
   AdminProductResponse,
   ProductBulkDelete,
@@ -25,10 +25,10 @@ type ProductState = {
 
   fetchProduct: (productId: string) => Promise<AdminProductResponse>;
   fetchProductLite: (productId: string) => Promise<ProductResponse>; // Less data version than fetchProduct
-  fetchProductDetail: (
+  fetchProductDetails: (
     productId: string,
     query?: ProductDetailQuery
-  ) => Promise<AdminProductDetailResponse>;
+  ) => Promise<AdminProductDetailsResponse>;
 
   deleteProduct: (productId: string) => Promise<void>;
   deleteProductBulk: (data: ProductBulkDelete) => Promise<void>;
@@ -108,10 +108,10 @@ const useProductStore = create<ProductState>(() => ({
     }
   },
 
-  async fetchProductDetail(
+  async fetchProductDetails(
     productId: string,
     query?: ProductDetailQuery
-  ): Promise<AdminProductDetailResponse> {
+  ): Promise<AdminProductDetailsResponse> {
     const queryString = new URLSearchParams();
     if (query) {
       if (query.modelStopSelling !== undefined) {
@@ -128,7 +128,7 @@ const useProductStore = create<ProductState>(() => ({
       );
       if (!res.success) throw new Error(res.message);
 
-      return res.data as AdminProductDetailResponse;
+      return res.data as AdminProductDetailsResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }

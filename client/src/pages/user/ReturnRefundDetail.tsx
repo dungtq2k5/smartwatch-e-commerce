@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { centsToUSD, formatError } from "../../../../common/utils.common";
 import type {
-  OrderReturnDetailResponse,
+  OrderReturnDetailsResponse,
   ReturnStateListResponse,
 } from "../../../../common/types.common";
 import ApiError from "../../components/common/ApiError";
@@ -59,7 +59,7 @@ export default function ReturnRefundDetail() {
   } = useReturnStateStore();
 
   const [returnDetail, setReturnDetail] = useState<
-    OrderReturnDetailResponse | undefined
+    OrderReturnDetailsResponse | undefined
   >(undefined);
   const [process, setProcess] = useState<Process>({
     isProcessing: true,
@@ -118,7 +118,7 @@ export default function ReturnRefundDetail() {
   const genProgressBar = useCallback(
     (
       states: ReturnStateListResponse["states"],
-      returnDetailStates: OrderReturnDetailResponse["states"]
+      returnDetailStates: OrderReturnDetailsResponse["states"]
     ) => {
       return (
         <div className="row justify-content-center mb-4">

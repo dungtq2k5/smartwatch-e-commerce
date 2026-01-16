@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type {
   CheckoutSessionResponse,
   OrderCreate,
-  OrderDetailResponse,
+  OrderDetailsResponse,
   OrderListResponse,
   OrderResponse,
   OrderReturnResponse,
@@ -15,7 +15,7 @@ import { formatError, removeOddSpaces } from "../../../../common/utils.common";
 
 type OrderState = {
   orderCache: OrderResponse | null;
-  orderDetailCache: OrderDetailResponse | null;
+  orderDetailCache: OrderDetailsResponse | null;
 
   createCheckoutSession: (orderId: string) => Promise<CheckoutSessionResponse>;
 
@@ -26,7 +26,7 @@ type OrderState = {
     signal?: AbortSignal
   ) => Promise<OrderListResponse>;
   fetchOrder: (id: string) => Promise<OrderResponse>;
-  fetchOrderDetail: (id: string) => Promise<OrderDetailResponse>;
+  fetchOrderDetail: (id: string) => Promise<OrderDetailsResponse>;
 
   checkItemIsReturned: (item: OrderResponse["items"][0]) => boolean;
   checkItemAvailable: (
@@ -39,12 +39,12 @@ type OrderState = {
 
   canSubmitOrder: (orderStateLookupId: string) => boolean;
   canReturnOrder: (
-    order: OrderResponse | OrderDetailResponse,
+    order: OrderResponse | OrderDetailsResponse,
     orderStateLookupId: string
   ) => boolean;
   canCancelOrder: (orderStateLookupId: string) => boolean;
   canBuyAgainOrder: (
-    order: OrderResponse | OrderDetailResponse,
+    order: OrderResponse | OrderDetailsResponse,
     orderStateLookupId: string
   ) => boolean;
   canPay: (
@@ -140,7 +140,7 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
     }
   },
 
-  async fetchOrderDetail(id: string): Promise<OrderDetailResponse> {
+  async fetchOrderDetail(id: string): Promise<OrderDetailsResponse> {
     const { orderDetailCache } = get();
     if (orderDetailCache?.id === id) return structuredClone(orderDetailCache);
 
@@ -148,7 +148,7 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
       const res = await retrieve(`${ORDER_URL}/${id}/details`);
       if (!res.success) throw new Error(res.message);
 
-      const orderDetail = res.data as OrderDetailResponse;
+      const orderDetail = res.data as OrderDetailsResponse;
       set({ orderDetailCache: orderDetail });
       return structuredClone(orderDetail);
     } catch (error) {
@@ -201,7 +201,7 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
   },
 
   canReturnOrder(
-    order: OrderResponse | OrderDetailResponse,
+    order: OrderResponse | OrderDetailsResponse,
     orderStateLookupId: string
   ): boolean {
     return (
@@ -218,7 +218,7 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
   },
 
   canBuyAgainOrder(
-    order: OrderResponse | OrderDetailResponse,
+    order: OrderResponse | OrderDetailsResponse,
     orderStateLookupId: string
   ): boolean {
     const availableItems = order.items.filter(get().checkItemAvailable);

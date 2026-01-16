@@ -81,7 +81,7 @@ export type AdminUserResponse = UserResponse & {
     assignedAt: string;
   }[];
 };
-export type AdminUserDetailResponse = AdminUserResponse & {
+export type AdminUserDetailsResponse = AdminUserResponse & {
   addresses: UserAddressListResponse;
   paymentMethods: UserSelfPaymentMethodListResponse;
   bankAccounts: UserBankAccountListResponse;
@@ -454,7 +454,7 @@ export type AdminProductResponse = Omit<
  *     - `total`: The total number of variations for the model.
  *     - `variations`: An array of ModelVariationResponse objects representing each variation.
  */
-export type ProductDetailResponse = ProductResponse & {
+export type ProductDetailsResponse = ProductResponse & {
   models: {
     total: number;
     models: (ProductModelResponse & {
@@ -466,7 +466,7 @@ export type ProductDetailResponse = ProductResponse & {
   };
 };
 
-export type AdminProductDetailResponse = Omit<
+export type AdminProductDetailsResponse = Omit<
   AdminProductResponse,
   "brandId" | "categoryId"
 > &
@@ -712,7 +712,7 @@ export type AdminProductModelListResponse = {
   limit: number;
 };
 
-export type AdminProductModelDetailResponse = Omit<
+export type AdminProductModelDetailsResponse = Omit<
   AdminProductModelResponse,
   "totalVariations"
 > & {
@@ -893,11 +893,14 @@ export type VariationInstanceSearchQuery = Partial<{
   isActive: "true" | "false";
   sortBy: (typeof VARIATION_INSTANCE_SEARCH_SORT_OPTIONS)[number];
 }>;
-export type AdminVariationInstanceDetailResponse = VariationInstanceResponse & {
+export type AdminVariationInstanceDetailsResponse = VariationInstanceResponse & {
   // modelVariation: Omit<AdminModelVariationResponse, "productId">;
   inventoryMovements: {
     total: number;
-    movements: InventoryMovementResponse[];
+    movements: Omit<
+      InventoryMovementDetailsResponse,
+      "variationInstanceId" | "variationInstanceSku"
+    >[];
   };
 };
 
@@ -1055,7 +1058,7 @@ export type OrderListResponse = {
   offset: number;
   limit: number;
 };
-export type OrderDetailResponse = Omit<
+export type OrderDetailsResponse = Omit<
   OrderResponse,
   "paymentMethodId" | "paymentStates" | "deliveryStates" | "states"
 > & {
@@ -1234,7 +1237,7 @@ export type OrderReturnResponse = {
   createdAt: string;
   updatedAt: string;
 };
-export type OrderReturnDetailResponse = Omit<
+export type OrderReturnDetailsResponse = Omit<
   OrderReturnResponse,
   "refundStates" | "pickupStates" | "states" | "reasonId"
 > & {
@@ -1418,6 +1421,17 @@ export type InventoryMovementResponse = {
   createdAt: string;
 };
 
+export type InventoryMovementDetailsResponse = Omit<
+  InventoryMovementResponse,
+  "grnId"
+> & {
+  grn:
+    | (Pick<GrnResponse, "id" | "name"> & {
+        provider: Pick<ProviderResponse, "id" | "fullName">;
+      })
+    | null;
+};
+
 export type GrnCreate = {
   modelVariationId: string;
   providerId: string;
@@ -1469,7 +1483,7 @@ export type GrnStateListResponse = {
   states: GrnStateResponse[];
 };
 
-export type GrnDetailResponse = Omit<GrnResponse, "providerId"> & {
+export type GrnDetailsResponse = Omit<GrnResponse, "providerId"> & {
   provider: Pick<ProviderResponse, "id" | "fullName">;
 };
 
@@ -1477,10 +1491,15 @@ export type GrnListResponse = {
   total: number;
   grns: {
     total: number;
-    grns: GrnDetailResponse[];
+    grns: GrnDetailsResponse[];
   };
   offset: number;
   limit: number;
+};
+
+export type GrnDetailsListResponse = {
+  total: number;
+  grns: GrnDetailsResponse[];
 };
 
 export type GrnSearchQuery = Partial<{

@@ -462,6 +462,17 @@ body {
   box-shadow: 0 0 0 3px rgba(32, 117, 255, 0.3);
 }
 
+/* Timeline Variant: Newest First (Top item is active) */
+.order-history-timeline.newest-first .timeline-item:last-child::before {
+  background-color: #adb5bd;
+  box-shadow: none;
+}
+
+.order-history-timeline.newest-first .timeline-item:first-child::before {
+  background-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(32, 117, 255, 0.3);
+}
+
 .purchase-item-img--g {
   width: 4em;
   height: 4em;
@@ -546,7 +557,7 @@ body {
 }
 
 .admin-sidebar--g.open {
-  width: 15rem;
+  width: 20rem;
 }
 
 .admin-sidebar--g.closed {
@@ -659,7 +670,8 @@ body {
   background-color: var(--success-color);
 }
 
-.bg-grey--g, .bg-gray--g {
+.bg-grey--g,
+.bg-gray--g {
   background-color: var(--grey-color);
 }
 

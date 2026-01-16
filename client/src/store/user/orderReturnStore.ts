@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type {
   OrderReturnCreate,
-  OrderReturnDetailResponse,
+  OrderReturnDetailsResponse,
   OrderReturnListResponse,
   OrderReturnResponse,
   OrderReturnSelfUpdate,
@@ -17,14 +17,14 @@ import {
 
 type ReturnState = {
   returnCache: OrderReturnResponse | null;
-  returnDetailCache: OrderReturnDetailResponse | null;
+  returnDetailCache: OrderReturnDetailsResponse | null;
 
   fetchReturns: (
     query?: OrderReturnSearchQueryCli,
     signal?: AbortSignal
   ) => Promise<OrderReturnListResponse>;
   fetchReturn: (returnId: string) => Promise<OrderReturnResponse>;
-  fetchReturnDetail: (returnId: string) => Promise<OrderReturnDetailResponse>;
+  fetchReturnDetail: (returnId: string) => Promise<OrderReturnDetailsResponse>;
 
   createReturn: (
     orderId: string,
@@ -94,7 +94,7 @@ const useReturnStoreInternal = create<ReturnState>((set, get) => ({
 
   async fetchReturnDetail(
     returnId: string
-  ): Promise<OrderReturnDetailResponse> {
+  ): Promise<OrderReturnDetailsResponse> {
     const { returnDetailCache } = get();
     if (returnDetailCache?.id === returnId) {
       return structuredClone(returnDetailCache);
@@ -104,7 +104,7 @@ const useReturnStoreInternal = create<ReturnState>((set, get) => ({
       const res = await retrieve(`${RETURN_URL}/${returnId}/details`);
       if (!res.success) throw new Error(res.message);
 
-      const returnDetail = res.data as OrderReturnDetailResponse;
+      const returnDetail = res.data as OrderReturnDetailsResponse;
       set({ returnDetailCache: returnDetail });
       return structuredClone(returnDetail);
     } catch (error) {

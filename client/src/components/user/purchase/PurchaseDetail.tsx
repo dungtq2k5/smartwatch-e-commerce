@@ -13,7 +13,7 @@ import { faArrowLeft, faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { formatError, centsToUSD } from "../../../../../common/utils.common";
 import PurchaseItem from "./PurchaseItem";
 import type {
-  OrderDetailResponse,
+  OrderDetailsResponse,
   OrderStateListResponse,
 } from "../../../../../common/types.common";
 import useOrderStateStore from "../../../store/common/order/orderStateStore";
@@ -64,7 +64,7 @@ export default function PurchaseDetail() {
   } = useOrderStore();
   const { createManyCart } = useUserCartStore();
 
-  const [orderDetail, setOrderDetail] = useState<OrderDetailResponse | null>(
+  const [orderDetail, setOrderDetail] = useState<OrderDetailsResponse | null>(
     null
   );
 
@@ -151,7 +151,7 @@ export default function PurchaseDetail() {
   const genProgressBar = useCallback(
     (
       states: OrderStateListResponse["states"],
-      orderDetailStates: OrderDetailResponse["states"]
+      orderDetailStates: OrderDetailsResponse["states"]
     ): JSX.Element => {
       return (
         <div className="row justify-content-center mb-4">

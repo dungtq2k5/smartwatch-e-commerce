@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type {
   ProductDetailQuery,
-  ProductDetailResponse,
+  ProductDetailsResponse,
   ProductListResponse,
   ProductSearchQuery,
 } from "../../../../../common/types.common";
@@ -18,7 +18,7 @@ type ProductState = {
   fetchProductDetail: (
     productId: string,
     query?: ProductDetailQuery
-  ) => Promise<ProductDetailResponse>;
+  ) => Promise<ProductDetailsResponse>;
 };
 
 export const useProductStore = create<ProductState>(() => ({
@@ -67,7 +67,7 @@ export const useProductStore = create<ProductState>(() => ({
   async fetchProductDetail(
     productId: string,
     query?: ProductDetailQuery
-  ): Promise<ProductDetailResponse> {
+  ): Promise<ProductDetailsResponse> {
     try {
       const queryString = new URLSearchParams();
 
@@ -85,7 +85,7 @@ export const useProductStore = create<ProductState>(() => ({
       );
       if (!res.success) throw new Error(res.message);
 
-      return res.data as ProductDetailResponse;
+      return res.data as ProductDetailsResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }

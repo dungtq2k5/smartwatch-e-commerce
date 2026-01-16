@@ -1,4 +1,7 @@
-import type { InventoryMovementTypeListResponse } from "../../../../../common/types.common";
+import type {
+  InventoryMovementTypeListResponse,
+  InventoryMovementTypeResponse,
+} from "../../../../../common/types.common";
 import { retrieve } from "../../../utils/utils";
 import { INVENTORY_MOVEMENT_TYPES_URL } from "../../../configs";
 import { formatError } from "../../../../../common/utils.common";
@@ -8,6 +11,8 @@ type MovementTypeState = {
   movementTypes: InventoryMovementTypeListResponse | null;
 
   fetchMovementTypes: () => Promise<InventoryMovementTypeListResponse>;
+
+  getMovementType: (id: string) => InventoryMovementTypeResponse | undefined;
 };
 
 const useInventoryMovementTypeStore = create<MovementTypeState>((set, get) => ({
@@ -27,6 +32,10 @@ const useInventoryMovementTypeStore = create<MovementTypeState>((set, get) => ({
     } catch (error) {
       throw new Error(formatError(error));
     }
+  },
+
+  getMovementType(id: string): InventoryMovementTypeResponse | undefined {
+    return get().movementTypes?.types.find((type) => type.id === id);
   },
 }));
 

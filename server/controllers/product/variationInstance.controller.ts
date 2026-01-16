@@ -4,7 +4,7 @@ import { HttpError } from "../../utils/errorHandler";
 import ModelVariation from "../../models/product/modelVariation.model";
 import VariationInstance from "../../models/product/variationInstance.model";
 import type {
-  AdminVariationInstanceDetailResponse,
+  AdminVariationInstanceDetailsResponse,
   SuccessResponse,
   VariationInstanceCreate,
   VariationInstanceListResponse,
@@ -13,7 +13,7 @@ import type {
   VariationInstanceUpdate,
 } from "../../../common/types.common";
 import {
-  formatAdminVariationInstanceDetailResponse,
+  formatAdminVariationInstanceDetailsResponse,
   formatVariationInstanceResponse,
   genInstanceSku,
   getInstanceConditionId,
@@ -223,6 +223,33 @@ export async function adminGetDetails(
               },
             },
             { $unwind: "$createdBy" },
+            {
+              $lookup: {
+                from: "grns",
+                localField: "grnId",
+                foreignField: "_id",
+                as: "grn",
+                pipeline: [
+                  { $project: { id: 1, name: 1 } },
+                  {
+                    $lookup: {
+                      from: "providers",
+                      localField: "providerId",
+                      foreignField: "_id",
+                      as: "provider",
+                      pipeline: [{ $project: { id: 1, fullName: 1 } }],
+                    },
+                  },
+                  { $unwind: "$provider" },
+                ],
+              },
+            },
+            { $unwind: { path: "$grn", preserveNullAndEmptyArrays: true } },
+            {
+              $addFields: {
+                grn: { $ifNull: ["$grn", null] },
+              },
+            },
             { $sort: { createdAt: -1 } },
             { $project: { variationInstanceId: 0, variationInstanceSku: 0 } },
           ],
@@ -238,8 +265,8 @@ export async function adminGetDetails(
     res.status(200).json({
       success: true,
       message: "Variation instance details fetched successfully.",
-      data: formatAdminVariationInstanceDetailResponse(instance),
-    } as SuccessResponse<AdminVariationInstanceDetailResponse>);
+      data: formatAdminVariationInstanceDetailsResponse(instance),
+    } as SuccessResponse<AdminVariationInstanceDetailsResponse>);
   } catch (error) {
     next(error);
   }

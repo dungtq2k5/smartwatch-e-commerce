@@ -346,9 +346,9 @@ export function formatAdminUserResponse(
   };
 }
 
-export function formatAdminUserDetailResponse(
+export function formatAdminUserDetailsResponse(
   user: any
-): commonType.AdminUserDetailResponse {
+): commonType.AdminUserDetailsResponse {
   return {
     ...formatAdminUserResponse(user),
     roles: user.roles,
@@ -671,16 +671,16 @@ export function formatVariationInstanceResponse(
   };
 }
 
-export function formatAdminVariationInstanceDetailResponse(
+export function formatAdminVariationInstanceDetailsResponse(
   instance: any
-): commonType.AdminVariationInstanceDetailResponse {
+): commonType.AdminVariationInstanceDetailsResponse {
   return {
     ...formatVariationInstanceResponse(instance),
     inventoryMovements: {
       total: instance.inventoryMovements.length,
       movements: instance.inventoryMovements.map((movement: any) => {
         const { variationInstanceId, variationInstanceSku, ...restData } =
-          formatInventoryMovementResponse(movement);
+          formatInventoryMovementDetailsResponse(movement);
         return restData;
       }),
     },
@@ -771,9 +771,9 @@ export function formatOrderResponse(order: any): commonType.OrderResponse {
   };
 }
 
-export function formatOrderDetailResponse(
+export function formatOrderDetailsResponse(
   order: any
-): commonType.OrderDetailResponse {
+): commonType.OrderDetailsResponse {
   const {
     paymentMethodId,
     paymentStates,
@@ -920,9 +920,9 @@ export function formatOrderReturnResponse(
   };
 }
 
-export function formatOrderReturnDetailResponse(
+export function formatOrderReturnDetailsResponse(
   orderReturn: any
-): commonType.OrderReturnDetailResponse {
+): commonType.OrderReturnDetailsResponse {
   const { refundStates, pickupStates, states, reasonId, ...restData } =
     formatOrderReturnResponse(orderReturn);
 
@@ -1068,6 +1068,17 @@ export function formatInventoryMovementResponse(
   };
 }
 
+export function formatInventoryMovementDetailsResponse(
+  movement: any
+): commonType.InventoryMovementDetailsResponse {
+  const { grnId, ...restData } = formatInventoryMovementResponse(movement);
+
+  return {
+    ...restData,
+    grn: movement.grn,
+  };
+}
+
 export function formatGrnResponse(grn: any): commonType.GrnResponse {
   return {
     id: grn._id,
@@ -1087,9 +1098,9 @@ export function formatGrnResponse(grn: any): commonType.GrnResponse {
   };
 }
 
-export function formatGrnDetailResponse(
+export function formatGrnDetailsResponse(
   grn: any
-): commonType.GrnDetailResponse {
+): commonType.GrnDetailsResponse {
   const { providerId, ...restData } = formatGrnResponse(grn);
 
   return {

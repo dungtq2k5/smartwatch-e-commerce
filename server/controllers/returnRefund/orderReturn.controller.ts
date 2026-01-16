@@ -8,14 +8,14 @@ import {
   OrderReturnPickupStateUpdate,
   OrderReturnSearchQuery,
   OrderReturnListResponse,
-  OrderReturnDetailResponse,
+  OrderReturnDetailsResponse,
 } from "../../../common/types.common";
 import mongoose, { Types } from "mongoose";
 import { HttpError } from "../../utils/errorHandler";
 import { ReturnItem } from "../../utils/types";
 import Order from "../../models/order/order.model";
 import {
-  formatOrderReturnDetailResponse,
+  formatOrderReturnDetailsResponse,
   formatOrderReturnResponse,
   getDeliveryStateLevel,
   getInstanceConditionId,
@@ -459,8 +459,8 @@ export async function getDetails(
     res.status(200).json({
       success: true,
       message: "Return order details retrieved.",
-      data: formatOrderReturnDetailResponse(orderReturn),
-    } as SuccessResponse<OrderReturnDetailResponse>);
+      data: formatOrderReturnDetailsResponse(orderReturn),
+    } as SuccessResponse<OrderReturnDetailsResponse>);
     console.log("✅ ", "Return order details retrieved.");
   } catch (error) {
     next(error);

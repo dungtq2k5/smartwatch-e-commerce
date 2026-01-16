@@ -9,7 +9,7 @@ import {
   AdminProductModelListResponse,
   ProductModelDetailQuery,
   AdminProductModelResponseForList,
-  AdminProductModelDetailResponse,
+  AdminProductModelDetailsResponse,
   AdminModelVariationResponse,
   ProductModelBulkDelete,
   AdminProductModelResponse,
@@ -401,7 +401,7 @@ export async function adminGetDetails(
           variations: formattedModelVariations,
         },
       },
-    } as SuccessResponse<AdminProductModelDetailResponse>);
+    } as SuccessResponse<AdminProductModelDetailsResponse>);
   } catch (error) {
     next(error);
   }

@@ -5,7 +5,7 @@ import type {
   AdminProductResponse,
   AdminUserResponse,
   BaseUserAddress,
-  GrnDetailResponse,
+  GrnDetailsResponse,
   OrderReturnSearchQuery,
   UserCartResponse,
   VariationInstanceResponse,
@@ -96,7 +96,7 @@ export type AdminVariationInstanceDisplayableField =
   | "actions";
 
 export type AdminGrnDisplayableField =
-  | keyof Omit<GrnDetailResponse, "stateId" | "reversedByGrnId" | "reversedAt">
+  | keyof Omit<GrnDetailsResponse, "stateId" | "reversedByGrnId" | "reversedAt">
   | "state"
   | "reversed"
   | "actions";

@@ -4,13 +4,13 @@ import { HttpError } from "../../utils/errorHandler";
 import ProductBrand from "../../models/product/productBrand.model";
 import ProductCategory from "../../models/product/productCategory.model";
 import type {
-  AdminProductDetailResponse,
+  AdminProductDetailsResponse,
   AdminProductListResponse,
   AdminProductResponse,
   ProductBulkDelete,
   ProductCreate,
   ProductDetailQuery,
-  ProductDetailResponse,
+  ProductDetailsResponse,
   ProductListResponse,
   ProductResponse,
   ProductSearchQuery,
@@ -180,7 +180,7 @@ export async function getDetails(
       };
     });
 
-    const data: ProductDetailResponse = {
+    const data: ProductDetailsResponse = {
       ...formatProductResponse(productDetail),
       models: {
         total: formattedModels.length,
@@ -192,7 +192,7 @@ export async function getDetails(
       success: true,
       message: "Product detail fetched successfully.",
       data,
-    } as SuccessResponse<ProductDetailResponse>);
+    } as SuccessResponse<ProductDetailsResponse>);
     console.log("✅ ", "Product detail fetched successfully.");
   } catch (error) {
     next(error);
@@ -589,7 +589,7 @@ export async function adminGetDetails(
 
     const { brandId, categoryId, ...restProductDetailData } =
       formatAdminProductResponse(productDetail);
-    const data: AdminProductDetailResponse = {
+    const data: AdminProductDetailsResponse = {
       ...restProductDetailData,
       brand: formatProductBrandResponse(productDetail.brand),
       category: formatProductCategoryResponse(productDetail.category),
@@ -603,7 +603,7 @@ export async function adminGetDetails(
       success: true,
       message: "Admin product detail fetched successfully.",
       data,
-    } as SuccessResponse<AdminProductDetailResponse>);
+    } as SuccessResponse<AdminProductDetailsResponse>);
     console.log("✅ ", "Admin product detail fetched successfully.");
   } catch (error) {
     next(error);
