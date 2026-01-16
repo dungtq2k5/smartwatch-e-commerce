@@ -2326,7 +2326,7 @@ export default function CreateModel() {
                         loading={process.isUploadingImages}
                         icon={<FontAwesomeIcon icon={faUpload} />}
                       >
-
+                        Upload Images
                       </Btn>
                       {formData.imageUrls.err && (
                         <InvalidInputMsg msg={formData.imageUrls.err} />
