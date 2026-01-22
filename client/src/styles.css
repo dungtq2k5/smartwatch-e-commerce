@@ -557,7 +557,7 @@ body {
 }
 
 .admin-sidebar--g.open {
-  width: 20rem;
+  width: 10rem;
 }
 
 .admin-sidebar--g.closed {
@@ -673,6 +673,18 @@ body {
 .bg-grey--g,
 .bg-gray--g {
   background-color: var(--grey-color);
+}
+
+.grn-history-item-card-link--g {
+  transition: all 0.2s ease-in-out;
+}
+
+.grn-history-item-card-link--g:hover {
+  border-color: var(--primary-color) !important;
+  background-color: #f8f9fa !important;
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05) !important;
+  cursor: pointer;
 }
 
 @keyframes toast-enter {

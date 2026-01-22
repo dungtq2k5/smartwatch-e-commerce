@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { HttpError } from "../../utils/errorHandler";
 import {
   GrnCreateReceived,
-  GrnDetailResponse,
+  GrnDetailsListResponse,
+  GrnDetailsResponse,
   GrnListResponse,
   GrnResponse,
   GrnSearchQuery,
@@ -10,7 +11,7 @@ import {
   SuccessResponse,
 } from "../../../common/types.common";
 import {
-  formatGrnDetailResponse,
+  formatGrnDetailsResponse,
   formatGrnResponse,
   genInstanceSkuSync,
   getGrnStateId,
@@ -201,6 +202,96 @@ export async function get(
   }
 }
 
+export async function getDetails(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  console.log("▶️ ", "Get GRN details...");
+  const { id } = req.params;
+
+  try {
+    /* Business logic:
+      - Get and return a list of GRN which connected to each other (reversedByGrnId).
+    */
+
+    if (!Types.ObjectId.isValid(id)) {
+      throw new HttpError(404, "GRN not found.");
+    }
+    const grns = await Grn.aggregate([
+      { $match: { _id: new Types.ObjectId(id) } },
+      // Find ancestors (past version that point to this one or its parents)
+      {
+        $graphLookup: {
+          from: "grns",
+          startWith: "$_id",
+          connectFromField: "reversedByGrnId",
+          connectToField: "_id",
+          as: "ancestors",
+        },
+      },
+      // Find descendants (newer version that this one or its children point to)
+      {
+        $graphLookup: {
+          from: "grns",
+          startWith: "$reversedByGrnId",
+          connectFromField: "reversedByGrnId",
+          connectToField: "_id",
+          as: "descendants",
+        },
+      },
+      // Combine all
+      {
+        $project: {
+          allGrns: {
+            $concatArrays: [["$$ROOT"], "$ancestors", "$descendants"],
+          },
+        },
+      },
+      { $unwind: "$allGrns" },
+      { $replaceRoot: { newRoot: "$allGrns" } },
+      // Remove duplicates (graphLookup may produce duplicates)
+      { $group: { _id: "$_id", doc: { $first: "$$ROOT" } } },
+      { $replaceRoot: { newRoot: "$doc" } },
+      OPTIMIZE_PIPELINE,
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+      {
+        $lookup: {
+          from: "providers",
+          localField: "providerId",
+          foreignField: "_id",
+          as: "provider",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$provider" },
+      // Sort by creation time
+      { $sort: { createdAt: 1, _id: 1 } },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "GRN details retrieved successfully.",
+      data: {
+        total: grns.length,
+        grns: grns.map(formatGrnDetailsResponse),
+      },
+    } as SuccessResponse<GrnDetailsListResponse>);
+    console.log("✅ ", "GRN details retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function search(
   req: Request,
   res: Response,
@@ -315,8 +406,8 @@ export async function search(
       },
     ]);
 
-    const grns: GrnDetailResponse[] = aggregationResult[0].data.map(
-      formatGrnDetailResponse
+    const grns: GrnDetailsResponse[] = aggregationResult[0].data.map(
+      formatGrnDetailsResponse
     );
     const total = aggregationResult[0].metadata[0]?.total || 0;
 

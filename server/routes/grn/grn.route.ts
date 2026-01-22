@@ -8,7 +8,7 @@ import {
   verifyGrnInput,
 } from "../../utils/middlewares/grn.middleware";
 import { GRN_FILE_IMPORT_MAX_SIZE } from "../../../common/configs.common";
-import { create, get, search, update } from "../../controllers/grn/grn.controller";
+import { create, get, getDetails, search, update } from "../../controllers/grn/grn.controller";
 
 const router = express.Router();
 
@@ -28,6 +28,12 @@ router.post(
   inputSanitizer("create"),
   verifyGrnInput("create"),
   create
+);
+
+router.get(
+  "/:id/details",
+  verifyPermission("r_grn"),
+  getDetails
 );
 
 router.get(

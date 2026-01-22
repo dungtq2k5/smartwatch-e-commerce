@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type {
   GrnCreate,
+  GrnDetailsListResponse,
   GrnListResponse,
   GrnResponse,
   GrnSearchQuery,
@@ -18,6 +19,11 @@ type GrnState = {
 
   fetchGrn: (id: string) => Promise<GrnResponse>;
   fetchGrns: (query?: GrnSearchQuery) => Promise<GrnListResponse>;
+
+  fetchGrnDetails: (
+    id: string,
+    sortBy?: "asc" | "desc",
+  ) => Promise<GrnDetailsListResponse>;
 
   updateGrn: (id: string, grn: GrnUpdate) => Promise<GrnResponse>;
 };
@@ -207,6 +213,117 @@ const useGrnStore = create<GrnState>(() => ({
       if (!res.success) throw new Error(res.message);
 
       return res.data as GrnListResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async fetchGrnDetails(
+    id: string,
+    sortBy?: "asc" | "desc",
+  ): Promise<GrnDetailsListResponse> {
+    // DEV temp for designing UI
+    const exampleGrnDetails: GrnDetailsListResponse = {
+      total: 4,
+      grns: [
+        {
+          id: "1",
+          name: "GRN 1",
+          totalPriceCents: 150000,
+          stateId: "69627a9a21123eac35b5947a",
+          createdBy: {
+            id: "69627a9721123eac35b59477",
+            fullName: "System",
+          },
+          quantity: 10,
+          notes: "First GRN",
+          createdAt: "2024-10-01T10:00:00Z",
+          reversedByGrnId: "2",
+          reversedAt: "2024-10-03T12:00:00Z",
+          provider: {
+            id: "69627ba35ee956bed423966f",
+            fullName: "Provider A",
+          },
+        },
+        {
+          id: "2",
+          name: "GRN 2",
+          totalPriceCents: 200000,
+          stateId: "69627a9a21123eac35b5947a",
+          createdBy: {
+            id: "69627a9721123eac35b59477",
+            fullName: "System",
+          },
+          quantity: 15,
+          notes: "Second GRN",
+          createdAt: "2024-10-05T14:30:00Z",
+          reversedByGrnId: "3",
+          reversedAt: "2024-10-10T09:00:00Z",
+          provider: {
+            id: "69627ba35ee956bed423966f",
+            fullName: "Provider B",
+          },
+        },
+        {
+          id: "3",
+          name: "GRN 3",
+          totalPriceCents: 300000,
+          stateId: "69627a9a21123eac35b5947a",
+          createdBy: {
+            id: "69627a9721123eac35b59477",
+            fullName: "System",
+          },
+          quantity: 20,
+          notes: "Third GRN",
+          createdAt: "2024-10-07T08:45:00Z",
+          reversedByGrnId: "4",
+          reversedAt: "2024-10-12T15:15:00Z",
+          provider: {
+            id: "69627ba35ee956bed423966f",
+            fullName: "Provider C",
+          },
+        },
+        {
+          id: "4",
+          name: "GRN 4",
+          totalPriceCents: 250000,
+          stateId: "69627a9a21123eac35b5947a",
+          createdBy: {
+            id: "69627a9721123eac35b59477",
+            fullName: "System",
+          },
+          quantity: 12,
+          notes: "Fourth GRN",
+          createdAt: "2024-10-09T13:20:00Z",
+          reversedByGrnId: null,
+          reversedAt: null,
+          provider: {
+            id: "69627ba35ee956bed423966f",
+            fullName: "Provider D",
+          },
+        },
+      ],
+    };
+    try {
+      // const res = await retrieve(`${GRN_URL}/${id}/details`);
+      // if (!res.success) throw new Error(res.message);
+
+      // const data = res.data as GrnDetailsListResponse;
+      const data = exampleGrnDetails;
+      if (sortBy) {
+        data.grns.sort((a, b) => {
+          if (sortBy === "asc") {
+            return (
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+          }
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+      }
+
+      return data;
     } catch (error) {
       throw new Error(formatError(error));
     }

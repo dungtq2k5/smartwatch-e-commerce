@@ -221,7 +221,7 @@ export default function DetailProduct() {
     variationPicked?.data.imageUrls,
   ]);
 
-  // TODO Buttons to view brand/os management pages with filter.
+  // TODO link to view brand/os management pages with filter.
 
   return (
     <>

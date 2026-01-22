@@ -57,6 +57,9 @@ import EditVariation from "./components/admin/product/EditVariation.tsx";
 import GrnManagement from "./components/admin/grn/GrnManagement.tsx";
 import { TOAST_DURATION } from "./configs.tsx";
 import EditGrn from "./components/admin/grn/EditGrn.tsx";
+import DetailInstance from "./components/admin/product/DetailInstance.tsx";
+import EditInstance from "./components/admin/product/EditInstance.tsx";
+import DetailGrn from "./components/admin/grn/DetailGrn.tsx";
 
 export default function App() {
   // DEV for testing
@@ -148,13 +151,23 @@ export default function App() {
 
                 <Route path="variation-instances">
                   <Route index element={<InstanceManagement />} />
-                  <Route path="create/:variationId" element={<CreateInstance />} />
+                  <Route
+                    path="create/:variationId"
+                    element={<CreateInstance />}
+                  />
+                  <Route path=":id">
+                    <Route index element={<DetailInstance />} />
+                    <Route path="edit" element={<EditInstance />} />
+                  </Route>
                 </Route>
 
                 <Route path="grns">
                   <Route index element={<GrnManagement />} />
                   <Route path="create/:variationId" element={<CreateGrn />} />
-                  <Route path=":id/edit" element={<EditGrn />} />
+                  <Route path=":id">
+                    <Route index element={<DetailGrn />} />
+                    <Route path="edit" element={<EditGrn />} />
+                  </Route>
                 </Route>
               </Route>
             </Route>
