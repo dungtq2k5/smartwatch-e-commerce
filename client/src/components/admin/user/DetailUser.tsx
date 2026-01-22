@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import useRoleStore from "../../../store/admin/roleStore";
-import type { AdminUserDetailResponse } from "../../../../../common/types.common";
+import type { AdminUserDetailsResponse } from "../../../../../common/types.common";
 import { centsToUSD, formatError } from "../../../../../common/utils.common";
 import ApiError from "../../common/ApiError";
 import useUserStore from "../../../store/admin/userStore";
@@ -22,10 +22,10 @@ export default function DetailUser() {
   const navigate = useNavigate();
 
   const { roles, fetchRoles } = useRoleStore();
-  const { sysUserId, fetchSysUserId, fetchUserDetail } = useUserStore();
+  const { sysUserId, fetchSysUserId, fetchUserDetails } = useUserStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
-  const [userDetail, setUserDetail] = useState<AdminUserDetailResponse | null>(
+  const [userDetail, setUserDetail] = useState<AdminUserDetailsResponse | null>(
     null
   );
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
@@ -41,7 +41,7 @@ export default function DetailUser() {
         if (!id) throw new Error("User ID is missing");
 
         const [fetchedUserDetail] = await Promise.all([
-          fetchUserDetail(id),
+          fetchUserDetails(id),
           roles ? Promise.resolve() : fetchRoles(),
           sysUserId ? Promise.resolve() : fetchSysUserId(),
         ]);
