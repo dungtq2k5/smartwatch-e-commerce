@@ -1544,6 +1544,11 @@ export type InventoryMovementTypeListResponse = {
   types: InventoryMovementTypeResponse[];
 };
 
+export type FirebaseBucket =
+  | "user-avatar"
+  | "product-image"
+  | "order-return";
+
 // --- HELPER TYPES ---
 
 export type NoneOptional<T> = {

@@ -54,11 +54,11 @@ const productBrandSchema: Schema<IProductBrand> = new Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const ProductBrand: Model<IProductBrand> = mongoose.model<IProductBrand>(
   "ProductBrand",
-  productBrandSchema
+  productBrandSchema,
 );
 export default ProductBrand;

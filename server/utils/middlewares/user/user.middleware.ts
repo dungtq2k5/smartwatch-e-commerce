@@ -277,7 +277,7 @@ export function verifyUserInput(
           }
           if (
             isPresent(avatarUrl) &&
-            !(await isValidImgUrl(avatarUrl, "avatar"))
+            !(await isValidImgUrl(avatarUrl, "user-avatar"))
           ) {
             errors.push("avatarUrl is invalid.");
           }
@@ -429,7 +429,7 @@ export function verifyUserInput(
           }
           if (
             isPresent(avatarUrl) &&
-            !(await isValidImgUrl(avatarUrl, "avatar"))
+            !(await isValidImgUrl(avatarUrl, "user-avatar"))
           ) {
             errors.push("avatarUrl is invalid.");
           }

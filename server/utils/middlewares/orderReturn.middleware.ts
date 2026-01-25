@@ -121,7 +121,7 @@ export function verifyOrderReturnInput(
           }
           if (
             isPresent(imageUrls) &&
-            !(await isValidImgUrls(imageUrls, "order return"))
+            !(await isValidImgUrls(imageUrls, "order-return"))
           ) {
             errors.push("Image URLs must be an array of valid image URLs.");
           }
@@ -210,7 +210,7 @@ export function verifyOrderReturnInput(
           }
           if (
             isPresent(imageUrls) &&
-            !(await isValidImgUrls(imageUrls, "order return"))
+            !(await isValidImgUrls(imageUrls, "order-return"))
           ) {
             errors.push("Image URLs must be an array of valid image URLs.");
           }

@@ -268,7 +268,7 @@ export default function EditVariation() {
       isProcessing: true,
       isUploadingImgs: true,
     }));
-    const imgFileErrs = await getImgFilesErrs(files, "product");
+    const imgFileErrs = await getImgFilesErrs(files, "product-image");
     if (imgFileErrs.length > 0) {
       setFormData((prev) => ({
         ...prev,
@@ -562,7 +562,7 @@ export default function EditVariation() {
             imageUrls.err = `You can upload up to ${MAX_PRODUCT_IMG_UPLOAD} images.`;
             allValid = false;
           } else {
-            const imgFileErrs = await getImgFilesErrs(imageUrls.val, "product");
+            const imgFileErrs = await getImgFilesErrs(imageUrls.val, "product-image");
             if (imgFileErrs.length > 0) {
               imageUrls.err = `Invalid files found: ${imgFileErrs.join(", ")}`;
               allValid = false;
@@ -692,7 +692,7 @@ export default function EditVariation() {
             const uploadedImgUrls: string[] = [];
 
             for (const imgUrl of imageUrls.val) {
-              const downloadUrl = await uploadFile(imgUrl, "product");
+              const downloadUrl = await uploadFile(imgUrl, "product-image");
               if (!downloadUrl) {
                 setFormData((prev) => ({
                   ...prev,

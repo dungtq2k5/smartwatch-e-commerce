@@ -233,7 +233,7 @@ export default function CreateProduct() {
       isProcessing: true,
       isUploadingImgs: true,
     }));
-    const imgFileErrs = await getImgFilesErrs(files, "product");
+    const imgFileErrs = await getImgFilesErrs(files, "product-image");
     if (imgFileErrs.length > 0) {
       setFormData((prev) => ({
         ...prev,
@@ -339,7 +339,7 @@ export default function CreateProduct() {
           } else {
             const imgFileErrs = await getImgFilesErrs(
               newFormData.imageUrls.val,
-              "product"
+              "product-image"
             );
             if (imgFileErrs.length > 0) {
               newFormData.imageUrls.err = `Invalid files found: ${imgFileErrs.join(
@@ -364,7 +364,7 @@ export default function CreateProduct() {
         try {
           const imageUrls: string[] = [];
           for (const img of formData.imageUrls.val) {
-            const downloadUrl = await uploadFile(img, "product");
+            const downloadUrl = await uploadFile(img, "product-image");
             if (!downloadUrl) throw new Error("Failed to upload image file.");
             imageUrls.push(downloadUrl);
           }

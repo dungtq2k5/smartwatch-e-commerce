@@ -599,7 +599,7 @@ export default function CreateModel() {
       isProcessing: true,
       isUploadingImgs: true,
     }));
-    const imgFileErrs = await getImgFilesErrs(files, "product");
+    const imgFileErrs = await getImgFilesErrs(files, "product-image");
     if (imgFileErrs.length > 0) {
       setFormData((prev) => ({
         ...prev,
@@ -743,7 +743,7 @@ export default function CreateModel() {
             imageUrls.err = `You can upload up to ${MAX_PRODUCT_IMG_UPLOAD} images.`;
             allValid = false;
           } else {
-            const imgFileErrs = await getImgFilesErrs(imageUrls.val, "product");
+            const imgFileErrs = await getImgFilesErrs(imageUrls.val, "product-image");
             if (imgFileErrs.length > 0) {
               imageUrls.err = `Invalid files found: ${imgFileErrs.join(", ")}`;
               allValid = false;
@@ -964,7 +964,7 @@ export default function CreateModel() {
         try {
           const imageUrls: string[] = [];
           for (const img of formData.imageUrls.val) {
-            const downloadUrl = await uploadFile(img, "product");
+            const downloadUrl = await uploadFile(img, "product-image");
             if (!downloadUrl) throw new Error("Failed to upload image file.");
             imageUrls.push(downloadUrl);
           }

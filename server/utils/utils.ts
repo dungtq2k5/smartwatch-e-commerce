@@ -38,7 +38,7 @@ export function isValidUrl(url: any): boolean {
 
 export async function isValidImgUrl(
   url: any,
-  category: "order return" | "product" | "avatar"
+  category: commonType.FirebaseBucket,
 ): Promise<boolean> {
   if (!isValidUrl(url)) return false;
 
@@ -48,11 +48,11 @@ export async function isValidImgUrl(
 
     const contentType = res.headers.get("content-type");
     const ALLOWED_TYPES =
-      category === "order return"
+      category === "order-return"
         ? ORDER_RETURN_IMG_ALLOWED_TYPES
-        : category === "product"
-        ? PRODUCT_IMAGE_ALLOWED_TYPES
-        : AVATAR_ALLOWED_TYPES;
+        : category === "product-image"
+          ? PRODUCT_IMAGE_ALLOWED_TYPES
+          : AVATAR_ALLOWED_TYPES;
 
     if (contentType && ALLOWED_TYPES.includes(contentType as any)) {
       return true;
@@ -66,7 +66,7 @@ export async function isValidImgUrl(
 
 export async function isValidImgUrls(
   imgUrls: any,
-  category: "order return" | "product" | "avatar"
+  category: commonType.FirebaseBucket,
 ): Promise<boolean> {
   if (!Array.isArray(imgUrls)) return false;
 

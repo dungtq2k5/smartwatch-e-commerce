@@ -211,7 +211,7 @@ export function verifyProductInput(
           }
           if (
             isPresent(imageUrls) &&
-            !(await isValidImgUrls(imageUrls, "product"))
+            !(await isValidImgUrls(imageUrls, "product-image"))
           ) {
             errors.push("image URLs must be an array of valid image URLs.");
           }
@@ -267,7 +267,7 @@ export function verifyProductInput(
           }
           if (
             isPresent(imageUrls) &&
-            !(await isValidImgUrls(imageUrls, "product"))
+            !(await isValidImgUrls(imageUrls, "product-image"))
           ) {
             errors.push("image URLs must be an array of valid image URLs.");
           }

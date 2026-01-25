@@ -285,7 +285,7 @@ export function EditProduct() {
       isProcessing: true,
       isUploadingImgs: true,
     }));
-    const imgFileErrs = await getImgFilesErrs(files, "product");
+    const imgFileErrs = await getImgFilesErrs(files, "product-image");
     if (imgFileErrs.length > 0) {
       setFormData((prev) => ({
         ...prev,
@@ -424,7 +424,7 @@ export function EditProduct() {
           } else {
             const imgFileErrs = await getImgFilesErrs(
               newFormData.imageUrls.val,
-              "product"
+              "product-image"
             );
             if (imgFileErrs.length > 0) {
               newFormData.imageUrls.err = `Invalid files found: ${imgFileErrs.join(
@@ -479,7 +479,7 @@ export function EditProduct() {
             const uploadedImgUrls: string[] = [];
 
             for (const imgUrl of formData.imageUrls.val) {
-              const downloadUrl = await uploadFile(imgUrl, "product");
+              const downloadUrl = await uploadFile(imgUrl, "product-image");
               if (!downloadUrl) {
                 setFormData((prev) => ({
                   ...prev,

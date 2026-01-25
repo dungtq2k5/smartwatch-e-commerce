@@ -7,7 +7,7 @@ import {
 } from "../../../../../common/configs.common";
 import { AVATAR_HINT_MESSAGE, WAITING_EMOJI } from "../../../configs";
 import { useNavigate } from "react-router-dom";
-import type { FormFileInput, FormInput } from "../../../utils/types";
+import type { FormData } from "./EditUser"
 import useRoleStore from "../../../store/admin/roleStore";
 import {
   formatError,
@@ -30,20 +30,6 @@ import Title from "../Title";
 import Btn from "../../common/Btn";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
-
-type FormData = {
-  fullName: FormInput;
-  avatar: FormFileInput;
-  email: FormInput;
-  isEmailVerified: boolean;
-  phoneNumber: FormInput;
-  isPhoneNumberVerified: boolean;
-  password: FormInput;
-  birth: FormInput;
-  gender: (typeof USER_GENDER_OPTIONS)[number];
-  isLocked: boolean;
-  roleIds: string[];
-};
 
 type Process = {
   isProcessing: boolean;
@@ -154,7 +140,7 @@ export default function CreateUser() {
           // Change avatarPreviewUrl
           setAvatarPreviewUrl((await readFileAsDataUrl(file)) as string);
 
-          const imgFileErrs = await getImgFileErrs(files[0], "avatar");
+          const imgFileErrs = await getImgFileErrs(files[0], "user-avatar");
           setFormData((prev) => ({
             ...prev,
             avatar: {
@@ -283,7 +269,7 @@ export default function CreateUser() {
         if (newFormData.avatar.val instanceof File) {
           const imgFileErrs = await getImgFileErrs(
             newFormData.avatar.val,
-            "avatar"
+            "user-avatar"
           );
           if (imgFileErrs.length) {
             newFormData.avatar.err = `Avatar file is invalid: ${imgFileErrs.join(
@@ -348,7 +334,7 @@ export default function CreateUser() {
         try {
           let avatarUrl: string | null = null;
           if (formData.avatar.val instanceof File) {
-            const downloadUrl = await uploadFile(formData.avatar.val, "avatar");
+            const downloadUrl = await uploadFile(formData.avatar.val, "user-avatar");
             if (!downloadUrl) throw new Error("Failed to upload avatar file.");
             avatarUrl = downloadUrl;
           }

@@ -207,7 +207,7 @@ export default function Profile() {
         if (newFormData.avatar.val instanceof File) {
           const imgFileErrs = await getImgFileErrs(
             newFormData.avatar.val,
-            "avatar"
+            "user-avatar"
           );
           if (imgFileErrs.length) {
             newFormData.avatar.err = `Avatar file is invalid: ${imgFileErrs.join(
@@ -245,7 +245,7 @@ export default function Profile() {
             changedData.birth = new Date(formData.birth.val).toISOString();
           }
           if (formData.avatar.val instanceof File) {
-            const downloadUrl = await uploadFile(formData.avatar.val, "avatar");
+            const downloadUrl = await uploadFile(formData.avatar.val, "user-avatar");
             if (!downloadUrl) throw new Error("Failed to upload avatar.");
             changedData.avatarUrl = downloadUrl;
           } else if (formData.avatar.val === null && user.avatarUrl) {

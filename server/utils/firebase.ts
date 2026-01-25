@@ -2,12 +2,14 @@ import {
   userAvatarBucket,
   productImgBucket,
   returnImgBucket,
+  productLogoBucket,
 } from "../configs/firebaseAdmin.config";
+import type { FirebaseBucket } from "../../common/types.common";
 
 // Function won't throw error
 export async function deleteFileFromFirebaseStorage(
   downloadUrl: string,
-  bucketName: "user-avatar" | "product-image" | "return-image"
+  bucketName: FirebaseBucket,
 ): Promise<void> {
   if (
     !downloadUrl ||
@@ -15,7 +17,7 @@ export async function deleteFileFromFirebaseStorage(
   ) {
     console.warn(
       "Invalid or non-Firebase URL provided for deletion, skipping:",
-      downloadUrl
+      downloadUrl,
     );
     return;
   }
@@ -28,7 +30,7 @@ export async function deleteFileFromFirebaseStorage(
     if (urlParts.length < 2) {
       console.warn(
         "Cannot extract file path from Firebase Storage URL:",
-        downloadUrl
+        downloadUrl,
       );
       return;
     }
@@ -38,7 +40,7 @@ export async function deleteFileFromFirebaseStorage(
     if (!filePath) {
       console.warn(
         "Empty file path extracted from URL, skipping deletion:",
-        downloadUrl
+        downloadUrl,
       );
       return;
     }
@@ -47,8 +49,10 @@ export async function deleteFileFromFirebaseStorage(
       bucketName === "user-avatar"
         ? userAvatarBucket
         : bucketName === "product-image"
-        ? productImgBucket
-        : returnImgBucket;
+          ? productImgBucket
+          : bucketName === "product-logo"
+            ? productLogoBucket
+            : returnImgBucket;
     const file = storageBucket.file(filePath);
     await file.delete();
     console.log(`File ${filePath} deleted from Firebase Storage successfully.`);
@@ -61,12 +65,12 @@ export async function deleteFileFromFirebaseStorage(
         error.errors.some((e: { reason: string }) => e.reason === "notFound"))
     ) {
       console.warn(
-        `File not found in Firebase Storage (it may have been already deleted): ${pathForLog}`
+        `File not found in Firebase Storage (it may have been already deleted): ${pathForLog}`,
       );
     } else {
       console.error(
         `Error deleting file ${pathForLog} from Firebase Storage:`,
-        error.message || error
+        error.message || error,
       );
     }
   }
@@ -75,7 +79,7 @@ export async function deleteFileFromFirebaseStorage(
 // Function won't throw error
 export async function deleteManyFileFromFirebaseStorage(
   downloadUrls: string[],
-  bucketName: "user-avatar" | "product-image" | "return-image"
+  bucketName: FirebaseBucket,
 ): Promise<void> {
   for (const downloadUrl of downloadUrls) {
     await deleteFileFromFirebaseStorage(downloadUrl, bucketName);
