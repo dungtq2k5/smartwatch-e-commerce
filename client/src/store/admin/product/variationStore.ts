@@ -156,7 +156,7 @@ const useVariationStore = create<VariationState>(() => ({
         );
       }
 
-      const res = await remove(`${MODEL_VARIATION_URL}/bulk`, null, data);
+      const res = await remove(`${MODEL_VARIATION_URL}/many`, null, data);
       if (!res.success) throw new Error(res.message);
     } catch (error) {
       throw new Error(formatError(error));

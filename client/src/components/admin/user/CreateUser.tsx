@@ -155,15 +155,15 @@ export default function CreateUser() {
           setAvatarPreviewUrl((await readFileAsDataUrl(file)) as string);
 
           const imgFileErrs = await getImgFileErrs(files[0], "avatar");
-          if (imgFileErrs.length === 0) {
-            setFormData((prev) => ({
-              ...prev,
-              avatar: {
-                val: file,
-                err: `Avatar file is invalid: ${imgFileErrs.join(", ")}`,
-              },
-            }));
-          }
+          setFormData((prev) => ({
+            ...prev,
+            avatar: {
+              val: imgFileErrs.length ? prev.avatar.val : file,
+              err: imgFileErrs.length
+                ? `Avatar file is invalid: ${imgFileErrs.join(", ")}`
+                : undefined,
+            },
+          }));
 
           setProcess((prev) => ({
             ...prev,

@@ -154,7 +154,7 @@ const useProductStore = create<ProductState>(() => ({
         );
       }
 
-      const res = await remove(`${PRODUCT_URL}/bulk`, null, data);
+      const res = await remove(`${PRODUCT_URL}/many`, null, data);
       if (!res.success) throw new Error(res.message);
     } catch (error) {
       throw new Error(formatError(error));

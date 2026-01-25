@@ -323,7 +323,7 @@ export default function ProductManagement() {
       canReadVariation,
       getBrand,
       getCategory,
-    ]
+    ],
   );
 
   const [process, setProcess] = useState<Process>({
@@ -334,7 +334,7 @@ export default function ProductManagement() {
   const [apiErr, setApiErr] = useState<string | null>(null);
 
   const [products, setProducts] = useState<AdminProductListResponse | null>(
-    null
+    null,
   );
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -413,12 +413,12 @@ export default function ProductManagement() {
               ? urlStopSelling
               : undefined,
           type: PRODUCT_TYPES.includes(
-            urlType as (typeof PRODUCT_TYPES)[number]
+            urlType as (typeof PRODUCT_TYPES)[number],
           )
             ? (urlType as (typeof PRODUCT_TYPES)[number])
             : undefined,
           sortBy: PRODUCT_SEARCH_SORT_OPTIONS.includes(
-            urlSortBy as (typeof PRODUCT_SEARCH_SORT_OPTIONS)[number]
+            urlSortBy as (typeof PRODUCT_SEARCH_SORT_OPTIONS)[number],
           )
             ? (urlSortBy as (typeof PRODUCT_SEARCH_SORT_OPTIONS)[number])
             : undefined,
@@ -504,7 +504,7 @@ export default function ProductManagement() {
         id: SELECTION_TOAST_ID,
         duration: Infinity,
         position: "top-center",
-      }
+      },
     );
 
     setSelectionToastId(SELECTION_TOAST_ID);
@@ -528,16 +528,14 @@ export default function ProductManagement() {
 
       setSearchForm((prev) => ({
         ...prev,
-        [name]: ["type", "brandIds", "categoryIds", "stopSelling"].includes(
-          name
-        )
+        [name]: ["brandIds", "categoryIds"].includes(name)
           ? value
             ? [value]
             : undefined
           : value,
       }));
     },
-    [process.isProcessing, setSearchParams]
+    [process.isProcessing, setSearchParams],
   );
 
   const handleSearchSubmit = useCallback(
@@ -585,7 +583,7 @@ export default function ProductManagement() {
         return prev;
       });
     },
-    [process.isProcessing, searchForm, setSearchParams]
+    [process.isProcessing, searchForm, setSearchParams],
   );
 
   const handleClearFilters = useCallback((): void => {
@@ -609,7 +607,7 @@ export default function ProductManagement() {
 
       setSearchParams((prev) => ({ ...prev, sortBy }));
     },
-    [process.isProcessing, setSearchParams]
+    [process.isProcessing, setSearchParams],
   );
 
   const handleOffsetChange = useCallback(
@@ -630,7 +628,7 @@ export default function ProductManagement() {
         return prev;
       });
     },
-    [process.isProcessing, setSearchParams]
+    [process.isProcessing, setSearchParams],
   );
 
   const handleSelectProduct = useCallback(
@@ -671,7 +669,7 @@ export default function ProductManagement() {
             updatedSelectedProductIds.push(productId);
           } else {
             updatedSelectedProductIds = updatedSelectedProductIds.filter(
-              (id) => id !== productId
+              (id) => id !== productId,
             );
           }
         }
@@ -681,7 +679,7 @@ export default function ProductManagement() {
           : updatedSelectedProductIds;
       });
     },
-    [process.isProcessing, products]
+    [process.isProcessing, products],
   );
 
   // Also handle loading effects
@@ -720,7 +718,7 @@ export default function ProductManagement() {
                 isDesc={isDesc}
                 onClick={() => {
                   handleSort(
-                    isAsc ? colDisplay.sortKey.desc : colDisplay.sortKey.asc
+                    isAsc ? colDisplay.sortKey.desc : colDisplay.sortKey.asc,
                   );
                 }}
               />
@@ -849,7 +847,7 @@ export default function ProductManagement() {
       setDisplayFields(fields);
       toast.success("Config display has been updated.");
     },
-    [setDisplayFields]
+    [setDisplayFields],
   );
 
   const handleResetConfigDisplay = useCallback((): void => {
@@ -893,16 +891,16 @@ export default function ProductManagement() {
 
       // Use the current exportable + visible fields and their order for the CSV
       const exportableFields = displayFields.filter(
-        (field) => field.exportable && field.visible
+        (field) => field.exportable && field.visible,
       );
       const headers = exportableFields.map(
-        (field) => TABLE_COL_DISPLAY[field.name].label
+        (field) => TABLE_COL_DISPLAY[field.name].label,
       );
       const getVals = (
-        product: AdminProductResponse
+        product: AdminProductResponse,
       ): (string | number | boolean | null)[] => {
         return exportableFields.map((field) =>
-          TABLE_COL_DISPLAY[field.name].getCsvVal(product)
+          TABLE_COL_DISPLAY[field.name].getCsvVal(product),
         );
       };
 
@@ -910,11 +908,11 @@ export default function ProductManagement() {
         `${PROJECT_NAME.toLowerCase()}-products-export-${new Date().toISOString()}.csv`,
         headers,
         productsToExport.products,
-        getVals
+        getVals,
       );
 
       toast.success(
-        `Exported ${productsToExport.products.length} products successfully.`
+        `Exported ${productsToExport.products.length} products successfully.`,
       );
     } catch (error) {
       toast.error(formatError(error));
@@ -987,7 +985,7 @@ export default function ProductManagement() {
     try {
       await deleteProductBulk({ productIds: modal.productIdsToDelete });
       toast.success(
-        `${modal.productIdsToDelete.length} products deleted successfully.`
+        `${modal.productIdsToDelete.length} products deleted successfully.`,
       );
 
       // Refresh list by re-triggering the useEffect
