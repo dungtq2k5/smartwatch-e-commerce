@@ -3,8 +3,11 @@ import type {
   AdminConfig,
   GrnDisplayField,
   ModelVariationDisplayField,
+  ProductBrandDisplayField,
+  ProductCategoryDisplayField,
   ProductDisplayField,
   ProductModelDisplayField,
+  ProductOsDisplayField,
   UserDisplayField,
   VariationInstanceDisplayField,
 } from "../../utils/types";
@@ -17,27 +20,42 @@ type ConfigState = {
   resetUserManagementDisplayFields: () => void;
 
   setProductManagementDisplayFields: (
-    displayFields: ProductDisplayField[]
+    displayFields: ProductDisplayField[],
   ) => void;
   resetProductManagementDisplayFields: () => void;
 
   setProductModelManagementDisplayFields: (
-    displayFields: ProductModelDisplayField[]
+    displayFields: ProductModelDisplayField[],
   ) => void;
   resetProductModelManagementDisplayFields: () => void;
 
   setModelVariationManagementDisplayFields: (
-    displayFields: ModelVariationDisplayField[]
+    displayFields: ModelVariationDisplayField[],
   ) => void;
   resetModelVariationManagementDisplayFields: () => void;
 
   setVariationInstanceManagementDisplayFields: (
-    displayFields: VariationInstanceDisplayField[]
+    displayFields: VariationInstanceDisplayField[],
   ) => void;
   resetVariationInstanceManagementDisplayFields: () => void;
 
   setGrnManagementDisplayFields: (displayFields: GrnDisplayField[]) => void;
   resetGrnManagementDisplayFields: () => void;
+
+  setProductBrandManagementDisplayFields: (
+    displayFields: ProductBrandDisplayField[],
+  ) => void;
+  resetProductBrandManagementDisplayFields: () => void;
+
+  setProductCategoryManagementDisplayFields: (
+    displayFields: ProductCategoryDisplayField[],
+  ) => void;
+  resetProductCategoryManagementDisplayFields: () => void;
+
+  setProductOsManagementDisplayFields: (
+    displayFields: ProductOsDisplayField[],
+  ) => void;
+  resetProductOsManagementDisplayFields: () => void;
 };
 
 const getInitialState = (): AdminConfig => {
@@ -78,7 +96,7 @@ const useConfigStore = create<ConfigState>((set, get) => ({
   },
 
   setProductManagementDisplayFields: (
-    displayFields: ProductDisplayField[]
+    displayFields: ProductDisplayField[],
   ): void => {
     const newConfig: AdminConfig = {
       ...get().config,
@@ -101,7 +119,7 @@ const useConfigStore = create<ConfigState>((set, get) => ({
   },
 
   setProductModelManagementDisplayFields: (
-    displayFields: ProductModelDisplayField[]
+    displayFields: ProductModelDisplayField[],
   ): void => {
     const newConfig: AdminConfig = {
       ...get().config,
@@ -124,7 +142,7 @@ const useConfigStore = create<ConfigState>((set, get) => ({
   },
 
   setModelVariationManagementDisplayFields: (
-    displayFields: ModelVariationDisplayField[]
+    displayFields: ModelVariationDisplayField[],
   ): void => {
     const newConfig: AdminConfig = {
       ...get().config,
@@ -147,7 +165,7 @@ const useConfigStore = create<ConfigState>((set, get) => ({
   },
 
   setVariationInstanceManagementDisplayFields: (
-    displayFields: VariationInstanceDisplayField[]
+    displayFields: VariationInstanceDisplayField[],
   ): void => {
     const newConfig: AdminConfig = {
       ...get().config,
@@ -185,6 +203,75 @@ const useConfigStore = create<ConfigState>((set, get) => ({
       grnManagementDisplayFields:
         DEFAULT_ADMIN_CONFIG.grnManagementDisplayFields,
     };
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  setProductBrandManagementDisplayFields: (
+    displayFields: ProductBrandDisplayField[],
+  ): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      productBrandManagementDisplayFields: displayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  resetProductBrandManagementDisplayFields: (): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      productBrandManagementDisplayFields:
+        DEFAULT_ADMIN_CONFIG.productBrandManagementDisplayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  setProductCategoryManagementDisplayFields: (
+    displayFields: ProductCategoryDisplayField[],
+  ): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      productCategoryManagementDisplayFields: displayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  resetProductCategoryManagementDisplayFields: (): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      productCategoryManagementDisplayFields:
+        DEFAULT_ADMIN_CONFIG.productCategoryManagementDisplayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  setProductOsManagementDisplayFields: (
+    displayFields: ProductOsDisplayField[],
+  ): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      productOsManagementDisplayFields: displayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  resetProductOsManagementDisplayFields: (): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      productOsManagementDisplayFields:
+        DEFAULT_ADMIN_CONFIG.productOsManagementDisplayFields,
+    };
+
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
     set({ config: newConfig });
   },

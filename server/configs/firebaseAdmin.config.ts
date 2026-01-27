@@ -7,6 +7,7 @@ const {
   FIREBASE_USER_AVATAR_BUCKET,
   FIREBASE_PRODUCT_IMAGE_BUCKET,
   FIREBASE_RETURN_IMAGE_BUCKET,
+  FIREBASE_PRODUCT_LOGO_BUCKET,
 } = process.env as { [key: string]: string };
 
 // The SDK will automatically find the credentials via the
@@ -24,3 +25,4 @@ admin.initializeApp({
 export const userAvatarBucket = admin.storage().bucket(FIREBASE_USER_AVATAR_BUCKET);
 export const productImgBucket = admin.storage().bucket(FIREBASE_PRODUCT_IMAGE_BUCKET);
 export const returnImgBucket = admin.storage().bucket(FIREBASE_RETURN_IMAGE_BUCKET);
+export const productLogoBucket = admin.storage().bucket(FIREBASE_PRODUCT_LOGO_BUCKET);

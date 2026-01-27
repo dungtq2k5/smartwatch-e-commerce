@@ -1,7 +1,10 @@
 import type { JSX } from "react";
 import type {
   AdminModelVariationResponse,
+  AdminProductBrandResponse,
+  AdminProductCategoryResponse,
   AdminProductModelResponse,
+  AdminProductOsResponse,
   AdminProductResponse,
   AdminUserResponse,
   BaseUserAddress,
@@ -101,6 +104,18 @@ export type AdminGrnDisplayableField =
   | "reversed"
   | "actions";
 
+export type AdminProductBrandDisplayableField =
+  | keyof Omit<AdminProductBrandResponse, "logoUrl">
+  | "actions";
+
+export type AdminProductCategoryDisplayableField =
+  | keyof AdminProductCategoryResponse
+  | "actions";
+
+export type AdminProductOsDisplayableField =
+  | keyof Omit<AdminProductOsResponse, "logoUrl">
+  | "actions";
+
 export type TableColDisplay<Item, SortOption> = {
   label: string; // For header display
   thClassName?: string; // Additional className for <th>
@@ -137,8 +152,16 @@ export type ModelVariationDisplayField =
 export type VariationInstanceDisplayField =
   DisplayField<AdminVariationInstanceDisplayableField>;
 
-export type GrnDisplayField =
-  DisplayField<AdminGrnDisplayableField>;
+export type GrnDisplayField = DisplayField<AdminGrnDisplayableField>;
+
+export type ProductBrandDisplayField =
+  DisplayField<AdminProductBrandDisplayableField>;
+
+export type ProductCategoryDisplayField =
+  DisplayField<AdminProductCategoryDisplayableField>;
+
+export type ProductOsDisplayField =
+  DisplayField<AdminProductOsDisplayableField>;
 
 export type AdminConfig = {
   userManagementDisplayFields: UserDisplayField[];
@@ -147,6 +170,13 @@ export type AdminConfig = {
   modelVariationManagementDisplayFields: ModelVariationDisplayField[];
   variationInstanceManagementDisplayFields: VariationInstanceDisplayField[];
   grnManagementDisplayFields: GrnDisplayField[];
+  productBrandManagementDisplayFields: ProductBrandDisplayField[];
+  productCategoryManagementDisplayFields: ProductCategoryDisplayField[];
+  productOsManagementDisplayFields: ProductOsDisplayField[];
 };
 
-export type ProductCreationWizardStep = "product" | "model" | "variation" | "grn";
+export type ProductCreationWizardStep =
+  | "product"
+  | "model"
+  | "variation"
+  | "grn";

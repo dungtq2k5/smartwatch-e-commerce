@@ -1,4 +1,4 @@
-https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lmbu/vn-public-apis
+- VN addresses: https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lmbu/vn-public-apis
 
 - Legends:
   🔥 Working on.
@@ -40,6 +40,7 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - export FormData type from create component to reuse in edit component ❌.
     - Use lazy import of needed ❌.
     - Create Button component with isLoading props ✅.
+    - Update all related user components to display 'createdBy' field ❌.
 
   - Backend - API: (remember isDeleted field)
     - Because __v field is only activated with doc.save() so stick with find-modify-save method when modifying data 📝.
@@ -56,6 +57,7 @@ https://www.postman.com/nguyenkhoiteam/api-th-gii-s-api-tgs-com/collection/kq7lm
     - Refresh token ✅.
     - Also save import GRN file to db ❌.
     - Use 'joi' or 'express-validator' for validating request body ❌.
+    - Add 'createdBy' field for user schema ❌.
 
   - Database init:
     - Init roles & permissions ✅.

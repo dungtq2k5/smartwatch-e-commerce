@@ -43,7 +43,7 @@ import EditUserSkeleton from "../skeleton/EditUserSkeleton";
 import Title from "../Title";
 import Btn from "../../common/Btn";
 
-type FormData = {
+export type FormData = {
   fullName: FormInput;
   avatar: FormFileInput;
   password: FormInput;
@@ -108,9 +108,7 @@ export default function EditUser() {
   const [apiErr, setApiErr] = useState<string | null>(null);
 
   const changeAvatarRef = useRef<HTMLInputElement>(null);
-  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string>(
-    user?.avatarUrl || defaultAvatar
-  );
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string>(defaultAvatar);
 
   // Fetch and set initial data when first load or refresh signal: roles, user
   useEffect(() => {
@@ -181,7 +179,7 @@ export default function EditUser() {
 
   const handleChange = useCallback(
     async (
-      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     ): Promise<void> => {
       if (process.isProcessing) return;
 
@@ -201,7 +199,7 @@ export default function EditUser() {
           // Change avatarPreviewUrl
           setAvatarPreviewUrl((await readFileAsDataUrl(file)) as string);
 
-          const imgFileErrs = await getImgFileErrs(files[0], "avatar");
+          const imgFileErrs = await getImgFileErrs(files[0], "user-avatar");
           setFormData((prev) => ({
             ...prev,
             avatar: {
@@ -303,7 +301,7 @@ export default function EditUser() {
         [name]: { val, err },
       }));
     },
-    [formData.email.val, formData.phoneNumber.val, process.isProcessing]
+    [formData.email.val, formData.phoneNumber.val, process.isProcessing],
   );
 
   const handleSubmitGeneralInfo = useCallback(
@@ -338,11 +336,11 @@ export default function EditUser() {
         if (newFormData.avatar.val instanceof File) {
           const imgFileErrs = await getImgFileErrs(
             newFormData.avatar.val,
-            "avatar"
+            "user-avatar",
           );
           if (imgFileErrs.length) {
             newFormData.avatar.err = `Avatar file is invalid: ${imgFileErrs.join(
-              ", "
+              ", ",
             )}`;
             allValid = false;
           }
@@ -380,7 +378,7 @@ export default function EditUser() {
             changedData.fullName = formData.fullName.val;
           }
           if (formData.avatar.val instanceof File) {
-            const downloadUrl = await uploadFile(formData.avatar.val, "avatar");
+            const downloadUrl = await uploadFile(formData.avatar.val, "user-avatar");
             if (!downloadUrl) throw new Error("Failed to upload avatar image.");
             changedData.avatarUrl = downloadUrl;
           } else if (formData.avatar.val === null && user.avatarUrl) {
@@ -404,7 +402,7 @@ export default function EditUser() {
           if (
             !compareList<string>(
               formData.roleIds,
-              user.roles.map((role) => role.id)
+              user.roles.map((role) => role.id),
             )
           ) {
             changedData.roleIds = formData.roleIds;
@@ -439,7 +437,7 @@ export default function EditUser() {
         isUpdatingGeneralInfo: false,
       }));
     },
-    [canEditUser, formData, process.isProcessing, updateUser, user]
+    [canEditUser, formData, process.isProcessing, updateUser, user],
   );
 
   const handleSubmitContactInfo = useCallback(
@@ -563,7 +561,7 @@ export default function EditUser() {
       updateUserEmail,
       updateUserPhoneNumber,
       user,
-    ]
+    ],
   );
 
   return (

@@ -3,6 +3,7 @@ import {
   AVATAR_ALLOWED_TYPES,
   ORDER_RETURN_IMG_ALLOWED_TYPES,
   PRODUCT_IMAGE_ALLOWED_TYPES,
+  PRODUCT_LOGO_ALLOWED_TYPES,
   VERIFICATION_CODE_LENGTH,
 } from "../../common/configs.common";
 import jwt from "jsonwebtoken";
@@ -52,7 +53,9 @@ export async function isValidImgUrl(
         ? ORDER_RETURN_IMG_ALLOWED_TYPES
         : category === "product-image"
           ? PRODUCT_IMAGE_ALLOWED_TYPES
-          : AVATAR_ALLOWED_TYPES;
+          : category === "product-logo"
+            ? PRODUCT_LOGO_ALLOWED_TYPES
+            : AVATAR_ALLOWED_TYPES;
 
     if (contentType && ALLOWED_TYPES.includes(contentType as any)) {
       return true;
@@ -78,7 +81,7 @@ export async function isValidImgUrls(
 }
 
 export function genVerificationCode(
-  length: number = VERIFICATION_CODE_LENGTH
+  length: number = VERIFICATION_CODE_LENGTH,
 ): string {
   if (length <= 0) {
     throw new Error("Verification code length must be a positive integer.");
@@ -96,7 +99,7 @@ export function genVerificationCode(
 
 export function genJwtAndSetCookie(
   res: Response,
-  payload: JwtPayload
+  payload: JwtPayload,
 ): { accessToken: string; refreshToken: string } {
   // Create Access token
   const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY!, {
@@ -127,7 +130,7 @@ export function genJwtAndSetCookie(
 
 export function getJwtPayload(
   token: any,
-  secret: string = process.env.JWT_SECRET_KEY!
+  secret: string = process.env.JWT_SECRET_KEY!,
 ): JwtPayload | false {
   if (typeof token !== "string") return false;
 
@@ -164,7 +167,7 @@ export function isArrayOfNonEmptyStrings(arr: any): boolean {
  */
 export async function getPropsForInstanceSkuGen(
   variationId: Types.ObjectId,
-  session?: mongoose.ClientSession
+  session?: mongoose.ClientSession,
 ): Promise<commonType.GenSkuProps> {
   const variation = await ModelVariation.aggregate([
     { $match: { _id: variationId } },
@@ -223,10 +226,10 @@ export async function getPropsForInstanceSkuGen(
  */
 export async function genInstanceSku(
   variationId: Types.ObjectId,
-  session?: mongoose.ClientSession
+  session?: mongoose.ClientSession,
 ): Promise<string> {
   return genInstanceSkuSync(
-    await getPropsForInstanceSkuGen(variationId, session)
+    await getPropsForInstanceSkuGen(variationId, session),
   );
 }
 
@@ -294,7 +297,7 @@ export function isPresent<T>(val: T): val is NonNullable<T> {
  * @throws {HttpError} Throws an error if the state array is empty.
  */
 export function getLatestStateId(
-  stateArr: { id: Types.ObjectId; createdAt?: Date | null }[]
+  stateArr: { id: Types.ObjectId; createdAt?: Date | null }[],
 ): Types.ObjectId {
   if (stateArr.length === 0) {
     throw new HttpError(500, "State array is empty.");
@@ -337,7 +340,7 @@ export function formatUserResponse(user: any): commonType.UserResponse {
 }
 
 export function formatAdminUserResponse(
-  user: any
+  user: any,
 ): commonType.AdminUserResponse {
   return {
     ...formatUserResponse(user),
@@ -347,7 +350,7 @@ export function formatAdminUserResponse(
 }
 
 export function formatAdminUserDetailsResponse(
-  user: any
+  user: any,
 ): commonType.AdminUserDetailsResponse {
   return {
     ...formatAdminUserResponse(user),
@@ -355,19 +358,19 @@ export function formatAdminUserDetailsResponse(
     addresses: {
       total: user.addresses.length,
       addresses: user.addresses.map((addr: any) =>
-        formatUserAddressResponse(addr)
+        formatUserAddressResponse(addr),
       ),
     },
     paymentMethods: {
       total: user.paymentMethods.length,
       methods: user.paymentMethods.map((pm: any) =>
-        formatUserSelfPaymentMethodResponse(pm)
+        formatUserSelfPaymentMethodResponse(pm),
       ),
     },
     bankAccounts: {
       total: user.bankAccounts.length,
       accounts: user.bankAccounts.map((ba: any) =>
-        formatUserSelfBankAccountResponse(ba)
+        formatUserSelfBankAccountResponse(ba),
       ),
     },
   };
@@ -390,7 +393,7 @@ export function formatRoleResponse(role: any): commonType.RoleResponse {
 }
 
 export function formatPermissionResponse(
-  permission: any
+  permission: any,
 ): commonType.PermissionResponse {
   return {
     id: permission._id,
@@ -400,7 +403,7 @@ export function formatPermissionResponse(
 }
 
 export function formatUserAddressResponse(
-  address: any
+  address: any,
 ): commonType.UserSelfAddressResponse {
   return {
     id: address._id,
@@ -421,7 +424,7 @@ export function formatUserAddressResponse(
 }
 
 export function formatAdminUserAddressResponse(
-  address: any
+  address: any,
 ): commonType.AdminUserAddressResponse {
   return {
     ...formatUserAddressResponse(address),
@@ -476,7 +479,7 @@ export function formatUserCartResponse(cart: any): commonType.UserCartResponse {
 }
 
 export function formatProductResponse(
-  product: any
+  product: any,
 ): commonType.ProductResponse {
   return {
     id: product._id,
@@ -495,7 +498,7 @@ export function formatProductResponse(
 }
 
 export function formatAdminProductResponse(
-  product: any
+  product: any,
 ): commonType.AdminProductResponse {
   return {
     id: product._id,
@@ -519,7 +522,7 @@ export function formatAdminProductResponse(
 }
 
 export function formatProductBrandResponse(
-  brand: any
+  brand: any,
 ): commonType.ProductBrandResponse {
   return {
     ...formatProductCategoryResponse(brand),
@@ -527,8 +530,22 @@ export function formatProductBrandResponse(
   };
 }
 
+export function formatAdminProductBrandResponse(
+  brand: any,
+): commonType.AdminProductBrandResponse {
+  const { createdBy, ...restData } = formatProductBrandResponse(brand);
+
+  return {
+    ...restData,
+    createdBy: {
+      id: brand.createdBy._id,
+      fullName: brand.createdBy.fullName,
+    },
+  };
+}
+
 export function formatProductCategoryResponse(
-  category: any
+  category: any,
 ): commonType.ProductCategoryResponse {
   return {
     id: category._id,
@@ -540,12 +557,40 @@ export function formatProductCategoryResponse(
   };
 }
 
+export function formatAdminProductCategoryResponse(
+  category: any,
+): commonType.AdminProductCategoryResponse {
+  const { createdBy, ...restData } = formatProductCategoryResponse(category);
+
+  return {
+    ...restData,
+    createdBy: {
+      id: category.createdBy._id,
+      fullName: category.createdBy.fullName,
+    },
+  };
+}
+
 export function formatProductOsResponse(os: any): commonType.ProductOsResponse {
   return formatProductBrandResponse(os);
 }
 
+export function formatAdminProductOsResponse(
+  os: any,
+): commonType.AdminProductOsResponse {
+  const { createdBy, ...restData } = formatProductOsResponse(os);
+
+  return {
+    ...restData,
+    createdBy: {
+      id: os.createdBy._id,
+      fullName: os.createdBy.fullName,
+    },
+  };
+}
+
 export function formatProductModelResponse(
-  model: any
+  model: any,
 ): commonType.ProductModelResponse {
   // Remove osId, os from config
   const { osId, os, ...config } = model.config;
@@ -575,7 +620,7 @@ export function formatProductModelResponse(
 }
 
 export function formatAdminProductModelResponse(
-  model: any
+  model: any,
 ): commonType.AdminProductModelResponse {
   const { createdBy, ...restData } = formatProductModelResponse(model);
 
@@ -591,7 +636,7 @@ export function formatAdminProductModelResponse(
 }
 
 export function formatAdminProductModelResponseForList(
-  model: any
+  model: any,
 ): commonType.AdminProductModelResponseForList {
   return {
     id: model._id,
@@ -620,7 +665,7 @@ export function formatAdminProductModelResponseForList(
 }
 
 export function formatModelVariationResponse(
-  variation: any
+  variation: any,
 ): commonType.ModelVariationResponse {
   return {
     id: variation._id,
@@ -639,7 +684,7 @@ export function formatModelVariationResponse(
 }
 
 export function formatAdminModelVariationResponse(
-  variation: any
+  variation: any,
 ): commonType.AdminModelVariationResponse {
   const { createdBy, ...restData } = formatModelVariationResponse(variation);
 
@@ -655,7 +700,7 @@ export function formatAdminModelVariationResponse(
 }
 
 export function formatVariationInstanceResponse(
-  instance: any
+  instance: any,
 ): commonType.VariationInstanceResponse {
   return {
     id: instance._id,
@@ -672,7 +717,7 @@ export function formatVariationInstanceResponse(
 }
 
 export function formatAdminVariationInstanceDetailsResponse(
-  instance: any
+  instance: any,
 ): commonType.AdminVariationInstanceDetailsResponse {
   return {
     ...formatVariationInstanceResponse(instance),
@@ -688,7 +733,7 @@ export function formatAdminVariationInstanceDetailsResponse(
 }
 
 export function formatInstanceConditionResponse(
-  condition: any
+  condition: any,
 ): commonType.InstanceConditionResponse {
   return {
     id: condition._id,
@@ -699,7 +744,7 @@ export function formatInstanceConditionResponse(
 }
 
 export function formatProviderResponse(
-  provider: any
+  provider: any,
 ): commonType.ProviderResponse {
   return {
     id: provider._id,
@@ -772,7 +817,7 @@ export function formatOrderResponse(order: any): commonType.OrderResponse {
 }
 
 export function formatOrderDetailsResponse(
-  order: any
+  order: any,
 ): commonType.OrderDetailsResponse {
   const {
     paymentMethodId,
@@ -819,7 +864,7 @@ export function formatOrderDetailsResponse(
 }
 
 export function formatPaymentMethodResponse(
-  method: any
+  method: any,
 ): commonType.PaymentMethodResponse {
   return {
     id: method._id,
@@ -830,7 +875,7 @@ export function formatPaymentMethodResponse(
 }
 
 export function formatUserSelfPaymentMethodResponse(
-  method: any
+  method: any,
 ): commonType.UserSelfPaymentMethodResponse {
   return {
     id: method._id,
@@ -844,7 +889,7 @@ export function formatUserSelfPaymentMethodResponse(
 }
 
 export function formatDeliveryStateResponse(
-  state: any
+  state: any,
 ): commonType.DeliveryStateResponse {
   return {
     id: state._id,
@@ -855,7 +900,7 @@ export function formatDeliveryStateResponse(
 }
 
 export function formatPaymentStateResponse(
-  state: any
+  state: any,
 ): commonType.PaymentStateResponse {
   return {
     id: state._id,
@@ -865,7 +910,7 @@ export function formatPaymentStateResponse(
 }
 
 export function formatOrderReturnResponse(
-  orderReturn: any
+  orderReturn: any,
 ): commonType.OrderReturnResponse {
   return {
     id: orderReturn._id,
@@ -921,7 +966,7 @@ export function formatOrderReturnResponse(
 }
 
 export function formatOrderReturnDetailsResponse(
-  orderReturn: any
+  orderReturn: any,
 ): commonType.OrderReturnDetailsResponse {
   const { refundStates, pickupStates, states, reasonId, ...restData } =
     formatOrderReturnResponse(orderReturn);
@@ -959,31 +1004,31 @@ export function formatOrderReturnDetailsResponse(
 }
 
 export function formatOrderStateResponse(
-  state: any
+  state: any,
 ): commonType.OrderStateResponse {
   return formatDeliveryStateResponse(state);
 }
 
 export function formatPickupStateResponse(
-  state: any
+  state: any,
 ): commonType.PickupStateResponse {
   return formatDeliveryStateResponse(state);
 }
 
 export function formatReturnStateResponse(
-  state: any
+  state: any,
 ): commonType.ReturnStateResponse {
   return formatOrderStateResponse(state);
 }
 
 export function formatRefundStateResponse(
-  state: any
+  state: any,
 ): commonType.RefundStateResponse {
   return formatPaymentStateResponse(state);
 }
 
 export function formatReturnReason(
-  reason: any
+  reason: any,
 ): commonType.ReturnReasonResponse {
   return {
     id: reason._id,
@@ -993,7 +1038,7 @@ export function formatReturnReason(
 }
 
 export function formatSetupBankAccountResponse(
-  account: any
+  account: any,
 ): commonType.UserBankAccountSetupResponse {
   return {
     bankAccountId: account._id,
@@ -1003,7 +1048,7 @@ export function formatSetupBankAccountResponse(
 }
 
 export function formatUserSelfBankAccountResponse(
-  account: any
+  account: any,
 ): commonType.UserSelfBankAccountResponse {
   return {
     id: account._id,
@@ -1024,7 +1069,7 @@ export function formatUserSelfBankAccountResponse(
 }
 
 export function formatSelfWithdrawalRequestResponse(
-  request: any
+  request: any,
 ): commonType.SelfWithdrawalRequestResponse {
   return {
     id: request._id,
@@ -1043,13 +1088,13 @@ export function formatSelfWithdrawalRequestResponse(
 }
 
 export function formatWithdrawalStateResponse(
-  state: any
+  state: any,
 ): commonType.WithdrawalStateResponse {
   return formatOrderStateResponse(state);
 }
 
 export function formatInventoryMovementResponse(
-  movement: any
+  movement: any,
 ): commonType.InventoryMovementResponse {
   return {
     id: movement._id,
@@ -1069,7 +1114,7 @@ export function formatInventoryMovementResponse(
 }
 
 export function formatInventoryMovementDetailsResponse(
-  movement: any
+  movement: any,
 ): commonType.InventoryMovementDetailsResponse {
   const { grnId, ...restData } = formatInventoryMovementResponse(movement);
 
@@ -1099,7 +1144,7 @@ export function formatGrnResponse(grn: any): commonType.GrnResponse {
 }
 
 export function formatGrnDetailsResponse(
-  grn: any
+  grn: any,
 ): commonType.GrnDetailsResponse {
   const { providerId, ...restData } = formatGrnResponse(grn);
 
@@ -1113,7 +1158,7 @@ export function formatGrnDetailsResponse(
 }
 
 export function formatGrnStateResponse(
-  state: any
+  state: any,
 ): commonType.GrnStateResponse {
   return {
     id: state._id,
@@ -1124,7 +1169,7 @@ export function formatGrnStateResponse(
 }
 
 export function formatInventoryMovementTypeResponse(
-  type: any
+  type: any,
 ): commonType.InventoryMovementTypeResponse {
   return {
     id: type._id,
@@ -1144,7 +1189,7 @@ export function getInstanceConditionId(lookupId: string): Types.ObjectId {
   const conditionId = instanceConditions[lookupId];
   if (!conditionId) {
     throw new Error(
-      `Condition with lookupId '${lookupId}' not found in cache.`
+      `Condition with lookupId '${lookupId}' not found in cache.`,
     );
   }
 
@@ -1160,7 +1205,7 @@ export function getMovementTypeId(lookupId: string): Types.ObjectId {
   const movementTypeId = inventoryMovementTypes[lookupId];
   if (!movementTypeId) {
     throw new Error(
-      `Movement type with lookupId '${lookupId}' not found in cache.`
+      `Movement type with lookupId '${lookupId}' not found in cache.`,
     );
   }
 
@@ -1176,7 +1221,7 @@ export function getDeliveryStateId(lookupId: string): Types.ObjectId {
   const state = deliveryStates[lookupId];
   if (!state) {
     throw new Error(
-      `Delivery state with lookupId '${lookupId}' not found in cache.`
+      `Delivery state with lookupId '${lookupId}' not found in cache.`,
     );
   }
 
@@ -1184,7 +1229,7 @@ export function getDeliveryStateId(lookupId: string): Types.ObjectId {
 }
 
 export function getDeliveryStateLevel(
-  stateId: Types.ObjectId | string
+  stateId: Types.ObjectId | string,
 ): number {
   const { deliveryStates } = appCache;
   if (!deliveryStates) {
@@ -1201,7 +1246,7 @@ export function getDeliveryStateLevel(
 }
 
 export function getDeliveryStateLookupId(
-  stateId: Types.ObjectId | string
+  stateId: Types.ObjectId | string,
 ): string {
   const { deliveryStates } = appCache;
   if (!deliveryStates) {
@@ -1225,7 +1270,7 @@ export function getPaymentStateId(lookupId: string): Types.ObjectId {
   const stateId = paymentStates[lookupId];
   if (!stateId) {
     throw new Error(
-      `Payment state with lookupId '${lookupId}' not found in cache.`
+      `Payment state with lookupId '${lookupId}' not found in cache.`,
     );
   }
 
@@ -1233,7 +1278,7 @@ export function getPaymentStateId(lookupId: string): Types.ObjectId {
 }
 
 export function getPaymentStateLookupId(
-  stateId: Types.ObjectId | string
+  stateId: Types.ObjectId | string,
 ): string {
   const { paymentStates } = appCache;
   if (!paymentStates) {
@@ -1258,7 +1303,7 @@ export function getOrderStateId(lookupId: string): Types.ObjectId {
   const state = orderStates[lookupId];
   if (!state) {
     throw new Error(
-      `Order state with lookupId '${lookupId}' not found in cache.`
+      `Order state with lookupId '${lookupId}' not found in cache.`,
     );
   }
 
@@ -1266,7 +1311,7 @@ export function getOrderStateId(lookupId: string): Types.ObjectId {
 }
 
 export function getOrderStateLookupId(
-  stateId: Types.ObjectId | string
+  stateId: Types.ObjectId | string,
 ): string {
   const { orderStates } = appCache;
   if (!orderStates) {
@@ -1306,7 +1351,7 @@ export function getPaymentMethodId(lookupId: string): Types.ObjectId {
   const methodId = paymentMethods[lookupId];
   if (!methodId) {
     throw new Error(
-      `Payment method with lookupId '${lookupId}' not found in cache.`
+      `Payment method with lookupId '${lookupId}' not found in cache.`,
     );
   }
 
@@ -1314,7 +1359,7 @@ export function getPaymentMethodId(lookupId: string): Types.ObjectId {
 }
 
 export function getPaymentMethodLookupId(
-  methodId: Types.ObjectId | string
+  methodId: Types.ObjectId | string,
 ): string {
   const { paymentMethods } = appCache;
   if (!paymentMethods) {
@@ -1348,7 +1393,7 @@ export function getRefundStateId(lookupId: string): Types.ObjectId {
   const stateId = refundStates[lookupId];
   if (!stateId) {
     throw new Error(
-      `Refund state with lookupId '${lookupId}' not found in cache.`
+      `Refund state with lookupId '${lookupId}' not found in cache.`,
     );
   }
 
@@ -1356,7 +1401,7 @@ export function getRefundStateId(lookupId: string): Types.ObjectId {
 }
 
 export function getRefundStateLookupId(
-  stateId: Types.ObjectId | string
+  stateId: Types.ObjectId | string,
 ): string {
   const { refundStates } = appCache;
   if (!refundStates) {
@@ -1381,7 +1426,7 @@ export function getReturnStateId(lookupId: string): Types.ObjectId {
   const state = returnStates[lookupId];
   if (!state) {
     throw new Error(
-      `Return state with lookupId '${lookupId}' not found in cache.`
+      `Return state with lookupId '${lookupId}' not found in cache.`,
     );
   }
 
@@ -1403,7 +1448,7 @@ export function getReturnStateLevel(stateId: Types.ObjectId | string): number {
 }
 
 export function getReturnStateLookupId(
-  stateId: Types.ObjectId | string
+  stateId: Types.ObjectId | string,
 ): string {
   const { returnStates } = appCache;
   if (!returnStates) {
@@ -1427,7 +1472,7 @@ export function getPickupStateId(lookupId: string): Types.ObjectId {
   const state = pickupStates[lookupId];
   if (!state) {
     throw new Error(
-      `Pickup state with lookupId '${lookupId}' not found in cache.`
+      `Pickup state with lookupId '${lookupId}' not found in cache.`,
     );
   }
 
@@ -1449,7 +1494,7 @@ export function getPickupStateLevel(stateId: Types.ObjectId | string): number {
 }
 
 export function getPickupStateLookupId(
-  stateId: Types.ObjectId | string
+  stateId: Types.ObjectId | string,
 ): string {
   const { pickupStates } = appCache;
   if (!pickupStates) {
@@ -1491,7 +1536,7 @@ export function getWithdrawalStateId(lookupId: string): Types.ObjectId {
   const state = withdrawalStates[lookupId];
   if (!state) {
     throw new Error(
-      `Withdrawal state with lookupId '${lookupId}' not found in cache.`
+      `Withdrawal state with lookupId '${lookupId}' not found in cache.`,
     );
   }
 
@@ -1499,7 +1544,7 @@ export function getWithdrawalStateId(lookupId: string): Types.ObjectId {
 }
 
 export function getWithdrawalStateLevel(
-  stateId: Types.ObjectId | string
+  stateId: Types.ObjectId | string,
 ): number {
   const { withdrawalStates } = appCache;
   if (!withdrawalStates) {
@@ -1516,7 +1561,7 @@ export function getWithdrawalStateLevel(
 }
 
 export function getWithdrawalStateLookupId(
-  stateId: Types.ObjectId | string
+  stateId: Types.ObjectId | string,
 ): string {
   const { withdrawalStates } = appCache;
   if (!withdrawalStates) {
@@ -1541,7 +1586,7 @@ export function getGrnStateId(lookupId: string): Types.ObjectId {
   const stateId = grnStates[lookupId];
   if (!stateId) {
     throw new Error(
-      `GRN state with lookupId '${lookupId}' not found in cache.`
+      `GRN state with lookupId '${lookupId}' not found in cache.`,
     );
   }
 

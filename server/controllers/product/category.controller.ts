@@ -4,20 +4,35 @@ import ProductCategory, {
   IProductCategory,
 } from "../../models/product/productCategory.model";
 import {
+  AdminProductCategoryListResponse,
+  AdminProductCategoryResponse,
+  ProductCategoryBulkDelete,
   ProductCategoryCreate,
   ProductCategoryListResponse,
   ProductCategoryResponse,
+  ProductCategorySearchQuery,
   ProductCategoryUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
-import { formatProductCategoryResponse, isPresent } from "../../utils/utils";
-import { Types } from "mongoose";
+import {
+  formatAdminProductCategoryResponse,
+  formatProductCategoryResponse,
+  isPresent,
+} from "../../utils/utils";
+import mongoose, { Types } from "mongoose";
 import Product from "../../models/product/product.model";
+import {
+  DEFAULT_SEARCH_LIMIT,
+  OPTIMIZE_CREATED_BY_PIPELINE,
+  OPTIMIZE_PIPELINE,
+} from "../../configs/configs";
+import { MAX_PRODUCT_CATEGORIES_TO_DELETE_BULK } from "../../../common/configs.common";
+import User from "../../models/user/user.model";
 
 export async function create(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Creating product category...");
 
@@ -26,8 +41,8 @@ export async function create(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled in middlewares."
-      )
+        "User ID not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { name, description } = req.body as ProductCategoryCreate;
@@ -65,7 +80,7 @@ export async function create(
 export async function get(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Fetching product categories...");
   const { categoryId } = req.params;
@@ -93,7 +108,7 @@ export async function get(
 export async function getAll(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Fetching all product categories...");
 
@@ -119,20 +134,144 @@ export async function getAll(
   }
 }
 
+export async function adminGet(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Admin fetching product category...");
+  const { categoryId } = req.params;
+
+  try {
+    if (!Types.ObjectId.isValid(categoryId)) {
+      throw new HttpError(404, "Product category not found.");
+    }
+    const category = await ProductCategory.aggregate([
+      { $match: { _id: new Types.ObjectId(categoryId), isDeleted: false } },
+      OPTIMIZE_PIPELINE,
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+    ]).then((results) => results[0]);
+    if (!category) {
+      throw new HttpError(404, "Product category not found.");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Product category fetched successfully.",
+      data: formatAdminProductCategoryResponse(category),
+    } as SuccessResponse<AdminProductCategoryResponse>);
+    console.log("✅ ", "Product category fetched successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function adminSearch(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Admin searching product categories...");
+
+  const reqQuery = req["sanitizedQuery"] as ProductCategorySearchQuery;
+
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const query: any = {};
+
+  if (reqQuery.searchTerm) {
+    query.$or = [
+      {
+        _id: Types.ObjectId.isValid(reqQuery.searchTerm)
+          ? new Types.ObjectId(reqQuery.searchTerm)
+          : undefined,
+      },
+      { name: { $regex: reqQuery.searchTerm, $options: "i" } },
+      {
+        description: { $regex: reqQuery.searchTerm, $options: "i" },
+      },
+    ];
+  }
+
+  const sort = (reqQuery.sortBy || "createdAt").split("_");
+  const sortField = sort[0];
+  const sortBy = sort[1] === "desc" ? -1 : 1;
+  const sortStage: any = { [sortField]: sortBy, _id: 1 };
+
+  try {
+    const aggregationResult = await ProductCategory.aggregate([
+      { $match: { isDeleted: false, ...query } },
+      OPTIMIZE_PIPELINE,
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $sort: sortStage }, { $skip: offset }, { $limit: limit }],
+        },
+      },
+    ]);
+
+    const categories: AdminProductCategoryResponse[] =
+      aggregationResult[0].data.map(formatAdminProductCategoryResponse);
+    const total: number = aggregationResult[0].metadata[0]?.total || 0;
+
+    res.status(200).json({
+      success: true,
+      message: "Product categories fetched successfully.",
+      data: {
+        total,
+        categories: {
+          total: categories.length,
+          categories,
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<AdminProductCategoryListResponse>);
+    console.log("✅ ", "Product categories fetched successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function update(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Updating product category...");
   const { categoryId } = req.params;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
     // Check category exists
     if (!Types.ObjectId.isValid(categoryId)) {
       throw new HttpError(404, "Product category not found.");
     }
-    const category = await ProductCategory.findById(categoryId);
+    const category =
+      await ProductCategory.findById(categoryId).session(session);
     if (!category || category.isDeleted) {
       throw new HttpError(404, "Product category not found.");
     }
@@ -157,23 +296,42 @@ export async function update(
         ? null
         : updateData.description || category.description;
 
-    await category.save();
+    await category.save({ session });
+
+    const createdByUser = await User.findById(category.createdBy)
+      .select("fullName")
+      .lean()
+      .session(session);
+    if (!createdByUser) {
+      throw new HttpError(500, "Creator user not found.");
+    }
+
+    await session.commitTransaction();
 
     res.status(200).json({
       success: true,
       message: "Product category updated successfully.",
-      data: formatProductCategoryResponse(category),
+      data: formatProductCategoryResponse({
+        ...category.toObject(),
+        createdBy: {
+          _id: category.createdBy,
+          fullName: createdByUser.fullName,
+        },
+      }),
     } as SuccessResponse<ProductCategoryResponse>);
     console.log("✅ ", "Product category updated successfully.");
   } catch (error) {
+    await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
   }
 }
 
 export async function remove(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Deleting product category...");
 
@@ -182,8 +340,8 @@ export async function remove(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled in middlewares."
-      )
+        "User ID not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { categoryId } = req.params;
@@ -210,6 +368,70 @@ export async function remove(
   }
 }
 
+export async function removeBulk(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Bulk deleting product categories...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const { categoryIds: categoryIdsToDelete } =
+    req.body as ProductCategoryBulkDelete;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (categoryIdsToDelete.length > MAX_PRODUCT_CATEGORIES_TO_DELETE_BULK) {
+      throw new HttpError(
+        400,
+        `Cannot delete more than ${MAX_PRODUCT_CATEGORIES_TO_DELETE_BULK} product categories at once.`,
+      );
+    }
+
+    // Delete categories, if category not found -> skip and continue
+    for (const categoryId of categoryIdsToDelete) {
+      const category = Types.ObjectId.isValid(categoryId)
+        ? await ProductCategory.findById(categoryId).session(session)
+        : null;
+      if (category && !category.isDeleted) {
+        await executeDeletion(category, new Types.ObjectId(reqUserId));
+      }
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "Product categories deleted successfully.",
+    } as SuccessResponse);
+    console.log("✅ ", "Product categories deleted successfully.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
 // --- HELPER FUNCTIONS ---
 async function hasConstraints(categoryId: Types.ObjectId): Promise<boolean> {
   console.log("▶️ ", "Checking category constraints...");
@@ -228,12 +450,12 @@ async function hasConstraints(categoryId: Types.ObjectId): Promise<boolean> {
     if (hasConstraints) {
       console.log(
         `▶️ `,
-        `Critical constraints found for category: ${categoryId}. Soft delete required.`
+        `Critical constraints found for category: ${categoryId}. Soft delete required.`,
       );
     } else {
       console.log(
         `✅ `,
-        `No critical constraints found for category: ${categoryId}. Hard delete allowed.`
+        `No critical constraints found for category: ${categoryId}. Hard delete allowed.`,
       );
     }
     return hasConstraints;
@@ -245,7 +467,7 @@ async function hasConstraints(categoryId: Types.ObjectId): Promise<boolean> {
 
 async function executeDeletion(
   categoryToDelete: IProductCategory,
-  deletedBy: Types.ObjectId
+  deletedBy: Types.ObjectId,
 ): Promise<void> {
   try {
     if (await hasConstraints(categoryToDelete._id)) {

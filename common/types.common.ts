@@ -18,6 +18,10 @@ import {
   VARIATION_INSTANCE_SEARCH_SORT_OPTIONS,
   GRN_FILE_IMPORT_HEADERS,
   GRN_SEARCH_SORT_OPTIONS,
+  PRODUCT_BRAND_SORT_OPTIONS,
+  PRODUCT_CATEGORY_SORT_OPTIONS,
+  PRODUCT_OS_SORT_OPTIONS,
+  FIREBASE_STORAGE_BUCKET_NAMES,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -1495,10 +1499,7 @@ export type InventoryMovementTypeListResponse = {
   types: InventoryMovementTypeResponse[];
 };
 
-export type FirebaseBucket =
-  | "user-avatar"
-  | "product-image"
-  | "order-return";
+export type FirebaseBucket = typeof FIREBASE_STORAGE_BUCKET_NAMES[number];
 
 // --- HELPER TYPES ---
 

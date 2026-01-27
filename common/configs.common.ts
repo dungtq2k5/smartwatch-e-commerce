@@ -18,7 +18,7 @@ export const AVATAR_MIN_WIDTH = 200;
 export const AVATAR_MIN_HEIGHT = 200;
 export const AVATAR_MAX_WIDTH = 1000;
 export const AVATAR_MAX_HEIGHT = 1000;
-export const AVATAR_HINT_MESSAGE = `Avatar must be a valid image URL or file, with a maximum size of 5MB and dimensions between 200x200 and 1000x1000 pixels. Allowed formats are JPG and PNG.`;
+export const AVATAR_HINT_MESSAGE = `Avatar must be a valid image URL file with a maximum size of 5MB and dimensions between 200x200 and 1000x1000 pixels. Allowed formats are JPG and PNG.`;
 
 export const VERIFICATION_CODE_LENGTH = 6;
 export const VERIFICATION_CODE_TTL = 15 * 60 * 1000; // 15 minutes
@@ -39,10 +39,28 @@ export const PRODUCT_IMAGE_MAX_WIDTH = 1500; // Increased for better detail/zoom
 export const PRODUCT_IMAGE_MAX_HEIGHT = 1500; // Increased for better detail/zoom capabilities
 export const PRODUCT_IMAGE_BEST_WIDTH = 600;
 export const PRODUCT_IMAGE_BEST_HEIGHT = 696;
-export const PRODUCT_IMAGE_HINT_MESSAGE = `Product image must be a valid image URL or file. Recommended maximum size: 2MB. Recommended dimensions: Between 200x200 pixels and 1500x1500 pixels. Allowed formats: JPG, PNG, and WebP.`; // Added WebP and clarified "recommended" sizes/dimensions
+export const PRODUCT_IMAGE_HINT_MESSAGE = `Product image must be a valid image file with a maximum size: 2MB and dimension between 200x200 pixels and 1500x1500 pixels. Allowed formats: JPG, PNG, and WebP.`; // Added WebP and clarified "recommended" sizes/dimensions
+
+export const PRODUCT_LOGO_ALLOWED_TYPES = [
+  "image/jpeg", // Standard for JPG
+  "image/png",
+  "image/webp", // Highly recommended for web performance
+] as const;
+export const PRODUCT_LOGO_MAX_SIZE = 2 * 1024 * 1024; // Adjusted for better web performance
+export const PRODUCT_LOGO_MIN_WIDTH = 100;
+export const PRODUCT_LOGO_MIN_HEIGHT = 100;
+export const PRODUCT_LOGO_MAX_WIDTH = 800;
+export const PRODUCT_LOGO_MAX_HEIGHT = 800;
+export const PRODUCT_LOGO_BEST_WIDTH = 300;
+export const PRODUCT_LOGO_BEST_HEIGHT = 300;
+export const PRODUCT_LOGO_HINT_MESSAGE = `Product logo must be a valid image file with a maximum size: 2MB and dimensions between 100x100 pixels and 800x800 pixels. Allowed formats: JPG, PNG, and WebP.`; // Added WebP and clarified "recommended" sizes/dimensions
+
 export const IMMUTABILITY_USER_EMAILS = [SYSTEM_USER.email] as const;
 export const PROTECTED_USER_EMAILS = [ADMIN_USER.email] as const;
-export const UNDELETABLE_USER_EMAILS = [SYSTEM_USER.email, ADMIN_USER.email] as const;
+export const UNDELETABLE_USER_EMAILS = [
+  SYSTEM_USER.email,
+  ADMIN_USER.email,
+] as const;
 export const MODIFIABLE_PROTECTED_USER_FIELDS = [
   "fullName",
   "avatarUrl",
@@ -338,7 +356,7 @@ export const STRIPE_BANK_ACCOUNT_STATUS = [
   "rejected",
 ] as const;
 
-export const  DEFAULT_BANK_ACCOUNT_COUNTRY = "VN"; // ISO 3166-1 alpha-2 country code
+export const DEFAULT_BANK_ACCOUNT_COUNTRY = "VN"; // ISO 3166-1 alpha-2 country code
 
 export const DEFAULT_CURRENCY = "usd";
 
@@ -351,6 +369,12 @@ export const MAX_USERS_TO_DELETE_BULK = 10;
 export const MAX_PRODUCTS_TO_DELETE_BULK = 5;
 
 export const MAX_PRODUCT_MODELS_TO_DELETE_BULK = 5;
+
+export const MAX_PRODUCT_BRANDS_TO_DELETE_BULK = 5;
+
+export const MAX_PRODUCT_CATEGORIES_TO_DELETE_BULK = 5;
+
+export const MAX_PRODUCT_OS_TO_DELETE_BULK = 5;
 
 export const MAX_PRODUCT_IMG_UPLOAD = 8; // Max 8 images per product
 
@@ -396,4 +420,22 @@ export const GRN_SEARCH_SORT_OPTIONS = [
   "createdAt_asc",
   "totalPriceCents_desc",
   "totalPriceCents_asc",
+] as const;
+
+export const PRODUCT_BRAND_SORT_OPTIONS = [
+  "name_desc",
+  "name_asc",
+  "createdAt_desc",
+  "createdAt_asc",
+  "updatedAt_desc",
+  "updatedAt_asc",
+] as const;
+export const PRODUCT_CATEGORY_SORT_OPTIONS = PRODUCT_BRAND_SORT_OPTIONS;
+export const PRODUCT_OS_SORT_OPTIONS = PRODUCT_BRAND_SORT_OPTIONS;
+
+export const FIREBASE_STORAGE_BUCKET_NAMES = [
+  "user-avatar",
+  "product-image",
+  "order-return",
+  "product-logo",
 ] as const;

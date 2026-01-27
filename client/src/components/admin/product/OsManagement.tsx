@@ -1,1 +1,1 @@
-//TODO OS management component implementation
+//TODO AI gen - similar to BrandManagement.tsx but for oses

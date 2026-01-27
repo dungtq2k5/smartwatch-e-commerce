@@ -1,7 +1,8 @@
-import type { Response } from "../../../common/types.common";
+import type { FirebaseBucket, Response } from "../../../common/types.common";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import {
   productImgStorage,
+  productLogoStorage,
   returnImgStorage,
   userAvatarStorage,
 } from "./firebase.config";
@@ -19,6 +20,10 @@ import {
   GRN_FILE_IMPORT_EXTENSIONS,
   GRN_FILE_IMPORT_MAX_SIZE,
   GRN_FILE_IMPORT_HEADERS,
+  PRODUCT_LOGO_ALLOWED_TYPES,
+  PRODUCT_LOGO_MAX_SIZE,
+  PRODUCT_LOGO_MAX_WIDTH,
+  PRODUCT_LOGO_MAX_HEIGHT,
 } from "../../../common/configs.common";
 import {
   formatError,
@@ -164,7 +169,9 @@ export const uploadFile = async (
         ? userAvatarStorage
         : storageType === "product-image"
           ? productImgStorage
-          : returnImgStorage;
+          : storageType === "product-logo"
+            ? productLogoStorage
+            : returnImgStorage;
 
     const fileName = new Date().getTime() + "_" + file.name; // Ensure unique name
     const storageRef = ref(storage, fileName);
@@ -193,12 +200,19 @@ export async function getImgFileErrs(
             PRODUCT_IMAGE_MAX_WIDTH,
             PRODUCT_IMAGE_MAX_HEIGHT,
           ]
-        : [
-            AVATAR_ALLOWED_TYPES,
-            AVATAR_MAX_SIZE,
-            AVATAR_MAX_WIDTH,
-            AVATAR_MAX_HEIGHT,
-          ];
+        : category === "product-logo"
+          ? [
+              PRODUCT_LOGO_ALLOWED_TYPES,
+              PRODUCT_LOGO_MAX_SIZE,
+              PRODUCT_LOGO_MAX_WIDTH,
+              PRODUCT_LOGO_MAX_HEIGHT,
+            ]
+          : [
+              AVATAR_ALLOWED_TYPES,
+              AVATAR_MAX_SIZE,
+              AVATAR_MAX_WIDTH,
+              AVATAR_MAX_HEIGHT,
+            ];
 
   if (!(IMG_ALLOWED_TYPES as readonly string[]).includes(file.type)) {
     errors.push(

@@ -92,7 +92,7 @@ function sanitizeDeleteBulkInput(
   res: Response,
   next: NextFunction
 ): void {
-  console.log("▶️ ", "Sanitizing delete bulk input...");
+  console.log("▶️ ", "Sanitizing delete many input...");
   const { userIds } = req.body;
 
   // Auto remove duplicates
@@ -117,7 +117,7 @@ export function inputSanitizer(
     | "update email"
     | "create user"
     | "user search"
-    | "delete bulk"
+    | "delete many"
 ): (req: Request, res: Response, next: NextFunction) => void {
   switch (type) {
     case "signup":
@@ -133,7 +133,7 @@ export function inputSanitizer(
       return sanitizeUserInput;
     case "user search":
       return sanitizeUserSearchInput;
-    case "delete bulk":
+    case "delete many":
       return sanitizeDeleteBulkInput;
   }
 }
@@ -156,7 +156,7 @@ export function verifyUserInput(
     | "update password"
     | "set password"
     | "search"
-    | "delete bulk"
+    | "delete many"
 ): (req: Request, res: Response, next: NextFunction) => Promise<void> {
   return async (
     req: Request,
@@ -561,8 +561,8 @@ export function verifyUserInput(
 
           break;
         }
-        case "delete bulk": {
-          console.log("Validating delete bulk users input...");
+        case "delete many": {
+          console.log("Validating delete many users input...");
           const { userIds } = req.body;
 
           if (!Array.isArray(userIds) || userIds.length === 0) {

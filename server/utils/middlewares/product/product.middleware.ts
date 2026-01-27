@@ -15,10 +15,10 @@ import {
 import { HttpError } from "../../errorHandler";
 import { isPresent, isValidIdArray, isValidImgUrls } from "../../utils";
 
-function sanitizeProductInput(
+export function sanitizeProductInput(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   console.log("▶️ ", "Sanitizing product input...");
   const { name, type, description } = req.body;
@@ -39,11 +39,11 @@ function sanitizeProductInput(
 function sanitizeProductSearchInput(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   console.log("▶️ ", "Sanitizing product search input...");
 
-  // Since req.query can't be modifiable so we create a new query obj for the request
+  // Since req.query can't be modified so we create a new query obj for the request
   const sanitizedQuery = { ...req.query };
   const {
     searchTerm,
@@ -77,14 +77,10 @@ function sanitizeProductSearchInput(
   next();
 }
 
-const sanitizeBrandInput = sanitizeProductInput;
-const sanitizeCategoryInput = sanitizeProductInput;
-const sanitizeOsInput = sanitizeProductInput;
-
 function sanitizeProductDetailQuery(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   console.log("▶️ ", "Sanitizing product detail query input...");
 
@@ -93,12 +89,12 @@ function sanitizeProductDetailQuery(
 
   if (typeof modelStopSelling === "string") {
     sanitizedQuery.modelStopSelling = removeAllSpaces(
-      modelStopSelling.toLowerCase()
+      modelStopSelling.toLowerCase(),
     );
   }
   if (typeof variationStopSelling === "string") {
     sanitizedQuery.variationStopSelling = removeAllSpaces(
-      variationStopSelling.toLowerCase()
+      variationStopSelling.toLowerCase(),
     );
   }
 
@@ -109,7 +105,7 @@ function sanitizeProductDetailQuery(
 function sanitizeDeleteBulkInput(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   console.log("▶️ ", "Sanitizing delete many input...");
   const { productIds } = req.body;
@@ -125,24 +121,15 @@ function sanitizeDeleteBulkInput(
 export function inputSanitizer(
   type:
     | "product"
-    | "brand"
-    | "category"
-    | "os"
     | "product search"
     | "admin product search"
     | "product details"
     | "admin product details"
-    | "delete many"
+    | "delete many",
 ): (req: Request, res: Response, next: NextFunction) => void {
   switch (type) {
     case "product":
       return sanitizeProductInput;
-    case "brand":
-      return sanitizeBrandInput;
-    case "category":
-      return sanitizeCategoryInput;
-    case "os":
-      return sanitizeOsInput;
     case "product search":
     case "admin product search":
       return sanitizeProductSearchInput;
@@ -162,12 +149,12 @@ export function verifyProductInput(
     | "admin search"
     | "details"
     | "admin details"
-    | "delete many"
+    | "delete many",
 ): (req: Request, res: Response, next: NextFunction) => void {
   return async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> => {
     console.log("▶️ ", "Validating product input...");
 
@@ -193,14 +180,14 @@ export function verifyProductInput(
             errors.push(
               `name must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
-              and cannot contain special characters.`
+              and cannot contain special characters.`,
             );
           }
           if (!type) {
             errors.push("type is required.");
           } else if (!PRODUCT_TYPES.includes(type)) {
             errors.push(
-              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`
+              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`,
             );
           }
           if (!brandId) {
@@ -245,12 +232,12 @@ export function verifyProductInput(
             errors.push(
               `name must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
-              and cannot contain special characters.`
+              and cannot contain special characters.`,
             );
           }
           if (type !== undefined && !PRODUCT_TYPES.includes(type)) {
             errors.push(
-              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`
+              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`,
             );
           }
           if (
@@ -318,7 +305,7 @@ export function verifyProductInput(
           }
           if (type !== undefined && !PRODUCT_TYPES.includes(type)) {
             errors.push(
-              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`
+              `type must be one of the following: ${PRODUCT_TYPES.join(", ")}`,
             );
           }
           if (brandIds !== undefined && !isValidIdArray(brandIds)) {
@@ -326,7 +313,7 @@ export function verifyProductInput(
           }
           if (categoryIds !== undefined && !isValidIdArray(categoryIds)) {
             errors.push(
-              "categoryIds must be an array of non-empty string IDs."
+              "categoryIds must be an array of non-empty string IDs.",
             );
           }
           if (stopSelling !== undefined && !isValidBooleanString(stopSelling)) {
@@ -360,8 +347,8 @@ export function verifyProductInput(
           ) {
             errors.push(
               `sortBy must be one of the following: ${PRODUCT_SEARCH_SORT_OPTIONS.join(
-                ", "
-              )}`
+                ", ",
+              )}`,
             );
           }
           break;
@@ -396,7 +383,7 @@ export function verifyProductInput(
             for (const [idx, id] of productIds.entries()) {
               if (typeof id !== "string" || !id) {
                 errors.push(
-                  `productIds[${idx}] is invalid. Each productId must be a non-empty string.`
+                  `productIds[${idx}] is invalid. Each productId must be a non-empty string.`,
                 );
               }
             }
@@ -410,191 +397,6 @@ export function verifyProductInput(
         throw new HttpError(400, errors);
       }
 
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-}
-
-export function verifyBrandInput(
-  type: "create" | "update"
-): (req: Request, res: Response, next: NextFunction) => void {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    console.log("▶️ ", "Validating product brand input...");
-
-    const errors: string[] = [];
-    try {
-      switch (type) {
-        case "create": {
-          const { name, logoUrl, description } = req.body;
-
-          if (!name) {
-            errors.push("name is required.");
-          } else if (typeof name !== "string") {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(logoUrl) &&
-          !(await isValidImgUrls(logoUrl, "product"))
-          ) {
-            errors.push("logo URL must be a valid image URL.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string.");
-          }
-          break;
-        }
-        case "update": {
-          const { name, logoUrl, description } = req.body;
-
-          if (name !== undefined && (typeof name !== "string" || !name)) {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(logoUrl) &&
-            !(await isValidImgUrls(logoUrl, "product"))
-          ) {
-            errors.push("logo URL must be a valid image URL or null.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string or null.");
-          }
-          break;
-        }
-      }
-
-      if (errors.length > 0) {
-        throw new HttpError(400, errors);
-      }
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-}
-
-export function verifyCategoryInput(
-  type: "create" | "update"
-): (req: Request, res: Response, next: NextFunction) => void {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    console.log("▶️ ", "Validating product category input...");
-
-    const errors: string[] = [];
-    try {
-      switch (type) {
-        case "create": {
-          const { name, description } = req.body;
-
-          if (!name) {
-            errors.push("name is required.");
-          } else if (typeof name !== "string") {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string.");
-          }
-          break;
-        }
-        case "update": {
-          const { name, description } = req.body;
-
-          if (name !== undefined && (typeof name !== "string" || !name)) {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string or null.");
-          }
-          break;
-        }
-      }
-
-      if (errors.length > 0) {
-        throw new HttpError(400, errors);
-      }
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-}
-
-export function verifyOsInput(
-  type: "create" | "update"
-): (req: Request, res: Response, next: NextFunction) => void {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    console.log("▶️ ", "Validating product OS input...");
-
-    const errors: string[] = [];
-    try {
-      switch (type) {
-        case "create": {
-          const { name, logoUrl, description } = req.body;
-
-          if (!name) {
-            errors.push("name is required.");
-          } else if (typeof name !== "string") {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(logoUrl) &&
-            !(await isValidImgUrls(logoUrl, "product"))
-          ) {
-            errors.push("logo URL must be a valid image URL.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string.");
-          }
-          break;
-        }
-        case "update": {
-          const { name, logoUrl, description } = req.body;
-
-          if (name !== undefined && (typeof name !== "string" || !name)) {
-            errors.push("name must be a non-empty string.");
-          }
-          if (
-            isPresent(logoUrl) &&
-            !(await isValidImgUrls(logoUrl, "product"))
-          ) {
-            errors.push("logo URL must be a valid image URL.");
-          }
-          if (
-            isPresent(description) &&
-            (typeof description !== "string" || !description)
-          ) {
-            errors.push("description must be a non-empty string or null.");
-          }
-          break;
-        }
-      }
-
-      if (errors.length > 0) {
-        throw new HttpError(400, errors);
-      }
       next();
     } catch (error) {
       next(error);

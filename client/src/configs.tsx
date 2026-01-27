@@ -17,15 +17,21 @@ import type {
   AdminConfig,
   AdminGrnDisplayableField,
   AdminModelVariationDisplayableField,
+  AdminProductBrandDisplayableField,
+  AdminProductCategoryDisplayableField,
   AdminProductDisplayableField,
   AdminProductModelDisplayableField,
+  AdminProductOsDisplayableField,
   AdminUserDisplayableField,
   AdminVariationInstanceDisplayableField,
   GrnDisplayField,
   ModelVariationDisplayField,
+  ProductBrandDisplayField,
+  ProductCategoryDisplayField,
   ProductCreationWizardStep,
   ProductDisplayField,
   ProductModelDisplayField,
+  ProductOsDisplayField,
   UserDisplayField,
   VariationInstanceDisplayField,
 } from "./utils/types";
@@ -373,6 +379,42 @@ export const GRN_FIELD_LABEL_LEGEND: Readonly<
   actions: "Actions",
 };
 
+export const PRODUCT_BRAND_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminProductBrandDisplayableField, string>
+> = {
+  id: "ID",
+  name: "Name",
+  description: "Description",
+  createdBy: "Created By",
+  createdAt: "Created At",
+  updatedAt: "Updated At",
+  actions: "Actions",
+};
+
+export const PRODUCT_CATEGORY_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminProductCategoryDisplayableField, string>
+> = {
+  id: "ID",
+  name: "Name",
+  description: "Description",
+  createdBy: "Created By",
+  createdAt: "Created At",
+  updatedAt: "Updated At",
+  actions: "Actions",
+};
+
+export const PRODUCT_OS_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminProductOsDisplayableField, string>
+> = {
+  id: "ID",
+  name: "Name",
+  description: "Description",
+  createdBy: "Created By",
+  createdAt: "Created At",
+  updatedAt: "Updated At",
+  actions: "Actions",
+};
+
 export const DEFAULT_ADMIN_USER_DISPLAY_FIELDS: UserDisplayField[] = [
   { name: "id", visible: false, exportable: true },
   { name: "fullName", visible: true, exportable: true },
@@ -473,6 +515,23 @@ export const DEFAULT_ADMIN_GRN_DISPLAY_FIELDS: GrnDisplayField[] = [
   { name: "actions", visible: true, exportable: false },
 ];
 
+export const DEFAULT_ADMIN_PRODUCT_BRAND_DISPLAY_FIELDS: ProductBrandDisplayField[] =
+  [
+    { name: "id", visible: true, exportable: true },
+    { name: "name", visible: true, exportable: true },
+    { name: "description", visible: false, exportable: true },
+    { name: "createdBy", visible: false, exportable: true },
+    { name: "createdAt", visible: true, exportable: true },
+    { name: "updatedAt", visible: false, exportable: true },
+    { name: "actions", visible: true, exportable: false },
+  ];
+
+export const DEFAULT_ADMIN_PRODUCT_CATEGORY_DISPLAY_FIELDS: ProductCategoryDisplayField[] =
+  DEFAULT_ADMIN_PRODUCT_BRAND_DISPLAY_FIELDS;
+
+export const DEFAULT_ADMIN_PRODUCT_OS_DISPLAY_FIELDS: ProductOsDisplayField[] =
+  DEFAULT_ADMIN_PRODUCT_BRAND_DISPLAY_FIELDS;
+
 export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   visa: (
     <FontAwesomeIcon
@@ -509,6 +568,11 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   variationInstanceManagementDisplayFields:
     DEFAULT_ADMIN_VARIATION_INSTANCE_DISPLAY_FIELDS,
   grnManagementDisplayFields: DEFAULT_ADMIN_GRN_DISPLAY_FIELDS,
+  productBrandManagementDisplayFields:
+    DEFAULT_ADMIN_PRODUCT_BRAND_DISPLAY_FIELDS,
+  productCategoryManagementDisplayFields:
+    DEFAULT_ADMIN_PRODUCT_CATEGORY_DISPLAY_FIELDS,
+  productOsManagementDisplayFields: DEFAULT_ADMIN_PRODUCT_OS_DISPLAY_FIELDS,
 };
 
 export const GRN_FILE_IMPORT_WORKSHEET_NAME = "grn-import-template"; // Must match with the worksheet name in the Excel template file
@@ -521,4 +585,5 @@ export const PRODUCT_CREATION_WIZARD_STEPS: ProductCreationWizardStep[] = [
 ]; // Order matters
 
 export const DISABLED_TITLE_FOR_VIEWING = "You don't have permission to view";
-export const DISABLED_TITLE_FOR_PERFORMING = "You don't have permission to perform";
+export const DISABLED_TITLE_FOR_PERFORMING =
+  "You don't have permission to perform";
