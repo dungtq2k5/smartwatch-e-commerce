@@ -39,7 +39,7 @@ export const PRODUCT_IMAGE_MAX_WIDTH = 1500; // Increased for better detail/zoom
 export const PRODUCT_IMAGE_MAX_HEIGHT = 1500; // Increased for better detail/zoom capabilities
 export const PRODUCT_IMAGE_BEST_WIDTH = 600;
 export const PRODUCT_IMAGE_BEST_HEIGHT = 696;
-export const PRODUCT_IMAGE_HINT_MESSAGE = `Product image must be a valid image file with a maximum size: 2MB and dimension between 200x200 pixels and 1500x1500 pixels. Allowed formats: JPG, PNG, and WebP.`; // Added WebP and clarified "recommended" sizes/dimensions
+export const PRODUCT_IMAGE_HINT_MESSAGE = `Product image must be a valid image file with a maximum size of 2MB and dimension between 200x200 pixels and 1500x1500 pixels. Allowed formats: JPG, PNG, and WebP.`; // Added WebP and clarified "recommended" sizes/dimensions
 
 export const PRODUCT_LOGO_ALLOWED_TYPES = [
   "image/jpeg", // Standard for JPG
@@ -53,7 +53,7 @@ export const PRODUCT_LOGO_MAX_WIDTH = 800;
 export const PRODUCT_LOGO_MAX_HEIGHT = 800;
 export const PRODUCT_LOGO_BEST_WIDTH = 300;
 export const PRODUCT_LOGO_BEST_HEIGHT = 300;
-export const PRODUCT_LOGO_HINT_MESSAGE = `Product logo must be a valid image file with a maximum size: 2MB and dimensions between 100x100 pixels and 800x800 pixels. Allowed formats: JPG, PNG, and WebP.`; // Added WebP and clarified "recommended" sizes/dimensions
+export const PRODUCT_LOGO_HINT_MESSAGE = `Product logo must be a valid image file with a maximum size of 2MB and dimensions between 100x100 pixels and 800x800 pixels. Allowed formats: JPG, PNG, and WebP.`; // Added WebP and clarified "recommended" sizes/dimensions
 
 export const IMMUTABILITY_USER_EMAILS = [SYSTEM_USER.email] as const;
 export const PROTECTED_USER_EMAILS = [ADMIN_USER.email] as const;
