@@ -419,6 +419,7 @@ export default function CreateUser() {
                         placeholder="John Doe"
                         autoComplete="name"
                         onChange={handleChange}
+                        disabled={process.isProcessing}
                       />
                       {formData.fullName.err && (
                         <InvalidInputMsg msg={formData.fullName.err} />
@@ -443,6 +444,7 @@ export default function CreateUser() {
                           placeholder="john@gmail.com"
                           autoComplete="email"
                           onChange={handleChange}
+                          disabled={process.isProcessing}
                         />
                         <div className="input-group-text">
                           <input
@@ -452,6 +454,7 @@ export default function CreateUser() {
                             name="isEmailVerified"
                             checked={formData.isEmailVerified}
                             onChange={handleChange}
+                            disabled={process.isProcessing}
                           />
                           <label
                             className="form-check-label ms-2"
@@ -484,6 +487,7 @@ export default function CreateUser() {
                           placeholder="+1234567890"
                           onChange={handleChange}
                           autoComplete="tel"
+                          disabled={process.isProcessing}
                         />
                         <div className="input-group-text">
                           <input
@@ -494,6 +498,7 @@ export default function CreateUser() {
                             checked={formData.isPhoneNumberVerified}
                             onChange={handleChange}
                             autoComplete="tel"
+                            disabled={process.isProcessing}
                           />
                           <label
                             className="form-check-label ms-2"
@@ -523,6 +528,7 @@ export default function CreateUser() {
                         onChange={handleChange}
                         autoComplete="new-password"
                         aria-describedby="passwordHelp"
+                        disabled={process.isProcessing}
                       />
                       <div id="passwordHelp" className="form-text">
                         {PASSWORD_HINT_MESSAGE}
@@ -545,6 +551,7 @@ export default function CreateUser() {
                           className="form-control"
                           value={getLocalDateString(formData.birth.val)}
                           onChange={handleChange}
+                          disabled={process.isProcessing}
                         />
                         {formData.birth.err && (
                           <InvalidInputMsg msg={formData.birth.err} />
@@ -581,6 +588,7 @@ export default function CreateUser() {
                         name="isLocked"
                         checked={formData.isLocked}
                         onChange={handleChange}
+                        disabled={process.isProcessing}
                       />
                       <label className="form-check-label" htmlFor="isLocked">
                         Lock this account
@@ -603,6 +611,7 @@ export default function CreateUser() {
                                 value={role.id}
                                 checked={formData.roleIds.includes(role.id)}
                                 onChange={handleChange}
+                                disabled={process.isProcessing}
                               />
                               <label
                                 className="form-check-label text-capitalize"
