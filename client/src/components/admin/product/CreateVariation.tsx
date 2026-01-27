@@ -65,8 +65,8 @@ export type FormData = {
     lugWidthMm: FormInput;
     material: FormInput;
     colors: {
-      hex: FormInput;
-      name: FormInput;
+      hex: FormInput<string, undefined>;
+      name: FormInput<string, undefined>;
     }[];
     claspType: FormInput;
     adjustableRange: {

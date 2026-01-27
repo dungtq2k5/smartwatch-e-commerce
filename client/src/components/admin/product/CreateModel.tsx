@@ -64,18 +64,18 @@ type FormData = {
       description: FormInput;
     };
     utilities: {
-      healths: FormInput<string[]>;
-      sports: FormInput<string[]>;
-      specials: FormInput<string[]>;
-      others: FormInput<string[]>;
+      healths: FormInput<string[], undefined>;
+      sports: FormInput<string[], undefined>;
+      specials: FormInput<string[], undefined>;
+      others: FormInput<string[], undefined>;
     };
-    supportedAppsForNotifications: FormInput<string[]>;
+    supportedAppsForNotifications: FormInput<string[], undefined>;
   };
   config: {
-    connectivities: FormInput<string[]>;
+    connectivities: FormInput<string[], undefined>;
     camera: {
       resolutionMp: FormInput;
-      features: FormInput<string[]>;
+      features: FormInput<string[], undefined>;
     };
     chipset: FormInput;
     memory: {
@@ -83,9 +83,9 @@ type FormData = {
       storageBytes: FormInput;
     };
     osId: FormInput<string, undefined>;
-    compatiblePhoneOs: FormInput<string[]>;
-    appsConnect: FormInput<string[]>;
-    sensors: FormInput<string[]>;
+    compatiblePhoneOs: FormInput<string[], undefined>;
+    appsConnect: FormInput<string[], undefined>;
+    sensors: FormInput<string[], undefined>;
   };
   battery: {
     capacityMah: FormInput;
@@ -298,7 +298,7 @@ export default function CreateModel() {
         return `${fieldName} is invalid`;
       }
     },
-    []
+    [],
   );
 
   const getFieldErr = useCallback(
@@ -398,14 +398,14 @@ export default function CreateModel() {
           break;
       }
     },
-    [formData.screen.isCircular.val]
+    [formData.screen.isCircular.val],
   );
 
   const handleChange = useCallback(
     (
       e: React.ChangeEvent<
         HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >
+      >,
     ) => {
       if (process.isProcessing) return;
 
@@ -430,7 +430,7 @@ export default function CreateModel() {
                   err: isCircular
                     ? getRequiredNumFieldErr(
                         "Diameter mm",
-                        prev.screen.diameterMm.val
+                        prev.screen.diameterMm.val,
                       )
                     : undefined,
                 },
@@ -441,7 +441,7 @@ export default function CreateModel() {
                     err: !isCircular
                       ? getRequiredNumFieldErr(
                           "Dimension wMm",
-                          prev.screen.dimension.wMm.val
+                          prev.screen.dimension.wMm.val,
                         )
                       : undefined,
                   },
@@ -450,7 +450,7 @@ export default function CreateModel() {
                     err: !isCircular
                       ? getRequiredNumFieldErr(
                           "Dimension hMm",
-                          prev.screen.dimension.hMm.val
+                          prev.screen.dimension.hMm.val,
                         )
                       : undefined,
                   },
@@ -459,7 +459,7 @@ export default function CreateModel() {
                     err: !isCircular
                       ? getRequiredNumFieldErr(
                           "Dimension thicknessMm",
-                          prev.screen.dimension.thicknessMm.val
+                          prev.screen.dimension.thicknessMm.val,
                         )
                       : undefined,
                   },
@@ -509,7 +509,7 @@ export default function CreateModel() {
         },
       }));
     },
-    [getFieldErr, getRequiredNumFieldErr, process.isProcessing]
+    [getFieldErr, getRequiredNumFieldErr, process.isProcessing],
   );
 
   const handleChangeItemInListField = useCallback(
@@ -535,14 +535,14 @@ export default function CreateModel() {
           }
         } else if (action === "delete") {
           currField.val = currField.val.filter(
-            (item: string) => item !== modItem
+            (item: string) => item !== modItem,
           );
         }
 
         return { ...prev };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const handleUploadImgs = useCallback(async (): Promise<void> => {
@@ -567,7 +567,8 @@ export default function CreateModel() {
     if (currFiles.length > 0) {
       const filteredFiles = Array.from(files).filter((f) => {
         return !currFiles.some(
-          (cf) => cf.name === f.name && cf.size === f.size && cf.type === f.type
+          (cf) =>
+            cf.name === f.name && cf.size === f.size && cf.type === f.type,
         );
       });
 
@@ -633,7 +634,7 @@ export default function CreateModel() {
         return { ...prev, imageUrls: { val: updatedImgs } };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const genImgPreviews = useCallback(
@@ -661,7 +662,7 @@ export default function CreateModel() {
         </div>
       ));
     },
-    [handleRemoveImg, process.isProcessing]
+    [handleRemoveImg, process.isProcessing],
   );
 
   const handleSubmit = useCallback(
@@ -724,7 +725,7 @@ export default function CreateModel() {
         }
         const priceCentsErr = getRequiredNumFieldErr(
           "Price cents",
-          priceCents.val
+          priceCents.val,
         );
         if (priceCentsErr) {
           priceCents.err = priceCentsErr;
@@ -732,7 +733,7 @@ export default function CreateModel() {
         }
         const stockPriceCentsErr = getRequiredNumFieldErr(
           "Stock price cents",
-          stockPriceCents.val
+          stockPriceCents.val,
         );
         if (stockPriceCentsErr) {
           stockPriceCents.err = stockPriceCentsErr;
@@ -743,7 +744,10 @@ export default function CreateModel() {
             imageUrls.err = `You can upload up to ${MAX_PRODUCT_IMG_UPLOAD} images.`;
             allValid = false;
           } else {
-            const imgFileErrs = await getImgFilesErrs(imageUrls.val, "product-image");
+            const imgFileErrs = await getImgFilesErrs(
+              imageUrls.val,
+              "product-image",
+            );
             if (imgFileErrs.length > 0) {
               imageUrls.err = `Invalid files found: ${imgFileErrs.join(", ")}`;
               allValid = false;
@@ -763,7 +767,7 @@ export default function CreateModel() {
         }
         const memoryRamBytesErr = getRequiredNumFieldErr(
           "Ram bytes",
-          memory.ramBytes.val
+          memory.ramBytes.val,
         );
         if (memoryRamBytesErr) {
           memory.ramBytes.err = memoryRamBytesErr;
@@ -771,7 +775,7 @@ export default function CreateModel() {
         }
         const memoryStorageBytesErr = getRequiredNumFieldErr(
           "Storage bytes",
-          memory.storageBytes.val
+          memory.storageBytes.val,
         );
         if (memoryStorageBytesErr) {
           memory.storageBytes.err = memoryStorageBytesErr;
@@ -779,7 +783,7 @@ export default function CreateModel() {
         }
         const batteryCapacityMahErr = getRequiredNumFieldErr(
           "Capacity mAh",
-          capacityMah.val
+          capacityMah.val,
         );
         if (batteryCapacityMahErr) {
           capacityMah.err = batteryCapacityMahErr;
@@ -787,7 +791,7 @@ export default function CreateModel() {
         }
         const timeOnlineAodOnMinErr = getRequiredNumFieldErr(
           "AOD on time min",
-          timeOnline.aodOnMin.val
+          timeOnline.aodOnMin.val,
         );
         if (timeOnlineAodOnMinErr) {
           timeOnline.aodOnMin.err = timeOnlineAodOnMinErr;
@@ -795,7 +799,7 @@ export default function CreateModel() {
         }
         const timeOnlineAodOffMinErr = getRequiredNumFieldErr(
           "AOD off time min",
-          timeOnline.aodOffMin.val
+          timeOnline.aodOffMin.val,
         );
         if (timeOnlineAodOffMinErr) {
           timeOnline.aodOffMin.err = timeOnlineAodOffMinErr;
@@ -817,7 +821,7 @@ export default function CreateModel() {
         }
         const batteryTimeFullChargeMinErr = getRequiredNumFieldErr(
           "Time full charge min",
-          timeFullChargeMin.val
+          timeFullChargeMin.val,
         );
         if (batteryTimeFullChargeMinErr) {
           timeFullChargeMin.err = batteryTimeFullChargeMinErr;
@@ -829,7 +833,7 @@ export default function CreateModel() {
         }
         const screenDisplayDiagonalSizeInchErr = getRequiredNumFieldErr(
           "Diagonal size inch",
-          display.diagonalSizeInch.val
+          display.diagonalSizeInch.val,
         );
         if (screenDisplayDiagonalSizeInchErr) {
           display.diagonalSizeInch.err = screenDisplayDiagonalSizeInchErr;
@@ -841,7 +845,7 @@ export default function CreateModel() {
         }
         const screenBrightnessMinNitsErr = getRequiredNumFieldErr(
           "Brightness min nits",
-          brightness.minNits.val
+          brightness.minNits.val,
         );
         if (screenBrightnessMinNitsErr) {
           brightness.minNits.err = screenBrightnessMinNitsErr;
@@ -849,7 +853,7 @@ export default function CreateModel() {
         }
         const screenBrightnessMaxNitsErr = getRequiredNumFieldErr(
           "Brightness max nits",
-          brightness.maxNits.val
+          brightness.maxNits.val,
         );
         if (screenBrightnessMaxNitsErr) {
           brightness.maxNits.err = screenBrightnessMaxNitsErr;
@@ -857,7 +861,7 @@ export default function CreateModel() {
         }
         const screenResolutionHPxErr = getRequiredNumFieldErr(
           "Resolution H px",
-          resolution.hPx.val
+          resolution.hPx.val,
         );
         if (screenResolutionHPxErr) {
           resolution.hPx.err = screenResolutionHPxErr;
@@ -865,7 +869,7 @@ export default function CreateModel() {
         }
         const screenResolutionWPxErr = getRequiredNumFieldErr(
           "Resolution W px",
-          resolution.wPx.val
+          resolution.wPx.val,
         );
         if (screenResolutionWPxErr) {
           resolution.wPx.err = screenResolutionWPxErr;
@@ -890,7 +894,7 @@ export default function CreateModel() {
         if (isCircular.val) {
           const diameterMmErr = getRequiredNumFieldErr(
             "Diameter mm",
-            diameterMm.val
+            diameterMm.val,
           );
           if (diameterMmErr) {
             diameterMm.err = diameterMmErr;
@@ -899,7 +903,7 @@ export default function CreateModel() {
         } else {
           const dimensionWMmErr = getRequiredNumFieldErr(
             "Dimension W mm",
-            dimension.wMm.val
+            dimension.wMm.val,
           );
           if (dimensionWMmErr) {
             dimension.wMm.err = dimensionWMmErr;
@@ -907,7 +911,7 @@ export default function CreateModel() {
           }
           const dimensionHMmErr = getRequiredNumFieldErr(
             "Dimension H mm",
-            dimension.hMm.val
+            dimension.hMm.val,
           );
           if (dimensionHMmErr) {
             dimension.hMm.err = dimensionHMmErr;
@@ -915,7 +919,7 @@ export default function CreateModel() {
           }
           const dimensionThicknessMmErr = getRequiredNumFieldErr(
             "Dimension thickness mm",
-            dimension.thicknessMm.val
+            dimension.thicknessMm.val,
           );
           if (dimensionThicknessMmErr) {
             dimension.thicknessMm.err = dimensionThicknessMmErr;
@@ -928,7 +932,7 @@ export default function CreateModel() {
         }
         const watchWeightMgErr = getRequiredNumFieldErr(
           "Watch weight mg",
-          watchWeightMg.val
+          watchWeightMg.val,
         );
         if (watchWeightMgErr) {
           watchWeightMg.err = watchWeightMgErr;
@@ -936,7 +940,7 @@ export default function CreateModel() {
         }
         const compatibleBandLugWidthMmErr = getRequiredNumFieldErr(
           "Compatible band lug width mm",
-          compatibleBandLugWidthMm.val
+          compatibleBandLugWidthMm.val,
         );
         if (compatibleBandLugWidthMmErr) {
           compatibleBandLugWidthMm.err = compatibleBandLugWidthMmErr;
@@ -1032,7 +1036,7 @@ export default function CreateModel() {
                 utilities.healths.val,
                 utilities.sports.val,
                 utilities.specials.val,
-                utilities.others.val
+                utilities.others.val,
               )
                 ? {
                     healths: utilities.healths.val,
@@ -1143,7 +1147,7 @@ export default function CreateModel() {
       getRequiredNumFieldErr,
       createModel,
       wizard,
-    ]
+    ],
   );
 
   const handleDiscard = useCallback((): void => {
@@ -2005,7 +2009,7 @@ export default function CreateModel() {
                           handleChangeItemInListField(
                             "config.connectivities",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder="Wifi, Bluetooth, NFC"
@@ -2027,7 +2031,7 @@ export default function CreateModel() {
                           handleChangeItemInListField(
                             "config.camera.features",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder="None"
@@ -2049,7 +2053,7 @@ export default function CreateModel() {
                           handleChangeItemInListField(
                             "config.compatiblePhoneOs",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder="iOS"
@@ -2071,7 +2075,7 @@ export default function CreateModel() {
                           handleChangeItemInListField(
                             "config.appsConnect",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder="Apple Health, Google Fit"
@@ -2090,7 +2094,7 @@ export default function CreateModel() {
                           handleChangeItemInListField(
                             "config.sensors",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder="Accelerometer, Gyroscope"
@@ -2187,7 +2191,7 @@ export default function CreateModel() {
                           handleChangeItemInListField(
                             "feature.utilities.healths",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder="Heart Rate Monitor, Sleep Tracking"
@@ -2209,7 +2213,7 @@ export default function CreateModel() {
                           handleChangeItemInListField(
                             "feature.utilities.sports",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder="Running, Cycling, Swimming"
@@ -2231,7 +2235,7 @@ export default function CreateModel() {
                           handleChangeItemInListField(
                             "feature.utilities.specials",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder="ECG, Fall Detection"
@@ -2253,7 +2257,7 @@ export default function CreateModel() {
                           handleChangeItemInListField(
                             "feature.utilities.others",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder="Voice Assistant, Mobile Payments"
@@ -2277,7 +2281,7 @@ export default function CreateModel() {
                           handleChangeItemInListField(
                             "feature.supportedAppsForNotifications",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder="Messages, Calls, Calendar"
