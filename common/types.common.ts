@@ -357,15 +357,14 @@ export type UserBulkDelete = {
   userIds: string[];
 };
 
-export type UserSearchQuery = Partial<{
-  limit: string;
-  offset: string;
-  searchTerm: string;
-  isEmailVerified: "true" | "false";
-  isPhoneNumberVerified: "true" | "false";
-  isLocked: "true" | "false";
-  sortBy: (typeof USER_SEARCH_SORT_OPTIONS)[number];
-}>;
+export type UserSearchQuery = SearchQuery<
+  (typeof USER_SEARCH_SORT_OPTIONS)[number]
+> &
+  Partial<{
+    isEmailVerified: "true" | "false";
+    isPhoneNumberVerified: "true" | "false";
+    isLocked: "true" | "false";
+  }>;
 
 export type RoleCreate = {
   name: string;
@@ -430,16 +429,13 @@ export type ProductResponse = {
 export type AdminProductResponse = Omit<
   ProductResponse,
   "brand" | "category" | "createdBy"
-> & {
-  brandId: string;
-  categoryId: string;
-  createdBy: {
-    id: string;
-    fullName: string;
+> &
+  CreatedBy & {
+    brandId: string;
+    categoryId: string;
+    totalModels: number;
+    totalVariations: number;
   };
-  totalModels: number;
-  totalVariations: number;
-};
 
 /**
  * Represents the detailed response for a product, extending the basic ProductResponse.
@@ -482,24 +478,14 @@ export type AdminProductDetailsResponse = Omit<
     };
   };
 
-export type ProductListResponse = {
-  total: number; // Total filter match but exclude offset or limit
-  products: {
-    total: number;
-    products: ProductResponse[];
-  };
-  offset: number;
-  limit: number;
-};
-export type AdminProductListResponse = {
-  total: number;
-  products: {
-    total: number;
-    products: AdminProductResponse[];
-  };
-  offset: number;
-  limit: number;
-};
+export type ProductListResponse = PaginatedResponse<
+  "products",
+  ProductResponse
+>;
+export type AdminProductListResponse = PaginatedResponse<
+  "products",
+  AdminProductResponse
+>;
 
 export type ProductBrandCreate = {
   name: string;
@@ -518,40 +504,76 @@ export type ProductBrandResponse = {
   createdAt: string;
   updatedAt: string;
 };
-export type ProductBrandListResponse = {
-  brands: {
-    total: number;
-    brands: ProductBrandResponse[];
-  };
-  offset: number;
-  limit: number;
-  total: number;
+export type ProductBrandListResponse = PaginatedResponse<
+  "brands",
+  ProductBrandResponse
+>;
+
+export type AdminProductBrandResponse = Omit<
+  ProductBrandResponse,
+  "createdBy"
+> &
+  CreatedBy;
+export type AdminProductBrandListResponse = PaginatedResponse<
+  "brands",
+  AdminProductBrandResponse
+>;
+
+export type ProductBrandSearchQuery = SearchQuery<
+  (typeof PRODUCT_BRAND_SORT_OPTIONS)[number]
+>;
+
+export type ProductBrandBulkDelete = {
+  brandIds: string[];
 };
 
 export type ProductCategoryCreate = Omit<ProductBrandCreate, "logoUrl">;
 export type ProductCategoryUpdate = Omit<ProductBrandUpdate, "logoUrl">;
 export type ProductCategoryResponse = Omit<ProductBrandResponse, "logoUrl">;
-export type ProductCategoryListResponse = {
-  categories: {
-    total: number;
-    categories: ProductCategoryResponse[];
-  };
-  offset: number;
-  limit: number;
-  total: number;
+export type ProductCategoryListResponse = PaginatedResponse<
+  "categories",
+  ProductCategoryResponse
+>;
+
+export type AdminProductCategoryResponse = Omit<
+  ProductCategoryResponse,
+  "createdBy"
+> &
+  CreatedBy;
+export type AdminProductCategoryListResponse = PaginatedResponse<
+  "categories",
+  AdminProductCategoryResponse
+>;
+
+export type ProductCategorySearchQuery = SearchQuery<
+  (typeof PRODUCT_CATEGORY_SORT_OPTIONS)[number]
+>;
+
+export type ProductCategoryBulkDelete = {
+  categoryIds: string[];
 };
 
 export type ProductOsCreate = ProductBrandCreate;
 export type ProductOsUpdate = ProductBrandUpdate;
 export type ProductOsResponse = ProductBrandResponse;
-export type ProductOsListResponse = {
-  oses: {
-    total: number;
-    oses: ProductOsResponse[];
-  };
-  offset: number;
-  limit: number;
-  total: number;
+export type ProductOsListResponse = PaginatedResponse<
+  "oses",
+  ProductOsResponse
+>;
+
+export type AdminProductOsResponse = Omit<ProductOsResponse, "createdBy"> &
+  CreatedBy;
+export type AdminProductOsListResponse = PaginatedResponse<
+  "oses",
+  AdminProductOsResponse
+>;
+
+export type ProductOsSearchQuery = SearchQuery<
+  (typeof PRODUCT_OS_SORT_OPTIONS)[number]
+>;
+
+export type ProductOsBulkDelete = {
+  osIds: string[];
 };
 
 export type ProductModelCreate = {
@@ -702,15 +724,10 @@ export type AdminProductModelResponseForList = Omit<
   config: DeepNonePartial<ProductModelCreate["config"]>;
 };
 
-export type AdminProductModelListResponse = {
-  total: number;
-  models: {
-    total: number;
-    models: AdminProductModelResponseForList[];
-  };
-  offset: number;
-  limit: number;
-};
+export type AdminProductModelListResponse = PaginatedResponse<
+  "models",
+  AdminProductModelResponseForList
+>;
 
 export type AdminProductModelDetailsResponse = Omit<
   AdminProductModelResponse,
@@ -722,29 +739,23 @@ export type AdminProductModelDetailsResponse = Omit<
   };
 };
 
-export type ProductModelListResponse = {
-  models: {
-    total: number;
-    models: ProductModelResponse[];
-  };
-  offset: number;
-  limit: number;
-  total: number;
-};
+export type ProductModelListResponse = PaginatedResponse<
+  "models",
+  ProductModelResponse
+>;
 
-export type ProductModelSearchQuery = Partial<{
-  limit: string;
-  offset: string;
-  searchTerm: string;
-  priceCentsMin: string;
-  priceCentsMax: string;
-  stockPriceCentsMin: string;
-  stockPriceCentsMax: string;
-  releaseDateFrom: string;
-  releaseDateTo: string;
-  stopSelling: "true" | "false";
-  sortBy: (typeof PRODUCT_MODEL_SEARCH_SORT_OPTIONS)[number];
-}>;
+export type ProductModelSearchQuery = SearchQuery<
+  (typeof PRODUCT_MODEL_SEARCH_SORT_OPTIONS)[number]
+> &
+  Partial<{
+    priceCentsMin: string;
+    priceCentsMax: string;
+    stockPriceCentsMin: string;
+    stockPriceCentsMax: string;
+    releaseDateFrom: string;
+    releaseDateTo: string;
+    stopSelling: "true" | "false";
+  }>;
 
 export type ProductModelDetailQuery = Pick<
   ProductDetailQuery,
@@ -815,40 +826,28 @@ export type AdminModelVariationResponse = Omit<
     stockAdditionalPriceCents: number;
   };
 
-export type AdminModelVariationListResponse = {
-  total: number;
-  variations: {
-    total: number;
-    variations: AdminModelVariationResponse[];
-  };
-  offset: number;
-  limit: number;
-};
-
+export type AdminModelVariationListResponse = PaginatedResponse<
+  "variations",
+  AdminModelVariationResponse
+>;
 export type ModelVariationUpdate = DeepPartial<
   Omit<ModelVariationCreate, "productModelId">
 >;
-export type ModelVariationListResponse = {
-  variations: {
-    total: number;
-    variations: ModelVariationResponse[];
-  };
-  offset: number;
-  limit: number;
-  total: number;
-};
+export type ModelVariationListResponse = PaginatedResponse<
+  "variations",
+  ModelVariationResponse
+>;
 
-export type ModelVariationSearchQuery = Partial<{
-  limit: string;
-  offset: string;
-  searchTerm: string;
-  additionalPriceCentsMin: string;
-  additionalPriceCentsMax: string;
-  stockAdditionalPriceCentsMin: string;
-  stockAdditionalPriceCentsMax: string;
-  stopSelling: "true" | "false";
-  sortBy: (typeof MODEL_VARIATION_SEARCH_SORT_OPTIONS)[number];
-}>;
+export type ModelVariationSearchQuery = SearchQuery<
+  (typeof MODEL_VARIATION_SEARCH_SORT_OPTIONS)[number]
+> &
+  Partial<{
+    additionalPriceCentsMin: string;
+    additionalPriceCentsMax: string;
+    stockAdditionalPriceCentsMin: string;
+    stockAdditionalPriceCentsMax: string;
+    stopSelling: "true" | "false";
+  }>;
 
 export type ModelVariationBulkDelete = {
   variationIds: string[];
@@ -873,36 +872,31 @@ export type VariationInstanceResponse = {
   createdAt: string;
   updatedAt: string;
 };
-export type VariationInstanceListResponse = {
-  total: number;
-  instances: {
-    total: number;
-    instances: VariationInstanceResponse[];
-  };
-  offset: number;
-  limit: number;
-};
+export type VariationInstanceListResponse = PaginatedResponse<
+  "instances",
+  VariationInstanceResponse
+>;
 export type VariationInstanceUpdate = Partial<
   Omit<VariationInstanceCreate, "modelVariationId">
 >;
-export type VariationInstanceSearchQuery = Partial<{
-  limit: string;
-  offset: string;
-  searchTerm: string; // SKU, modelVariationId, supplierSerialNumber, supplierImeiNumber
-  conditionId: string;
-  isActive: "true" | "false";
-  sortBy: (typeof VARIATION_INSTANCE_SEARCH_SORT_OPTIONS)[number];
-}>;
-export type AdminVariationInstanceDetailsResponse = VariationInstanceResponse & {
-  // modelVariation: Omit<AdminModelVariationResponse, "productId">;
-  inventoryMovements: {
-    total: number;
-    movements: Omit<
-      InventoryMovementDetailsResponse,
-      "variationInstanceId" | "variationInstanceSku"
-    >[];
+export type VariationInstanceSearchQuery = SearchQuery<
+  (typeof VARIATION_INSTANCE_SEARCH_SORT_OPTIONS)[number]
+> &
+  Partial<{
+    conditionId: string;
+    isActive: "true" | "false";
+  }>;
+export type AdminVariationInstanceDetailsResponse =
+  VariationInstanceResponse & {
+    // modelVariation: Omit<AdminModelVariationResponse, "productId">;
+    inventoryMovements: {
+      total: number;
+      movements: Omit<
+        InventoryMovementDetailsResponse,
+        "variationInstanceId" | "variationInstanceSku"
+      >[];
+    };
   };
-};
 
 export type InstanceConditionResponse = {
   id: string;
@@ -1040,24 +1034,14 @@ export type OrderResponse = {
   createdAt: string;
   updatedAt: string;
 };
-export type OrderSearchQuery = Partial<{
-  limit: string;
-  offset: string;
-  searchTerm: string; // Product/model/variation name, or order ID
-  deliveryStateIds: string[];
-  paymentStateIds: string[];
-  stateIds: string[]; // Order state IDs
-  userId: string; // For admin to search by user ID
-}>;
-export type OrderListResponse = {
-  total: number;
-  orders: {
-    total: number;
-    orders: OrderResponse[];
-  };
-  offset: number;
-  limit: number;
-};
+export type OrderSearchQuery = SearchQuery &
+  Partial<{
+    deliveryStateIds: string[];
+    paymentStateIds: string[];
+    stateIds: string[]; // Order state IDs
+    userId: string; // For admin to search by user ID
+  }>;
+export type OrderListResponse = PaginatedResponse<"orders", OrderResponse>;
 export type OrderDetailsResponse = Omit<
   OrderResponse,
   "paymentMethodId" | "paymentStates" | "deliveryStates" | "states"
@@ -1087,18 +1071,17 @@ export type UserValidatePassword = {
   password: string;
 };
 
-export type ProductSearchQuery = Partial<{
-  limit: string;
-  offset: string;
-  searchTerm: string; // Name, description, ID
-  type: (typeof PRODUCT_TYPES)[number];
-  brandIds: string[];
-  categoryIds: string[];
-  stopSelling: "true" | "false";
-  priceCentsMin: string;
-  priceCentsMax: string;
-  sortBy: (typeof PRODUCT_SEARCH_SORT_OPTIONS)[number];
-}>;
+export type ProductSearchQuery = SearchQuery<
+  (typeof PRODUCT_SEARCH_SORT_OPTIONS)[number]
+> &
+  Partial<{
+    type: (typeof PRODUCT_TYPES)[number];
+    brandIds: string[];
+    categoryIds: string[];
+    stopSelling: "true" | "false";
+    priceCentsMin: string;
+    priceCentsMax: string;
+  }>;
 
 export type ProductDetailQuery = Partial<{
   modelStopSelling: "true" | "false";
@@ -1250,15 +1233,10 @@ export type OrderReturnDetailsResponse = Omit<
   states: (StateResponse & { lookupId: string; name: string; level: number })[];
   reason: ReturnReasonResponse;
 };
-export type OrderReturnListResponse = {
-  total: number;
-  returns: {
-    total: number;
-    returns: OrderReturnResponse[];
-  };
-  offset: number;
-  limit: number;
-};
+export type OrderReturnListResponse = PaginatedResponse<
+  "returns",
+  OrderReturnResponse
+>;
 export type OrderReturnSearchQuery = Partial<{
   limit: string;
   offset: string;
@@ -1307,15 +1285,10 @@ export type UserBalanceHistoryResponse = {
   state: "completed" | "pending" | "failed"; // For display only
   createdAt: string;
 };
-export type UserBalanceHistoryListResponse = {
-  total: number;
-  histories: {
-    total: number;
-    histories: UserBalanceHistoryResponse[];
-  };
-  offset: number;
-  limit: number;
-};
+export type UserBalanceHistoryListResponse = PaginatedResponse<
+  "histories",
+  UserBalanceHistoryResponse
+>;
 
 export type UserBankAccountSetupResponse = {
   bankAccountId: string;
@@ -1377,15 +1350,10 @@ export type SelfWithdrawalRequestResponse = {
   updatedAt: string;
 };
 
-export type SelfWithdrawalRequestListResponse = {
-  total: number;
-  requests: {
-    total: number;
-    requests: SelfWithdrawalRequestResponse[];
-  };
-  offset: number;
-  limit: number;
-};
+export type SelfWithdrawalRequestListResponse = PaginatedResponse<
+  "requests",
+  SelfWithdrawalRequestResponse
+>;
 
 export type SelfWithdrawalRequestSearchQuery = Partial<{
   limit: string;
@@ -1411,15 +1379,11 @@ export type InventoryMovementResponse = {
   variationInstanceSku: string;
   inventoryMovementTypeId: string;
   grnId: string | null;
-  createdBy: {
-    id: string;
-    fullName: string;
-  };
   movementDate: string;
   quantity: 1 | -1;
   notes: string | null;
   createdAt: string;
-};
+} & CreatedBy;
 
 export type InventoryMovementDetailsResponse = Omit<
   InventoryMovementResponse,
@@ -1458,10 +1422,6 @@ export type GrnResponse = {
   id: string;
   name: string;
   providerId: string;
-  createdBy: {
-    id: string;
-    fullName: string;
-  };
   totalPriceCents: number;
   quantity: number;
   notes: string | null;
@@ -1469,7 +1429,7 @@ export type GrnResponse = {
   createdAt: string;
   reversedByGrnId: string | null;
   reversedAt: string | null;
-};
+} & CreatedBy;
 
 export type GrnStateResponse = {
   id: string;
@@ -1487,32 +1447,23 @@ export type GrnDetailsResponse = Omit<GrnResponse, "providerId"> & {
   provider: Pick<ProviderResponse, "id" | "fullName">;
 };
 
-export type GrnListResponse = {
-  total: number;
-  grns: {
-    total: number;
-    grns: GrnDetailsResponse[];
-  };
-  offset: number;
-  limit: number;
-};
+export type GrnListResponse = PaginatedResponse<"grns", GrnResponse>;
 
 export type GrnDetailsListResponse = {
   total: number;
   grns: GrnDetailsResponse[];
 };
 
-export type GrnSearchQuery = Partial<{
-  limit: string;
-  offset: string;
-  searchTerm: string; // name, ID, provider ID, provider name, notes
-  totalPriceCentsMin: string;
-  totalPriceCentsMax: string;
-  createdAtFrom: string;
-  createdAtTo: string;
-  stateId: string;
-  sortBy: (typeof GRN_SEARCH_SORT_OPTIONS)[number];
-}>;
+export type GrnSearchQuery = SearchQuery<
+  (typeof GRN_SEARCH_SORT_OPTIONS)[number]
+> &
+  Partial<{
+    totalPriceCentsMin: string;
+    totalPriceCentsMax: string;
+    createdAtFrom: string;
+    createdAtTo: string;
+    stateId: string;
+  }>;
 
 export type GrnUpdate = Partial<
   Pick<GrnResponse, "name" | "providerId" | "totalPriceCents" | "stateId"> & {
@@ -1577,8 +1528,8 @@ export type DeepPartial<T> = {
   [P in keyof T]?: IsArray<T[P]> extends true
     ? T[P]
     : IsObject<T[P]> extends true
-    ? DeepPartial<T[P]>
-    : T[P];
+      ? DeepPartial<T[P]>
+      : T[P];
 };
 
 export type DeepNonePartial<T> = {
@@ -1586,3 +1537,29 @@ export type DeepNonePartial<T> = {
     ? DeepNonePartial<T[K]>
     : T[K];
 };
+
+type CreatedBy = {
+  createdBy: {
+    id: string;
+    fullName: string;
+  };
+};
+
+type PaginatedResponse<K extends string = "items", T = any> = {
+  total: number;
+  offset: number;
+  limit: number;
+} & {
+  [P in K]: {
+    total: number;
+  } & {
+    [P in K]: T[];
+  };
+};
+
+type SearchQuery<SortBy extends string | undefined = undefined> = Partial<{
+  limit: string;
+  offset: string;
+  searchTerm: string;
+  sortBy: SortBy;
+}>;
