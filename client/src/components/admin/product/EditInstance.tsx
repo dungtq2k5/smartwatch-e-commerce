@@ -47,7 +47,7 @@ export default function EditInstance() {
   const canEditInstance = useHasPermission("u_variation_instance");
 
   const [instance, setInstance] = useState<VariationInstanceResponse | null>(
-    null
+    null,
   );
   const [process, setProcess] = useState<Process>({
     isProcessing: true,
@@ -107,7 +107,7 @@ export default function EditInstance() {
         isActive: { val: instance.isActive },
       }));
     },
-    []
+    [],
   );
 
   const handleChange = useCallback(
@@ -142,7 +142,7 @@ export default function EditInstance() {
         };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const handleSubmit = useCallback(
@@ -232,7 +232,7 @@ export default function EditInstance() {
 
           const updatedInstance = await updateInstance(
             instance.id,
-            changedData
+            changedData,
           );
 
           setInstance(updatedInstance);
@@ -263,7 +263,7 @@ export default function EditInstance() {
       process.isProcessing,
       updateFormData,
       updateInstance,
-    ]
+    ],
   );
 
   return (
@@ -343,6 +343,69 @@ export default function EditInstance() {
                           msg={formData.supplierImeiNumber.err}
                         />
                       )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Info Card */}
+                <div className="card shadow-sm">
+                  <div className="card-header">
+                    <h2 className="fs-5 mb-0">Additional Information</h2>
+                  </div>
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label htmlFor="id" className="form-label">
+                          ID
+                        </label>
+                        <input
+                          type="text"
+                          id="id"
+                          className="form-control"
+                          value={instance.id}
+                          disabled
+                        />
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label htmlFor="inactiveAt" className="form-label">
+                          Inactive at
+                        </label>
+                        <input
+                          type="text"
+                          id="inactiveAt"
+                          className="form-control"
+                          value={
+                            instance.inactiveAt
+                              ? new Date(instance.inactiveAt).toLocaleString()
+                              : "N/A"
+                          }
+                          disabled
+                        />
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label htmlFor="createdAt" className="form-label">
+                          Created at
+                        </label>
+                        <input
+                          type="text"
+                          id="createdAt"
+                          className="form-control"
+                          value={new Date(instance.createdAt).toLocaleString()}
+                          disabled
+                        />
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label htmlFor="updatedAt" className="form-label">
+                          Updated at
+                        </label>
+                        <input
+                          type="text"
+                          id="updatedAt"
+                          className="form-control"
+                          value={new Date(instance.updatedAt).toLocaleString()}
+                          disabled
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
