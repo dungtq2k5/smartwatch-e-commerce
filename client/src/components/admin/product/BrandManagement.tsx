@@ -21,7 +21,7 @@ import type {
   TableColDisplay as GeneralTableColDisplay,
   ProductBrandDisplayField as BrandDisplayField,
 } from "../../../utils/types";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import useUserStore from "../../../store/admin/userStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useConfigStore from "../../../store/admin/configStore";
@@ -138,7 +138,9 @@ export default function BrandManagement() {
                 className="brand-logo--g"
               />
             )}
-            <span>{brand.name}</span>
+            <Link to={brand.id} title="View detail brand">
+              {brand.name}
+            </Link>
           </div>
         ),
         getCsvVal: (brand) => brand.name,
@@ -820,7 +822,7 @@ export default function BrandManagement() {
       brandIdsToDelete: null,
     });
   }, []);
-  
+
   return (
     <>
       {/* Heading */}

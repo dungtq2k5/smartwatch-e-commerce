@@ -308,6 +308,7 @@ export default function EditBrand() {
   );
 
   // TODO apply invalid feedback UI to all inputs.
+  // TODO use red asterisk for required fields.
   return (
     <>
       {process.isInitializing ? (

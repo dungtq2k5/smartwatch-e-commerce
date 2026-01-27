@@ -63,6 +63,7 @@ import DetailGrn from "./components/admin/grn/DetailGrn.tsx";
 import BrandManagement from "./components/admin/product/BrandManagement.tsx";
 import CreateBrand from "./components/admin/product/CreateBrand.tsx";
 import EditBrand from "./components/admin/product/EditBrand.tsx";
+import DetailBrand from "./components/admin/product/DetailBrand.tsx";
 
 export default function App() {
   // DEV for testing
@@ -143,7 +144,10 @@ export default function App() {
                 <Route path="product-brands">
                   <Route index element={<BrandManagement />} />
                   <Route path="create" element={<CreateBrand />} />
-                  <Route path=":id/edit" element={<EditBrand />} />
+                  <Route path=":id">
+                    <Route index element={<DetailBrand />} />
+                    <Route path="edit" element={<EditBrand />} />
+                  </Route>
                 </Route>
 
                 <Route path="product-models">
