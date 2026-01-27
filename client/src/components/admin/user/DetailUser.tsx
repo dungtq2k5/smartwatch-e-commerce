@@ -25,7 +25,7 @@ export default function DetailUser() {
   const { sysUserId, fetchSysUserId, fetchUserDetails } = useUserStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
-  const [userDetail, setUserDetail] = useState<AdminUserDetailsResponse | null>(
+  const [userDetails, setUserDetails] = useState<AdminUserDetailsResponse | null>(
     null
   );
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
@@ -46,7 +46,7 @@ export default function DetailUser() {
           sysUserId ? Promise.resolve() : fetchSysUserId(),
         ]);
 
-        setUserDetail(fetchedUserDetail);
+        setUserDetails(fetchedUserDetail);
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
@@ -66,7 +66,7 @@ export default function DetailUser() {
         <ApiError errMsg={apiErr} />
       ) : !roles ? (
         <ApiError errMsg="Roles data not found." />
-      ) : !userDetail ? (
+      ) : !userDetails ? (
         <ApiError errMsg="User detail data not found." />
       ) : !sysUserId ? (
         <ApiError errMsg="System user ID not found." />
@@ -83,7 +83,7 @@ export default function DetailUser() {
                   User Management
                 </Link>
                 <p className="mb-0 fw-light">/</p>
-                User #ID {userDetail.id}
+                User #ID {userDetails.id}
               </h1>
             </div>
             <Link to={`./edit`} className="btn btn-primary">
@@ -97,38 +97,38 @@ export default function DetailUser() {
               <div className="card text-center mb-4">
                 <div className="card-body">
                   <img
-                    src={userDetail.avatarUrl || defaultAvatar}
-                    alt={userDetail.fullName}
+                    src={userDetails.avatarUrl || defaultAvatar}
+                    alt={userDetails.fullName}
                     className="avatar--lg--g mb-3 rounded-circle"
                   />
-                  <p className="fs-5 card-title mb-0">{userDetail.fullName}</p>
-                  {userDetail.email && (
+                  <p className="fs-5 card-title mb-0">{userDetails.fullName}</p>
+                  {userDetails.email && (
                     <p className="text-muted mb-1">
-                      {userDetail.email}{" "}
+                      {userDetails.email}{" "}
                       <span
                         className={`badge ${
-                          userDetail.isEmailVerified
+                          userDetails.isEmailVerified
                             ? "bg-success-subtle text-success-emphasis"
                             : "bg-warning-subtle text-warning-emphasis"
                         }`}
                       >
-                        {userDetail.isEmailVerified
+                        {userDetails.isEmailVerified
                           ? "Verified"
                           : "Not Verified"}
                       </span>
                     </p>
                   )}
-                  {userDetail.phoneNumber && (
+                  {userDetails.phoneNumber && (
                     <p className="text-muted mb-0">
-                      {userDetail.phoneNumber}{" "}
+                      {userDetails.phoneNumber}{" "}
                       <span
                         className={`badge ${
-                          userDetail.isPhoneNumberVerified
+                          userDetails.isPhoneNumberVerified
                             ? "bg-success-subtle text-success-emphasis"
                             : "bg-warning-subtle text-warning-emphasis"
                         }`}
                       >
-                        {userDetail.isPhoneNumberVerified
+                        {userDetails.isPhoneNumberVerified
                           ? "Verified"
                           : "Not Verified"}
                       </span>
@@ -147,69 +147,69 @@ export default function DetailUser() {
                     <dt className="col-sm-5">User ID</dt>
                     <dd
                       className="col-sm-7 text-truncate"
-                      title={userDetail.id}
+                      title={userDetails.id}
                     >
-                      {userDetail.id}
+                      {userDetails.id}
                     </dd>
 
                     <dt className="col-sm-5">Stripe Account ID</dt>
                     <dd
                       className="col-sm-7 text-truncate"
-                      title={userDetail.stripeCustomerId || "N/A"}
+                      title={userDetails.stripeCustomerId || "N/A"}
                     >
-                      {userDetail.stripeCustomerId || "N/A"}
+                      {userDetails.stripeCustomerId || "N/A"}
                     </dd>
 
                     <dt className="col-sm-5">Gender</dt>
                     <dd className="col-sm-7 text-capitalize">
-                      {userDetail.gender}
+                      {userDetails.gender}
                     </dd>
 
                     <dt className="col-sm-5">Birth Date</dt>
                     <dd className="col-sm-7">
-                      {userDetail.birth
-                        ? new Date(userDetail.birth).toLocaleDateString()
+                      {userDetails.birth
+                        ? new Date(userDetails.birth).toLocaleDateString()
                         : "N/A"}
                     </dd>
 
                     <dt className="col-sm-5">Balance</dt>
                     <dd className="col-sm-7">
-                      {centsToUSD(userDetail.userBalanceCents)}
+                      {centsToUSD(userDetails.userBalanceCents)}
                     </dd>
 
                     <dt className="col-sm-5">Auth Provider</dt>
                     <dd className="col-sm-7 text-capitalize">
-                      {userDetail.authProvider}
+                      {userDetails.authProvider}
                     </dd>
 
                     <dt className="col-sm-5">Account Status</dt>
                     <dd className="col-sm-7">
                       <span
                         className={`badge ${
-                          userDetail.isLocked
+                          userDetails.isLocked
                             ? "bg-danger-subtle text-danger-emphasis"
                             : "bg-success-subtle text-success-emphasis"
                         }`}
                       >
-                        {userDetail.isLocked ? "Locked" : "Active"}
+                        {userDetails.isLocked ? "Locked" : "Active"}
                       </span>
                     </dd>
 
                     <dt className="col-sm-5">Last Login</dt>
                     <dd className="col-sm-7">
-                      {userDetail.lastLogin
-                        ? new Date(userDetail.lastLogin).toLocaleString()
+                      {userDetails.lastLogin
+                        ? new Date(userDetails.lastLogin).toLocaleString()
                         : "Never"}
                     </dd>
 
                     <dt className="col-sm-5">Joined(Created At)</dt>
                     <dd className="col-sm-7">
-                      {new Date(userDetail.createdAt).toLocaleString()}
+                      {new Date(userDetails.createdAt).toLocaleString()}
                     </dd>
 
                     <dt className="col-sm-5">Last Updated</dt>
                     <dd className="col-sm-7">
-                      {new Date(userDetail.updatedAt).toLocaleString()}
+                      {new Date(userDetails.updatedAt).toLocaleString()}
                     </dd>
                   </dl>
                 </div>
@@ -221,8 +221,8 @@ export default function DetailUser() {
                   <h2 className="fs-6 mb-0">Roles</h2>
                 </div>
                 <div className="list-group list-group-flush">
-                  {userDetail.roles.length > 0 ? (
-                    userDetail.roles.map((userRole) => {
+                  {userDetails.roles.length > 0 ? (
+                    userDetails.roles.map((userRole) => {
                       const roleInfo = roles.roles.find(
                         (r) => r.id === userRole.id
                       );
@@ -265,11 +265,11 @@ export default function DetailUser() {
               <div className="card mb-4">
                 <div className="card-header d-flex justify-content-between align-items-center">
                   <h2 className="fs-6 mb-0">
-                    Addresses ({userDetail.addresses.total})
+                    Addresses ({userDetails.addresses.total})
                   </h2>
                 </div>
                 <div className="card-body">
-                  {userDetail.addresses.addresses.map((address) => (
+                  {userDetails.addresses.addresses.map((address) => (
                     <div key={address.id} className="mb-3 pb-3 border-bottom">
                       <div className="d-flex justify-content-between">
                         <p className="fw-bold mb-1">
@@ -285,7 +285,7 @@ export default function DetailUser() {
                       <p className="text-muted mb-0">{address.phoneNumber}</p>
                     </div>
                   ))}
-                  {userDetail.addresses.total === 0 && (
+                  {userDetails.addresses.total === 0 && (
                     <p className="text-muted mb-0">No addresses found.</p>
                   )}
                 </div>
@@ -295,11 +295,11 @@ export default function DetailUser() {
               <div className="card mb-4">
                 <div className="card-header d-flex justify-content-between align-items-center">
                   <h2 className="fs-6 mb-0">
-                    Payment Methods ({userDetail.paymentMethods.total})
+                    Payment Methods ({userDetails.paymentMethods.total})
                   </h2>
                 </div>
                 <div className="card-body">
-                  {userDetail.paymentMethods.methods.map((method) => (
+                  {userDetails.paymentMethods.methods.map((method) => (
                     <div
                       key={method.id}
                       className="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom"
@@ -324,7 +324,7 @@ export default function DetailUser() {
                       </div>
                     </div>
                   ))}
-                  {userDetail.paymentMethods.total === 0 && (
+                  {userDetails.paymentMethods.total === 0 && (
                     <p className="text-muted mb-0">No payment methods found.</p>
                   )}
                 </div>
@@ -334,11 +334,11 @@ export default function DetailUser() {
               <div className="card mb-2">
                 <div className="card-header d-flex justify-content-between align-items-center">
                   <h2 className="fs-6 mb-0">
-                    Bank Accounts ({userDetail.bankAccounts.total})
+                    Bank Accounts ({userDetails.bankAccounts.total})
                   </h2>
                 </div>
                 <div className="card-body">
-                  {userDetail.bankAccounts.accounts.map((account) => (
+                  {userDetails.bankAccounts.accounts.map((account) => (
                     <div
                       key={account.id}
                       className="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom"
@@ -372,7 +372,7 @@ export default function DetailUser() {
                       </div>
                     </div>
                   ))}
-                  {userDetail.bankAccounts.total === 0 && (
+                  {userDetails.bankAccounts.total === 0 && (
                     <p className="text-muted mb-0">No bank accounts found.</p>
                   )}
                 </div>

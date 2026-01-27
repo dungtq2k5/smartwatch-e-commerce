@@ -34,7 +34,7 @@ export default function DetailInstance() {
     useHasPermission("r_provider_inventory"),
   ];
 
-  const [instanceDetail, setInstanceDetail] =
+  const [instanceDetails, setInstanceDetails] =
     useState<AdminVariationInstanceDetailsResponse | null>(null);
 
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
@@ -55,7 +55,7 @@ export default function DetailInstance() {
           movementTypes ? Promise.resolve() : fetchMovementTypes(),
         ]);
 
-        setInstanceDetail(fetchedInstance);
+        setInstanceDetails(fetchedInstance);
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
@@ -77,13 +77,13 @@ export default function DetailInstance() {
         <ApiError errMsg="Instance condition data not found." />
       ) : !movementTypes ? (
         <ApiError errMsg="Inventory movement type data not found." />
-      ) : !instanceDetail ? (
+      ) : !instanceDetails ? (
         <ApiError errMsg="Instance detail data not found." />
       ) : (
         <div className="container-fluid p-0">
           {/* Heading */}
           <Title
-            title={`Detail instance #ID ${instanceDetail.id}`}
+            title={`Detail instance #ID ${instanceDetails.id}`}
             parentTitle="Instance Management"
             parentLink="/admin/variation-instances"
             className="mb-4"
@@ -100,7 +100,7 @@ export default function DetailInstance() {
                   <div className="mb-3">
                     <span className="small text-uppercase fw-bold">SKU</span>
                     <div className="fs-6 font-monospace text-break">
-                      {instanceDetail.sku}
+                      {instanceDetails.sku}
                     </div>
                   </div>
 
@@ -109,14 +109,14 @@ export default function DetailInstance() {
                       Serial Number
                     </span>
                     <div className="text-break">
-                      {instanceDetail.supplierSerialNumber}
+                      {instanceDetails.supplierSerialNumber}
                     </div>
                   </div>
 
                   <div className="mb-3">
                     <span className="small text-uppercase fw-bold">IMEI</span>
                     <div className="text-break">
-                      {instanceDetail.supplierImeiNumber || (
+                      {instanceDetails.supplierImeiNumber || (
                         <span className="text-muted fst-italic">N/A</span>
                       )}
                     </div>
@@ -128,7 +128,7 @@ export default function DetailInstance() {
                     </span>
                     <div>
                       <span className="badge bg-light text-dark border">
-                        {getInstanceCondition(instanceDetail.conditionId)
+                        {getInstanceCondition(instanceDetails.conditionId)
                           ?.name || "Unknown"}
                       </span>
                     </div>
@@ -137,7 +137,7 @@ export default function DetailInstance() {
                   <div className="mb-3">
                     <span className="small text-uppercase fw-bold">Status</span>
                     <div>
-                      {instanceDetail.isActive ? (
+                      {instanceDetails.isActive ? (
                         <span className="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
                           Active
                         </span>
@@ -157,7 +157,7 @@ export default function DetailInstance() {
                         Created
                       </span>
                       <div className="small">
-                        {new Date(instanceDetail.createdAt).toLocaleString()}
+                        {new Date(instanceDetails.createdAt).toLocaleString()}
                       </div>
                     </div>
                     <div className="col-6 mb-3">
@@ -165,18 +165,18 @@ export default function DetailInstance() {
                         Updated
                       </span>
                       <div className="small">
-                        {new Date(instanceDetail.updatedAt).toLocaleString()}
+                        {new Date(instanceDetails.updatedAt).toLocaleString()}
                       </div>
                     </div>
                   </div>
 
-                  {instanceDetail.inactiveAt && (
+                  {instanceDetails.inactiveAt && (
                     <div className="mb-3">
                       <span className="small text-uppercase fw-bold">
                         Inactive At
                       </span>
                       <div className="small">
-                        {new Date(instanceDetail.inactiveAt).toLocaleString()}
+                        {new Date(instanceDetails.inactiveAt).toLocaleString()}
                       </div>
                     </div>
                   )}
@@ -190,18 +190,18 @@ export default function DetailInstance() {
                 <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                   <h2 className="fs-5 card-title mb-0">Inventory History</h2>
                   <span className="badge bg-primary rounded-pill">
-                    {instanceDetail.inventoryMovements.total} Movements
+                    {instanceDetails.inventoryMovements.total} Movements
                   </span>
                 </div>
                 <div className="card-body">
                   <div className="order-history-timeline newest-first mt-2">
-                    {instanceDetail.inventoryMovements.total === 0 ? (
+                    {instanceDetails.inventoryMovements.total === 0 ? (
                       <div className="text-center text-muted py-5">
                         No inventory movements recorded.
                       </div>
                     ) : (
                       <>
-                        {instanceDetail.inventoryMovements.movements.map(
+                        {instanceDetails.inventoryMovements.movements.map(
                           (movement) => (
                             <div
                               key={movement.id}

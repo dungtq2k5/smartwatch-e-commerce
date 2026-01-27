@@ -65,7 +65,7 @@ export default function DetailProduct() {
   ];
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [productDetail, setProductDetail] =
+  const [productDetails, setProductDetails] =
     useState<AdminProductDetailsResponse | null>(null);
   const [modelPicked, setModelPicked] =
     useState<ItemPicked<AdminProductModelResponse>>(null);
@@ -84,7 +84,7 @@ export default function DetailProduct() {
       setApiErr(null);
 
       // Reset states
-      setProductDetail(null);
+      setProductDetails(null);
       setModelPicked(null);
       setVariationPicked(null);
       setMainImgIdx(0);
@@ -97,7 +97,7 @@ export default function DetailProduct() {
           sysUserId ? Promise.resolve() : fetchSysUserId(),
         ]);
 
-        setProductDetail(productDetail);
+        setProductDetails(productDetail);
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
@@ -112,7 +112,7 @@ export default function DetailProduct() {
   // Handle select model or variation from URL params
   useEffect(() => {
     const handleSelectFromUrlParams = (): void => {
-      if (!productDetail) return; // Wait for productDetail to be loaded
+      if (!productDetails) return; // Wait for productDetails to be loaded
 
       const [urlModelId, urlVariationId] = [
         searchParams.get("modelId"),
@@ -122,20 +122,20 @@ export default function DetailProduct() {
       let modelIdx = 0;
       let variationIdx = 0;
 
-      let modelPicked = productDetail.models.models[modelIdx] as
-        | (typeof productDetail.models.models)[number]
+      let modelPicked = productDetails.models.models[modelIdx] as
+        | (typeof productDetails.models.models)[number]
         | undefined;
       let variationPicked = modelPicked
         ? modelPicked.variations.variations[variationIdx]
         : undefined;
 
       if (urlModelId) {
-        const foundModelIdx = productDetail.models.models.findIndex(
+        const foundModelIdx = productDetails.models.models.findIndex(
           (model) => model.id === urlModelId
         );
         if (foundModelIdx !== -1) {
           modelIdx = foundModelIdx;
-          modelPicked = productDetail.models.models[foundModelIdx];
+          modelPicked = productDetails.models.models[foundModelIdx];
         }
       }
       if (urlVariationId && modelPicked) {
@@ -187,15 +187,15 @@ export default function DetailProduct() {
 
     handleSelectFromUrlParams();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productDetail, searchParams]);
+  }, [productDetails, searchParams]);
 
   const genImgsSelector = useCallback((): JSX.Element[] => {
     const imgUrls = variationPicked?.data.imageUrls.length
       ? variationPicked.data.imageUrls
       : modelPicked?.data.imageUrls.length
       ? modelPicked.data.imageUrls
-      : productDetail?.imageUrls.length
-      ? productDetail.imageUrls
+      : productDetails?.imageUrls.length
+      ? productDetails.imageUrls
       : [defaultProductImg];
 
     return imgUrls.map((url, i) => (
@@ -217,7 +217,7 @@ export default function DetailProduct() {
   }, [
     mainImgIdx,
     modelPicked?.data.imageUrls,
-    productDetail?.imageUrls,
+    productDetails?.imageUrls,
     variationPicked?.data.imageUrls,
   ]);
 
@@ -229,13 +229,13 @@ export default function DetailProduct() {
         <DetailProductSkeleton />
       ) : apiErr ? (
         <ApiError errMsg={apiErr} />
-      ) : !productDetail ? (
+      ) : !productDetails ? (
         <ApiError errMsg="Product data not found." />
       ) : (
         <>
           {/* Heading */}
           <Title
-            title={`Detail product #ID ${productDetail.id}`}
+            title={`Detail product #ID ${productDetails.id}`}
             parentTitle="Product Management"
             parentLink="/admin/products"
             className="mb-4"
@@ -246,31 +246,31 @@ export default function DetailProduct() {
             <div className="d-flex align-items-center text-muted small">
               <span>
                 Brand:
-                {productDetail.brand.logoUrl ? (
+                {productDetails.brand.logoUrl ? (
                   <img
-                    src={productDetail.brand.logoUrl}
-                    alt={`${productDetail.brand.name} logo`}
+                    src={productDetails.brand.logoUrl}
+                    alt={`${productDetails.brand.name} logo`}
                     className="brand-logo--g ms-2"
-                    title={productDetail.brand.name}
+                    title={productDetails.brand.name}
                   />
                 ) : (
-                  <strong>{productDetail.brand.name}</strong>
+                  <strong>{productDetails.brand.name}</strong>
                 )}
               </span>
               <span className="mx-2">|</span>
               <span>
-                Category: <strong>{productDetail.category.name}</strong>
+                Category: <strong>{productDetails.category.name}</strong>
               </span>
               <span className="mx-2">|</span>
               <span>
-                Type: <strong>{productDetail.type}</strong>
+                Type: <strong>{productDetails.type}</strong>
               </span>
             </div>
             <p className="text-muted mt-2">
-              Description: <strong>{productDetail.description}</strong>
+              Description: <strong>{productDetails.description}</strong>
             </p>
             <div className="d-flex align-items-center gap-2">
-              {productDetail.stopSelling ? (
+              {productDetails.stopSelling ? (
                 <div className="d-flex align-items-center badge bg-danger">
                   <FontAwesomeIcon icon={faCircleXmark} className="me-1" />
                   Stop selling
@@ -283,19 +283,19 @@ export default function DetailProduct() {
               )}
               <span className="text-muted">|</span>
               <span className="small">
-                Created: {new Date(productDetail.createdAt).toLocaleString()} by{" "}
+                Created: {new Date(productDetails.createdAt).toLocaleString()} by{" "}
                 <DetailUserLink
-                  userId={productDetail.createdBy.id}
+                  userId={productDetails.createdBy.id}
                   disabled={!canReadUser}
                   disabledtitle={DISABLED_TITLE_FOR_VIEWING}
                 >
-                  {productDetail.createdBy.fullName}
+                  {productDetails.createdBy.fullName}
                 </DetailUserLink>
               </span>
               <span className="text-muted">|</span>
               <span className="small">
                 Last Updated:{" "}
-                {new Date(productDetail.updatedAt).toLocaleString()}
+                {new Date(productDetails.updatedAt).toLocaleString()}
               </span>
             </div>
           </div>
@@ -310,7 +310,7 @@ export default function DetailProduct() {
                     src={
                       variationPicked?.data.imageUrls[mainImgIdx] ||
                       modelPicked?.data.imageUrls[mainImgIdx] ||
-                      productDetail.imageUrls[mainImgIdx] ||
+                      productDetails.imageUrls[mainImgIdx] ||
                       defaultProductImg
                     }
                     alt="product"
@@ -328,11 +328,11 @@ export default function DetailProduct() {
               {/* Model Picker */}
               <div className="mb-3">
                 <h2 className="h5 mb-2">
-                  Models ({productDetail.models.total})
+                  Models ({productDetails.models.total})
                 </h2>
-                {productDetail.models.total > 0 ? (
+                {productDetails.models.total > 0 ? (
                   <div className="d-flex flex-wrap gap-2">
-                    {productDetail.models.models.map((model, idx) => (
+                    {productDetails.models.models.map((model, idx) => (
                       <button
                         key={model.id}
                         type="button"
@@ -372,7 +372,7 @@ export default function DetailProduct() {
                     />
                     No models found for this product,{" "}
                     <LinkBtn
-                      to={`/admin/product-models/create/${productDetail.id}`}
+                      to={`/admin/product-models/create/${productDetails.id}`}
                       disabled={!canCreateModel}
                       disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
                     >
@@ -388,15 +388,15 @@ export default function DetailProduct() {
                   <h2 className="h5 mb-2">
                     Variations (
                     {
-                      productDetail.models.models[modelPicked.idx].variations
+                      productDetails.models.models[modelPicked.idx].variations
                         .total
                     }
                     )
                   </h2>
-                  {productDetail.models.models[modelPicked.idx].variations
+                  {productDetails.models.models[modelPicked.idx].variations
                     .total > 0 ? (
                     <div className="d-flex flex-wrap gap-2">
-                      {productDetail.models.models[
+                      {productDetails.models.models[
                         modelPicked.idx
                       ].variations.variations.map((variation, idx) => (
                         <button
@@ -1183,7 +1183,7 @@ export default function DetailProduct() {
                     <div className="mb-3">
                       <div className="d-flex align-items-center gap-2 mb-1">
                         <h3 className="h6 mb-0">
-                          Product Images ({productDetail.imageUrls.length})
+                          Product Images ({productDetails.imageUrls.length})
                         </h3>
                         <FontAwesomeIcon
                           icon={faCircleQuestion}
@@ -1192,7 +1192,7 @@ export default function DetailProduct() {
                         />
                       </div>
                       <div className="d-flex flex-wrap gap-2">
-                        {productDetail.imageUrls.map((url, i) => (
+                        {productDetails.imageUrls.map((url, i) => (
                           <img
                             key={`prod-img-${i + 1}`}
                             src={url}
