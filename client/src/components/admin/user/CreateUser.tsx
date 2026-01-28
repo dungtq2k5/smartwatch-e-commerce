@@ -7,7 +7,7 @@ import {
 } from "../../../../../common/configs.common";
 import { AVATAR_HINT_MESSAGE, WAITING_EMOJI } from "../../../configs";
 import { useNavigate } from "react-router-dom";
-import type { FormData } from "./EditUser"
+import type { FormData } from "./EditUser";
 import useRoleStore from "../../../store/admin/roleStore";
 import {
   formatError,
@@ -30,6 +30,9 @@ import Title from "../Title";
 import Btn from "../../common/Btn";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
+import Label from "../../common/Label";
 
 type Process = {
   isProcessing: boolean;
@@ -120,7 +123,7 @@ export default function CreateUser() {
 
   const handleChange = useCallback(
     async (
-      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     ): Promise<void> => {
       if (process.isProcessing) return;
 
@@ -242,7 +245,7 @@ export default function CreateUser() {
         [name]: { val, err },
       }));
     },
-    [formData.email.val, formData.phoneNumber.val, process.isProcessing]
+    [formData.email.val, formData.phoneNumber.val, process.isProcessing],
   );
 
   const handleSubmit = useCallback(
@@ -269,11 +272,11 @@ export default function CreateUser() {
         if (newFormData.avatar.val instanceof File) {
           const imgFileErrs = await getImgFileErrs(
             newFormData.avatar.val,
-            "user-avatar"
+            "user-avatar",
           );
           if (imgFileErrs.length) {
             newFormData.avatar.err = `Avatar file is invalid: ${imgFileErrs.join(
-              ", "
+              ", ",
             )}`;
             allValid = false;
           }
@@ -334,7 +337,10 @@ export default function CreateUser() {
         try {
           let avatarUrl: string | null = null;
           if (formData.avatar.val instanceof File) {
-            const downloadUrl = await uploadFile(formData.avatar.val, "user-avatar");
+            const downloadUrl = await uploadFile(
+              formData.avatar.val,
+              "user-avatar",
+            );
             if (!downloadUrl) throw new Error("Failed to upload avatar file.");
             avatarUrl = downloadUrl;
           }
@@ -366,7 +372,7 @@ export default function CreateUser() {
         isCreating: false,
       }));
     },
-    [createUser, formData, navigate, process.isProcessing]
+    [createUser, formData, navigate, process.isProcessing],
   );
 
   const handleDiscard = useCallback((): void => {
@@ -407,10 +413,10 @@ export default function CreateUser() {
                   <div className="col-lg-8">
                     {/* Full name */}
                     <div className="mb-3">
-                      <label htmlFor="fullName" className="form-label">
+                      <Label htmlFor="fullName" className="form-label" required>
                         Full Name
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="text"
                         id="fullName"
                         name="fullName"
@@ -420,22 +426,21 @@ export default function CreateUser() {
                         autoComplete="name"
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
+                        error={formData.fullName.err}
                       />
-                      {formData.fullName.err && (
-                        <InvalidInputMsg msg={formData.fullName.err} />
-                      )}
                     </div>
 
                     {/* Email */}
                     <div className="mb-3">
-                      <label htmlFor="email" className="form-label">
+                      <Label htmlFor="email" className="form-label" required>
                         Email{" "}
                         <span className="text-muted small">
                           (can leave blank if phone is provided)
                         </span>
-                      </label>
+                      </Label>
                       <div className="input-group">
-                        <input
+                        <Input
                           type="email"
                           id="email"
                           name="email"
@@ -445,6 +450,8 @@ export default function CreateUser() {
                           autoComplete="email"
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          error={formData.email.err}
+                          neverShowErrorMessage
                         />
                         <div className="input-group-text">
                           <input
@@ -471,14 +478,18 @@ export default function CreateUser() {
 
                     {/* Phone */}
                     <div className="mb-3">
-                      <label htmlFor="phoneNumber" className="form-label">
+                      <Label
+                        htmlFor="phoneNumber"
+                        className="form-label"
+                        required
+                      >
                         Phone{" "}
                         <span className="text-muted small">
                           (can leave blank if email is provided)
                         </span>
-                      </label>
+                      </Label>
                       <div className="input-group">
-                        <input
+                        <Input
                           type="tel"
                           inputMode="numeric"
                           id="phoneNumber"
@@ -489,6 +500,8 @@ export default function CreateUser() {
                           onChange={handleChange}
                           autoComplete="tel"
                           disabled={process.isProcessing}
+                          error={formData.phoneNumber.err}
+                          neverShowErrorMessage
                         />
                         <div className="input-group-text">
                           <input
@@ -516,10 +529,10 @@ export default function CreateUser() {
 
                     {/* Password */}
                     <div className="mb-3">
-                      <label htmlFor="password" className="form-label">
+                      <Label htmlFor="password" className="form-label" required>
                         Password
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="password"
                         id="password"
                         name="password"
@@ -530,22 +543,21 @@ export default function CreateUser() {
                         autoComplete="new-password"
                         aria-describedby="passwordHelp"
                         disabled={process.isProcessing}
+                        required
+                        error={formData.password.err}
                       />
                       <div id="passwordHelp" className="form-text">
                         {PASSWORD_HINT_MESSAGE}
                       </div>
-                      {formData.password.err && (
-                        <InvalidInputMsg msg={formData.password.err} />
-                      )}
                     </div>
 
                     <div className="row">
                       {/* Birth */}
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="birth" className="form-label">
+                        <Label htmlFor="birth" className="form-label" required>
                           Birth Date
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="date"
                           id="birth"
                           name="birth"
@@ -553,33 +565,31 @@ export default function CreateUser() {
                           value={getLocalDateString(formData.birth.val)}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.birth.err}
                         />
-                        {formData.birth.err && (
-                          <InvalidInputMsg msg={formData.birth.err} />
-                        )}
                       </div>
                       {/* Gender */}
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="gender" className="form-label">
+                        <Label htmlFor="gender" className="form-label" required>
                           Gender
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           id="gender"
                           name="gender"
                           className="form-select"
                           value={formData.gender}
                           onChange={handleChange}
+                          required
                         >
                           {USER_GENDER_OPTIONS.map((option) => (
                             <option key={option} value={option}>
                               {option}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                     </div>
-
-                    {/* Locked */}
                     <div className="form-check form-switch mb-3">
                       <input
                         className="form-check-input"

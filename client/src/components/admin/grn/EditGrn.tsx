@@ -21,8 +21,11 @@ import ApiError from "../../common/ApiError";
 import useProviderStore from "../../../store/admin/providerStore";
 import Title from "../Title";
 import DetailUserLink from "../DetailUserLink";
-import InvalidInputMsg from "../../common/InvalidInputMsg";
 import Btn from "../../common/Btn";
+import Label from "../../common/Label";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
+import Textarea from "../../common/Textarea";
 
 type Process = {
   isProcessing: boolean;
@@ -137,7 +140,7 @@ export default function EditGrn() {
     (
       e: React.ChangeEvent<
         HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >
+      >,
     ): void => {
       if (process.isProcessing) return;
 
@@ -167,7 +170,7 @@ export default function EditGrn() {
         };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const handleSubmit = useCallback(
@@ -281,7 +284,14 @@ export default function EditGrn() {
         }
       }
     },
-    [canEditGrn, formData, grn, process.isProcessing, updateFormData, updateGrn]
+    [
+      canEditGrn,
+      formData,
+      grn,
+      process.isProcessing,
+      updateFormData,
+      updateGrn,
+    ],
   );
 
   return (
@@ -321,10 +331,10 @@ export default function EditGrn() {
                   <div className="card-body">
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="name" className="form-label">
+                        <Label htmlFor="name" className="form-label" required>
                           Name
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           name="name"
                           id="name"
@@ -333,38 +343,46 @@ export default function EditGrn() {
                           value={formData.name.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          error={formData.name.err}
+                          required
                         />
-                        {formData.name.err && (
-                          <InvalidInputMsg msg={formData.name.err} />
-                        )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="providerId" className="form-label">
+                        <Label
+                          htmlFor="providerId"
+                          className="form-label"
+                          required
+                        >
                           Provider
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           name="providerId"
                           id="providerId"
                           className="form-select"
                           value={formData.providerId.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
                           {providers.providers.map((provider) => (
                             <option key={provider.id} value={provider.id}>
                               {provider.fullName}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                     </div>
 
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="totalPriceCents" className="form-label">
+                        <Label
+                          htmlFor="totalPriceCents"
+                          className="form-label"
+                          required
+                        >
                           Total Price (&#65504; - cents)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           name="totalPriceCents"
                           id="totalPriceCents"
@@ -374,22 +392,26 @@ export default function EditGrn() {
                           value={formData.totalPriceCents.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          error={formData.totalPriceCents.err}
+                          required
                         />
-                        {formData.totalPriceCents.err && (
-                          <InvalidInputMsg msg={formData.totalPriceCents.err} />
-                        )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="stateId" className="form-label">
+                        <Label
+                          htmlFor="stateId"
+                          className="form-label"
+                          required
+                        >
                           GRN State
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           name="stateId"
                           id="stateId"
                           className="form-select"
                           value={formData.stateId.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
                           {grnStates.states.map((state) => (
                             <option key={state.id} value={state.id}>
@@ -398,27 +420,25 @@ export default function EditGrn() {
                                 ` - ${state.description.toLowerCase()}`}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                     </div>
 
                     <div className="mb-3">
-                      <label htmlFor="notes" className="form-label">
+                      <Label htmlFor="notes" className="form-label">
                         Notes
-                      </label>
-                      <textarea
+                      </Label>
+                      <Textarea
                         name="notes"
                         id="notes"
                         className="form-control"
                         rows={3}
-                        placeholder={grn.notes || "No notes"}
+                        placeholder={grn.notes || "None"}
                         value={formData.notes.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        error={formData.notes.err}
                       />
-                      {formData.notes.err && (
-                        <InvalidInputMsg msg={formData.notes.err} />
-                      )}
                     </div>
                   </div>
                 </div>
@@ -431,19 +451,21 @@ export default function EditGrn() {
                   <div className="card-body">
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label
+                        <Label
                           htmlFor="inventoryMovementTypeId"
                           className="form-label"
+                          required
                         >
                           Movement Type
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           name="inventoryMovementTypeId"
                           id="inventoryMovementTypeId"
                           className="form-select"
                           value={formData.inventoryMovementTypeId.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
                           {movementTypes.types.map((type) => (
                             <option key={type.id} value={type.id}>
@@ -452,37 +474,39 @@ export default function EditGrn() {
                                 ` - ${type.description.toLowerCase()}`}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label
+                        <Label
                           htmlFor="inventoryMovementQuantity"
                           className="form-label"
+                          required
                         >
                           Quantity Change
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           name="inventoryMovementQuantity"
                           id="inventoryMovementQuantity"
                           className="form-select"
                           value={formData.inventoryMovementQuantity.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
-                          <option value={1}>Increase Stock</option>
-                          <option value={-1}>Decrease Stock</option>
-                        </select>
+                          <option value="1">Increase Stock</option>
+                          <option value="-1">Decrease Stock</option>
+                        </Select>
                       </div>
                     </div>
 
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="inventoryMovementNotes"
                         className="form-label"
                       >
                         Movement Notes
-                      </label>
-                      <textarea
+                      </Label>
+                      <Textarea
                         name="inventoryMovementNotes"
                         id="inventoryMovementNotes"
                         className="form-control"
@@ -491,12 +515,8 @@ export default function EditGrn() {
                         value={formData.inventoryMovementNotes.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        error={formData.inventoryMovementNotes.err}
                       />
-                      {formData.inventoryMovementNotes.err && (
-                        <InvalidInputMsg
-                          msg={formData.inventoryMovementNotes.err}
-                        />
-                      )}
                     </div>
                   </div>
                 </div>

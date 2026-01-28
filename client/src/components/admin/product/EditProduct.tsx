@@ -43,6 +43,10 @@ import Title from "../Title";
 import DetailUserLink from "../DetailUserLink";
 import LinkBtn from "../../common/LinkBtn";
 import Btn from "../../common/Btn";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
+import Textarea from "../../common/Textarea";
+import Label from "../../common/Label";
 
 type Process = {
   isProcessing: boolean;
@@ -127,17 +131,17 @@ export function EditProduct() {
             brands ? Promise.resolve(brands) : fetchBrands(),
             categories ? Promise.resolve(categories) : fetchCategories(),
             sysUserId ? Promise.resolve() : fetchSysUserId(),
-          ]
+          ],
         );
 
         // Handle case product's brand/category is soft deleted -> auto select
         fetchedProduct.brandId = fetchedBrands.brands.brands.some(
-          (b) => b.id === fetchedProduct.brandId
+          (b) => b.id === fetchedProduct.brandId,
         )
           ? fetchedProduct.brandId
           : fetchedBrands.brands.brands[0]?.id || "";
         fetchedProduct.categoryId = fetchedCates.categories.categories.some(
-          (c) => c.id === fetchedProduct.categoryId
+          (c) => c.id === fetchedProduct.categoryId,
         )
           ? fetchedProduct.categoryId
           : fetchedCates.categories.categories[0]?.id || "";
@@ -196,7 +200,7 @@ export function EditProduct() {
     (
       e: React.ChangeEvent<
         HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >
+      >,
     ): void => {
       if (process.isProcessing) return;
 
@@ -225,7 +229,7 @@ export function EditProduct() {
         };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const handleUploadImgs = useCallback(async (): Promise<void> => {
@@ -250,7 +254,8 @@ export function EditProduct() {
     if (currFiles.length > 0) {
       const filteredFiles = Array.from(files).filter((f) => {
         return !currFiles.some(
-          (cf) => cf.name === f.name && cf.size === f.size && cf.type === f.type
+          (cf) =>
+            cf.name === f.name && cf.size === f.size && cf.type === f.type,
         );
       });
 
@@ -339,7 +344,7 @@ export function EditProduct() {
           break;
       }
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const genImgPreviews = useCallback(
@@ -367,7 +372,7 @@ export function EditProduct() {
         </div>
       ));
     },
-    [handleRemoveImg, process.isProcessing]
+    [handleRemoveImg, process.isProcessing],
   );
 
   const handleSubmit = useCallback(
@@ -424,11 +429,11 @@ export function EditProduct() {
           } else {
             const imgFileErrs = await getImgFilesErrs(
               newFormData.imageUrls.val,
-              "product-image"
+              "product-image",
             );
             if (imgFileErrs.length > 0) {
               newFormData.imageUrls.err = `Invalid files found: ${imgFileErrs.join(
-                ", "
+                ", ",
               )}`;
               allValid = false;
             }
@@ -489,7 +494,7 @@ export function EditProduct() {
                   },
                 }));
                 throw new Error(
-                  "Some images failed to upload. Please try again."
+                  "Some images failed to upload. Please try again.",
                 );
               }
               uploadedImgUrls.push(downloadUrl);
@@ -542,7 +547,7 @@ export function EditProduct() {
       updateProduct,
       fetchProduct,
       updateFormData,
-    ]
+    ],
   );
 
   return (
@@ -582,10 +587,10 @@ export function EditProduct() {
                   <div className="card-body">
                     {/* Name */}
                     <div className="mb-3">
-                      <label htmlFor="name" className="form-label">
+                      <Label htmlFor="name" className="form-label" required>
                         Name
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="text"
                         id="name"
                         name="name"
@@ -594,18 +599,17 @@ export function EditProduct() {
                         value={formData.name.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
+                        error={formData.name.err}
                       />
-                      {formData.name.err && (
-                        <InvalidInputMsg msg={formData.name.err} />
-                      )}
                     </div>
 
                     {/* Description */}
                     <div className="mb-3">
-                      <label htmlFor="description" className="form-label">
+                      <Label htmlFor="description" className="form-label" required>
                         Description
-                      </label>
-                      <textarea
+                      </Label>
+                      <Textarea
                         id="description"
                         name="description"
                         className="form-control"
@@ -614,81 +618,95 @@ export function EditProduct() {
                         value={formData.description.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
+                        error={formData.description.err}
                       />
-                      {formData.description.err && (
-                        <InvalidInputMsg msg={formData.description.err} />
-                      )}
                     </div>
 
                     <div className="row">
                       {/* Type */}
                       <div className="col-md-4 mb-3">
-                        <label htmlFor="type" className="form-label">
+                        <Label htmlFor="type" className="form-label" required>
                           Type
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           id="type"
                           name="type"
                           className="form-select"
                           value={formData.type.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
                           {PRODUCT_TYPES.map((type) => (
                             <option key={type} value={type}>
                               {capFirstLetter(type)}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                       {/* Brand */}
                       <div className="col-md-4 mb-3">
-                        <label htmlFor="brandId" className="form-label">
+                        <Label
+                          htmlFor="brandId"
+                          className="form-label"
+                          required
+                        >
                           Brand
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           id="brandId"
                           name="brandId"
                           className="form-select"
                           value={formData.brandId.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
                           {brands.brands.brands.map((brand) => (
                             <option key={brand.id} value={brand.id}>
                               {brand.name}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                       {/* Category */}
                       <div className="col-md-4 mb-3">
-                        <label htmlFor="categoryId" className="form-label">
+                        <Label
+                          htmlFor="categoryId"
+                          className="form-label"
+                          required
+                        >
                           Category
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           id="categoryId"
                           name="categoryId"
                           className="form-select"
                           value={formData.categoryId.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
                           {categories.categories.categories.map((cate) => (
                             <option key={cate.id} value={cate.id}>
                               {cate.name}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                     </div>
 
                     {/* Base Price */}
                     <div className="mb-3">
-                      <label htmlFor="basePriceCents" className="form-label">
+                      <Label
+                        htmlFor="basePriceCents"
+                        className="form-label"
+                        required
+                      >
                         Base price (in &#65504; - cents)
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="number"
                         id="basePriceCents"
                         name="basePriceCents"
@@ -698,10 +716,9 @@ export function EditProduct() {
                         value={formData.basePriceCents.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
+                        error={formData.basePriceCents.err}
                       />
-                      {formData.basePriceCents.err && (
-                        <InvalidInputMsg msg={formData.basePriceCents.err} />
-                      )}
                     </div>
 
                     {/* Stop Selling */}
@@ -837,10 +854,10 @@ export function EditProduct() {
                         genImgPreviews(formData.currImageUrls.val, "current")}
                     </div>
                     <div className="mt-3">
-                      <label htmlFor="imageUrls" className="form-label">
+                      <Label htmlFor="imageUrls" className="form-label">
                         Upload new images
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="file"
                         id="imageUrls"
                         name="imageUrls"
@@ -850,6 +867,8 @@ export function EditProduct() {
                         aria-describedby="imgHelp"
                         ref={fileInputRef}
                         disabled={process.isProcessing}
+                        error={formData.imageUrls.err}
+                        neverShowErrorMessage
                       />
                       <Btn
                         type="button"

@@ -18,10 +18,12 @@ import { WAITING_EMOJI } from "../../../configs";
 import CreateInstanceSkeleton from "../skeleton/CreateInstanceSkeleton";
 import ApiError from "../../common/ApiError";
 import Title from "../Title";
-import InvalidInputMsg from "../../common/InvalidInputMsg";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import Btn from "../../common/Btn";
+import Label from "../../common/Label";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
 
 type Process = {
   isProcessing: boolean;
@@ -297,13 +299,14 @@ export default function EditInstance() {
                   </div>
                   <div className="card-body">
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="supplierSerialNumber"
                         className="form-label"
+                        required
                       >
                         Supplier Serial Number
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="text"
                         name="supplierSerialNumber"
                         id="supplierSerialNumber"
@@ -313,21 +316,18 @@ export default function EditInstance() {
                         onChange={handleChange}
                         disabled={process.isProcessing}
                         autoComplete="off"
+                        required
+                        error={formData.supplierSerialNumber.err}
                       />
-                      {formData.supplierSerialNumber.err && (
-                        <InvalidInputMsg
-                          msg={formData.supplierSerialNumber.err}
-                        />
-                      )}
                     </div>
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="supplierImeiNumber"
                         className="form-label"
                       >
                         Supplier IMEI Number
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="text"
                         name="supplierImeiNumber"
                         id="supplierImeiNumber"
@@ -337,12 +337,8 @@ export default function EditInstance() {
                         onChange={handleChange}
                         disabled={process.isProcessing}
                         autoComplete="off"
+                        error={formData.supplierImeiNumber.err}
                       />
-                      {formData.supplierImeiNumber.err && (
-                        <InvalidInputMsg
-                          msg={formData.supplierImeiNumber.err}
-                        />
-                      )}
                     </div>
                   </div>
                 </div>
@@ -419,16 +415,21 @@ export default function EditInstance() {
                   </div>
                   <div className="card-body">
                     <div className="mb-3">
-                      <label htmlFor="conditionId" className="form-label">
+                      <Label
+                        htmlFor="conditionId"
+                        className="form-label"
+                        required
+                      >
                         Condition
-                      </label>
-                      <select
+                      </Label>
+                      <Select
                         name="conditionId"
                         id="conditionId"
                         className="form-select"
                         value={formData.conditionId.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
                       >
                         {instanceConditions.conditions.map((condition) => (
                           <option key={condition.id} value={condition.id}>
@@ -436,7 +437,7 @@ export default function EditInstance() {
                             {condition.description.toLowerCase()}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
                     <div className="form-check form-switch">
                       <input

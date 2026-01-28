@@ -40,6 +40,10 @@ import useCreationWizardStore from "../../../store/admin/creationWizardStore";
 import WizardStepHeader from "../WizardStepHeader";
 import CreateProductSkeleton from "../skeleton/CreateProductSkeleton";
 import Btn from "../../common/Btn";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
+import Textarea from "../../common/Textarea";
+import Label from "../../common/Label";
 
 type Process = {
   isProcessing: boolean;
@@ -50,9 +54,9 @@ type Process = {
 
 type FormData = {
   name: FormInput;
-  type: FormInput<(typeof PRODUCT_TYPES)[number]>;
-  brandId: FormInput;
-  categoryId: FormInput;
+  type: FormInput<(typeof PRODUCT_TYPES)[number], undefined>;
+  brandId: FormInput<string, undefined>;
+  categoryId: FormInput<string, undefined>;
   description: FormInput;
   imageUrls: FormInput<File[]>;
   stopSelling: boolean;
@@ -157,7 +161,7 @@ export default function CreateProduct() {
     (
       e: React.ChangeEvent<
         HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >
+      >,
     ) => {
       if (process.isProcessing) return;
 
@@ -186,7 +190,7 @@ export default function CreateProduct() {
         };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const handleUploadImgs = useCallback(async (): Promise<void> => {
@@ -211,7 +215,8 @@ export default function CreateProduct() {
     if (currFiles.length > 0) {
       const filteredFiles = Array.from(files).filter((f) => {
         return !currFiles.some(
-          (cf) => cf.name === f.name && cf.size === f.size && cf.type === f.type
+          (cf) =>
+            cf.name === f.name && cf.size === f.size && cf.type === f.type,
         );
       });
 
@@ -277,7 +282,7 @@ export default function CreateProduct() {
         return { ...prev, imageUrls: { val: updatedImgs } };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const genImgPreviews = useCallback(
@@ -305,7 +310,7 @@ export default function CreateProduct() {
         </div>
       ));
     },
-    [handleRemoveImg, process.isProcessing]
+    [handleRemoveImg, process.isProcessing],
   );
 
   const handleSubmit = useCallback(
@@ -349,11 +354,11 @@ export default function CreateProduct() {
           } else {
             const imgFileErrs = await getImgFilesErrs(
               newFormData.imageUrls.val,
-              "product-image"
+              "product-image",
             );
             if (imgFileErrs.length > 0) {
               newFormData.imageUrls.err = `Invalid files found: ${imgFileErrs.join(
-                ", "
+                ", ",
               )}`;
               allValid = false;
             }
@@ -409,7 +414,7 @@ export default function CreateProduct() {
         isCreating: false,
       }));
     },
-    [canCreateProduct, createProduct, formData, process.isProcessing, wizard]
+    [canCreateProduct, createProduct, formData, process.isProcessing, wizard],
   );
 
   const handleDiscard = useCallback((): void => {
@@ -479,10 +484,10 @@ export default function CreateProduct() {
                   <div className="card-body">
                     {/* Name */}
                     <div className="mb-3">
-                      <label htmlFor="name" className="form-label">
+                      <Label htmlFor="name" className="form-label" required>
                         Name
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="text"
                         id="name"
                         name="name"
@@ -492,18 +497,21 @@ export default function CreateProduct() {
                         onChange={handleChange}
                         disabled={process.isProcessing}
                         autoComplete="off"
+                        required
+                        error={formData.name.err}
                       />
-                      {formData.name.err && (
-                        <InvalidInputMsg msg={formData.name.err} />
-                      )}
                     </div>
 
                     {/* Description */}
                     <div className="mb-3">
-                      <label htmlFor="description" className="form-label">
+                      <Label
+                        htmlFor="description"
+                        className="form-label"
+                        required
+                      >
                         Description
-                      </label>
-                      <textarea
+                      </Label>
+                      <Textarea
                         id="description"
                         name="description"
                         className="form-control"
@@ -512,81 +520,95 @@ export default function CreateProduct() {
                         value={formData.description.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
+                        error={formData.description.err}
                       />
-                      {formData.description.err && (
-                        <InvalidInputMsg msg={formData.description.err} />
-                      )}
                     </div>
 
                     <div className="row">
                       {/* Type */}
                       <div className="col-md-4 mb-3">
-                        <label htmlFor="type" className="form-label">
+                        <Label htmlFor="type" className="form-label" required>
                           Type
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           id="type"
                           name="type"
                           className="form-select"
                           value={formData.type.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
                           {PRODUCT_TYPES.map((type) => (
                             <option key={type} value={type}>
                               {capFirstLetter(type)}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                       {/* Brand */}
                       <div className="col-md-4 mb-3">
-                        <label htmlFor="brandId" className="form-label">
+                        <Label
+                          htmlFor="brandId"
+                          className="form-label"
+                          required
+                        >
                           Brand
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           id="brandId"
                           name="brandId"
                           className="form-select"
                           value={formData.brandId.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
                           {brands.brands.brands.map((brand) => (
                             <option key={brand.id} value={brand.id}>
                               {brand.name}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                       {/* Category */}
                       <div className="col-md-4 mb-3">
-                        <label htmlFor="categoryId" className="form-label">
+                        <Label
+                          htmlFor="categoryId"
+                          className="form-label"
+                          required
+                        >
                           Category
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           id="categoryId"
                           name="categoryId"
                           className="form-select"
                           value={formData.categoryId.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
                           {categories.categories.categories.map((cate) => (
                             <option key={cate.id} value={cate.id}>
                               {cate.name}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                     </div>
 
                     {/* Base Price */}
                     <div className="mb-3">
-                      <label htmlFor="basePriceCents" className="form-label">
+                      <Label
+                        htmlFor="basePriceCents"
+                        className="form-label"
+                        required
+                      >
                         Base price (in &#65504; - cents)
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="number"
                         id="basePriceCents"
                         name="basePriceCents"
@@ -596,10 +618,9 @@ export default function CreateProduct() {
                         value={formData.basePriceCents.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
+                        error={formData.basePriceCents.err}
                       />
-                      {formData.basePriceCents.err && (
-                        <InvalidInputMsg msg={formData.basePriceCents.err} />
-                      )}
                     </div>
 
                     {/* Stop Selling */}
@@ -645,19 +666,22 @@ export default function CreateProduct() {
                       {imgPreviews.length > 0 && genImgPreviews(imgPreviews)}
                     </div>
                     <div className="mt-3">
-                      <label htmlFor="imageUrls" className="form-label">
-                        Upload new images
-                      </label>
-                      <input
+                      <Label htmlFor="imageUrls" className="form-label">
+                        Upload Images
+                      </Label>
+                      <Input
                         type="file"
                         id="imageUrls"
                         name="imageUrls"
+                        value={formData.imageUrls.val.length}
                         className="form-control"
                         multiple
                         accept={PRODUCT_IMAGE_ALLOWED_TYPES.join(",")}
                         aria-describedby="imgHelp"
                         ref={fileInputRef}
                         disabled={process.isProcessing}
+                        error={formData.imageUrls.err}
+                        neverShowErrorMessage
                       />
                       <Btn
                         type="button"

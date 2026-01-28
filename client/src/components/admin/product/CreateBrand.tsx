@@ -21,6 +21,9 @@ import {
   PRODUCT_LOGO_HINT_MESSAGE,
 } from "../../../../../common/configs.common";
 import Btn from "../../common/Btn";
+import Input from "../../common/Input";
+import Textarea from "../../common/Textarea";
+import Label from "../../common/Label";
 
 type Process = {
   isProcessing: boolean;
@@ -254,46 +257,39 @@ export default function CreateBrand() {
               <div className="col-md-8">
                 {/* Name */}
                 <div className="mb-3">
-                  <label htmlFor="name" className="form-label">
-                    Name <span className="text-danger">*</span>
-                  </label>
-                  <input
+                  <Label htmlFor="name" className="form-label" required>
+                    Name
+                  </Label>
+                  <Input
                     type="text"
                     id="name"
                     name="name"
-                    className={`form-control ${
-                      formData.name.err ? "is-invalid" : ""
-                    }`}
+                    className="form-control"
                     placeholder="e.g. Apple"
                     value={formData.name.val}
                     onChange={handleChange}
                     disabled={process.isProcessing}
+                    required
+                    error={formData.name.err}
                   />
-                  {formData.name.err && (
-                    <InvalidInputMsg msg={formData.name.err} />
-                  )}
                 </div>
 
                 {/* Description */}
                 <div className="mb-3">
-                  <label htmlFor="description" className="form-label">
+                  <Label htmlFor="description" className="form-label">
                     Description
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
                     id="description"
                     name="description"
-                    className={`form-control ${
-                      formData.description.err ? "is-invalid" : ""
-                    }`}
+                    className="form-control"
                     placeholder="e.g. Apple Inc. is an American multinational technology company..."
                     rows={4}
                     value={formData.description.val}
                     onChange={handleChange}
                     disabled={process.isProcessing}
+                    error={formData.description.err}
                   />
-                  {formData.description.err && (
-                    <InvalidInputMsg msg={formData.description.err} />
-                  )}
                 </div>
               </div>
 

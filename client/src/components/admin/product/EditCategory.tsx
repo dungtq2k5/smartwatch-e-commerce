@@ -1,1 +1,1 @@
-// TODO AI gen - similar to EditBrand.tsx but for categories
+// CHECKPOINT... AI gen - similar to EditBrand.tsx but for categories

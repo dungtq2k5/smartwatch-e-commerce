@@ -17,11 +17,13 @@ import { WAITING_EMOJI } from "../../../configs";
 import toast from "react-hot-toast";
 import ApiError from "../../common/ApiError";
 import Title from "../Title";
-import InvalidInputMsg from "../../common/InvalidInputMsg";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import CreateInstanceSkeleton from "../skeleton/CreateInstanceSkeleton";
 import Btn from "../../common/Btn";
+import Label from "../../common/Label";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
 
 type Process = {
   isProcessing: boolean;
@@ -60,7 +62,7 @@ export default function CreateInstance() {
   });
 
   const [variation, setVariation] = useState<ModelVariationResponse | null>(
-    null
+    null,
   );
   const [formData, setFormData] = useState<FormData>({
     supplierSerialNumber: { val: "" },
@@ -89,7 +91,7 @@ export default function CreateInstance() {
             instanceConditions
               ? Promise.resolve(instanceConditions)
               : fetchInstanceConditions(),
-          ]
+          ],
         );
 
         setVariation(fetchedVariation);
@@ -146,7 +148,7 @@ export default function CreateInstance() {
         };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const handleSubmit = useCallback(
@@ -213,7 +215,7 @@ export default function CreateInstance() {
           const createdInstance = await createInstance(instance);
           toast.success("Variation instance created successfully.");
           navigate(
-            `/admin/variation-instances?searchTerm=${createdInstance.id}`
+            `/admin/variation-instances?searchTerm=${createdInstance.id}`,
           );
         } catch (error) {
           toast.error(formatError(error));
@@ -233,7 +235,7 @@ export default function CreateInstance() {
       navigate,
       process.isProcessing,
       variationId,
-    ]
+    ],
   );
 
   return (
@@ -267,13 +269,14 @@ export default function CreateInstance() {
                   </div>
                   <div className="card-body">
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="supplierSerialNumber"
                         className="form-label"
+                        required
                       >
                         Supplier Serial Number
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="text"
                         name="supplierSerialNumber"
                         id="supplierSerialNumber"
@@ -283,21 +286,18 @@ export default function CreateInstance() {
                         onChange={handleChange}
                         disabled={process.isProcessing}
                         autoComplete="off"
+                        required
+                        error={formData.supplierSerialNumber.err}
                       />
-                      {formData.supplierSerialNumber.err && (
-                        <InvalidInputMsg
-                          msg={formData.supplierSerialNumber.err}
-                        />
-                      )}
                     </div>
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="supplierImeiNumber"
                         className="form-label"
                       >
                         Supplier IMEI Number
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="text"
                         name="supplierImeiNumber"
                         id="supplierImeiNumber"
@@ -307,12 +307,8 @@ export default function CreateInstance() {
                         onChange={handleChange}
                         disabled={process.isProcessing}
                         autoComplete="off"
+                        error={formData.supplierImeiNumber.err}
                       />
-                      {formData.supplierImeiNumber.err && (
-                        <InvalidInputMsg
-                          msg={formData.supplierImeiNumber.err}
-                        />
-                      )}
                     </div>
                   </div>
                 </div>
@@ -326,16 +322,21 @@ export default function CreateInstance() {
                   </div>
                   <div className="card-body">
                     <div className="mb-3">
-                      <label htmlFor="conditionId" className="form-label">
+                      <Label
+                        htmlFor="conditionId"
+                        className="form-label"
+                        required
+                      >
                         Condition
-                      </label>
-                      <select
+                      </Label>
+                      <Select
                         name="conditionId"
                         id="conditionId"
                         className="form-select"
                         value={formData.conditionId.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
                       >
                         {instanceConditions.conditions.map((condition) => (
                           <option key={condition.id} value={condition.id}>
@@ -343,7 +344,7 @@ export default function CreateInstance() {
                             {condition.description.toLowerCase()}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
                     <div className="form-check form-switch">
                       <input

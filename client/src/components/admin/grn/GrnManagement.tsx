@@ -12,9 +12,9 @@ import {
   PROJECT_NAME,
 } from "../../../../../common/configs.common";
 import type {
-  GrnListResponse,
-  GrnDetailsResponse,
   GrnSearchQuery,
+  GrnListResponse,
+  GrnDetailsItem,
 } from "../../../../../common/types.common";
 import {
   DATA_DISPLAY_ROWS_PER_PAGE,
@@ -83,7 +83,7 @@ type Modal = {
 
 type TableColDisplay = {
   [key in AdminGrnDisplayableField]: GeneralTableColDisplay<
-    GrnDetailsResponse,
+    GrnDetailsItem,
     (typeof GRN_SEARCH_SORT_OPTIONS)[number]
   >;
 };
@@ -207,7 +207,7 @@ export default function GrnManagement() {
         getCsvVal: () => null,
       },
     }),
-    [canEditGrn, canReadProvider, canReadUser, getGrnState]
+    [canEditGrn, canReadProvider, canReadUser, getGrnState],
   );
 
   const [process, setProcess] = useState<Process>({
@@ -290,7 +290,7 @@ export default function GrnManagement() {
               : undefined,
           stateId: urlStateId || undefined,
           sortBy: GRN_SEARCH_SORT_OPTIONS.includes(
-            urlSortBy as (typeof GRN_SEARCH_SORT_OPTIONS)[number]
+            urlSortBy as (typeof GRN_SEARCH_SORT_OPTIONS)[number],
           )
             ? (urlSortBy as (typeof GRN_SEARCH_SORT_OPTIONS)[number])
             : undefined,
@@ -356,7 +356,7 @@ export default function GrnManagement() {
         id: SELECTION_TOAST_ID,
         duration: Infinity,
         position: "top-center",
-      }
+      },
     );
 
     setSelectionToastId(SELECTION_TOAST_ID);
@@ -384,7 +384,7 @@ export default function GrnManagement() {
         [name]: value,
       }));
     },
-    [process.isProcessing, setSearchParams]
+    [process.isProcessing, setSearchParams],
   );
 
   const handleSearchSubmit = useCallback(
@@ -430,7 +430,7 @@ export default function GrnManagement() {
         return prev;
       });
     },
-    [process.isProcessing, searchForm, setSearchParams]
+    [process.isProcessing, searchForm, setSearchParams],
   );
 
   const handleClearFilters = useCallback((): void => {
@@ -454,7 +454,7 @@ export default function GrnManagement() {
 
       setSearchParams((prev) => ({ ...prev, sortBy }));
     },
-    [process.isProcessing, setSearchParams]
+    [process.isProcessing, setSearchParams],
   );
 
   const handleOffsetChange = useCallback(
@@ -475,7 +475,7 @@ export default function GrnManagement() {
         return prev;
       });
     },
-    [process.isProcessing, setSearchParams]
+    [process.isProcessing, setSearchParams],
   );
 
   const handleSelectGrn = useCallback(
@@ -516,7 +516,7 @@ export default function GrnManagement() {
             updatedSelectedGrnIds.push(grnId);
           } else {
             updatedSelectedGrnIds = updatedSelectedGrnIds.filter(
-              (id) => id !== grnId
+              (id) => id !== grnId,
             );
           }
         }
@@ -526,7 +526,7 @@ export default function GrnManagement() {
           : updatedSelectedGrnIds;
       });
     },
-    [process.isProcessing, grns]
+    [process.isProcessing, grns],
   );
 
   // Also handle loading effects
@@ -565,7 +565,7 @@ export default function GrnManagement() {
                 isDesc={isDesc}
                 onClick={() => {
                   handleSort(
-                    isAsc ? colDisplay.sortKey.desc : colDisplay.sortKey.asc
+                    isAsc ? colDisplay.sortKey.desc : colDisplay.sortKey.asc,
                   );
                 }}
               />
@@ -624,19 +624,19 @@ export default function GrnManagement() {
       </tr>
     ) : (
       <>
-        {grns.grns.grns.map((model) => (
-          <tr key={model.id}>
+        {grns.grns.grns.map((grn) => (
+          <tr key={grn.id}>
             <td>
-              <label htmlFor={`select-grn-${model.id}`} hidden aria-hidden>
-                Select this model
+              <label htmlFor={`select-grn-${grn.id}`} hidden aria-hidden>
+                Select this grn
               </label>
               <input
                 type="checkbox"
-                id={`select-grn-${model.id}`}
-                name={`select-grn-${model.id}`}
+                id={`select-grn-${grn.id}`}
+                name={`select-grn-${grn.id}`}
                 className="form-check-input"
                 checked={
-                  selectedGrnIds === "all" || selectedGrnIds.includes(model.id)
+                  selectedGrnIds === "all" || selectedGrnIds.includes(grn.id)
                 }
                 onChange={handleSelectGrn}
                 disabled={process.isProcessing}
@@ -653,7 +653,7 @@ export default function GrnManagement() {
                   key={`td-${idx}-${field.name}`}
                   className={colDisplay.tdClassName}
                 >
-                  {colDisplay.tdContent(model)}
+                  {colDisplay.tdContent(grn)}
                 </td>
               );
             })}
@@ -689,7 +689,7 @@ export default function GrnManagement() {
       setDisplayFields(fields);
       toast.success("Config display has been updated.");
     },
-    [setDisplayFields]
+    [setDisplayFields],
   );
 
   const handleResetConfigDisplay = useCallback((): void => {
@@ -733,24 +733,24 @@ export default function GrnManagement() {
 
       // Use the current exportable + visible fields and their order for the CSV
       const exportableFields = displayFields.filter(
-        (field) => field.exportable && field.visible
+        (field) => field.exportable && field.visible,
       );
       const headers = exportableFields.map(
-        (field) => TABLE_COL_DISPLAY[field.name].label
+        (field) => TABLE_COL_DISPLAY[field.name].label,
       );
       const getVals = (
-        grn: GrnDetailsResponse
+        grn: GrnDetailsItem,
       ): (string | number | boolean | null)[] => {
         return exportableFields.map((field) => {
           return TABLE_COL_DISPLAY[field.name].getCsvVal(grn);
         });
       };
 
-      exportToCsv<GrnDetailsResponse>(
+      exportToCsv<GrnDetailsItem>(
         `${PROJECT_NAME.toLowerCase()}-grns-export-${new Date().toISOString()}.csv`,
         headers,
         grnsToExport.grns,
-        getVals
+        getVals,
       );
 
       toast.success(`Exported ${grnsToExport.grns.length} grns successfully.`);

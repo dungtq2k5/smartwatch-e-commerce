@@ -6,6 +6,7 @@ import useHasPermission from "../../../hooks/admin/useHasPermission";
 import type { FormInput } from "../../../utils/types";
 import useGrnStateStore from "../../../store/admin/grn/grnStateStore";
 import {
+  capFirstLetter,
   formatError,
   removeOddSpaces,
 } from "../../../../../common/utils.common";
@@ -23,10 +24,10 @@ import ApiError from "../../common/ApiError";
 import useVariationStore from "../../../store/admin/product/variationStore";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faCircleQuestion,
   faFileArrowDown,
   faFileArrowUp,
 } from "@fortawesome/free-solid-svg-icons";
-import InvalidInputMsg from "../../common/InvalidInputMsg";
 import { GRN_FILE_IMPORT_EXTENSIONS } from "../../../../../common/configs.common";
 import ExcelTemplates from "../../../assets/templates/excel-templates.xlsx";
 import ExcelJS from "exceljs";
@@ -35,6 +36,10 @@ import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import WizardStepHeader from "../WizardStepHeader";
 import CreateGrnSkeleton from "../skeleton/CreateGrnSkeleton";
 import Btn from "../../common/Btn";
+import Label from "../../common/Label";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
+import Textarea from "../../common/Textarea";
 
 type Process = {
   isProcessing: boolean;
@@ -228,7 +233,7 @@ export default function CreateGrn() {
         isUploadingFile: false,
       }));
     },
-    [formData.file.val, process.isProcessing]
+    [formData.file.val, process.isProcessing],
   );
 
   const handleSubmit = useCallback(
@@ -424,8 +429,8 @@ export default function CreateGrn() {
       startStep === "product"
         ? "/admin/products/create"
         : startStep === "model"
-        ? `/admin/product-models/create/${wizard.context.productId}`
-        : `/admin/model-variations/create/${wizard.context.modelId}`;
+          ? `/admin/product-models/create/${wizard.context.productId}`
+          : `/admin/model-variations/create/${wizard.context.modelId}`;
 
     navigate(navigateUrl, { replace: true });
   }, [navigate, process.isProcessing, wizard]);
@@ -466,10 +471,10 @@ export default function CreateGrn() {
                   <div className="card-body">
                     {/* Name */}
                     <div className="mb-3">
-                      <label htmlFor="name" className="form-label">
+                      <Label htmlFor="name" className="form-label" required>
                         GRN Name
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="text"
                         name="name"
                         id="name"
@@ -478,43 +483,48 @@ export default function CreateGrn() {
                         value={formData.name.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        error={formData.name.err}
                         autoComplete="off"
+                        required
                       />
-                      {formData.name.err && (
-                        <InvalidInputMsg msg={formData.name.err} />
-                      )}
                     </div>
 
                     {/* Provider */}
                     <div className="mb-3">
-                      <label htmlFor="providerId" className="form-label">
+                      <Label
+                        htmlFor="providerId"
+                        className="form-label"
+                        required
+                      >
                         Provider
-                      </label>
-                      <select
+                      </Label>
+                      <Select
                         name="providerId"
                         id="providerId"
                         className="form-select"
                         value={formData.providerId.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
                       >
                         {providers.providers.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.fullName}
                           </option>
                         ))}
-                      </select>
-                      {formData.providerId.err && (
-                        <InvalidInputMsg msg={formData.providerId.err} />
-                      )}
+                      </Select>
                     </div>
 
                     {/* Total Price */}
                     <div className="mb-3">
-                      <label htmlFor="totalPriceCents" className="form-label">
+                      <Label
+                        htmlFor="totalPriceCents"
+                        className="form-label"
+                        required
+                      >
                         Total Price (&#65504; - cents)
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="number"
                         name="totalPriceCents"
                         id="totalPriceCents"
@@ -524,18 +534,17 @@ export default function CreateGrn() {
                         value={formData.totalPriceCents.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        error={formData.totalPriceCents.err}
+                        required
                       />
-                      {formData.totalPriceCents.err && (
-                        <InvalidInputMsg msg={formData.totalPriceCents.err} />
-                      )}
                     </div>
 
                     {/* Notes */}
                     <div className="mb-3">
-                      <label htmlFor="notes" className="form-label">
+                      <Label htmlFor="notes" className="form-label">
                         Notes
-                      </label>
-                      <textarea
+                      </Label>
+                      <Textarea
                         name="notes"
                         id="notes"
                         className="form-control"
@@ -544,10 +553,8 @@ export default function CreateGrn() {
                         value={formData.notes.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        error={formData.notes.err}
                       />
-                      {formData.notes.err && (
-                        <InvalidInputMsg msg={formData.notes.err} />
-                      )}
                     </div>
                   </div>
                 </div>
@@ -572,21 +579,22 @@ export default function CreateGrn() {
                   </div>
                   <div className="card-body">
                     <div className="mb-3">
-                      <label htmlFor="file" className="form-label">
-                        Excel File ({GRN_FILE_IMPORT_EXTENSIONS.join(", ")})
-                      </label>
-                      <input
+                      <Label htmlFor="file" className="form-label" required>
+                        Excel File ({GRN_FILE_IMPORT_EXTENSIONS.join(", ")}
+                        ){" "}
+                      </Label>
+                      <Input
                         type="file"
                         name="file"
                         id="file"
+                        value={formData.file.val}
                         className="form-control"
                         accept={GRN_FILE_IMPORT_EXTENSIONS.join(",")}
                         onChange={handleFileChange}
                         disabled={process.isProcessing}
+                        error={formData.file.err}
+                        required
                       />
-                      {formData.file.err && (
-                        <InvalidInputMsg msg={formData.file.err} />
-                      )}
                       {process.isUploadingFile && (
                         <div className="text-muted small mt-1">
                           Processing file...
@@ -596,8 +604,16 @@ export default function CreateGrn() {
 
                     {/* Quantity Display */}
                     <div className="mb-3">
-                      <label htmlFor="quantity" className="form-label">
+                      <label
+                        htmlFor="quantity"
+                        className="form-label d-flex align-items-center gap-2"
+                      >
                         Detected Quantity
+                        <FontAwesomeIcon
+                          icon={faCircleQuestion}
+                          className="text-muted"
+                          title="Auto-calculated from the number of entries in the uploaded file."
+                        />
                       </label>
                       <input
                         type="text"
@@ -608,9 +624,6 @@ export default function CreateGrn() {
                         readOnly
                         disabled
                       />
-                      <div className="form-text">
-                        Auto-calculated from file.
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -622,16 +635,17 @@ export default function CreateGrn() {
                   </div>
                   <div className="card-body">
                     <div className="mb-3">
-                      <label htmlFor="stateId" className="form-label">
+                      <Label htmlFor="stateId" className="form-label" required>
                         GRN State
-                      </label>
-                      <select
+                      </Label>
+                      <Select
                         name="stateId"
                         id="stateId"
                         className="form-select"
                         value={formData.stateId.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
                       >
                         {grnStates.states.map((s) => (
                           <option key={s.id} value={s.id}>
@@ -640,10 +654,7 @@ export default function CreateGrn() {
                               `- ${s.description.toLowerCase()}`}
                           </option>
                         ))}
-                      </select>
-                      {formData.stateId.err && (
-                        <InvalidInputMsg msg={formData.stateId.err} />
-                      )}
+                      </Select>
                     </div>
                   </div>
                 </div>

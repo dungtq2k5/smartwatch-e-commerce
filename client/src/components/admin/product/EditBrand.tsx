@@ -28,6 +28,9 @@ import {
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import Btn from "../../common/Btn";
 import Loading from "../../common/Loading";
+import Input from "../../common/Input";
+import Textarea from "../../common/Textarea";
+import Label from "../../common/Label";
 
 export type FormData = {
   name: FormInput;
@@ -306,9 +309,7 @@ export default function EditBrand() {
     },
     [brand, canEditBrand, formData, process.isProcessing, updateBrand],
   );
-
-  // TODO apply invalid feedback UI to all inputs.
-  // TODO use red asterisk for required fields.
+  
   return (
     <>
       {process.isInitializing ? (
@@ -337,46 +338,40 @@ export default function EditBrand() {
                   <form onSubmit={handleSubmit} id="editBrandForm">
                     {/* Name */}
                     <div className="mb-3">
-                      <label htmlFor="name" className="form-label">
-                        Name <span className="text-danger">*</span>
-                      </label>
-                      <input
+                      <Label htmlFor="name" className="form-label" required>
+                        Name
+                      </Label>
+                      <Input
                         type="text"
                         id="name"
                         name="name"
-                        className={`form-control ${
-                          formData.name.err ? "is-invalid" : ""
-                        }`}
+                        className="form-control"
                         placeholder={brand.name}
                         value={formData.name.val}
                         onChange={handleChange}
+                        autoComplete="name"
                         disabled={process.isProcessing}
+                        required
+                        error={formData.name.err}
                       />
-                      {formData.name.err && (
-                        <InvalidInputMsg msg={formData.name.err} />
-                      )}
                     </div>
 
                     {/* Description */}
                     <div className="mb-3">
-                      <label htmlFor="description" className="form-label">
+                      <Label htmlFor="description" className="form-label">
                         Description
-                      </label>
-                      <textarea
+                      </Label>
+                      <Textarea
                         id="description"
                         name="description"
-                        className={`form-control ${
-                          formData.description.err ? "is-invalid" : ""
-                        }`}
+                        className="form-control"
                         placeholder={brand.description || "None"}
                         rows={4}
                         value={formData.description.val}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        error={formData.description.err}
                       />
-                      {formData.description.err && (
-                        <InvalidInputMsg msg={formData.description.err} />
-                      )}
                     </div>
                   </form>
                 </div>

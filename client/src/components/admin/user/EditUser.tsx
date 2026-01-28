@@ -42,6 +42,9 @@ import useRefreshStore from "../../../store/admin/refreshStore";
 import EditUserSkeleton from "../skeleton/EditUserSkeleton";
 import Title from "../Title";
 import Btn from "../../common/Btn";
+import Label from "../../common/Label";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
 
 export type FormData = {
   fullName: FormInput;
@@ -108,7 +111,8 @@ export default function EditUser() {
   const [apiErr, setApiErr] = useState<string | null>(null);
 
   const changeAvatarRef = useRef<HTMLInputElement>(null);
-  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string>(defaultAvatar);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] =
+    useState<string>(defaultAvatar);
 
   // Fetch and set initial data when first load or refresh signal: roles, user
   useEffect(() => {
@@ -378,7 +382,10 @@ export default function EditUser() {
             changedData.fullName = formData.fullName.val;
           }
           if (formData.avatar.val instanceof File) {
-            const downloadUrl = await uploadFile(formData.avatar.val, "user-avatar");
+            const downloadUrl = await uploadFile(
+              formData.avatar.val,
+              "user-avatar",
+            );
             if (!downloadUrl) throw new Error("Failed to upload avatar image.");
             changedData.avatarUrl = downloadUrl;
           } else if (formData.avatar.val === null && user.avatarUrl) {
@@ -596,10 +603,10 @@ export default function EditUser() {
                   <div className="col-lg-8">
                     {/* Full name */}
                     <div className="mb-3">
-                      <label htmlFor="fullName" className="form-label">
+                      <Label htmlFor="fullName" className="form-label" required>
                         Full Name
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="text"
                         id="fullName"
                         name="fullName"
@@ -609,18 +616,17 @@ export default function EditUser() {
                         autoComplete="name"
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
+                        error={formData.fullName.err}
                       />
-                      {formData.fullName.err && (
-                        <InvalidInputMsg msg={formData.fullName.err} />
-                      )}
                     </div>
 
                     {/* Password */}
                     <div className="mb-3">
-                      <label htmlFor="password" className="form-label">
+                      <Label htmlFor="password" className="form-label">
                         New Password
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="password"
                         id="password"
                         name="password"
@@ -631,6 +637,8 @@ export default function EditUser() {
                         autoComplete="new-password"
                         aria-describedby="passwordHelp"
                         disabled={process.isProcessing}
+                        error={formData.password.err}
+                        neverShowErrorMessage
                       />
                       <div id="passwordHelp" className="form-text">
                         {PASSWORD_HINT_MESSAGE}
@@ -643,10 +651,10 @@ export default function EditUser() {
                     <div className="row">
                       {/* Birth */}
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="birth" className="form-label">
+                        <Label htmlFor="birth" className="form-label" required>
                           Birth Date
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="date"
                           id="birth"
                           name="birth"
@@ -654,30 +662,30 @@ export default function EditUser() {
                           value={getLocalDateString(formData.birth.val)}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.birth.err}
                         />
-                        {formData.birth.err && (
-                          <InvalidInputMsg msg={formData.birth.err} />
-                        )}
                       </div>
                       {/* Gender */}
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="gender" className="form-label">
+                        <Label htmlFor="gender" className="form-label" required>
                           Gender
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           id="gender"
                           name="gender"
                           className="form-select"
                           value={formData.gender}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
                           {USER_GENDER_OPTIONS.map((option) => (
                             <option key={option} value={option}>
                               {option}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                     </div>
 
@@ -809,14 +817,14 @@ export default function EditUser() {
               <div className="card-body">
                 {/* Email */}
                 <div className="mb-3">
-                  <label htmlFor="email" className="form-label">
+                  <Label htmlFor="email" className="form-label" required>
                     Email{" "}
                     <span className="text-muted small">
                       (can leave blank if phone is provided)
                     </span>
-                  </label>
+                  </Label>
                   <div className="input-group">
-                    <input
+                    <Input
                       type="email"
                       id="email"
                       name="email"
@@ -826,6 +834,8 @@ export default function EditUser() {
                       autoComplete="email"
                       onChange={handleChange}
                       disabled={process.isProcessing}
+                      error={formData.email.err}
+                      neverShowErrorMessage
                     />
                     <div className="input-group-text">
                       <input
@@ -852,14 +862,14 @@ export default function EditUser() {
 
                 {/* Phone */}
                 <div className="mb-3">
-                  <label htmlFor="phoneNumber" className="form-label">
+                  <Label htmlFor="phoneNumber" className="form-label" required>
                     Phone{" "}
                     <span className="text-muted small">
                       (can leave blank if email is provided)
                     </span>
-                  </label>
+                  </Label>
                   <div className="input-group">
-                    <input
+                    <Input
                       type="tel"
                       inputMode="numeric"
                       id="phoneNumber"
@@ -870,6 +880,8 @@ export default function EditUser() {
                       onChange={handleChange}
                       autoComplete="tel"
                       disabled={process.isProcessing}
+                      error={formData.phoneNumber.err}
+                      neverShowErrorMessage
                     />
                     <div className="input-group-text">
                       <input

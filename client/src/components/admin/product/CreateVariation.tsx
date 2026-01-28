@@ -43,6 +43,8 @@ import useCreationWizardStore from "../../../store/admin/creationWizardStore";
 import WizardStepHeader from "../WizardStepHeader";
 import CreateVariationSkeleton from "../skeleton/CreateVariationSkeleton";
 import Btn from "../../common/Btn";
+import Label from "../../common/Label";
+import Input from "../../common/Input";
 
 type Process = {
   isProcessing: boolean;
@@ -135,7 +137,7 @@ export default function CreateVariation() {
   const [imgPreviews, setImgPreviews] = useState<string[]>([]);
 
   const [continueToCreateGrn, setContinueToCreateGrn] = useState<string | null>(
-    null
+    null,
   ); // Store created variation ID
 
   // Fetch set data on initial load: model
@@ -206,7 +208,8 @@ export default function CreateVariation() {
     if (currFiles.length > 0) {
       const filteredFiles = Array.from(files).filter((f) => {
         return !currFiles.some(
-          (cf) => cf.name === f.name && cf.size === f.size && cf.type === f.type
+          (cf) =>
+            cf.name === f.name && cf.size === f.size && cf.type === f.type,
         );
       });
 
@@ -272,7 +275,7 @@ export default function CreateVariation() {
         return { ...prev, imageUrls: { val: updatedImgs } };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const genImgPreviews = useCallback(
@@ -300,7 +303,7 @@ export default function CreateVariation() {
         </div>
       ));
     },
-    [handleRemoveImg, process.isProcessing]
+    [handleRemoveImg, process.isProcessing],
   );
 
   const getFieldErr = useCallback(
@@ -364,7 +367,7 @@ export default function CreateVariation() {
           break;
       }
     },
-    []
+    [],
   );
 
   const handleChange = useCallback(
@@ -419,13 +422,13 @@ export default function CreateVariation() {
         },
       }));
     },
-    [getFieldErr, process.isProcessing]
+    [getFieldErr, process.isProcessing],
   );
 
   const handleChangeBandColors = useCallback(
     (
       color: ModelVariationCreate["band"]["colors"][number],
-      action: "add" | "delete"
+      action: "add" | "delete",
     ): void => {
       if (process.isProcessing) return;
 
@@ -439,7 +442,7 @@ export default function CreateVariation() {
           });
         } else if (action === "delete") {
           updatedColors = updatedColors.filter(
-            (c) => c.hex.val !== color.hex && c.name.val !== color.name
+            (c) => c.hex.val !== color.hex && c.name.val !== color.name,
           );
         }
 
@@ -452,7 +455,7 @@ export default function CreateVariation() {
         };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const handleSubmit = useCallback(
@@ -521,7 +524,10 @@ export default function CreateVariation() {
             imageUrls.err = `You can upload up to ${MAX_PRODUCT_IMG_UPLOAD} images.`;
             allValid = false;
           } else {
-            const imgFileErrs = await getImgFilesErrs(imageUrls.val, "product-image");
+            const imgFileErrs = await getImgFilesErrs(
+              imageUrls.val,
+              "product-image",
+            );
             if (imgFileErrs.length > 0) {
               imageUrls.err = `Invalid files found: ${imgFileErrs.join(", ")}`;
               allValid = false;
@@ -677,7 +683,7 @@ export default function CreateVariation() {
       modelId,
       process.isProcessing,
       wizard,
-    ]
+    ],
   );
 
   const handleDiscard = useCallback((): void => {
@@ -745,10 +751,10 @@ export default function CreateVariation() {
                   <div className="card-body">
                     {/* Name */}
                     <div className="mb-3">
-                      <label htmlFor="name" className="form-label">
+                      <Label htmlFor="name" className="form-label" required>
                         Name
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="text"
                         name="name"
                         id="name"
@@ -758,17 +764,20 @@ export default function CreateVariation() {
                         onChange={handleChange}
                         autoComplete="off"
                         disabled={process.isProcessing}
+                        required
+                        error={formData.name.err}
                       />
-                      {formData.name.err && (
-                        <InvalidInputMsg msg={formData.name.err} />
-                      )}
                     </div>
 
                     {/* Color */}
                     <div className="mb-3">
-                      <label htmlFor="color.name" className="form-label">
+                      <Label
+                        htmlFor="color.name"
+                        className="form-label"
+                        required
+                      >
                         Color
-                      </label>
+                      </Label>
                       <div className="input-group">
                         <span className="input-group-text p-1 bg-white">
                           <input
@@ -782,7 +791,7 @@ export default function CreateVariation() {
                             title="Choose color"
                           />
                         </span>
-                        <input
+                        <Input
                           type="text"
                           name="color.name"
                           id="color.name"
@@ -791,6 +800,9 @@ export default function CreateVariation() {
                           value={formData.color.name.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.color.name.err}
+                          neverShowErrorMessage
                         />
                       </div>
                       {(formData.color.hex.err || formData.color.name.err) && (
@@ -805,13 +817,13 @@ export default function CreateVariation() {
                     {/* Prices */}
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label
+                        <Label
                           htmlFor="additionalPriceCents"
                           className="form-label"
                         >
                           Selling Additional Price (&#65504; - cents)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           name="additionalPriceCents"
                           id="additionalPriceCents"
@@ -821,21 +833,17 @@ export default function CreateVariation() {
                           value={formData.additionalPriceCents.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          error={formData.additionalPriceCents.err}
                         />
-                        {formData.additionalPriceCents.err && (
-                          <InvalidInputMsg
-                            msg={formData.additionalPriceCents.err}
-                          />
-                        )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label
+                        <Label
                           htmlFor="stockAdditionalPriceCents"
                           className="form-label"
                         >
                           Stock Additional Price (&#65504; - cents)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           name="stockAdditionalPriceCents"
                           id="stockAdditionalPriceCents"
@@ -845,12 +853,8 @@ export default function CreateVariation() {
                           value={formData.stockAdditionalPriceCents.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          error={formData.stockAdditionalPriceCents.err}
                         />
-                        {formData.stockAdditionalPriceCents.err && (
-                          <InvalidInputMsg
-                            msg={formData.stockAdditionalPriceCents.err}
-                          />
-                        )}
                       </div>
                     </div>
                   </div>
@@ -864,10 +868,14 @@ export default function CreateVariation() {
                   <div className="card-body">
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="band.widthMm" className="form-label">
+                        <Label
+                          htmlFor="band.widthMm"
+                          className="form-label"
+                          required
+                        >
                           Width (mm)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           name="band.widthMm"
                           id="band.widthMm"
@@ -877,16 +885,19 @@ export default function CreateVariation() {
                           value={formData.band.widthMm.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.band.widthMm.err}
                         />
-                        {formData.band.widthMm.err && (
-                          <InvalidInputMsg msg={formData.band.widthMm.err} />
-                        )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="band.lugWidthMm" className="form-label">
+                        <Label
+                          htmlFor="band.lugWidthMm"
+                          className="form-label"
+                          required
+                        >
                           Lug Width (mm)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           name="band.lugWidthMm"
                           id="band.lugWidthMm"
@@ -896,19 +907,22 @@ export default function CreateVariation() {
                           value={formData.band.lugWidthMm.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.band.lugWidthMm.err}
                         />
-                        {formData.band.lugWidthMm.err && (
-                          <InvalidInputMsg msg={formData.band.lugWidthMm.err} />
-                        )}
                       </div>
                     </div>
 
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="band.material" className="form-label">
+                        <Label
+                          htmlFor="band.material"
+                          className="form-label"
+                          required
+                        >
                           Material
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           name="band.material"
                           id="band.material"
@@ -917,16 +931,19 @@ export default function CreateVariation() {
                           value={formData.band.material.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.band.material.err}
                         />
-                        {formData.band.material.err && (
-                          <InvalidInputMsg msg={formData.band.material.err} />
-                        )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="band.claspType" className="form-label">
+                        <Label
+                          htmlFor="band.claspType"
+                          className="form-label"
+                          required
+                        >
                           Clasp Type
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           name="band.claspType"
                           id="band.claspType"
@@ -935,19 +952,22 @@ export default function CreateVariation() {
                           value={formData.band.claspType.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.band.claspType.err}
                         />
-                        {formData.band.claspType.err && (
-                          <InvalidInputMsg msg={formData.band.claspType.err} />
-                        )}
                       </div>
                     </div>
 
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="band.style" className="form-label">
+                        <Label
+                          htmlFor="band.style"
+                          className="form-label"
+                          required
+                        >
                           Style
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           name="band.style"
                           id="band.style"
@@ -956,16 +976,19 @@ export default function CreateVariation() {
                           value={formData.band.style.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.band.style.err}
                         />
-                        {formData.band.style.err && (
-                          <InvalidInputMsg msg={formData.band.style.err} />
-                        )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="band.weightMg" className="form-label">
+                        <Label
+                          htmlFor="band.weightMg"
+                          className="form-label"
+                          required
+                        >
                           Weight (mg)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           name="band.weightMg"
                           id="band.weightMg"
@@ -975,17 +998,22 @@ export default function CreateVariation() {
                           value={formData.band.weightMg.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.band.weightMg.err}
                         />
-                        {formData.band.weightMg.err && (
-                          <InvalidInputMsg msg={formData.band.weightMg.err} />
-                        )}
                       </div>
                     </div>
 
                     <div className="mb-3">
-                      <p className="form-label">Adjustable Range (Min - Max)</p>
+                      <Label
+                        htmlFor="band.adjustableRange.minMm"
+                        className="form-label"
+                        required
+                      >
+                        Adjustable Range (Min - Max)
+                      </Label>
                       <div className="input-group">
-                        <input
+                        <Input
                           type="number"
                           name="band.adjustableRange.minMm"
                           className="form-control"
@@ -994,6 +1022,9 @@ export default function CreateVariation() {
                           value={formData.band.adjustableRange.minMm.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.band.adjustableRange.minMm.err}
+                          neverShowErrorMessage
                         />
                         <span className="input-group-text">
                           <FontAwesomeIcon
@@ -1001,7 +1032,7 @@ export default function CreateVariation() {
                             className="text-muted"
                           />
                         </span>
-                        <input
+                        <Input
                           type="number"
                           name="band.adjustableRange.maxMm"
                           className="form-control"
@@ -1010,6 +1041,9 @@ export default function CreateVariation() {
                           value={formData.band.adjustableRange.maxMm.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.band.adjustableRange.maxMm.err}
+                          neverShowErrorMessage
                         />
                       </div>
                       {(formData.band.adjustableRange.minMm.err ||
@@ -1024,9 +1058,9 @@ export default function CreateVariation() {
                     </div>
 
                     <div className="mb-3">
-                      <label htmlFor="band.colors" className="form-label">
+                      <Label htmlFor="band.colors" className="form-label">
                         Band Colors
-                      </label>
+                      </Label>
                       <ColorListInput
                         name="band.colors"
                         id="band.colors"
@@ -1117,18 +1151,22 @@ export default function CreateVariation() {
                       {imgPreviews.length > 0 && genImgPreviews(imgPreviews)}
                     </div>
                     <div className="mt-3">
-                      <label htmlFor="imageUrls" className="form-label">
+                      <Label htmlFor="imageUrls" className="form-label">
                         Upload new images
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="file"
                         id="imageUrls"
                         name="imageUrls"
+                        value={formData.imageUrls.val.length}
                         className="form-control"
                         multiple
                         accept="image/*"
                         ref={fileInputRef}
                         disabled={process.isProcessing}
+                        error={formData.imageUrls.err}
+                        neverShowErrorMessage
+                        aria-describedby="imgHelp"
                       />
                       <Btn
                         type="button"

@@ -46,6 +46,10 @@ import Title from "../Title";
 import DetailUserLink from "../DetailUserLink";
 import LinkBtn from "../../common/LinkBtn";
 import Btn from "../../common/Btn";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
+import Textarea from "../../common/Textarea";
+import Label from "../../common/Label";
 
 type Process = {
   isProcessing: boolean;
@@ -437,7 +441,7 @@ export function EditModel() {
         return `${fieldName} is invalid`;
       }
     },
-    []
+    [],
   );
 
   const getFieldErr = useCallback(
@@ -537,14 +541,14 @@ export function EditModel() {
           break;
       }
     },
-    [formData.screen.isCircular.val]
+    [formData.screen.isCircular.val],
   );
 
   const handleChange = useCallback(
     (
       e: React.ChangeEvent<
         HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >
+      >,
     ) => {
       if (process.isProcessing) return;
 
@@ -569,7 +573,7 @@ export function EditModel() {
                   err: isCircular
                     ? getRequiredNumFieldErr(
                         "Diameter mm",
-                        prev.screen.diameterMm.val
+                        prev.screen.diameterMm.val,
                       )
                     : undefined,
                 },
@@ -580,7 +584,7 @@ export function EditModel() {
                     err: !isCircular
                       ? getRequiredNumFieldErr(
                           "Dimension wMm",
-                          prev.screen.dimension.wMm.val
+                          prev.screen.dimension.wMm.val,
                         )
                       : undefined,
                   },
@@ -589,7 +593,7 @@ export function EditModel() {
                     err: !isCircular
                       ? getRequiredNumFieldErr(
                           "Dimension hMm",
-                          prev.screen.dimension.hMm.val
+                          prev.screen.dimension.hMm.val,
                         )
                       : undefined,
                   },
@@ -598,7 +602,7 @@ export function EditModel() {
                     err: !isCircular
                       ? getRequiredNumFieldErr(
                           "Dimension thicknessMm",
-                          prev.screen.dimension.thicknessMm.val
+                          prev.screen.dimension.thicknessMm.val,
                         )
                       : undefined,
                   },
@@ -648,7 +652,7 @@ export function EditModel() {
         },
       }));
     },
-    [getFieldErr, getRequiredNumFieldErr, process.isProcessing]
+    [getFieldErr, getRequiredNumFieldErr, process.isProcessing],
   );
 
   const handleUploadImgs = useCallback(async (): Promise<void> => {
@@ -673,7 +677,8 @@ export function EditModel() {
     if (currFiles.length > 0) {
       const filteredFiles = Array.from(files).filter((f) => {
         return !currFiles.some(
-          (cf) => cf.name === f.name && cf.size === f.size && cf.type === f.type
+          (cf) =>
+            cf.name === f.name && cf.size === f.size && cf.type === f.type,
         );
       });
 
@@ -762,7 +767,7 @@ export function EditModel() {
           break;
       }
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const genImgPreviews = useCallback(
@@ -790,7 +795,7 @@ export function EditModel() {
         </div>
       ));
     },
-    [handleRemoveImg, process.isProcessing]
+    [handleRemoveImg, process.isProcessing],
   );
 
   const handleSubmit = useCallback(
@@ -849,7 +854,7 @@ export function EditModel() {
         }
         const priceCentsErr = getRequiredNumFieldErr(
           "Price cents",
-          priceCents.val
+          priceCents.val,
         );
         if (priceCentsErr) {
           priceCents.err = priceCentsErr;
@@ -857,7 +862,7 @@ export function EditModel() {
         }
         const stockPriceCentsErr = getRequiredNumFieldErr(
           "Stock price cents",
-          stockPriceCents.val
+          stockPriceCents.val,
         );
         if (stockPriceCentsErr) {
           stockPriceCents.err = stockPriceCentsErr;
@@ -871,7 +876,10 @@ export function EditModel() {
             imageUrls.err = `You can upload up to ${MAX_PRODUCT_IMG_UPLOAD} images.`;
             allValid = false;
           } else {
-            const imgFileErrs = await getImgFilesErrs(imageUrls.val, "product-image");
+            const imgFileErrs = await getImgFilesErrs(
+              imageUrls.val,
+              "product-image",
+            );
             if (imgFileErrs.length > 0) {
               imageUrls.err = `Invalid files found: ${imgFileErrs.join(", ")}`;
               allValid = false;
@@ -891,7 +899,7 @@ export function EditModel() {
         }
         const memoryRamBytesErr = getRequiredNumFieldErr(
           "Ram bytes",
-          memory.ramBytes.val
+          memory.ramBytes.val,
         );
         if (memoryRamBytesErr) {
           memory.ramBytes.err = memoryRamBytesErr;
@@ -899,7 +907,7 @@ export function EditModel() {
         }
         const memoryStorageBytesErr = getRequiredNumFieldErr(
           "Storage bytes",
-          memory.storageBytes.val
+          memory.storageBytes.val,
         );
         if (memoryStorageBytesErr) {
           memory.storageBytes.err = memoryStorageBytesErr;
@@ -907,7 +915,7 @@ export function EditModel() {
         }
         const batteryCapacityMahErr = getRequiredNumFieldErr(
           "Capacity mAh",
-          capacityMah.val
+          capacityMah.val,
         );
         if (batteryCapacityMahErr) {
           capacityMah.err = batteryCapacityMahErr;
@@ -915,7 +923,7 @@ export function EditModel() {
         }
         const timeOnlineAodOnMinErr = getRequiredNumFieldErr(
           "AOD on time min",
-          timeOnline.aodOnMin.val
+          timeOnline.aodOnMin.val,
         );
         if (timeOnlineAodOnMinErr) {
           timeOnline.aodOnMin.err = timeOnlineAodOnMinErr;
@@ -923,7 +931,7 @@ export function EditModel() {
         }
         const timeOnlineAodOffMinErr = getRequiredNumFieldErr(
           "AOD off time min",
-          timeOnline.aodOffMin.val
+          timeOnline.aodOffMin.val,
         );
         if (timeOnlineAodOffMinErr) {
           timeOnline.aodOffMin.err = timeOnlineAodOffMinErr;
@@ -945,7 +953,7 @@ export function EditModel() {
         }
         const batteryTimeFullChargeMinErr = getRequiredNumFieldErr(
           "Time full charge min",
-          timeFullChargeMin.val
+          timeFullChargeMin.val,
         );
         if (batteryTimeFullChargeMinErr) {
           timeFullChargeMin.err = batteryTimeFullChargeMinErr;
@@ -957,7 +965,7 @@ export function EditModel() {
         }
         const screenDisplayDiagonalSizeInchErr = getRequiredNumFieldErr(
           "Diagonal size inch",
-          display.diagonalSizeInch.val
+          display.diagonalSizeInch.val,
         );
         if (screenDisplayDiagonalSizeInchErr) {
           display.diagonalSizeInch.err = screenDisplayDiagonalSizeInchErr;
@@ -969,7 +977,7 @@ export function EditModel() {
         }
         const screenBrightnessMinNitsErr = getRequiredNumFieldErr(
           "Brightness min nits",
-          brightness.minNits.val
+          brightness.minNits.val,
         );
         if (screenBrightnessMinNitsErr) {
           brightness.minNits.err = screenBrightnessMinNitsErr;
@@ -977,7 +985,7 @@ export function EditModel() {
         }
         const screenBrightnessMaxNitsErr = getRequiredNumFieldErr(
           "Brightness max nits",
-          brightness.maxNits.val
+          brightness.maxNits.val,
         );
         if (screenBrightnessMaxNitsErr) {
           brightness.maxNits.err = screenBrightnessMaxNitsErr;
@@ -985,7 +993,7 @@ export function EditModel() {
         }
         const screenResolutionHPxErr = getRequiredNumFieldErr(
           "Resolution H px",
-          resolution.hPx.val
+          resolution.hPx.val,
         );
         if (screenResolutionHPxErr) {
           resolution.hPx.err = screenResolutionHPxErr;
@@ -993,7 +1001,7 @@ export function EditModel() {
         }
         const screenResolutionWPxErr = getRequiredNumFieldErr(
           "Resolution W px",
-          resolution.wPx.val
+          resolution.wPx.val,
         );
         if (screenResolutionWPxErr) {
           resolution.wPx.err = screenResolutionWPxErr;
@@ -1018,7 +1026,7 @@ export function EditModel() {
         if (isCircular.val) {
           const diameterMmErr = getRequiredNumFieldErr(
             "Diameter mm",
-            diameterMm.val
+            diameterMm.val,
           );
           if (diameterMmErr) {
             diameterMm.err = diameterMmErr;
@@ -1027,7 +1035,7 @@ export function EditModel() {
         } else {
           const dimensionWMmErr = getRequiredNumFieldErr(
             "Dimension W mm",
-            dimension.wMm.val
+            dimension.wMm.val,
           );
           if (dimensionWMmErr) {
             dimension.wMm.err = dimensionWMmErr;
@@ -1035,7 +1043,7 @@ export function EditModel() {
           }
           const dimensionHMmErr = getRequiredNumFieldErr(
             "Dimension H mm",
-            dimension.hMm.val
+            dimension.hMm.val,
           );
           if (dimensionHMmErr) {
             dimension.hMm.err = dimensionHMmErr;
@@ -1043,7 +1051,7 @@ export function EditModel() {
           }
           const dimensionThicknessMmErr = getRequiredNumFieldErr(
             "Dimension thickness mm",
-            dimension.thicknessMm.val
+            dimension.thicknessMm.val,
           );
           if (dimensionThicknessMmErr) {
             dimension.thicknessMm.err = dimensionThicknessMmErr;
@@ -1056,7 +1064,7 @@ export function EditModel() {
         }
         const watchWeightMgErr = getRequiredNumFieldErr(
           "Watch weight mg",
-          watchWeightMg.val
+          watchWeightMg.val,
         );
         if (watchWeightMgErr) {
           watchWeightMg.err = watchWeightMgErr;
@@ -1064,7 +1072,7 @@ export function EditModel() {
         }
         const compatibleBandLugWidthMmErr = getRequiredNumFieldErr(
           "Compatible band lug width mm",
-          compatibleBandLugWidthMm.val
+          compatibleBandLugWidthMm.val,
         );
         if (compatibleBandLugWidthMmErr) {
           compatibleBandLugWidthMm.err = compatibleBandLugWidthMmErr;
@@ -1163,7 +1171,7 @@ export function EditModel() {
                   },
                 }));
                 throw new Error(
-                  "Some images failed to upload. Please try again."
+                  "Some images failed to upload. Please try again.",
                 );
               }
               uploadedImgUrls.push(downloadUrl);
@@ -1181,7 +1189,7 @@ export function EditModel() {
             model.compatibleBandLugWidthMm.toString()
           ) {
             changedData.compatibleBandLugWidthMm = Number(
-              compatibleBandLugWidthMm.val
+              compatibleBandLugWidthMm.val,
             );
           }
           if (
@@ -1208,7 +1216,7 @@ export function EditModel() {
               utilities.healths.val,
               utilities.sports.val,
               utilities.specials.val,
-              utilities.others.val
+              utilities.others.val,
             )
               ? {
                   healths: utilities.healths.val,
@@ -1344,7 +1352,7 @@ export function EditModel() {
       updateModel,
       fetchModel,
       updateFormData,
-    ]
+    ],
   );
 
   const handleChangeItemInListField = useCallback(
@@ -1370,14 +1378,14 @@ export function EditModel() {
           }
         } else if (action === "delete") {
           currField.val = currField.val.filter(
-            (item: string) => item !== modItem
+            (item: string) => item !== modItem,
           );
         }
 
         return { ...prev };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   return (
@@ -1415,10 +1423,10 @@ export function EditModel() {
                   <div className="card-body">
                     {/* Name */}
                     <div className="mb-3">
-                      <label htmlFor="name" className="form-label">
+                      <Label htmlFor="name" className="form-label" required>
                         Name
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="text"
                         id="name"
                         name="name"
@@ -1428,19 +1436,22 @@ export function EditModel() {
                         onChange={handleChange}
                         autoComplete="off"
                         disabled={process.isProcessing}
+                        required
+                        error={formData.name.err}
                       />
-                      {formData.name.err && (
-                        <InvalidInputMsg msg={formData.name.err} />
-                      )}
                     </div>
 
                     {/* Prices */}
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="priceCents" className="form-label">
+                        <Label
+                          htmlFor="priceCents"
+                          className="form-label"
+                          required
+                        >
                           Price (&#65504; - cents)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="priceCents"
                           name="priceCents"
@@ -1449,16 +1460,19 @@ export function EditModel() {
                           value={formData.priceCents.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.priceCents.err}
                         />
-                        {formData.priceCents.err && (
-                          <InvalidInputMsg msg={formData.priceCents.err} />
-                        )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="stockPriceCents" className="form-label">
+                        <Label
+                          htmlFor="stockPriceCents"
+                          className="form-label"
+                          required
+                        >
                           Stock Price (&#65504; - cents)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="stockPriceCents"
                           name="stockPriceCents"
@@ -1467,20 +1481,23 @@ export function EditModel() {
                           value={formData.stockPriceCents.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.stockPriceCents.err}
                         />
-                        {formData.stockPriceCents.err && (
-                          <InvalidInputMsg msg={formData.stockPriceCents.err} />
-                        )}
                       </div>
                     </div>
 
                     {/* Physical Specs */}
                     <div className="row">
                       <div className="col-md-4 mb-3">
-                        <label htmlFor="caseMaterial" className="form-label">
+                        <Label
+                          htmlFor="caseMaterial"
+                          className="form-label"
+                          required
+                        >
                           Case Material
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           id="caseMaterial"
                           name="caseMaterial"
@@ -1489,16 +1506,18 @@ export function EditModel() {
                           value={formData.caseMaterial.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          error={formData.caseMaterial.err}
                         />
-                        {formData.caseMaterial.err && (
-                          <InvalidInputMsg msg={formData.caseMaterial.err} />
-                        )}
                       </div>
                       <div className="col-md-4 mb-3">
-                        <label htmlFor="watchWeightMg" className="form-label">
+                        <Label
+                          htmlFor="watchWeightMg"
+                          className="form-label"
+                          required
+                        >
                           Weight (mg)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="watchWeightMg"
                           name="watchWeightMg"
@@ -1507,19 +1526,19 @@ export function EditModel() {
                           value={formData.watchWeightMg.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.watchWeightMg.err}
                         />
-                        {formData.watchWeightMg.err && (
-                          <InvalidInputMsg msg={formData.watchWeightMg.err} />
-                        )}
                       </div>
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="compatibleBandLugWidthMm"
                           className="form-label"
+                          required
                         >
                           Band Lug Width (mm)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="compatibleBandLugWidthMm"
                           name="compatibleBandLugWidthMm"
@@ -1528,21 +1547,22 @@ export function EditModel() {
                           value={formData.compatibleBandLugWidthMm.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.compatibleBandLugWidthMm.err}
                         />
-                        {formData.compatibleBandLugWidthMm.err && (
-                          <InvalidInputMsg
-                            msg={formData.compatibleBandLugWidthMm.err}
-                          />
-                        )}
                       </div>
                     </div>
 
                     {/* Release Date */}
                     <div className="mb-3">
-                      <label htmlFor="releaseDate" className="form-label">
+                      <Label
+                        htmlFor="releaseDate"
+                        className="form-label"
+                        required
+                      >
                         Release Date
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="date"
                         id="releaseDate"
                         name="releaseDate"
@@ -1550,10 +1570,9 @@ export function EditModel() {
                         value={getLocalDateString(formData.releaseDate.val)}
                         onChange={handleChange}
                         disabled={process.isProcessing}
+                        required
+                        error={formData.releaseDate.err}
                       />
-                      {formData.releaseDate.err && (
-                        <InvalidInputMsg msg={formData.releaseDate.err} />
-                      )}
                     </div>
                   </div>
                 </div>
@@ -1567,13 +1586,14 @@ export function EditModel() {
                     {/* Display Basic */}
                     <div className="row">
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="screen.display.diagonalSizeInch"
                           className="form-label"
+                          required
                         >
                           Diagonal Size (inch)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="screen.display.diagonalSizeInch"
                           name="screen.display.diagonalSizeInch"
@@ -1582,21 +1602,19 @@ export function EditModel() {
                           value={formData.screen.display.diagonalSizeInch.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.screen.display.diagonalSizeInch.err}
                         />
-                        {formData.screen.display.diagonalSizeInch.err && (
-                          <InvalidInputMsg
-                            msg={formData.screen.display.diagonalSizeInch.err}
-                          />
-                        )}
                       </div>
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="screen.display.displayType"
                           className="form-label"
+                          required
                         >
                           Display Type
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           id="screen.display.displayType"
                           name="screen.display.displayType"
@@ -1605,21 +1623,18 @@ export function EditModel() {
                           value={formData.screen.display.displayType.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.screen.display.displayType.err}
                         />
-                        {formData.screen.display.displayType.err && (
-                          <InvalidInputMsg
-                            msg={formData.screen.display.displayType.err}
-                          />
-                        )}
                       </div>
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="screen.refreshRateHz"
                           className="form-label"
                         >
                           Refresh Rate (Hz)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="screen.refreshRateHz"
                           name="screen.refreshRateHz"
@@ -1630,21 +1645,23 @@ export function EditModel() {
                           value={formData.screen.refreshRateHz.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          error={formData.screen.refreshRateHz.err}
                         />
-                        {formData.screen.refreshRateHz.err && (
-                          <InvalidInputMsg
-                            msg={formData.screen.refreshRateHz.err}
-                          />
-                        )}
                       </div>
                     </div>
 
                     {/* Resolution & Brightness */}
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <p className="form-label">Resolution (W x H px)</p>
+                        <Label
+                          htmlFor="screen.resolution.wPx"
+                          className="form-label"
+                          required
+                        >
+                          Resolution (W x H px)
+                        </Label>
                         <div className="input-group">
-                          <input
+                          <Input
                             type="number"
                             id="screen.resolution.wPx"
                             name="screen.resolution.wPx"
@@ -1653,6 +1670,9 @@ export function EditModel() {
                             value={formData.screen.resolution.wPx.val}
                             onChange={handleChange}
                             disabled={process.isProcessing}
+                            error={formData.screen.resolution.wPx.err}
+                            required
+                            neverShowErrorMessage
                           />
                           <span className="input-group-text">
                             <FontAwesomeIcon
@@ -1660,7 +1680,7 @@ export function EditModel() {
                               className="text-muted"
                             />
                           </span>
-                          <input
+                          <Input
                             type="number"
                             id="screen.resolution.hPx"
                             name="screen.resolution.hPx"
@@ -1669,6 +1689,9 @@ export function EditModel() {
                             value={formData.screen.resolution.hPx.val}
                             onChange={handleChange}
                             disabled={process.isProcessing}
+                            error={formData.screen.resolution.hPx.err}
+                            required
+                            neverShowErrorMessage
                           />
                         </div>
                         {(formData.screen.resolution.wPx.err ||
@@ -1682,11 +1705,14 @@ export function EditModel() {
                         )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <p className="form-label">
+                        <Label
+                          htmlFor="screen.brightness.minNits"
+                          className="form-label"
+                        >
                           Brightness (Min - Max nits)
-                        </p>
+                        </Label>
                         <div className="input-group">
-                          <input
+                          <Input
                             type="number"
                             id="screen.brightness.minNits"
                             name="screen.brightness.minNits"
@@ -1695,6 +1721,9 @@ export function EditModel() {
                             value={formData.screen.brightness.minNits.val}
                             onChange={handleChange}
                             disabled={process.isProcessing}
+                            required
+                            error={formData.screen.brightness.minNits.err}
+                            neverShowErrorMessage
                           />
                           <span className="input-group-text">
                             <FontAwesomeIcon
@@ -1702,7 +1731,7 @@ export function EditModel() {
                               className="text-muted"
                             />
                           </span>
-                          <input
+                          <Input
                             type="number"
                             id="screen.brightness.maxNits"
                             name="screen.brightness.maxNits"
@@ -1711,6 +1740,9 @@ export function EditModel() {
                             value={formData.screen.brightness.maxNits.val}
                             onChange={handleChange}
                             disabled={process.isProcessing}
+                            required
+                            error={formData.screen.brightness.maxNits.err}
+                            neverShowErrorMessage
                           />
                         </div>
                         {(formData.screen.brightness.minNits.err ||
@@ -1728,13 +1760,14 @@ export function EditModel() {
                     {/* Materials & Shape */}
                     <div className="row">
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="screen.glassMaterial"
                           className="form-label"
+                          required
                         >
                           Glass Material
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           id="screen.glassMaterial"
                           name="screen.glassMaterial"
@@ -1743,21 +1776,19 @@ export function EditModel() {
                           value={formData.screen.glassMaterial.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.screen.glassMaterial.err}
                         />
-                        {formData.screen.glassMaterial.err && (
-                          <InvalidInputMsg
-                            msg={formData.screen.glassMaterial.err}
-                          />
-                        )}
                       </div>
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="screen.bezelMaterial"
                           className="form-label"
+                          required
                         >
                           Bezel Material
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           id="screen.bezelMaterial"
                           name="screen.bezelMaterial"
@@ -1766,18 +1797,19 @@ export function EditModel() {
                           value={formData.screen.bezelMaterial.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.screen.bezelMaterial.err}
                         />
-                        {formData.screen.bezelMaterial.err && (
-                          <InvalidInputMsg
-                            msg={formData.screen.bezelMaterial.err}
-                          />
-                        )}
                       </div>
                       <div className="col-md-4 mb-3">
-                        <label htmlFor="screen.shape" className="form-label">
+                        <Label
+                          htmlFor="screen.shape"
+                          className="form-label"
+                          required
+                        >
                           Shape
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           id="screen.shape"
                           name="screen.shape"
@@ -1786,10 +1818,9 @@ export function EditModel() {
                           value={formData.screen.shape.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.screen.shape.err}
                         />
-                        {formData.screen.shape.err && (
-                          <InvalidInputMsg msg={formData.screen.shape.err} />
-                        )}
                       </div>
                     </div>
 
@@ -1817,13 +1848,14 @@ export function EditModel() {
 
                     {formData.screen.isCircular.val ? (
                       <div className="mb-3">
-                        <label
+                        <Label
                           htmlFor="screen.diameterMm"
                           className="form-label"
+                          required
                         >
                           Diameter (mm)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="screen.diameterMm"
                           name="screen.diameterMm"
@@ -1834,20 +1866,21 @@ export function EditModel() {
                           value={formData.screen.diameterMm.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.screen.diameterMm.err}
+                          neverShowErrorMessage
                         />
-                        {formData.screen.diameterMm.err && (
-                          <InvalidInputMsg
-                            msg={formData.screen.diameterMm.err}
-                          />
-                        )}
                       </div>
                     ) : (
                       <div className="mb-3">
-                        <p className="form-label">
+                        <Label
+                          htmlFor="screen.dimension.wMm"
+                          className="form-label"
+                        >
                           Dimensions (W x H x Thickness mm)
-                        </p>
+                        </Label>
                         <div className="input-group">
-                          <input
+                          <Input
                             type="number"
                             id="screen.dimension.wMm"
                             name="screen.dimension.wMm"
@@ -1858,6 +1891,9 @@ export function EditModel() {
                             value={formData.screen.dimension.wMm.val}
                             onChange={handleChange}
                             disabled={process.isProcessing}
+                            required
+                            error={formData.screen.dimension.wMm.err}
+                            neverShowErrorMessage
                           />
                           <span className="input-group-text">
                             <FontAwesomeIcon
@@ -1865,7 +1901,7 @@ export function EditModel() {
                               className="text-muted"
                             />
                           </span>
-                          <input
+                          <Input
                             type="number"
                             name="screen.dimension.hMm"
                             className="form-control"
@@ -1875,6 +1911,9 @@ export function EditModel() {
                             value={formData.screen.dimension.hMm.val}
                             onChange={handleChange}
                             disabled={process.isProcessing}
+                            required
+                            error={formData.screen.dimension.hMm.err}
+                            neverShowErrorMessage
                           />
                           <span className="input-group-text">
                             <FontAwesomeIcon
@@ -1882,7 +1921,7 @@ export function EditModel() {
                               className="text-muted"
                             />
                           </span>
-                          <input
+                          <Input
                             type="number"
                             name="screen.dimension.thicknessMm"
                             className="form-control"
@@ -1892,6 +1931,9 @@ export function EditModel() {
                             value={formData.screen.dimension.thicknessMm.val}
                             onChange={handleChange}
                             disabled={process.isProcessing}
+                            required
+                            error={formData.screen.dimension.thicknessMm.err}
+                            neverShowErrorMessage
                           />
                         </div>
                         {(formData.screen.dimension.wMm.err ||
@@ -1918,13 +1960,14 @@ export function EditModel() {
                   <div className="card-body">
                     <div className="row">
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="battery.capacityMah"
                           className="form-label"
+                          required
                         >
                           Capacity (mAh)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="battery.capacityMah"
                           name="battery.capacityMah"
@@ -1933,21 +1976,19 @@ export function EditModel() {
                           value={formData.battery.capacityMah.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.battery.capacityMah.err}
                         />
-                        {formData.battery.capacityMah.err && (
-                          <InvalidInputMsg
-                            msg={formData.battery.capacityMah.err}
-                          />
-                        )}
                       </div>
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="battery.chargingType"
                           className="form-label"
+                          required
                         >
                           Charging Type
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           id="battery.chargingType"
                           name="battery.chargingType"
@@ -1956,21 +1997,19 @@ export function EditModel() {
                           value={formData.battery.chargingType.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.battery.chargingType.err}
                         />
-                        {formData.battery.chargingType.err && (
-                          <InvalidInputMsg
-                            msg={formData.battery.chargingType.err}
-                          />
-                        )}
                       </div>
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="battery.timeFullChargeMin"
                           className="form-label"
+                          required
                         >
                           Full Charge Time (min)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="battery.timeFullChargeMin"
                           name="battery.timeFullChargeMin"
@@ -1979,19 +2018,21 @@ export function EditModel() {
                           value={formData.battery.timeFullChargeMin.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.battery.timeFullChargeMin.err}
                         />
-                        {formData.battery.timeFullChargeMin.err && (
-                          <InvalidInputMsg
-                            msg={formData.battery.timeFullChargeMin.err}
-                          />
-                        )}
                       </div>
                     </div>
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <p className="form-label">AOD Time (On - Off min)</p>
+                        <Label
+                          htmlFor="battery.timeOnline.aodOnMin"
+                          className="form-label"
+                        >
+                          AOD Time (On - Off min)
+                        </Label>
                         <div className="input-group">
-                          <input
+                          <Input
                             type="number"
                             name="battery.timeOnline.aodOnMin"
                             className="form-control"
@@ -1999,6 +2040,9 @@ export function EditModel() {
                             value={formData.battery.timeOnline.aodOnMin.val}
                             onChange={handleChange}
                             disabled={process.isProcessing}
+                            required
+                            error={formData.battery.timeOnline.aodOnMin.err}
+                            neverShowErrorMessage
                           />
                           <span className="input-group-text">
                             <FontAwesomeIcon
@@ -2006,7 +2050,7 @@ export function EditModel() {
                               className="text-muted"
                             />
                           </span>
-                          <input
+                          <Input
                             type="number"
                             name="battery.timeOnline.aodOffMin"
                             className="form-control"
@@ -2014,6 +2058,9 @@ export function EditModel() {
                             value={formData.battery.timeOnline.aodOffMin.val}
                             onChange={handleChange}
                             disabled={process.isProcessing}
+                            required
+                            error={formData.battery.timeOnline.aodOffMin.err}
+                            neverShowErrorMessage
                           />
                         </div>
                         {(formData.battery.timeOnline.aodOnMin.err ||
@@ -2027,13 +2074,13 @@ export function EditModel() {
                         )}
                       </div>
                       <div className="col-md-3 mb-3">
-                        <label
+                        <Label
                           htmlFor="battery.timeOnline.typicalUsageMin"
                           className="form-label"
                         >
                           Typical (min)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="battery.timeOnline.typicalUsageMin"
                           name="battery.timeOnline.typicalUsageMin"
@@ -2047,23 +2094,19 @@ export function EditModel() {
                           }
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          error={
+                            formData.battery.timeOnline.typicalUsageMin.err
+                          }
                         />
-                        {formData.battery.timeOnline.typicalUsageMin.err && (
-                          <InvalidInputMsg
-                            msg={
-                              formData.battery.timeOnline.typicalUsageMin.err
-                            }
-                          />
-                        )}
                       </div>
                       <div className="col-md-3 mb-3">
-                        <label
+                        <Label
                           htmlFor="battery.timeOnline.standByMin"
                           className="form-label"
                         >
                           Standby (min)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="battery.timeOnline.standByMin"
                           name="battery.timeOnline.standByMin"
@@ -2075,12 +2118,8 @@ export function EditModel() {
                           value={formData.battery.timeOnline.standByMin.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          error={formData.battery.timeOnline.standByMin.err}
                         />
-                        {formData.battery.timeOnline.standByMin.err && (
-                          <InvalidInputMsg
-                            msg={formData.battery.timeOnline.standByMin.err}
-                          />
-                        )}
                       </div>
                     </div>
                   </div>
@@ -2094,10 +2133,14 @@ export function EditModel() {
                   <div className="card-body">
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="config.chipset" className="form-label">
+                        <Label
+                          htmlFor="config.chipset"
+                          className="form-label"
+                          required
+                        >
                           Chipset
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           id="config.chipset"
                           name="config.chipset"
@@ -2106,40 +2149,45 @@ export function EditModel() {
                           value={formData.config.chipset.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.config.chipset.err}
                         />
-                        {formData.config.chipset.err && (
-                          <InvalidInputMsg msg={formData.config.chipset.err} />
-                        )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="config.osId" className="form-label">
+                        <Label
+                          htmlFor="config.osId"
+                          className="form-label"
+                          required
+                        >
                           Operating System
-                        </label>
-                        <select
+                        </Label>
+                        <Select
                           id="config.osId"
                           name="config.osId"
                           className="form-select"
                           value={formData.config.osId.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
                         >
                           {oses.oses.oses.map((os) => (
                             <option key={os.id} value={os.id}>
                               {os.name}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                     </div>
                     <div className="row">
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="config.memory.ramBytes"
                           className="form-label"
+                          required
                         >
                           RAM (bytes)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="config.memory.ramBytes"
                           name="config.memory.ramBytes"
@@ -2148,21 +2196,19 @@ export function EditModel() {
                           value={formData.config.memory.ramBytes.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.config.memory.ramBytes.err}
                         />
-                        {formData.config.memory.ramBytes.err && (
-                          <InvalidInputMsg
-                            msg={formData.config.memory.ramBytes.err}
-                          />
-                        )}
                       </div>
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="config.memory.storageBytes"
                           className="form-label"
+                          required
                         >
                           Storage (bytes)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="config.memory.storageBytes"
                           name="config.memory.storageBytes"
@@ -2171,21 +2217,18 @@ export function EditModel() {
                           value={formData.config.memory.storageBytes.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          required
+                          error={formData.config.memory.storageBytes.err}
                         />
-                        {formData.config.memory.storageBytes.err && (
-                          <InvalidInputMsg
-                            msg={formData.config.memory.storageBytes.err}
-                          />
-                        )}
                       </div>
                       <div className="col-md-4 mb-3">
-                        <label
+                        <Label
                           htmlFor="config.camera.resolutionMp"
                           className="form-label"
                         >
                           Camera (MP)
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
                           id="config.camera.resolutionMp"
                           name="config.camera.resolutionMp"
@@ -2197,22 +2240,18 @@ export function EditModel() {
                           value={formData.config.camera.resolutionMp.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          error={formData.config.camera.resolutionMp.err}
                         />
-                        {formData.config.camera.resolutionMp.err && (
-                          <InvalidInputMsg
-                            msg={formData.config.camera.resolutionMp.err}
-                          />
-                        )}
                       </div>
                     </div>
 
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="config.connectivities"
                         className="form-label"
                       >
                         Connectivities
-                      </label>
+                      </Label>
                       <TxtListInput
                         name="config.connectivities"
                         id="config.connectivities"
@@ -2221,7 +2260,7 @@ export function EditModel() {
                           handleChangeItemInListField(
                             "config.connectivities",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder={
@@ -2231,12 +2270,12 @@ export function EditModel() {
                       />
                     </div>
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="config.camera.features"
                         className="form-label"
                       >
                         Camera Features
-                      </label>
+                      </Label>
                       <TxtListInput
                         name="config.camera.features"
                         id="config.camera.features"
@@ -2245,7 +2284,7 @@ export function EditModel() {
                           handleChangeItemInListField(
                             "config.camera.features",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder={
@@ -2255,12 +2294,12 @@ export function EditModel() {
                       />
                     </div>
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="config.compatiblePhoneOs"
                         className="form-label"
                       >
                         Compatible Phone OS
-                      </label>
+                      </Label>
                       <TxtListInput
                         name="config.compatiblePhoneOs"
                         id="config.compatiblePhoneOs"
@@ -2269,7 +2308,7 @@ export function EditModel() {
                           handleChangeItemInListField(
                             "config.compatiblePhoneOs",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder={
@@ -2279,12 +2318,12 @@ export function EditModel() {
                       />
                     </div>
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="config.appsConnect"
                         className="form-label"
                       >
                         Apps Connect
-                      </label>
+                      </Label>
                       <TxtListInput
                         name="config.appsConnect"
                         id="config.appsConnect"
@@ -2293,7 +2332,7 @@ export function EditModel() {
                           handleChangeItemInListField(
                             "config.appsConnect",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder={
@@ -2303,9 +2342,9 @@ export function EditModel() {
                       />
                     </div>
                     <div className="mb-3">
-                      <label htmlFor="config.sensors" className="form-label">
+                      <Label htmlFor="config.sensors" className="form-label">
                         Sensors
-                      </label>
+                      </Label>
                       <TxtListInput
                         name="config.sensors"
                         id="config.sensors"
@@ -2314,7 +2353,7 @@ export function EditModel() {
                           handleChangeItemInListField(
                             "config.sensors",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder={model.config.sensors.join(", ") || "None"}
@@ -2352,13 +2391,13 @@ export function EditModel() {
                     </div>
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label
+                        <Label
                           htmlFor="feature.waterResistance.rating"
                           className="form-label"
                         >
                           Water Resistance Rating
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="text"
                           id="feature.waterResistance.rating"
                           name="feature.waterResistance.rating"
@@ -2369,21 +2408,17 @@ export function EditModel() {
                           value={formData.feature.waterResistance.rating.val}
                           onChange={handleChange}
                           disabled={process.isProcessing}
+                          error={formData.feature.waterResistance.rating.err}
                         />
-                        {formData.feature.waterResistance.rating.err && (
-                          <InvalidInputMsg
-                            msg={formData.feature.waterResistance.rating.err}
-                          />
-                        )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label
+                        <Label
                           htmlFor="feature.waterResistance.description"
                           className="form-label"
                         >
                           Water Resistance Desc
-                        </label>
-                        <textarea
+                        </Label>
+                        <Textarea
                           id="feature.waterResistance.description"
                           name="feature.waterResistance.description"
                           className="form-control"
@@ -2401,12 +2436,12 @@ export function EditModel() {
                     </div>
 
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="feature.utilities.healths"
                         className="form-label"
                       >
                         Health Utilities
-                      </label>
+                      </Label>
                       <TxtListInput
                         name="feature.utilities.healths"
                         id="feature.utilities.healths"
@@ -2415,7 +2450,7 @@ export function EditModel() {
                           handleChangeItemInListField(
                             "feature.utilities.healths",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder={
@@ -2425,12 +2460,12 @@ export function EditModel() {
                       />
                     </div>
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="feature.utilities.sports"
                         className="form-label"
                       >
                         Sports Utilities
-                      </label>
+                      </Label>
                       <TxtListInput
                         name="feature.utilities.sports"
                         id="feature.utilities.sports"
@@ -2439,7 +2474,7 @@ export function EditModel() {
                           handleChangeItemInListField(
                             "feature.utilities.sports",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder={
@@ -2449,12 +2484,12 @@ export function EditModel() {
                       />
                     </div>
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="feature.utilities.specials"
                         className="form-label"
                       >
                         Special Utilities
-                      </label>
+                      </Label>
                       <TxtListInput
                         name="feature.utilities.specials"
                         id="feature.utilities.specials"
@@ -2463,7 +2498,7 @@ export function EditModel() {
                           handleChangeItemInListField(
                             "feature.utilities.specials",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder={
@@ -2473,12 +2508,12 @@ export function EditModel() {
                       />
                     </div>
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="feature.utilities.others"
                         className="form-label"
                       >
                         Other Utilities
-                      </label>
+                      </Label>
                       <TxtListInput
                         name="feature.utilities.others"
                         id="feature.utilities.others"
@@ -2487,7 +2522,7 @@ export function EditModel() {
                           handleChangeItemInListField(
                             "feature.utilities.others",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder={
@@ -2497,12 +2532,12 @@ export function EditModel() {
                       />
                     </div>
                     <div className="mb-3">
-                      <label
+                      <Label
                         htmlFor="feature.supportedAppsForNotifications"
                         className="form-label"
                       >
                         Supported Apps for Notifications
-                      </label>
+                      </Label>
                       <TxtListInput
                         name="feature.supportedAppsForNotifications"
                         id="feature.supportedAppsForNotifications"
@@ -2513,12 +2548,12 @@ export function EditModel() {
                           handleChangeItemInListField(
                             "feature.supportedAppsForNotifications",
                             item,
-                            action
+                            action,
                           )
                         }
                         placeholder={
                           model.feature.supportedAppsForNotifications.join(
-                            ", "
+                            ", ",
                           ) || "None"
                         }
                         disabled={process.isProcessing}
@@ -2550,18 +2585,22 @@ export function EditModel() {
                         genImgPreviews(formData.currImageUrls.val, "current")}
                     </div>
                     <div className="mt-3">
-                      <label htmlFor="imageUrls" className="form-label">
+                      <Label htmlFor="imageUrls" className="form-label">
                         Upload new images
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="file"
                         id="imageUrls"
                         name="imageUrls"
+                        value={formData.imageUrls.val.length}
                         className="form-control"
                         multiple
                         accept={PRODUCT_IMAGE_ALLOWED_TYPES.join(",")}
                         ref={fileInputRef}
                         disabled={process.isProcessing}
+                        error={formData.imageUrls.err}
+                        neverShowErrorMessage
+                        aria-describedby="imgHelp"
                       />
                       <Btn
                         type="button"
