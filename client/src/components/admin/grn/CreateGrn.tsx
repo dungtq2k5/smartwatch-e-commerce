@@ -435,13 +435,13 @@ export default function CreateGrn() {
       {process.isInitializing ? (
         <CreateGrnSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !providers ? (
-        <ApiError errMsg="Providers data not found." />
+        <ApiError errorMessage="Providers data not found." />
       ) : !grnStates ? (
-        <ApiError errMsg="GRN states data not found." />
+        <ApiError errorMessage="GRN states data not found." />
       ) : !variation ? (
-        <ApiError errMsg="Variation data not found." />
+        <ApiError errorMessage="Variation data not found." />
       ) : (
         <>
           {/* Heading */}

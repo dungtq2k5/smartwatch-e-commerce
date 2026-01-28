@@ -558,13 +558,13 @@ export default function BrandManagement() {
     ) : apiErr ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         </td>
       </tr>
     ) : !brands ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg="Brands data not found." />
+          <ApiError errorMessage="Brands data not found." />
         </td>
       </tr>
     ) : brands.total === 0 ? (

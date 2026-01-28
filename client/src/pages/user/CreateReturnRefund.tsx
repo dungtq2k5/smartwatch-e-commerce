@@ -363,7 +363,7 @@ export default function ReturnRefundCreate() {
       isProcessing: true,
       isUploadingImgs: true,
     }));
-    const validationErrs = await getImgFilesErrs(files, "order return");
+    const validationErrs = await getImgFilesErrs(files, "order-return");
     if (validationErrs.length > 0) {
       setFormData((prev) => ({
         ...prev,
@@ -650,13 +650,13 @@ export default function ReturnRefundCreate() {
         {process.isInitializing ? (
           <ReturnCreateSkeleton />
         ) : apiErr ? (
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         ) : !order ? (
-          <ApiError errMsg="Order data not available." />
+          <ApiError errorMessage="Order data not available." />
         ) : !returnReasons ? (
-          <ApiError errMsg="Return reasons not available." />
+          <ApiError errorMessage="Return reasons not available." />
         ) : !addresses ? (
-          <ApiError errMsg="User addresses not available." />
+          <ApiError errorMessage="User addresses not available." />
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="row g-4">

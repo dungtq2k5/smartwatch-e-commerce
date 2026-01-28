@@ -271,11 +271,11 @@ export default function EditInstance() {
       {process.isInitializing ? (
         <CreateInstanceSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !instanceConditions ? (
-        <ApiError errMsg="Instance conditions data not found." />
+        <ApiError errorMessage="Instance conditions data not found." />
       ) : !instance ? (
-        <ApiError errMsg="Instance data not found." />
+        <ApiError errorMessage="Instance data not found." />
       ) : (
         <>
           {/* Heading */}

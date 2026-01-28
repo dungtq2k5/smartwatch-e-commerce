@@ -228,9 +228,9 @@ export default function DetailProduct() {
       {isInitializing ? (
         <DetailProductSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !productDetails ? (
-        <ApiError errMsg="Product data not found." />
+        <ApiError errorMessage="Product data not found." />
       ) : (
         <>
           {/* Heading */}

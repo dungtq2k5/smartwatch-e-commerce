@@ -314,9 +314,9 @@ export default function EditBrand() {
       {process.isInitializing ? (
         <Loading loadingMsg="Loading brand data..." />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !brand ? (
-        <ApiError errMsg="Product brand data not found." />
+        <ApiError errorMessage="Product brand data not found." />
       ) : (
         <>
           <Title

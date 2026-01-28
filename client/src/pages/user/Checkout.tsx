@@ -378,17 +378,17 @@ export default function Checkout() {
         <h1 className="mb-4 text-center">Checkout</h1>
 
         {!user ? (
-          <ApiError errMsg="User data is not available." />
+          <ApiError errorMessage="User data is not available." />
         ) : process.isFetching ? (
           <CheckoutSkeleton />
         ) : apiErr ? (
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         ) : !checkoutCart ? (
-          <ApiError errMsg="Cart data is not available." />
+          <ApiError errorMessage="Cart data is not available." />
         ) : !paymentMethods ? (
-          <ApiError errMsg="Payment methods data is not available." />
+          <ApiError errorMessage="Payment methods data is not available." />
         ) : !selectedPaymentMethod ? (
-          <ApiError errMsg="Selected payment method data is not available." />
+          <ApiError errorMessage="Selected payment method data is not available." />
         ) : (checkoutCart.type === "UserCartListResponse" &&
             !checkoutCart.total) ||
           !isAllItemAvailable ? (

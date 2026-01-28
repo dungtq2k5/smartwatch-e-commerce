@@ -135,9 +135,9 @@ export default function Address() {
       {process.isFetching ? (
         <Loading loadingMsg="Hang on we are loading your addresses..." />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !addresses ? (
-        <ApiError errMsg="Addresses data not found." />
+        <ApiError errorMessage="Addresses data not found." />
       ) : (
         <>
           <div className="d-flex justify-content-between align-items-center mb-4">

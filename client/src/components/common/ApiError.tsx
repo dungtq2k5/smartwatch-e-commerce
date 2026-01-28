@@ -2,7 +2,9 @@ import { faFaceSadCry } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useRef } from "react";
 
-export default function ApiError({ errMsg }: Readonly<{ errMsg?: string }>) {
+export default function ApiError({
+  errorMessage,
+}: Readonly<{ errorMessage?: string }>) {
   // DEV temp for testing
   const renderCount = useRef(0);
   renderCount.current += 1;
@@ -17,7 +19,7 @@ export default function ApiError({ errMsg }: Readonly<{ errMsg?: string }>) {
       />
       <p className="h3 mb-3">Oops! An error occurred.</p>
       <p className="lead text-muted">
-        {errMsg ?? "Something went wrong on our end."}
+        {errorMessage ?? "Something went wrong on our end."}
       </p>
       <p>
         Please try refreshing the page, or contact support if the problem

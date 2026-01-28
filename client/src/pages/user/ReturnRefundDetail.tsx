@@ -269,11 +269,11 @@ export default function ReturnRefundDetail() {
       {process.isInitializing ? (
         <PurchaseDetailSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !returnStates ? (
-        <ApiError errMsg="Return states data is not available." />
+        <ApiError errorMessage="Return states data is not available." />
       ) : !returnDetail ? (
-        <ApiError errMsg="Return detail data is not available." />
+        <ApiError errorMessage="Return detail data is not available." />
       ) : (
         <>
           {/* Header */}

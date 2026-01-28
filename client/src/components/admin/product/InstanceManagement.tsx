@@ -610,13 +610,13 @@ export default function InstanceManagement() {
     ) : apiErr ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         </td>
       </tr>
     ) : !instances ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg="Instances data not found." />
+          <ApiError errorMessage="Instances data not found." />
         </td>
       </tr>
     ) : instances.total === 0 ? (

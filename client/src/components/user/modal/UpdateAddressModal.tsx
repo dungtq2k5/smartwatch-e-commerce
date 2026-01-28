@@ -423,11 +423,11 @@ const UpdateAddressModal = memo(
           <Loading loadingMsg="Loading address details..." />
         ) : apiErr ? (
           <div className="p-4">
-            <ApiError errMsg={apiErr} />
+            <ApiError errorMessage={apiErr} />
           </div>
         ) : !address ? (
           <div className="p-4">
-            <ApiError errMsg="Could not load address data." />
+            <ApiError errorMessage="Could not load address data." />
           </div>
         ) : (
           <form onSubmit={handleSubmit}>

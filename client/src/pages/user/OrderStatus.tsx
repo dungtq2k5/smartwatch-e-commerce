@@ -23,7 +23,7 @@ export default function OrderStatus() {
     <main className="container--g text-center">
       <h1 className="mb-4">Order Status</h1>
       {!status ? (
-        <ApiError errMsg="Couldn't get redirect_status." />
+        <ApiError errorMessage="Couldn't get redirect_status." />
       ) : (
         <>
           {paymentMethod === "stripe" ? (
@@ -60,7 +60,7 @@ export default function OrderStatus() {
               </p>
             )
           ) : (
-            <ApiError errMsg="Couldn't get payment method." />
+            <ApiError errorMessage="Couldn't get payment method." />
           )}
 
           <div className="d-flex gap-2 justify-content-center">

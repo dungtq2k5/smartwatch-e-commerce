@@ -321,7 +321,7 @@ export default function Profile() {
   return (
     <>
       {!user ? (
-        <ApiError errMsg="User data not found." />
+        <ApiError errorMessage="User data not found." />
       ) : (
         <>
           <form onSubmit={handleSubmit}>

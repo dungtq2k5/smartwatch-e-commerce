@@ -1188,11 +1188,11 @@ export default function CreateModel() {
       {process.isInitializing ? (
         <CreateModelSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !oses ? (
-        <ApiError errMsg="Operating systems data not found." />
+        <ApiError errorMessage="Operating systems data not found." />
       ) : !product ? (
-        <ApiError errMsg="Product data not found." />
+        <ApiError errorMessage="Product data not found." />
       ) : (
         <>
           {/* Heading */}

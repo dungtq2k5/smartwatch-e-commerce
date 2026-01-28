@@ -417,9 +417,9 @@ export default function Balance() {
       {process.isFetching ? (
         <Loading loadingMsg="Loading balance history..." />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : balanceHistories === null ? (
-        <ApiError errMsg="Balance history data is not available." />
+        <ApiError errorMessage="Balance history data is not available." />
       ) : (
         <>
           {/* Balance history */}

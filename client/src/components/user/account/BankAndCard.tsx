@@ -333,11 +333,11 @@ export default function BankAndCard() {
       {process.isInitializing ? (
         <Loading loadingMsg="Hang on we are loading payment methods..." />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !paymentMethods ? (
-        <ApiError errMsg="Payment methods data not found." />
+        <ApiError errorMessage="Payment methods data not found." />
       ) : !bankAccounts ? (
-        <ApiError errMsg="Bank accounts data not found." />
+        <ApiError errorMessage="Bank accounts data not found." />
       ) : (
         <>
           {/* Cards section */}

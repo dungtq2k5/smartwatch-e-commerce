@@ -831,11 +831,11 @@ export default function EditVariation() {
       {process.isInitializing ? (
         <p>Loading...</p> // TODO loading skeleton
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !sysUserId ? (
-        <ApiError errMsg="System user ID data not found." />
+        <ApiError errorMessage="System user ID data not found." />
       ) : !variation ? (
-        <ApiError errMsg="Variation data not found." />
+        <ApiError errorMessage="Variation data not found." />
       ) : (
         <>
           {/* Heading */}

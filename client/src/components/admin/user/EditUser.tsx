@@ -569,11 +569,11 @@ export default function EditUser() {
       {process.isInitializing ? (
         <EditUserSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !roles ? (
-        <ApiError errMsg="Roles data not found." />
+        <ApiError errorMessage="Roles data not found." />
       ) : !user ? (
-        <ApiError errMsg="User data not found." />
+        <ApiError errorMessage="User data not found." />
       ) : (
         <>
           {/* Heading */}

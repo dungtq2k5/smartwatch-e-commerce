@@ -588,13 +588,13 @@ export default function GrnManagement() {
     ) : apiErr ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         </td>
       </tr>
     ) : !grns ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg="Grns data not found." />
+          <ApiError errorMessage="Grns data not found." />
         </td>
       </tr>
     ) : grns.total === 0 ? (

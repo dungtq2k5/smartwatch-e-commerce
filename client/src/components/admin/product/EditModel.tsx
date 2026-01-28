@@ -1385,13 +1385,13 @@ export function EditModel() {
       {process.isInitializing ? (
         <p>Loading...</p> // TODO loading skeletons
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !oses ? (
-        <ApiError errMsg="Operating system data not found." />
+        <ApiError errorMessage="Operating system data not found." />
       ) : !model ? (
-        <ApiError errMsg="Model data not found." />
+        <ApiError errorMessage="Model data not found." />
       ) : !sysUserId ? (
-        <ApiError errMsg="System user ID not found." />
+        <ApiError errorMessage="System user ID not found." />
       ) : (
         <>
           {/* Heading */}

@@ -194,7 +194,7 @@ export default function SearchProduct() {
             ))}
           </div>
         ) : products.apiError ? (
-          <ApiError errMsg={products.apiError} />
+          <ApiError errorMessage={products.apiError} />
         ) : !products.searchProducts ? (
           <p className="text-muted">
             No products available, please type something.

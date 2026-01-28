@@ -72,13 +72,13 @@ export default function DetailInstance() {
       {isInitializing ? (
         <p>Loading...</p> // TODO skeleton loading
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !instanceConditions ? (
-        <ApiError errMsg="Instance condition data not found." />
+        <ApiError errorMessage="Instance condition data not found." />
       ) : !movementTypes ? (
-        <ApiError errMsg="Inventory movement type data not found." />
+        <ApiError errorMessage="Inventory movement type data not found." />
       ) : !instanceDetails ? (
-        <ApiError errMsg="Instance detail data not found." />
+        <ApiError errorMessage="Instance detail data not found." />
       ) : (
         <div className="container-fluid p-0">
           {/* Heading */}

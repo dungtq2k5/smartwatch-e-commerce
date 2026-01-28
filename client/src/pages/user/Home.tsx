@@ -351,9 +351,9 @@ export default function Home() {
             )}
           </div>
         ) : apiErr.initErr ? (
-          <ApiError errMsg={apiErr.initErr} />
+          <ApiError errorMessage={apiErr.initErr} />
         ) : !products.mostPopularProducts ? (
-          <ApiError errMsg="Popular products data is not available." />
+          <ApiError errorMessage="Popular products data is not available." />
         ) : !products.mostPopularProducts.products.total ? (
           <p className="mb-0 text-muted">No popular products found.</p>
         ) : (
@@ -574,9 +574,9 @@ export default function Home() {
                   ))}
                 </div>
               ) : apiErr.searchErr ? (
-                <ApiError errMsg={apiErr.searchErr} />
+                <ApiError errorMessage={apiErr.searchErr} />
               ) : !products.searchProducts ? (
-                <ApiError errMsg="Filtered products data is not available." />
+                <ApiError errorMessage="Filtered products data is not available." />
               ) : !products.searchProducts.products.total ? (
                 <div className="d-flex justify-content-center align-items-center h-100">
                   <p className="mb-0 text-muted">

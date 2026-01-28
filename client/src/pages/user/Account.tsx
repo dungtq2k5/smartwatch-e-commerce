@@ -57,7 +57,7 @@ export default function Account() {
   return (
     <>
       {!user ? (
-        <ApiError errMsg="User data is not available." />
+        <ApiError errorMessage="User data is not available." />
       ) : (
         <div className="container--g" style={{ minWidth: "100%" }}>
           <div className="row">

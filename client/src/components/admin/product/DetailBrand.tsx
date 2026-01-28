@@ -67,11 +67,11 @@ export default function DetailBrand() {
       {isInitializing ? (
         <Loading loadingMsg="Loading brand details..." />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !sysUserId ? (
-        <ApiError errMsg="System user ID not found." />
+        <ApiError errorMessage="System user ID not found." />
       ) : !brandDetails ? (
-        <ApiError errMsg="Brand details not found." />
+        <ApiError errorMessage="Brand details not found." />
       ) : (
         <>
           {/* Heading */}

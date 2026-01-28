@@ -89,7 +89,7 @@ const ReturnCard = memo(
         {isInitializing ? (
           <PurchaseCardSkeleton />
         ) : apiErr ? (
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         ) : (
           <div className="card mb-3">
             {/* Header */}

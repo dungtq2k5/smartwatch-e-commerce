@@ -289,15 +289,15 @@ export default function EditGrn() {
       {process.isInitializing ? (
         <p>Loading...</p> // TODO loading skeleton
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !grnStates ? (
-        <ApiError errMsg="GRN states data is not found." />
+        <ApiError errorMessage="GRN states data is not found." />
       ) : !movementTypes ? (
-        <ApiError errMsg="Inventory movement types data is not found." />
+        <ApiError errorMessage="Inventory movement types data is not found." />
       ) : !providers ? (
-        <ApiError errMsg="Providers data is not found." />
+        <ApiError errorMessage="Providers data is not found." />
       ) : !grn ? (
-        <ApiError errMsg="GRN data is not found." />
+        <ApiError errorMessage="GRN data is not found." />
       ) : (
         <>
           {/* Heading */}

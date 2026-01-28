@@ -703,13 +703,13 @@ export default function UserManagement() {
     ) : apiErr ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         </td>
       </tr>
     ) : !users ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg="Users data not found." />
+          <ApiError errorMessage="Users data not found." />
         </td>
       </tr>
     ) : users.total === 0 ? (

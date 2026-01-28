@@ -550,15 +550,15 @@ export function EditProduct() {
       {process.isInitializing ? (
         <p>Loading...</p> // TODO loading skeleton
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !brands ? (
-        <ApiError errMsg="Product brands data is not found." />
+        <ApiError errorMessage="Product brands data is not found." />
       ) : !categories ? (
-        <ApiError errMsg="Product categories data is not found." />
+        <ApiError errorMessage="Product categories data is not found." />
       ) : !product ? (
-        <ApiError errMsg="Product data is not found." />
+        <ApiError errorMessage="Product data is not found." />
       ) : !sysUserId ? (
-        <ApiError errMsg="System user ID data not found." />
+        <ApiError errorMessage="System user ID data not found." />
       ) : (
         <>
           {/* Heading */}

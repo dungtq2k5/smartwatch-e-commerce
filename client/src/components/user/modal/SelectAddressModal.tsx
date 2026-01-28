@@ -109,9 +109,9 @@ const SelectAddressModal = memo(
               {isFetching ? (
                 <Loading loadingMsg="Loading addresses..." />
               ) : apiErr ? (
-                <ApiError errMsg={apiErr} />
+                <ApiError errorMessage={apiErr} />
               ) : !addresses ? (
-                <ApiError errMsg="Addresses data not available." />
+                <ApiError errorMessage="Addresses data not available." />
               ) : !addresses.total ? (
                 <p>No addresses found!</p>
               ) : (

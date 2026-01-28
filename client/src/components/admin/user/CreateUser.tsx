@@ -385,9 +385,9 @@ export default function CreateUser() {
       {process.isInitializing ? (
         <CreateUserSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !roles ? (
-        <ApiError errMsg="Roles data not found." />
+        <ApiError errorMessage="Roles data not found." />
       ) : (
         <>
           {/* Heading */}

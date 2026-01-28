@@ -440,11 +440,11 @@ export default function CreateProduct() {
       {process.isInitializing ? (
         <CreateProductSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !brands ? (
-        <ApiError errMsg="Brands data not found." />
+        <ApiError errorMessage="Brands data not found." />
       ) : !categories ? (
-        <ApiError errMsg="Categories data not found." />
+        <ApiError errorMessage="Categories data not found." />
       ) : (
         <>
           {/* Heading */}

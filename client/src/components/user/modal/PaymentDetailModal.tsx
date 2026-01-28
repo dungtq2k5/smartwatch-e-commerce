@@ -82,11 +82,11 @@ const PaymentDetailModal = memo(
           {isInitializing ? (
             <Loading loadingMsg="Loading payment details..." />
           ) : apiErr ? (
-            <ApiError errMsg={apiErr} />
+            <ApiError errorMessage={apiErr} />
           ) : !order ? (
-            <ApiError errMsg="Order data not found." />
+            <ApiError errorMessage="Order data not found." />
           ) : !orderState ? (
-            <ApiError errMsg="Order state data not found." />
+            <ApiError errorMessage="Order state data not found." />
           ) : (
             <>
               {/* Header */}

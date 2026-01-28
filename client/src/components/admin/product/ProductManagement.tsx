@@ -741,13 +741,13 @@ export default function ProductManagement() {
     ) : apiErr ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         </td>
       </tr>
     ) : !products ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg="Products data not found." />
+          <ApiError errorMessage="Products data not found." />
         </td>
       </tr>
     ) : products.total === 0 ? (

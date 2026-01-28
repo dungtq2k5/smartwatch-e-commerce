@@ -733,13 +733,13 @@ export default function ModelManagement() {
     ) : apiErr ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         </td>
       </tr>
     ) : !models ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg="Models data not found." />
+          <ApiError errorMessage="Models data not found." />
         </td>
       </tr>
     ) : models.total === 0 ? (

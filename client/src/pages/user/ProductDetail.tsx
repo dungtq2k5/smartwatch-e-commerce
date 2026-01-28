@@ -342,9 +342,9 @@ export default function ProductDetail() {
       {process.isFetchingProductDetail ? (
         <ProductDetailSkeleton />
       ) : apiErr.productDetail ? (
-        <ApiError errMsg={apiErr.productDetail} />
+        <ApiError errorMessage={apiErr.productDetail} />
       ) : !products.productDetail || !modelPicked || !variationPicked ? (
-        <ApiError errMsg="Product data is not available." />
+        <ApiError errorMessage="Product data is not available." />
       ) : (
         <>
           {/* Main product section */}
@@ -546,7 +546,7 @@ export default function ProductDetail() {
                 )}
               </div>
             ) : apiErr.productsSuggest ? (
-              <ApiError errMsg={apiErr.productsSuggest} />
+              <ApiError errorMessage={apiErr.productsSuggest} />
             ) : !products.productsSuggest?.products.total ? (
               <p className="mb-0 text-muted text-center">
                 No products suggest available.

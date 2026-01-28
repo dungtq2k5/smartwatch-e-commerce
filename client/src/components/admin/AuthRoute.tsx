@@ -58,7 +58,7 @@ const AuthRoute = memo(() => {
         </main>
       ) : apiErr ? (
         <main className="container--g container--center--g">
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         </main>
       ) : (
         <Outlet />

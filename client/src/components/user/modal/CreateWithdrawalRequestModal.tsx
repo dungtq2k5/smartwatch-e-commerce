@@ -223,9 +223,9 @@ const CreateWithdrawalRequestModal = memo(
             {process.isInitializing ? (
               <Loading loadingMsg="Loading bank accounts..." />
             ) : apiErr ? (
-              <ApiError errMsg={apiErr} />
+              <ApiError errorMessage={apiErr} />
             ) : !bankAccounts ? (
-              <ApiError errMsg="Bank accounts data not found." />
+              <ApiError errorMessage="Bank accounts data not found." />
             ) : bankAccounts.total === 0 ? (
               <p>You don't have any bank accounts. Please add one first</p>
             ) : (

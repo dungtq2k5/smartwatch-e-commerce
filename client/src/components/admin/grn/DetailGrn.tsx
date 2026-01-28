@@ -75,13 +75,13 @@ export default function DetailGrn() {
       {isInitializing ? (
         <p>Loading...</p> // TODO skeleton loading
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !sysUserId ? (
-        <ApiError errMsg="System user data not found." />
+        <ApiError errorMessage="System user data not found." />
       ) : !grnStates ? (
-        <ApiError errMsg="GRN state data not found." />
+        <ApiError errorMessage="GRN state data not found." />
       ) : !grnDetails || !currGrnDetails ? (
-        <ApiError errMsg="Instance detail data not found." />
+        <ApiError errorMessage="Instance detail data not found." />
       ) : (
         <div className="container-fluid p-0">
           {/* Heading */}

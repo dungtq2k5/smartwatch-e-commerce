@@ -16,7 +16,7 @@ export default function Verify() {
   return (
     <main className="container--g container--center--g">
       {!user ? (
-        <ApiError errMsg="User data is not available." />
+        <ApiError errorMessage="User data is not available." />
       ) : (
         <VerifyForm
           type={user.email ? "email" : "phoneNumber"}

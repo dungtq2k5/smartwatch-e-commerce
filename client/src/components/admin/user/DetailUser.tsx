@@ -63,13 +63,13 @@ export default function DetailUser() {
       {isInitializing ? (
         <DetailUserSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !roles ? (
-        <ApiError errMsg="Roles data not found." />
+        <ApiError errorMessage="Roles data not found." />
       ) : !userDetails ? (
-        <ApiError errMsg="User detail data not found." />
+        <ApiError errorMessage="User detail data not found." />
       ) : !sysUserId ? (
-        <ApiError errMsg="System user ID not found." />
+        <ApiError errorMessage="System user ID not found." />
       ) : (
         <>
           {/* Heading */}

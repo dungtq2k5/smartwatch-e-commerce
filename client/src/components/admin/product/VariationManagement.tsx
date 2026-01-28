@@ -756,13 +756,13 @@ export default function VariationManagement() {
     ) : apiErr ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         </td>
       </tr>
     ) : !variations ? (
       <tr>
         <td colSpan={colSpan} className="p-4">
-          <ApiError errMsg="Variations data not found." />
+          <ApiError errorMessage="Variations data not found." />
         </td>
       </tr>
     ) : variations.total === 0 ? (

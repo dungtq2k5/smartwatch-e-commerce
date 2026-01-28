@@ -132,9 +132,9 @@ export default function Cart() {
       {process.isFetching ? (
         <CartSkeleton />
       ) : apiError ? (
-        <ApiError errMsg={apiError} />
+        <ApiError errorMessage={apiError} />
       ) : !cart ? (
-        <ApiError errMsg="No cart found. Please try again later." />
+        <ApiError errorMessage="No cart found. Please try again later." />
       ) : !cart.total ? (
         <div className="text-center">
           <h1 className="mb-4">Your Cart is Empty</h1>

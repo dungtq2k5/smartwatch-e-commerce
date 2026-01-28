@@ -84,11 +84,11 @@ const RefundDetailModal = memo(
           {isInitializing ? (
             <Loading loadingMsg="Loading refund details..." />
           ) : apiErr ? (
-            <ApiError errMsg={apiErr} />
+            <ApiError errorMessage={apiErr} />
           ) : !orderReturn ? (
-            <ApiError errMsg="Order return data not found." />
+            <ApiError errorMessage="Order return data not found." />
           ) : !returnState ? (
-            <ApiError errMsg="Return state data not found." />
+            <ApiError errorMessage="Return state data not found." />
           ) : (
             <>
               {/* Header */}

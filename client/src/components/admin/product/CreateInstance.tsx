@@ -241,11 +241,11 @@ export default function CreateInstance() {
       {process.isInitializing ? (
         <CreateInstanceSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !instanceConditions ? (
-        <ApiError errMsg="Instance conditions data not found." />
+        <ApiError errorMessage="Instance conditions data not found." />
       ) : !variation ? (
-        <ApiError errMsg="Variation data not found." />
+        <ApiError errorMessage="Variation data not found." />
       ) : (
         <>
           {/* Heading */}

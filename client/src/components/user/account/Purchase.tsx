@@ -695,19 +695,19 @@ export default function Purchase() {
         : process.isFetchingOrders) ? (
         <Loading loadingMsg={`Loading ${activeTabLabel} orders...`} />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !deliveryStates ? (
-        <ApiError errMsg="Delivery state data is not available." />
+        <ApiError errorMessage="Delivery state data is not available." />
       ) : !orderStates ? (
-        <ApiError errMsg="Order state data is not available." />
+        <ApiError errorMessage="Order state data is not available." />
       ) : !paymentMethods ? (
-        <ApiError errMsg="Payment method data is not available." />
+        <ApiError errorMessage="Payment method data is not available." />
       ) : !returnStates ? (
-        <ApiError errMsg="Return/Refund state data is not available." />
+        <ApiError errorMessage="Return/Refund state data is not available." />
       ) : searchForm.activeTab !== "return-refund" && !searchOrders ? (
-        <ApiError errMsg="Order data is not available." />
+        <ApiError errorMessage="Order data is not available." />
       ) : searchForm.activeTab === "return-refund" && !searchReturns ? (
-        <ApiError errMsg="Return/Refund data is not available." />
+        <ApiError errorMessage="Return/Refund data is not available." />
       ) : (searchForm.activeTab !== "return-refund" && !searchOrders?.total) ||
         (searchForm.activeTab === "return-refund" && !searchReturns?.total) ? (
         <div className="d-flex flex-column align-items-center justify-content-center h-100">

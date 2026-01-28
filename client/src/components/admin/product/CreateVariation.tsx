@@ -718,9 +718,9 @@ export default function CreateVariation() {
       {process.isInitializing ? (
         <CreateVariationSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !model ? (
-        <ApiError errMsg="Model data not found." />
+        <ApiError errorMessage="Model data not found." />
       ) : (
         <>
           {/* Heading */}

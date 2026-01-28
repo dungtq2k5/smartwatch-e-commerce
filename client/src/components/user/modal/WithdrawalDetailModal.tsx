@@ -138,11 +138,11 @@ const WithdrawalDetailModal = memo(
             {isInitializing ? (
               <Loading loadingMsg="Loading withdrawal details..." />
             ) : apiErr ? (
-              <ApiError errMsg={apiErr} />
+              <ApiError errorMessage={apiErr} />
             ) : !withdrawalRequest ? (
-              <ApiError errMsg="Withdrawal request data not found." />
+              <ApiError errorMessage="Withdrawal request data not found." />
             ) : !requestState ? (
-              <ApiError errMsg="Withdrawal request state data not found." />
+              <ApiError errorMessage="Withdrawal request state data not found." />
             ) : (
               <>
                 {/* Header */}

@@ -131,7 +131,7 @@ export default function ReturnRefundUpdate() {
             val:
               getUserAddressIdFromReturn(
                 fetchedReturn.pickupAddress,
-                userAddresses.addresses
+                userAddresses.addresses,
               ) || "",
           },
           estimatePickupDate: fetchedReturn.estimatePickupDate,
@@ -171,7 +171,7 @@ export default function ReturnRefundUpdate() {
     (
       e: React.ChangeEvent<
         HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >
+      >,
     ): void => {
       if (!orderReturn || process.isProcessing) return;
 
@@ -205,7 +205,7 @@ export default function ReturnRefundUpdate() {
         [name]: val,
       }));
     },
-    [process.isProcessing, orderReturn]
+    [process.isProcessing, orderReturn],
   );
 
   const handleUploadImgs = useCallback(async (): Promise<void> => {
@@ -230,7 +230,8 @@ export default function ReturnRefundUpdate() {
     if (currFiles.length > 0) {
       const filteredFiles = Array.from(files).filter((f) => {
         return !currFiles.some(
-          (cf) => cf.name === f.name && cf.size === f.size && cf.type === f.type
+          (cf) =>
+            cf.name === f.name && cf.size === f.size && cf.type === f.type,
         );
       });
 
@@ -265,7 +266,7 @@ export default function ReturnRefundUpdate() {
       isProcessing: true,
       isUploadingImgs: true,
     }));
-    const imgFileErrs = await getImgFilesErrs(files, "order return");
+    const imgFileErrs = await getImgFilesErrs(files, "order-return");
     if (imgFileErrs.length > 0) {
       setFormData((prev) => ({
         ...prev,
@@ -319,7 +320,7 @@ export default function ReturnRefundUpdate() {
           break;
       }
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const genImgPreviews = useCallback(
@@ -347,7 +348,7 @@ export default function ReturnRefundUpdate() {
         </li>
       ));
     },
-    [handleRemoveImg, process.isProcessing]
+    [handleRemoveImg, process.isProcessing],
   );
 
   const handleCancel = useCallback((): void => {
@@ -397,11 +398,11 @@ export default function ReturnRefundUpdate() {
           } else {
             const imgFileErrs = await getImgFilesErrs(
               newFormData.imageUrls.val,
-              "order return"
+              "order-return",
             );
             if (imgFileErrs.length) {
               newFormData.imageUrls.err = `Invalid files found: ${imgFileErrs.join(
-                ", "
+                ", ",
               )}`;
               allValid = false;
             }
@@ -439,9 +440,7 @@ export default function ReturnRefundUpdate() {
           if (formData.buyerReason.val !== (orderReturn.buyerReason || "")) {
             changedData.buyerReason = formData.buyerReason.val;
           }
-          const newAddress = await getAddress(
-            formData.userAddressIdToPickup.val
-          );
+          const newAddress = getAddress(formData.userAddressIdToPickup.val);
           if (!newAddress) {
             throw new Error("Selected pickup address not found.");
           }
@@ -472,7 +471,7 @@ export default function ReturnRefundUpdate() {
                   },
                 }));
                 throw new Error(
-                  "Some images failed to upload. Please try again."
+                  "Some images failed to upload. Please try again.",
                 );
               }
               uploadedImgUrls.push(downloadUrl);
@@ -525,7 +524,7 @@ export default function ReturnRefundUpdate() {
       orderReturn,
       process.isProcessing,
       updateReturn,
-    ]
+    ],
   );
 
   const handleSubmitCancelReturn = useCallback(async (): Promise<void> => {
@@ -573,13 +572,13 @@ export default function ReturnRefundUpdate() {
         {process.isInitializing ? (
           <ReturnUpdateSkeleton />
         ) : apiErr ? (
-          <ApiError errMsg={apiErr} />
+          <ApiError errorMessage={apiErr} />
         ) : !orderReturn ? (
-          <ApiError errMsg="Order return data not available." />
+          <ApiError errorMessage="Order return data not available." />
         ) : !returnReasons ? (
-          <ApiError errMsg="Return reasons data not available." />
+          <ApiError errorMessage="Return reasons data not available." />
         ) : !addresses ? (
-          <ApiError errMsg="User addresses data not available." />
+          <ApiError errorMessage="User addresses data not available." />
         ) : (
           <>
             {/* Warning note */}
@@ -627,7 +626,8 @@ export default function ReturnRefundUpdate() {
                               >
                                 {returnReasons.reasons.map((reason) => (
                                   <option key={reason.id} value={reason.id}>
-                                    {reason.name} ({reason.description?.toLowerCase()})
+                                    {reason.name} (
+                                    {reason.description?.toLowerCase()})
                                   </option>
                                 ))}
                               </select>
@@ -744,7 +744,7 @@ export default function ReturnRefundUpdate() {
                               {formData.currImageUrls.val.length > 0 &&
                                 genImgPreviews(
                                   formData.currImageUrls.val,
-                                  "current"
+                                  "current",
                                 )}
                             </ul>
                           </div>
@@ -860,13 +860,13 @@ export default function ReturnRefundUpdate() {
                           {[
                             ...new Array(
                               MAX_ESTIMATE_PICKUP_TIME_GAP /
-                                (24 * 60 * 60 * 1000)
+                                (24 * 60 * 60 * 1000),
                             ).keys(),
                           ].map((day) => {
                             day++; // Start from 1
 
                             const pickupDate = new Date(
-                              Date.now() + day * 24 * 60 * 60 * 1000
+                              Date.now() + day * 24 * 60 * 60 * 1000,
                             );
                             const isoDate = pickupDate
                               .toISOString()

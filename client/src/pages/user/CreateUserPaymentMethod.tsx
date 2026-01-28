@@ -50,9 +50,9 @@ export default function StripePaymentFormWrapper() {
       {isLoading ? (
         <Loading loadingMsg="Preparing secure form..." />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
+        <ApiError errorMessage={apiErr} />
       ) : !clientSecret ? (
-        <ApiError errMsg="Client secret data not found." />
+        <ApiError errorMessage="Client secret data not found." />
       ) : (
         <Elements options={options} stripe={stripePromise}>
           <AddPaymentMethodForm />
