@@ -312,7 +312,7 @@ export default function VariationManagement() {
               disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
             <CreateBtnLink
-              to={`/admin/grn/create/${variation.id}`}
+              to={`/admin/grns/create/${variation.id}`}
               title="Import GRN for this variation"
               disabled={!canCreateGrn}
               disabledtitle={DISABLED_TITLE_FOR_PERFORMING}

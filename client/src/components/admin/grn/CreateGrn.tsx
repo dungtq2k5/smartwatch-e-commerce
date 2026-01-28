@@ -157,6 +157,9 @@ export default function CreateGrn() {
           err = "Name is invalid";
         } else if (name === "totalPriceCents" && Number(val) < 0) {
           err = "Total price cents is invalid";
+        } else if (name === "notes" && val && !removeOddSpaces(val)) {
+          err = "Notes is invalid";
+          console.log("Notes validation error set");
         }
 
         return {
