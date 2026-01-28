@@ -3,7 +3,10 @@ import { Link, useParams } from "react-router-dom";
 import useUserStore from "../../../store/admin/userStore";
 import useGrnStore from "../../../store/admin/grn/grnStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
-import type { GrnDetailsListResponse } from "../../../../../common/types.common";
+import type {
+  GrnDetailsItem,
+  GrnDetailsResponse,
+} from "../../../../../common/types.common";
 import { formatError } from "../../../../../common/utils.common";
 import Title from "../Title";
 import ApiError from "../../common/ApiError";
@@ -31,12 +34,10 @@ export default function DetailGrn() {
     useHasPermission("r_usr"),
   ];
 
-  const [currGrnDetails, setCurrGrnDetails] = useState<
-    GrnDetailsListResponse["grns"][number] | null
-  >(null);
-  const [grnDetails, setGrnDetails] = useState<GrnDetailsListResponse | null>(
+  const [currGrnDetails, setCurrGrnDetails] = useState<GrnDetailsItem | null>(
     null,
   );
+  const [grnDetails, setGrnDetails] = useState<GrnDetailsResponse | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [apiErr, setApiErr] = useState<string | null>(null);
 

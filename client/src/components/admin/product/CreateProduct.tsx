@@ -161,7 +161,7 @@ export default function CreateProduct() {
           };
         }
 
-        let err = "";
+        let err = undefined;
         if (!val && ["name", "description", "basePriceCents"].includes(name)) {
           err = `${capFirstLetter(name)} is required.`;
         } else if (name === "name" && !isValidProductName(val)) {

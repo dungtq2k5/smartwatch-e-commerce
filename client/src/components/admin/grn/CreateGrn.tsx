@@ -45,7 +45,7 @@ type Process = {
 };
 
 type FormData = {
-  providerId: FormInput;
+  providerId: FormInput<string, undefined>;
   name: FormInput;
   totalPriceCents: FormInput;
   quantity: number; // Will be auto calculated from file
@@ -82,7 +82,7 @@ export default function CreateGrn() {
   const [apiErr, setApiErr] = useState<string | null>(null);
 
   const [variation, setVariation] = useState<ModelVariationResponse | null>(
-    null
+    null,
   );
   const [formData, setFormData] = useState<FormData>({
     providerId: { val: "" },
@@ -143,16 +143,16 @@ export default function CreateGrn() {
     (
       e: React.FormEvent<
         HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >
+      >,
     ) => {
       if (process.isProcessing) return;
 
       const { name, value: val } = e.currentTarget;
 
       setFormData((prev) => {
-        let err = "";
+        let err = undefined;
         if (!val && ["name", "totalPriceCents"].includes(name)) {
-          err = `${name} is required`;
+          err = `${capFirstLetter(name)} is required`;
         } else if (name === "name" && !removeOddSpaces(val)) {
           err = "Name is invalid";
         } else if (name === "totalPriceCents" && Number(val) < 0) {
@@ -168,7 +168,7 @@ export default function CreateGrn() {
         };
       });
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const handleFileChange = useCallback(
@@ -342,7 +342,7 @@ export default function CreateGrn() {
       variationId,
       wizard.isActive,
       wizard.startStep,
-    ]
+    ],
   );
 
   const handleDiscard = useCallback((): void => {

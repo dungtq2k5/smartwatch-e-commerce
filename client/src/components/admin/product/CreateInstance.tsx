@@ -129,7 +129,7 @@ export default function CreateInstance() {
       }
 
       setFormData((prev) => {
-        let err = "";
+        let err = undefined;
         if (!val && name === "supplierSerialNumber") {
           err = "Supplier serial number is required.";
         } else if (

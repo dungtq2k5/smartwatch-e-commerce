@@ -8,7 +8,7 @@ import type {
   AdminProductResponse,
   AdminUserResponse,
   BaseUserAddress,
-  GrnDetailsResponse,
+  GrnDetailsItem,
   OrderReturnSearchQuery,
   UserCartResponse,
   VariationInstanceResponse,
@@ -99,7 +99,7 @@ export type AdminVariationInstanceDisplayableField =
   | "actions";
 
 export type AdminGrnDisplayableField =
-  | keyof Omit<GrnDetailsResponse, "stateId" | "reversedByGrnId" | "reversedAt">
+  | keyof Omit<GrnDetailsItem, "stateId" | "reversedByGrnId" | "reversedAt">
   | "state"
   | "reversed"
   | "actions";
@@ -180,3 +180,8 @@ export type ProductCreationWizardStep =
   | "model"
   | "variation"
   | "grn";
+
+export type CustomInputProps = {
+  error?: string | null;
+  neverShowErrorMessage?: boolean;
+};

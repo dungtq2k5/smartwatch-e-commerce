@@ -144,7 +144,7 @@ export default function EditGrn() {
       const { name, value: val } = e.target;
 
       setFormData((prev) => {
-        let err = "";
+        let err = undefined;
         if (!val && ["name", "totalPriceCents"].includes(name)) {
           err = `${capFirstLetter(name)} is required.`;
         } else if (name === "name" && !removeOddSpaces(val)) {

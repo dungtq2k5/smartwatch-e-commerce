@@ -223,7 +223,7 @@ export default function CreateUser() {
       }
 
       // Other inputs
-      let err = "";
+      let err = undefined;
       if (!val && ["email", "phoneNumber"].includes(name)) {
         err = `${name} is required`;
       } else if (name === "fullName" && !isValidUserFullName(val)) {

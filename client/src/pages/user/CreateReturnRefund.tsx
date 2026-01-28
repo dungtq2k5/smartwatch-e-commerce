@@ -528,7 +528,7 @@ export default function ReturnRefundCreate() {
           } else {
             const imgFileErrs = await getImgFilesErrs(
               newFormData.imageUrls.val,
-              "order return"
+              "order-return"
             );
             if (imgFileErrs.length) {
               newFormData.imageUrls.err = `Invalid files found: ${imgFileErrs.join(

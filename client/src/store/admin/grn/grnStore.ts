@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type {
   GrnCreate,
-  GrnDetailsListResponse,
+  GrnDetailsResponse,
   GrnListResponse,
   GrnResponse,
   GrnSearchQuery,
@@ -23,7 +23,7 @@ type GrnState = {
   fetchGrnDetails: (
     id: string,
     sortBy?: "asc" | "desc",
-  ) => Promise<GrnDetailsListResponse>;
+  ) => Promise<GrnDetailsResponse>;
 
   updateGrn: (id: string, grn: GrnUpdate) => Promise<GrnResponse>;
 };
@@ -221,9 +221,9 @@ const useGrnStore = create<GrnState>(() => ({
   async fetchGrnDetails(
     id: string,
     sortBy?: "asc" | "desc",
-  ): Promise<GrnDetailsListResponse> {
+  ): Promise<GrnDetailsResponse> {
     // DEV temp for designing UI
-    const exampleGrnDetails: GrnDetailsListResponse = {
+    const exampleGrnDetails: GrnDetailsResponse = {
       total: 4,
       grns: [
         {
@@ -308,7 +308,7 @@ const useGrnStore = create<GrnState>(() => ({
       // const res = await retrieve(`${GRN_URL}/${id}/details`);
       // if (!res.success) throw new Error(res.message);
 
-      // const data = res.data as GrnDetailsListResponse;
+      // const data = res.data as GrnDetailsResponse;
       const data = exampleGrnDetails;
       if (sortBy) {
         data.grns.sort((a, b) => {

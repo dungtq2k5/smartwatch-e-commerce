@@ -1422,7 +1422,7 @@ export type GrnCreateReceived = Omit<GrnCreate, "file"> & {
   }[];
 };
 
-export type GrnResponse = {
+export type GrnResponse = CreatedBy & {
   id: string;
   name: string;
   providerId: string;
@@ -1433,7 +1433,7 @@ export type GrnResponse = {
   createdAt: string;
   reversedByGrnId: string | null;
   reversedAt: string | null;
-} & CreatedBy;
+};
 
 export type GrnStateResponse = {
   id: string;
@@ -1447,16 +1447,17 @@ export type GrnStateListResponse = {
   states: GrnStateResponse[];
 };
 
-export type GrnDetailsResponse = Omit<GrnResponse, "providerId"> & {
+// Because GrnDetailsResponse will return a list of "grn" with "total" so we need this type to avoid confusion
+export type GrnDetailsItem = Omit<GrnResponse, "providerId"> & {
   provider: Pick<ProviderResponse, "id" | "fullName">;
 };
 
-export type GrnListResponse = PaginatedResponse<"grns", GrnResponse>;
-
-export type GrnDetailsListResponse = {
+export type GrnDetailsResponse = {
   total: number;
-  grns: GrnDetailsResponse[];
+  grns: GrnDetailsItem[];
 };
+
+export type GrnListResponse = PaginatedResponse<"grns", GrnDetailsItem>;
 
 export type GrnSearchQuery = SearchQuery<
   (typeof GRN_SEARCH_SORT_OPTIONS)[number]
@@ -1499,7 +1500,7 @@ export type InventoryMovementTypeListResponse = {
   types: InventoryMovementTypeResponse[];
 };
 
-export type FirebaseBucket = typeof FIREBASE_STORAGE_BUCKET_NAMES[number];
+export type FirebaseBucket = (typeof FIREBASE_STORAGE_BUCKET_NAMES)[number];
 
 // --- HELPER TYPES ---
 

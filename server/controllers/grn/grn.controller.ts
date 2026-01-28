@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { HttpError } from "../../utils/errorHandler";
 import {
   GrnCreateReceived,
-  GrnDetailsListResponse,
+  GrnDetailsItem,
   GrnDetailsResponse,
   GrnListResponse,
   GrnResponse,
@@ -285,7 +285,7 @@ export async function getDetails(
         total: grns.length,
         grns: grns.map(formatGrnDetailsResponse),
       },
-    } as SuccessResponse<GrnDetailsListResponse>);
+    } as SuccessResponse<GrnDetailsResponse>);
     console.log("✅ ", "GRN details retrieved successfully.");
   } catch (error) {
     next(error);
@@ -406,7 +406,7 @@ export async function search(
       },
     ]);
 
-    const grns: GrnDetailsResponse[] = aggregationResult[0].data.map(
+    const grns: GrnDetailsItem[] = aggregationResult[0].data.map(
       formatGrnDetailsResponse
     );
     const total = aggregationResult[0].metadata[0]?.total || 0;

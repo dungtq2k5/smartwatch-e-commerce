@@ -1145,7 +1145,7 @@ export function formatGrnResponse(grn: any): commonType.GrnResponse {
 
 export function formatGrnDetailsResponse(
   grn: any,
-): commonType.GrnDetailsResponse {
+): commonType.GrnDetailsItem {
   const { providerId, ...restData } = formatGrnResponse(grn);
 
   return {

@@ -282,7 +282,7 @@ export default function EditUser() {
       }
 
       // Other inputs
-      let err = "";
+      let err = undefined;
       if (!val && ["email", "phoneNumber", "password"].includes(name)) {
         err = `${capFirstLetter(name)} is required`;
       } else if (name === "fullName" && !isValidUserFullName(val)) {
