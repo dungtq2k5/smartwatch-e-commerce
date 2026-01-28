@@ -480,6 +480,7 @@ export default function CreateUser() {
                       <div className="input-group">
                         <input
                           type="tel"
+                          inputMode="numeric"
                           id="phoneNumber"
                           name="phoneNumber"
                           className="form-control"

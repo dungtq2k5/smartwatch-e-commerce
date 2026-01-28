@@ -357,6 +357,7 @@ const CreateAddressModal = memo(
                 <div className="form-floating">
                   <input
                     type="tel"
+                    inputMode="numeric"
                     className="form-control"
                     id="phoneNumber"
                     name="phoneNumber"
