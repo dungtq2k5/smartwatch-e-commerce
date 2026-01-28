@@ -108,10 +108,20 @@ export default function CreateProduct() {
       setApiErr(null);
 
       try {
-        await Promise.all([
-          brands ? Promise.resolve() : fetchBrands(),
-          categories ? Promise.resolve() : fetchCategories(),
+        const [fetchedBrands, fetchedCategories] = await Promise.all([
+          brands ? Promise.resolve(brands) : fetchBrands(),
+          categories ? Promise.resolve(categories) : fetchCategories(),
         ]);
+
+        setFormData((prev) => ({
+          ...prev,
+          brandId: {
+            val: fetchedBrands.brands.brands[0]?.id || "",
+          },
+          categoryId: {
+            val: fetchedCategories.categories.categories[0]?.id || "",
+          },
+        }));
       } catch (error) {
         setApiErr(formatError(error));
       } finally {

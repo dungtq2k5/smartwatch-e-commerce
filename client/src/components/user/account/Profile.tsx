@@ -77,7 +77,7 @@ export default function Profile() {
 
   const changeAvatarRef = useRef<HTMLInputElement | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string>(
-    user?.avatarUrl || defaultAvatar
+    user?.avatarUrl || defaultAvatar,
   );
 
   const [modalUpdate, setModalUpdate] = useState<ModalUpdate>({
@@ -127,7 +127,7 @@ export default function Profile() {
 
   const handleChange = useCallback(
     async (
-      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     ): Promise<void> => {
       if (process.isProcessing) return;
 
@@ -173,7 +173,7 @@ export default function Profile() {
         [name]: { val: value },
       }));
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const handleSubmit = useCallback(
@@ -207,11 +207,11 @@ export default function Profile() {
         if (newFormData.avatar.val instanceof File) {
           const imgFileErrs = await getImgFileErrs(
             newFormData.avatar.val,
-            "user-avatar"
+            "user-avatar",
           );
           if (imgFileErrs.length) {
             newFormData.avatar.err = `Avatar file is invalid: ${imgFileErrs.join(
-              ", "
+              ", ",
             )}`;
             allValid = false;
           }
@@ -245,7 +245,10 @@ export default function Profile() {
             changedData.birth = new Date(formData.birth.val).toISOString();
           }
           if (formData.avatar.val instanceof File) {
-            const downloadUrl = await uploadFile(formData.avatar.val, "user-avatar");
+            const downloadUrl = await uploadFile(
+              formData.avatar.val,
+              "user-avatar",
+            );
             if (!downloadUrl) throw new Error("Failed to upload avatar.");
             changedData.avatarUrl = downloadUrl;
           } else if (formData.avatar.val === null && user.avatarUrl) {
@@ -266,6 +269,12 @@ export default function Profile() {
           toast.success("Profile updated successfully!");
         } catch (error) {
           toast.error(formatError(error));
+        } finally {
+          setProcess((prev) => ({
+            ...prev,
+            isProcessing: false,
+            isUpdatingSelfGeneralInfo: false,
+          }));
         }
       }
       setProcess((prev) => ({
@@ -274,7 +283,7 @@ export default function Profile() {
         isUpdatingSelfGeneralInfo: false,
       }));
     },
-    [formData, process.isProcessing, updateSelfGeneralInfo, user]
+    [formData, process.isProcessing, updateSelfGeneralInfo, user],
   );
 
   const closeModal = useCallback((): void => {
@@ -493,7 +502,7 @@ export default function Profile() {
                         You signed up using{" "}
                         <span className="text-capitalize">
                           {user.authProvider}
-                        </span>
+                        </span>{""}
                         . You can set a password to enable logging in with your
                         email as well.
                       </p>
