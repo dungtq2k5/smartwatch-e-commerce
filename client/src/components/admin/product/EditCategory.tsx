@@ -19,10 +19,10 @@ import ApiError from "../../common/ApiError";
 import Title from "../Title";
 import DetailUserLink from "../DetailUserLink";
 import Btn from "../../common/Btn";
-import Loading from "../../common/Loading";
 import Input from "../../common/Input";
 import Textarea from "../../common/Textarea";
 import Label from "../../common/Label";
+import EditCategorySkeleton from "../skeleton/EditCategorySkeleton";
 
 export type FormData = {
   name: FormInput;
@@ -222,7 +222,7 @@ export default function EditCategory() {
   return (
     <>
       {process.isInitializing ? (
-        <Loading loadingMsg="Loading category data..." />
+        <EditCategorySkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !category ? (

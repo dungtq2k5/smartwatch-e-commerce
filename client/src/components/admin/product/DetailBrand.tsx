@@ -7,10 +7,10 @@ import useUserStore from "../../../store/admin/userStore";
 import { formatError } from "../../../../../common/utils.common";
 import defaultLogo from "../../../assets/default-product.webp";
 import ApiError from "../../common/ApiError";
-import Loading from "../../common/Loading";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
 import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
 import DetailUserLink from "../DetailUserLink";
+import DetailBrandSkeleton from "../skeleton/DetailBrandSkeleton";
 
 export default function DetailBrand() {
   // DEV temp for testing
@@ -65,7 +65,7 @@ export default function DetailBrand() {
   return (
     <>
       {isInitializing ? (
-        <Loading loadingMsg="Loading brand details..." />
+        <DetailBrandSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !sysUserId ? (

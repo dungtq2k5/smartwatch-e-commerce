@@ -57,11 +57,22 @@ export default function DetailProduct() {
   const { fetchProductDetails } = useProductStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
-  const [canReadUser, canCreateModel, canCreateVariation, canReadInstance] = [
+  const [
+    canReadUser,
+    canCreateModel,
+    canCreateVariation,
+    canReadInstance,
+    canReadBrand,
+    canReadCategory,
+    canReadOs,
+  ] = [
     useHasPermission("r_usr"),
     useHasPermission("c_product_model"),
     useHasPermission("c_model_variation"),
     useHasPermission("r_variation_instance"),
+    useHasPermission("r_product_brand"),
+    useHasPermission("r_product_cat"),
+    useHasPermission("r_product_os"),
   ];
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -131,7 +142,7 @@ export default function DetailProduct() {
 
       if (urlModelId) {
         const foundModelIdx = productDetails.models.models.findIndex(
-          (model) => model.id === urlModelId
+          (model) => model.id === urlModelId,
         );
         if (foundModelIdx !== -1) {
           modelIdx = foundModelIdx;
@@ -140,7 +151,7 @@ export default function DetailProduct() {
       }
       if (urlVariationId && modelPicked) {
         const foundVariationIdx = modelPicked.variations.variations.findIndex(
-          (variation) => variation.id === urlVariationId
+          (variation) => variation.id === urlVariationId,
         );
         if (foundVariationIdx !== -1) {
           variationIdx = foundVariationIdx;
@@ -181,7 +192,7 @@ export default function DetailProduct() {
 
           return prev;
         },
-        { replace: true }
+        { replace: true },
       );
     };
 
@@ -193,10 +204,10 @@ export default function DetailProduct() {
     const imgUrls = variationPicked?.data.imageUrls.length
       ? variationPicked.data.imageUrls
       : modelPicked?.data.imageUrls.length
-      ? modelPicked.data.imageUrls
-      : productDetails?.imageUrls.length
-      ? productDetails.imageUrls
-      : [defaultProductImg];
+        ? modelPicked.data.imageUrls
+        : productDetails?.imageUrls.length
+          ? productDetails.imageUrls
+          : [defaultProductImg];
 
     return imgUrls.map((url, i) => (
       <button
@@ -221,8 +232,6 @@ export default function DetailProduct() {
     variationPicked?.data.imageUrls,
   ]);
 
-  // TODO link to view brand/os management pages with filter.
-
   return (
     <>
       {isInitializing ? (
@@ -246,20 +255,35 @@ export default function DetailProduct() {
             <div className="d-flex align-items-center text-muted small">
               <span>
                 Brand:
-                {productDetails.brand.logoUrl ? (
-                  <img
-                    src={productDetails.brand.logoUrl}
-                    alt={`${productDetails.brand.name} logo`}
-                    className="brand-logo--g ms-2"
-                    title={productDetails.brand.name}
-                  />
-                ) : (
-                  <strong>{productDetails.brand.name}</strong>
-                )}
+                <LinkBtn
+                  to={`/admin/product-brands/${productDetails.brand.id}`}
+                  title="View details of this brand"
+                  disabled={!canReadBrand}
+                  disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+                >
+                  {productDetails.brand.logoUrl ? (
+                    <img
+                      src={productDetails.brand.logoUrl}
+                      alt={`${productDetails.brand.name} logo`}
+                      className="brand-logo--g ms-2"
+                      title={productDetails.brand.name}
+                    />
+                  ) : (
+                    <strong>{productDetails.brand.name}</strong>
+                  )}
+                </LinkBtn>
               </span>
               <span className="mx-2">|</span>
               <span>
-                Category: <strong>{productDetails.category.name}</strong>
+                Category:
+                <LinkBtn
+                  to={`/admin/product-categories/${productDetails.category.id}`}
+                  title="View details of this category"
+                  disabled={!canReadCategory}
+                  disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+                >
+                  <strong>{productDetails.category.name}</strong>
+                </LinkBtn>
               </span>
               <span className="mx-2">|</span>
               <span>
@@ -283,7 +307,8 @@ export default function DetailProduct() {
               )}
               <span className="text-muted">|</span>
               <span className="small">
-                Created: {new Date(productDetails.createdAt).toLocaleString()} by{" "}
+                Created: {new Date(productDetails.createdAt).toLocaleString()}{" "}
+                by{" "}
                 <DetailUserLink
                   userId={productDetails.createdBy.id}
                   disabled={!canReadUser}
@@ -348,7 +373,7 @@ export default function DetailProduct() {
                               if (model.variations.total > 0) {
                                 prev.set(
                                   "variationId",
-                                  model.variations.variations[0].id
+                                  model.variations.variations[0].id,
                                 );
                               } else {
                                 prev.delete("variationId");
@@ -539,7 +564,7 @@ export default function DetailProduct() {
                             <th scope="row">Stock Add. Price</th>
                             <td>
                               {centsToUSD(
-                                variationPicked.data.stockAdditionalPriceCents
+                                variationPicked.data.stockAdditionalPriceCents,
                               )}{" "}
                               <span className="small text-muted">per item</span>
                             </td>
@@ -548,7 +573,7 @@ export default function DetailProduct() {
                             <th scope="row">Selling Add. Price</th>
                             <td>
                               {centsToUSD(
-                                variationPicked.data.additionalPriceCents
+                                variationPicked.data.additionalPriceCents,
                               )}{" "}
                               <span className="small text-muted">per item</span>
                             </td>
@@ -560,7 +585,7 @@ export default function DetailProduct() {
                                 {centsToUSD(
                                   modelPicked.data.stockPriceCents +
                                     variationPicked.data
-                                      .stockAdditionalPriceCents
+                                      .stockAdditionalPriceCents,
                                 )}
                               </span>{" "}
                               <span className="small text-muted">per item</span>
@@ -572,7 +597,7 @@ export default function DetailProduct() {
                               <span className="fw-bold text-success">
                                 {centsToUSD(
                                   modelPicked.data.priceCents +
-                                    variationPicked.data.additionalPriceCents
+                                    variationPicked.data.additionalPriceCents,
                                 )}
                               </span>{" "}
                               <span className="small text-muted">per item</span>
@@ -689,7 +714,7 @@ export default function DetailProduct() {
                                 <th>RAM</th>
                                 <td>
                                   {bytesToMB(
-                                    modelPicked.data.config.memory.ramBytes
+                                    modelPicked.data.config.memory.ramBytes,
                                   )}
                                   MB
                                 </td>
@@ -698,7 +723,7 @@ export default function DetailProduct() {
                                 <th>ROM</th>
                                 <td>
                                   {bytesToMB(
-                                    modelPicked.data.config.memory.storageBytes
+                                    modelPicked.data.config.memory.storageBytes,
                                   )}
                                   MB
                                 </td>
@@ -723,7 +748,7 @@ export default function DetailProduct() {
                                   {modelPicked.data.config.connectivities
                                     .length > 0
                                     ? modelPicked.data.config.connectivities.join(
-                                        ", "
+                                        ", ",
                                       )
                                     : "None"}
                                 </td>
@@ -734,7 +759,7 @@ export default function DetailProduct() {
                                   {modelPicked.data.config.compatiblePhoneOs
                                     .length > 0
                                     ? modelPicked.data.config.compatiblePhoneOs.join(
-                                        ", "
+                                        ", ",
                                       )
                                     : "None"}
                                 </td>
@@ -744,7 +769,7 @@ export default function DetailProduct() {
                                 <td>
                                   {modelPicked.data.config.appsConnect.length
                                     ? modelPicked.data.config.appsConnect.join(
-                                        ", "
+                                        ", ",
                                       )
                                     : "None"}
                                 </td>
@@ -780,7 +805,7 @@ export default function DetailProduct() {
                                 <th>Full Charge Time</th>
                                 <td>
                                   {formatMinTime(
-                                    modelPicked.data.battery.timeFullChargeMin
+                                    modelPicked.data.battery.timeFullChargeMin,
                                   )}
                                 </td>
                               </tr>
@@ -788,7 +813,8 @@ export default function DetailProduct() {
                                 <th>Battery Life (AOD On)</th>
                                 <td>
                                   {formatMinTime(
-                                    modelPicked.data.battery.timeOnline.aodOnMin
+                                    modelPicked.data.battery.timeOnline
+                                      .aodOnMin,
                                   )}
                                 </td>
                               </tr>
@@ -797,7 +823,7 @@ export default function DetailProduct() {
                                 <td>
                                   {formatMinTime(
                                     modelPicked.data.battery.timeOnline
-                                      .aodOffMin
+                                      .aodOffMin,
                                   )}
                                 </td>
                               </tr>
@@ -806,7 +832,7 @@ export default function DetailProduct() {
                                 <td>
                                   {formatMinTime(
                                     modelPicked.data.battery.timeOnline
-                                      .typicalUsageMin
+                                      .typicalUsageMin,
                                   )}
                                 </td>
                               </tr>
@@ -815,7 +841,7 @@ export default function DetailProduct() {
                                 <td>
                                   {formatMinTime(
                                     modelPicked.data.battery.timeOnline
-                                      .standByMin
+                                      .standByMin,
                                   )}
                                 </td>
                               </tr>
@@ -894,16 +920,23 @@ export default function DetailProduct() {
                               <tr>
                                 <th>Operating System</th>
                                 <td>
-                                  {modelPicked.data.config.os.logoUrl ? (
-                                    <img
-                                      src={modelPicked.data.config.os.logoUrl}
-                                      alt={`${modelPicked.data.config.os.name} logo`}
-                                      className="os-logo--g"
-                                      title={modelPicked.data.config.os.name}
-                                    />
-                                  ) : (
-                                    modelPicked.data.config.os.name
-                                  )}
+                                  <LinkBtn
+                                    to={`/admin/product-oses/${modelPicked.data.config.os.id}`}
+                                    title="View details of this OS"
+                                    disabled={!canReadOs}
+                                    disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+                                  >
+                                    {modelPicked.data.config.os.logoUrl ? (
+                                      <img
+                                        src={modelPicked.data.config.os.logoUrl}
+                                        alt={`${modelPicked.data.config.os.name} logo`}
+                                        className="os-logo--g"
+                                        title={modelPicked.data.config.os.name}
+                                      />
+                                    ) : (
+                                      modelPicked.data.config.os.name
+                                    )}
+                                  </LinkBtn>
                                 </td>
                               </tr>
                             </tbody>
@@ -964,7 +997,7 @@ export default function DetailProduct() {
                                         <li>
                                           Healths:{" "}
                                           {modelPicked.data.feature.utilities.healths.join(
-                                            ", "
+                                            ", ",
                                           )}
                                         </li>
                                       )}
@@ -973,7 +1006,7 @@ export default function DetailProduct() {
                                         <li>
                                           Sports:{" "}
                                           {modelPicked.data.feature.utilities.sports.join(
-                                            ", "
+                                            ", ",
                                           )}
                                         </li>
                                       )}
@@ -982,7 +1015,7 @@ export default function DetailProduct() {
                                         <li>
                                           Specials:{" "}
                                           {modelPicked.data.feature.utilities.specials.join(
-                                            ", "
+                                            ", ",
                                           )}
                                         </li>
                                       )}
@@ -991,7 +1024,7 @@ export default function DetailProduct() {
                                         <li>
                                           Others:{" "}
                                           {modelPicked.data.feature.utilities.others.join(
-                                            ", "
+                                            ", ",
                                           )}
                                         </li>
                                       )}
@@ -1007,7 +1040,7 @@ export default function DetailProduct() {
                                   {modelPicked.data.feature
                                     .supportedAppsForNotifications.length > 0
                                     ? modelPicked.data.feature.supportedAppsForNotifications.join(
-                                        ", "
+                                        ", ",
                                       )
                                     : "None"}
                                 </td>
@@ -1041,7 +1074,7 @@ export default function DetailProduct() {
                                   modelPicked.data.config.camera.features
                                     .length > 0
                                     ? modelPicked.data.config.camera.features.join(
-                                        ", "
+                                        ", ",
                                       )
                                     : "None"}
                                 </td>
@@ -1115,7 +1148,7 @@ export default function DetailProduct() {
                                         ></span>
                                         {color.name}
                                       </span>
-                                    )
+                                    ),
                                   )}
                                 </td>
                               </tr>
@@ -1270,7 +1303,7 @@ export default function DetailProduct() {
                             </th>
                             <td>
                               {new Date(
-                                modelPicked.data.createdAt
+                                modelPicked.data.createdAt,
                               ).toLocaleString()}{" "}
                               by{" "}
                               <DetailUserLink
@@ -1286,7 +1319,7 @@ export default function DetailProduct() {
                             <th scope="row">Model Updated</th>
                             <td>
                               {new Date(
-                                modelPicked.data.updatedAt
+                                modelPicked.data.updatedAt,
                               ).toLocaleString()}
                             </td>
                           </tr>
@@ -1294,7 +1327,7 @@ export default function DetailProduct() {
                             <th scope="row">Variation Created</th>
                             <td>
                               {new Date(
-                                variationPicked.data.createdAt
+                                variationPicked.data.createdAt,
                               ).toLocaleString()}{" "}
                               by{" "}
                               <DetailUserLink
@@ -1310,7 +1343,7 @@ export default function DetailProduct() {
                             <th scope="row">Variation Updated</th>
                             <td>
                               {new Date(
-                                variationPicked.data.updatedAt
+                                variationPicked.data.updatedAt,
                               ).toLocaleString()}
                             </td>
                           </tr>

@@ -50,6 +50,7 @@ import Input from "../../common/Input";
 import Select from "../../common/Select";
 import Textarea from "../../common/Textarea";
 import Label from "../../common/Label";
+import EditModelSkeleton from "../skeleton/EditModelSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -1391,7 +1392,7 @@ export function EditModel() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO loading skeletons
+        <EditModelSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !oses ? (

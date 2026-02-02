@@ -113,9 +113,6 @@ export default function App() {
           <Route path="/admin">
             {/* TODO CRUD:
               - dashboard
-              - product/model/variation/instance management (read, create, edit)
-              - brand management
-              - category management
               - order management
               - role management
               - inventory management

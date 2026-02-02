@@ -31,6 +31,7 @@ import Loading from "../../common/Loading";
 import Input from "../../common/Input";
 import Textarea from "../../common/Textarea";
 import Label from "../../common/Label";
+import EditOsSkeleton from "../skeleton/EditOsSkeleton";
 
 export type FormData = {
   name: FormInput;
@@ -313,7 +314,7 @@ export default function EditOs() {
   return (
     <>
       {process.isInitializing ? (
-        <Loading loadingMsg="Loading OS data..." />
+        <EditOsSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !os ? (

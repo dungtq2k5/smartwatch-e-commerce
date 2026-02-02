@@ -47,6 +47,7 @@ import DetailUserLink from "../DetailUserLink";
 import Btn from "../../common/Btn";
 import Label from "../../common/Label";
 import Input from "../../common/Input";
+import EditVariationSkeleton from "../skeleton/EditVariationSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -835,7 +836,7 @@ export default function EditVariation() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO loading skeleton
+        <EditVariationSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !sysUserId ? (

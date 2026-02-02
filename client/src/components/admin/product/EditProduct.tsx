@@ -47,6 +47,7 @@ import Input from "../../common/Input";
 import Select from "../../common/Select";
 import Textarea from "../../common/Textarea";
 import Label from "../../common/Label";
+import EditProductSkeleton from "../skeleton/EditProductSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -553,7 +554,7 @@ export function EditProduct() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO loading skeleton
+        <EditProductSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !brands ? (

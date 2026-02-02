@@ -6,10 +6,10 @@ import type { AdminProductCategoryResponse as ProductCategoryResponse } from "..
 import useUserStore from "../../../store/admin/userStore";
 import { formatError } from "../../../../../common/utils.common";
 import ApiError from "../../common/ApiError";
-import Loading from "../../common/Loading";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
 import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
 import DetailUserLink from "../DetailUserLink";
+import DetailCategorySkeleton from "../skeleton/DetailCategorySkeleton";
 
 export default function DetailCategory() {
   // DEV temp for testing
@@ -64,7 +64,7 @@ export default function DetailCategory() {
   return (
     <>
       {isInitializing ? (
-        <Loading loadingMsg="Loading category details..." />
+        <DetailCategorySkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !sysUserId ? (

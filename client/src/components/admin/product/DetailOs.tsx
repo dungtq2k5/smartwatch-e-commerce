@@ -7,10 +7,10 @@ import useUserStore from "../../../store/admin/userStore";
 import { formatError } from "../../../../../common/utils.common";
 import defaultLogo from "../../../assets/default-product.webp";
 import ApiError from "../../common/ApiError";
-import Loading from "../../common/Loading";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
 import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
 import DetailUserLink from "../DetailUserLink";
+import DetailOsSkeleton from "../skeleton/DetailOsSkeleton";
 
 export default function DetailOs() {
   // DEV temp for testing
@@ -63,7 +63,7 @@ export default function DetailOs() {
   return (
     <>
       {isInitializing ? (
-        <Loading loadingMsg="Loading OS details..." />
+        <DetailOsSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !sysUserId ? (

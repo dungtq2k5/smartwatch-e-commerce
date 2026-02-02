@@ -822,8 +822,6 @@ export default function InstanceManagement() {
     );
   }, [canCreateInstance, navigate]);
 
-  // TODO instance details (life-cycle)
-
   return (
     <>
       {/* Heading */}

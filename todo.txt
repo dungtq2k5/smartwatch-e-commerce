@@ -60,7 +60,7 @@
     - Refresh token ✅.
     - Also save import GRN file to db ❌.
     - Use 'joi' or 'express-validator' for validating request body ❌.
-    - Add 'createdBy' field for user schema ❌.
+    - Add 'createdBy' field for user schema (also handle chicken or egg first problem) ❌.
 
   - Database init:
     - Init roles & permissions ✅.

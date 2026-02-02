@@ -27,10 +27,10 @@ import {
 } from "../../../../../common/configs.common";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import Btn from "../../common/Btn";
-import Loading from "../../common/Loading";
 import Input from "../../common/Input";
 import Textarea from "../../common/Textarea";
 import Label from "../../common/Label";
+import EditBrandSkeleton from "../skeleton/EditBrandSkeleton";
 
 export type FormData = {
   name: FormInput;
@@ -309,11 +309,11 @@ export default function EditBrand() {
     },
     [brand, canEditBrand, formData, process.isProcessing, updateBrand],
   );
-  
+
   return (
     <>
       {process.isInitializing ? (
-        <Loading loadingMsg="Loading brand data..." />
+        <EditBrandSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !brand ? (

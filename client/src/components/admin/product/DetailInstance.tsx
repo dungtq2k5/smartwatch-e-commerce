@@ -12,6 +12,7 @@ import DetailUserLink from "../DetailUserLink";
 import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
 import LinkBtn from "../../common/LinkBtn";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
+import DetailInstanceSkeleton from "../skeleton/DetailInstanceSkeleton";
 
 export default function DetailInstance() {
   // DEV temp for testing
@@ -70,7 +71,7 @@ export default function DetailInstance() {
   return (
     <>
       {isInitializing ? (
-        <p>Loading...</p> // TODO skeleton loading
+        <DetailInstanceSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !instanceConditions ? (
