@@ -64,6 +64,10 @@ import BrandManagement from "./components/admin/product/BrandManagement.tsx";
 import CreateBrand from "./components/admin/product/CreateBrand.tsx";
 import EditBrand from "./components/admin/product/EditBrand.tsx";
 import DetailBrand from "./components/admin/product/DetailBrand.tsx";
+import CategoryManagement from "./components/admin/product/CategoryManagement.tsx";
+import CreateCategory from "./components/admin/product/CreateCategory.tsx";
+import EditCategory from "./components/admin/product/EditCategory.tsx";
+import DetailCategory from "./components/admin/product/DetailCategory.tsx";
 
 export default function App() {
   // DEV for testing
@@ -147,6 +151,15 @@ export default function App() {
                   <Route path=":id">
                     <Route index element={<DetailBrand />} />
                     <Route path="edit" element={<EditBrand />} />
+                  </Route>
+                </Route>
+
+                <Route path="product-categories">
+                  <Route index element={<CategoryManagement />} />
+                  <Route path="create" element={<CreateCategory />} />
+                  <Route path=":id">
+                    <Route index element={<DetailCategory />} />
+                    <Route path="edit" element={<EditCategory />} />
                   </Route>
                 </Route>
 
