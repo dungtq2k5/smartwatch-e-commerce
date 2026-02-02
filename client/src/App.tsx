@@ -68,6 +68,10 @@ import CategoryManagement from "./components/admin/product/CategoryManagement.ts
 import CreateCategory from "./components/admin/product/CreateCategory.tsx";
 import EditCategory from "./components/admin/product/EditCategory.tsx";
 import DetailCategory from "./components/admin/product/DetailCategory.tsx";
+import OsManagement from "./components/admin/product/OsManagement.tsx";
+import CreateOs from "./components/admin/product/CreateOs.tsx";
+import DetailOs from "./components/admin/product/DetailOs.tsx";
+import EditOs from "./components/admin/product/EditOs.tsx";
 
 export default function App() {
   // DEV for testing
@@ -160,6 +164,15 @@ export default function App() {
                   <Route path=":id">
                     <Route index element={<DetailCategory />} />
                     <Route path="edit" element={<EditCategory />} />
+                  </Route>
+                </Route>
+
+                <Route path="product-oses">
+                  <Route index element={<OsManagement />} />
+                  <Route path="create" element={<CreateOs />} />
+                  <Route path=":id">
+                    <Route index element={<DetailOs />} />
+                    <Route path="edit" element={<EditOs />} />
                   </Route>
                 </Route>
 
