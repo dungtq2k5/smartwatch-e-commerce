@@ -38,7 +38,6 @@ import {
 } from "../../../configs";
 import DetailUserLink from "../DetailUserLink";
 import EditBtnLink from "../EditBtnLink";
-import CreateBtnLink from "../CreateBtnLink";
 import DeleteBtn from "../DeleteBtn";
 import {
   formatError,
@@ -188,14 +187,8 @@ export default function BrandManagement() {
           <div className="d-flex gap-2">
             <EditBtnLink
               to={`${product.id}/edit`}
-              title="Edit product"
+              title="Edit brand"
               disabled={!canEditBrand}
-              disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
-            />
-            <CreateBtnLink
-              to={`/admin/product-models/create/${product.id}`}
-              title="Create model for this product"
-              disabled={!canCreateBrand}
               disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
             <DeleteBtn
@@ -205,7 +198,7 @@ export default function BrandManagement() {
                   brandIdToDelete: product.id,
                 }));
               }}
-              title="Delete product"
+              title="Delete brand"
               disabled={!canDeleteBrand}
               disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
             />
@@ -214,7 +207,7 @@ export default function BrandManagement() {
         getCsvVal: () => null,
       },
     }),
-    [canCreateBrand, canDeleteBrand, canEditBrand, canReadUser],
+    [canDeleteBrand, canEditBrand, canReadUser],
   );
 
   const [process, setProcess] = useState<Process>({

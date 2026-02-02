@@ -24,6 +24,8 @@ import Btn from "../../common/Btn";
 import Input from "../../common/Input";
 import Textarea from "../../common/Textarea";
 import Label from "../../common/Label";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 
 type Process = {
   isProcessing: boolean;
@@ -360,6 +362,7 @@ export default function CreateBrand() {
                 className="btn btn-primary"
                 disabled={process.isProcessing}
                 loading={process.isCreating}
+                icon={<FontAwesomeIcon icon={faPlus} />}
               >
                 Create Brand
               </Btn>
