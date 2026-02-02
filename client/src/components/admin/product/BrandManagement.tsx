@@ -152,41 +152,41 @@ export default function BrandManagement() {
       },
       createdBy: {
         label: BRAND_FIELD_LABEL_LEGEND["createdBy"] || "Created by",
-        tdContent: (product) => (
+        tdContent: (brand) => (
           <DetailUserLink
-            userId={product.createdBy.id}
+            userId={brand.createdBy.id}
             disabled={!canReadUser}
             disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
-            {product.createdBy.fullName}
+            {brand.createdBy.fullName}
           </DetailUserLink>
         ),
-        getCsvVal: (product) => product.createdBy.fullName,
+        getCsvVal: (brand) => brand.createdBy.fullName,
       },
       createdAt: {
         label: BRAND_FIELD_LABEL_LEGEND["createdAt"] || "Created at",
         isSortable: true,
         sortKey: { asc: "createdAt_asc", desc: "createdAt_desc" },
-        tdContent: (product) => (
-          <>{new Date(product.createdAt).toLocaleString()}</>
+        tdContent: (brand) => (
+          <>{new Date(brand.createdAt).toLocaleString()}</>
         ),
-        getCsvVal: (product) => new Date(product.createdAt).toLocaleString(),
+        getCsvVal: (brand) => new Date(brand.createdAt).toLocaleString(),
       },
       updatedAt: {
         label: BRAND_FIELD_LABEL_LEGEND["updatedAt"] || "Updated at",
         isSortable: true,
         sortKey: { asc: "updatedAt_asc", desc: "updatedAt_desc" },
-        tdContent: (product) => (
-          <>{new Date(product.updatedAt).toLocaleString()}</>
+        tdContent: (brand) => (
+          <>{new Date(brand.updatedAt).toLocaleString()}</>
         ),
-        getCsvVal: (product) => new Date(product.updatedAt).toLocaleString(),
+        getCsvVal: (brand) => new Date(brand.updatedAt).toLocaleString(),
       },
       actions: {
         label: BRAND_FIELD_LABEL_LEGEND["actions"] || "Actions",
-        tdContent: (product) => (
+        tdContent: (brand) => (
           <div className="d-flex gap-2">
             <EditBtnLink
-              to={`${product.id}/edit`}
+              to={`${brand.id}/edit`}
               title="Edit brand"
               disabled={!canEditBrand}
               disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
@@ -195,7 +195,7 @@ export default function BrandManagement() {
               onClick={() => {
                 setModal((prev) => ({
                   ...prev,
-                  brandIdToDelete: product.id,
+                  brandIdToDelete: brand.id,
                 }));
               }}
               title="Delete brand"
@@ -330,7 +330,7 @@ export default function BrandManagement() {
                 ...prev,
                 brandIdsToDelete:
                   selectedBrandIds === "all"
-                    ? brands.brands.brands.map((p) => p.id)
+                    ? brands.brands.brands.map((b) => b.id)
                     : selectedBrandIds,
               }));
               setSelectedBrandIds([]);
@@ -466,8 +466,8 @@ export default function BrandManagement() {
         if (prev === "all") {
           if (!checked) {
             updatedSelectedBrandIds = brands.brands.brands
-              .filter((p) => p.id !== brandId)
-              .map((p) => p.id);
+              .filter((b) => b.id !== brandId)
+              .map((b) => b.id);
           } else {
             // This case shouldn't happen as all are already selected, but as fallback
             updatedSelectedBrandIds = "all";

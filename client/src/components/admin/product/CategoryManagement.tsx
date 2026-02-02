@@ -147,41 +147,41 @@ export default function CategoryManagement() {
       },
       createdBy: {
         label: CATEGORY_FIELD_LABEL_LEGEND["createdBy"] || "Created by",
-        tdContent: (product) => (
+        tdContent: (category) => (
           <DetailUserLink
-            userId={product.createdBy.id}
+            userId={category.createdBy.id}
             disabled={!canReadUser}
             disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
-            {product.createdBy.fullName}
+            {category.createdBy.fullName}
           </DetailUserLink>
         ),
-        getCsvVal: (product) => product.createdBy.fullName,
+        getCsvVal: (category) => category.createdBy.fullName,
       },
       createdAt: {
         label: CATEGORY_FIELD_LABEL_LEGEND["createdAt"] || "Created at",
         isSortable: true,
         sortKey: { asc: "createdAt_asc", desc: "createdAt_desc" },
-        tdContent: (product) => (
-          <>{new Date(product.createdAt).toLocaleString()}</>
+        tdContent: (category) => (
+          <>{new Date(category.createdAt).toLocaleString()}</>
         ),
-        getCsvVal: (product) => new Date(product.createdAt).toLocaleString(),
+        getCsvVal: (category) => new Date(category.createdAt).toLocaleString(),
       },
       updatedAt: {
         label: CATEGORY_FIELD_LABEL_LEGEND["updatedAt"] || "Updated at",
         isSortable: true,
         sortKey: { asc: "updatedAt_asc", desc: "updatedAt_desc" },
-        tdContent: (product) => (
-          <>{new Date(product.updatedAt).toLocaleString()}</>
+        tdContent: (category) => (
+          <>{new Date(category.updatedAt).toLocaleString()}</>
         ),
-        getCsvVal: (product) => new Date(product.updatedAt).toLocaleString(),
+        getCsvVal: (category) => new Date(category.updatedAt).toLocaleString(),
       },
       actions: {
         label: CATEGORY_FIELD_LABEL_LEGEND["actions"] || "Actions",
-        tdContent: (product) => (
+        tdContent: (category) => (
           <div className="d-flex gap-2">
             <EditBtnLink
-              to={`${product.id}/edit`}
+              to={`${category.id}/edit`}
               title="Edit category"
               disabled={!canEditCategory}
               disabledtitle={DISABLED_TITLE_FOR_PERFORMING}
@@ -190,7 +190,7 @@ export default function CategoryManagement() {
               onClick={() => {
                 setModal((prev) => ({
                   ...prev,
-                  categoryIdToDelete: product.id,
+                  categoryIdToDelete: category.id,
                 }));
               }}
               title="Delete category"
@@ -327,7 +327,7 @@ export default function CategoryManagement() {
                 ...prev,
                 categoryIdsToDelete:
                   selectedCategoryIds === "all"
-                    ? categories.categories.categories.map((p) => p.id)
+                    ? categories.categories.categories.map((c) => c.id)
                     : selectedCategoryIds,
               }));
               setSelectedCategoryIds([]);
@@ -463,8 +463,8 @@ export default function CategoryManagement() {
         if (prev === "all") {
           if (!checked) {
             updatedSelectedCategoryIds = categories.categories.categories
-              .filter((p) => p.id !== categoryId)
-              .map((p) => p.id);
+              .filter((c) => c.id !== categoryId)
+              .map((c) => c.id);
           } else {
             // This case shouldn't happen as all are already selected, but as fallback
             updatedSelectedCategoryIds = "all";
