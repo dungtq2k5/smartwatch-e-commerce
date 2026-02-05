@@ -11,7 +11,7 @@ import { HttpError } from "../../errorHandler";
 export function sanitizeAddressInput(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   console.log("▶️ ", "Sanitizing address input...");
   const {
@@ -46,7 +46,7 @@ export function sanitizeAddressInput(
 }
 
 export function verifyAddressInput(
-  type: "create" | "update"
+  type: "create" | "update",
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating address input...");
@@ -69,23 +69,35 @@ export function verifyAddressInput(
             isDefault,
           } = req.body;
 
-          if (typeof name !== "string" || !name) {
+          if (typeof name !== "string") {
             errors.push("name is required.");
+          } else if (!name) {
+            errors.push("name is invalid.");
           }
-          if (typeof street !== "string" || !street) {
+          if (typeof street !== "string") {
             errors.push("street is required.");
+          } else if (!street) {
+            errors.push("street is invalid.");
           }
-          if (typeof apartmentNumber !== "string" || !apartmentNumber) {
+          if (typeof apartmentNumber !== "string") {
             errors.push("apartmentNumber is required.");
+          } else if (!apartmentNumber) {
+            errors.push("apartmentNumber is invalid.");
           }
-          if (typeof wardCode !== "string" || !wardCode) {
+          if (typeof wardCode !== "string") {
             errors.push("wardCode is required.");
+          } else if (!wardCode) {
+            errors.push("wardCode is invalid.");
           }
-          if (typeof districtCode !== "string" || !districtCode) {
+          if (typeof districtCode !== "string") {
             errors.push("districtCode is required.");
+          } else if (!districtCode) {
+            errors.push("districtCode is invalid.");
           }
-          if (typeof cityProvinceCode !== "string" || !cityProvinceCode) {
+          if (typeof cityProvinceCode !== "string") {
             errors.push("cityProvinceCode is required.");
+          } else if (!cityProvinceCode) {
+            errors.push("cityProvinceCode is invalid.");
           }
           if (!location) {
             errors.push("location is required.");
@@ -95,7 +107,7 @@ export function verifyAddressInput(
             location.latitude === undefined
           ) {
             errors.push(
-              "location must be an object with latitude and longitude."
+              "location must be an object with latitude and longitude.",
             );
           } else if (
             typeof location.longitude !== "number" ||
@@ -171,7 +183,7 @@ export function verifyAddressInput(
               !location.latitude
             ) {
               errors.push(
-                "location must be an object with latitude and longitude."
+                "location must be an object with latitude and longitude.",
               );
             } else if (
               typeof location.longitude !== "number" ||

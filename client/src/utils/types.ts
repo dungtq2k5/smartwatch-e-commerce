@@ -7,7 +7,6 @@ import type {
   AdminProductOsResponse,
   AdminProductResponse,
   AdminUserResponse,
-  BaseUserAddress,
   GrnDetailsItem,
   OrderReturnSearchQuery,
   UserCartResponse,
@@ -20,15 +19,6 @@ export type FormInput<ValT = string, ErrT = string> = {
 };
 
 export type FormFileInput = FormInput<File | string | null, string | string[]>; // File when uploading, string when first loaded from server (url string), null when want to remove image
-
-export type UserAddressFormat = Pick<
-  BaseUserAddress,
-  | "street"
-  | "apartmentNumber"
-  | "wardCode"
-  | "districtCode"
-  | "cityProvinceCode"
->;
 
 export type AddressFormData = {
   name: FormInput;

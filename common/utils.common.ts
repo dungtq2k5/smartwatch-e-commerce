@@ -8,9 +8,14 @@ import {
   PRODUCT_NAME_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
+  VN_COUNTRY_CODE,
 } from "./configs.common.ts";
 import type { DeepPartial, UserAddressCompare } from "./types.common.ts";
 import { districts, wards, provinces } from "./vnAddresses.ts";
+import { isValidPhoneNumber } from "libphonenumber-js";
+import countries from "i18n-iso-countries";
+
+countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
 
 export function removeOddSpaces(val: string): string {
   return val.replaceAll(/\s+/g, " ").trim();
@@ -27,11 +32,11 @@ export function genRandomPassword(): string {
 
   const passwordChars: string[] = [];
 
-  // Ensure at least one letter
-  passwordChars.push(letters[Math.floor(Math.random() * letters.length)]);
-
-  // Ensure at least one number
-  passwordChars.push(numbers[Math.floor(Math.random() * numbers.length)]);
+  // Ensure at least one letter and one number
+  passwordChars.push(
+    letters[Math.floor(Math.random() * letters.length)],
+    numbers[Math.floor(Math.random() * numbers.length)],
+  );
 
   // Fill the rest of the password length with random characters from the combined set
   for (let i = 2; i < PASSWORD_MIN_LENGTH; i++) {
@@ -101,7 +106,7 @@ export function getLocalDateString(date: string | Date): string {
 }
 
 export function readFileAsDataUrl(
-  file: File
+  file: File,
 ): Promise<string | ArrayBuffer | null> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -191,7 +196,7 @@ export function cleanObj<T extends object>(obj: T): T {
  */
 export function deepMerge<T extends object>(
   target: T,
-  source?: DeepPartial<T>
+  source?: DeepPartial<T>,
 ): T {
   if (!source) return target;
 
@@ -231,7 +236,7 @@ export function deepMerge<T extends object>(
  */
 export function shallowMerge<T extends object>(
   target: T,
-  source?: Partial<T>
+  source?: Partial<T>,
 ): T {
   if (!source) return target;
 
@@ -280,7 +285,7 @@ export function isEmptyObj(obj: any): boolean {
 
 export function formatError(
   err: unknown,
-  exceptionMsg: string = "An unknown error occurred"
+  exceptionMsg: string = "An unknown error occurred",
 ): string {
   if (typeof err === "string") return err;
   if (err instanceof Error) return err.message;
@@ -293,7 +298,7 @@ export function formatError(
 
 export function compareUserAddress(
   address1: UserAddressCompare,
-  address2: UserAddressCompare
+  address2: UserAddressCompare,
 ): boolean {
   return (
     address1.name === address2.name &&
@@ -463,23 +468,16 @@ export function isValidPassword(password: any): boolean {
   );
 }
 
-export function isValidPhoneNumber(phoneNumber: any): boolean {
-  if (typeof phoneNumber !== "string") return false;
-
-  // This regex validates phone numbers in the international E.164 format.
-  // E.g., +14155552671
-  // It checks for a leading '+', followed by digits.
-  // The total length of digits is typically between 7 and 15.
-  const phoneRegex = /^\+[1-9]\d{6,14}$/;
-  return phoneRegex.test(phoneNumber);
-}
-
 export function isValidVnPhoneNumber(phoneNumber: any): boolean {
   if (typeof phoneNumber !== "string") return false;
 
-  // Vietnamese phone numbers start with 0 and are 10 or 11 digits long
-  const phoneRegex = /^(0[1-9]\d{8}|0[1-9]\d{9})$/;
-  return phoneRegex.test(phoneNumber);
+  return isValidPhoneNumber(phoneNumber, VN_COUNTRY_CODE);
+}
+
+export function isValidCountryCode(countryCode: any): boolean {
+  if (typeof countryCode !== "string") return false;
+
+  return countries.isValid(countryCode);
 }
 
 export function isValidProductName(productName: any): boolean {
@@ -543,7 +541,7 @@ export function isValidListOfColorObj(colors: any): boolean {
     (color) =>
       isValidColorHex(color.hex) &&
       typeof color.name === "string" &&
-      !!color.name.trim()
+      !!color.name.trim(),
   );
 }
 
@@ -600,7 +598,7 @@ export function isValidNumString(numString: any): numString is string {
 }
 
 export function isValidBooleanString(
-  boolString: any
+  boolString: any,
 ): boolString is "true" | "false" {
   if (typeof boolString !== "string") return false;
   return ["true", "false"].includes(boolString);
@@ -632,11 +630,18 @@ export function formatAddress(address: UserAddressFormat): string {
   const district = getDistrict(address.districtCode);
   const cityProvince = getCityProvince(address.cityProvinceCode);
 
-  if (!ward || !district || !cityProvince) {
+  if (
+    !ward ||
+    !district ||
+    !cityProvince ||
+    !isValidCountryCode(address.countryCode)
+  ) {
     throw new Error("Invalid address components");
   }
 
-  return `${address.street}, ${address.apartmentNumber}, ${ward.name_with_type}, ${district.name_with_type}, ${cityProvince.name_with_type}`;
+  return `${address.street}, ${address.apartmentNumber}, ${ward.name_with_type}, ${district.name_with_type}, ${cityProvince.name_with_type}, ${
+    countries.getName(address.countryCode, "en") || address.countryCode
+  }`;
 }
 
 export function getWard(wardCode: string) {
@@ -651,7 +656,7 @@ export function getCityProvince(cityProvinceCode: string) {
   return provinces.data.find((province) => province.code === cityProvinceCode);
 }
 
-export function isValidAddress(address: {
+export function isValidVnAddress(address: {
   wardCode: string;
   districtCode: string;
   cityProvinceCode: string;
@@ -672,7 +677,7 @@ export function isValidAddress(address: {
 
 export function getDistrictsByProvinceCode(provinceCode: string) {
   const filteredDistricts = districts.data.filter(
-    (district) => district.parent_code === provinceCode
+    (district) => district.parent_code === provinceCode,
   );
 
   return {
@@ -683,7 +688,7 @@ export function getDistrictsByProvinceCode(provinceCode: string) {
 
 export function getWardsByDistrictCode(districtCode: string) {
   const filteredWards = wards.data.filter(
-    (ward) => ward.parent_code === districtCode
+    (ward) => ward.parent_code === districtCode,
   );
 
   return {

@@ -245,6 +245,17 @@ export type AdminUserAddressListResponse = {
   addresses: AdminUserAddressResponse[];
 };
 
+export type UserAddressFormat = Pick<
+  BaseUserAddress,
+  | "street"
+  | "apartmentNumber"
+  | "wardCode"
+  | "districtCode"
+  | "cityProvinceCode"
+> & {
+  countryCode: string;
+};
+
 export type BaseUserCart = {
   userId: string;
   variationId: string;
