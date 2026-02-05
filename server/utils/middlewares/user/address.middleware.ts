@@ -66,6 +66,7 @@ export function verifyAddressInput(
             cityProvinceCode,
             location,
             phoneNumber,
+            isDefault,
           } = req.body;
 
           if (typeof name !== "string" || !name) {
@@ -114,6 +115,9 @@ export function verifyAddressInput(
           } else if (!isValidVnPhoneNumber(phoneNumber)) {
             errors.push("phoneNumber is invalid.");
           }
+          if (isDefault !== undefined && typeof isDefault !== "boolean") {
+            errors.push("isDefault must be a boolean.");
+          }
           break;
         }
         case "update": {
@@ -127,6 +131,7 @@ export function verifyAddressInput(
             cityProvinceCode,
             location,
             phoneNumber,
+            isDefault,
           } = req.body;
 
           if (name !== undefined && (typeof name !== "string" || !name)) {
@@ -184,6 +189,9 @@ export function verifyAddressInput(
           }
           if (phoneNumber !== undefined && !isValidVnPhoneNumber(phoneNumber)) {
             errors.push("phoneNumber is invalid.");
+          }
+          if (isDefault !== undefined && typeof isDefault !== "boolean") {
+            errors.push("isDefault must be a boolean.");
           }
           break;
         }
