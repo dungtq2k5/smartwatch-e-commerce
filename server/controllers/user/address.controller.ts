@@ -106,7 +106,10 @@ export async function create(
     if (!Types.ObjectId.isValid(userId)) {
       throw new HttpError(404, "User not found.");
     }
-    const user = await User.findById(userId).lean().session(session);
+    const user = await User.findById(userId)
+      .select("_id isDeleted")
+      .lean()
+      .session(session);
     if (!user || user.isDeleted) {
       throw new HttpError(404, "User not found.");
     }
