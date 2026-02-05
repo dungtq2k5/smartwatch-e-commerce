@@ -757,6 +757,53 @@ export function formatProviderResponse(
   };
 }
 
+export function formatProviderDetailsResponse(
+  provider: any,
+): commonType.ProviderDetailsResponse {
+  const { createdBy, ...restData } = formatProviderResponse(provider);
+
+  return {
+    ...restData,
+    createdBy: {
+      id: provider.createdBy._id,
+      fullName: provider.createdBy.fullName,
+    },
+    addresses: {
+      total: provider.addresses.length,
+      addresses: provider.addresses.map((addr: any) =>
+        formatProviderAddressResponse(addr),
+      ),
+    },
+  };
+}
+
+export function formatProviderAddressResponse(
+  address: any,
+): commonType.ProviderAddressResponse {
+  return {
+    id: address._id,
+    providerId: address.providerId,
+    name: address.name,
+    countryCode: address.countryCode,
+    addressLine1: address.addressLine1,
+    addressLine2: address.addressLine2,
+    locality: address.locality,
+    adminAreaL1: address.adminAreaL1,
+    adminAreaL2: address.adminAreaL2,
+    postalCode: address.postalCode,
+    location: address.location,
+    phoneNumber: address.phoneNumber,
+    notes: address.notes,
+    isDefault: address.isDefault,
+    createdBy: {
+      id: address.createdBy._id,
+      fullName: address.createdBy.fullName,
+    },
+    createdAt: address.createdAt,
+    updatedAt: address.updatedAt,
+  };
+}
+
 export function formatOrderResponse(order: any): commonType.OrderResponse {
   return {
     id: order._id,

@@ -1,4 +1,4 @@
-import { faker } from "@faker-js/faker";
+import { allLocales, Faker, faker } from "@faker-js/faker";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import {
@@ -12,6 +12,7 @@ import {
   PRODUCT_IMAGE_BEST_WIDTH,
   PRODUCT_TYPES,
   ESTIMATE_PICKUP_TIME_GAP,
+  COUNTRY_LOCALE_KEYS,
 } from "../../common/configs.common";
 import { HASH_SALT } from "../configs/configs";
 import { provinces } from "../../common/vnAddresses";
@@ -64,13 +65,14 @@ import {
 import Order, { IOrder } from "../models/order/order.model";
 import Provider, { IProvider } from "../models/inventory/provider.model";
 import ProviderAddress from "../models/inventory/providerAddress.model";
+import { ProviderAddressCreate } from "../../common/types.common";
 
 // --- USERS ---
 
 // Clean up existing non-protected users, first 2 users are admins
 async function mockUsers(
   session: mongoose.mongo.ClientSession,
-  count: number = 10
+  count: number = 10,
 ): Promise<any[]> {
   console.log("⏳ ", `Mocking ${count} users...`);
 
@@ -131,7 +133,7 @@ async function mockUserAddresses(
   session: mongoose.mongo.ClientSession,
   users: IUser[],
   { min = 1, max = 4 } = {},
-  deleteExisting: boolean = true
+  deleteExisting: boolean = true,
 ): Promise<any[]> {
   console.log("⏳ ", `Mocking user addresses...`);
 
@@ -196,6 +198,7 @@ async function mockUserAddresses(
           wardCode: randWard.code,
           districtCode: randDistrict.code,
           cityProvinceCode: randProvince.code,
+          countryCode: VN_COUNTRY_CODE,
         };
 
         // Generate valid Vietnamese phone number
@@ -208,7 +211,6 @@ async function mockUserAddresses(
           userId: user._id,
           name: faker.person.fullName(),
           ...addressDetails,
-          countryCode: VN_COUNTRY_CODE,
           phoneNumber,
           fullAddress: formatAddress(addressDetails),
           location: {
@@ -238,7 +240,7 @@ async function mockUserAddresses(
 // --- PRODUCTS ---
 async function mockProductBrands(
   session: mongoose.mongo.ClientSession,
-  count: number = 5
+  count: number = 5,
 ): Promise<any> {
   console.log("⏳ ", "Mocking product brands...");
 
@@ -272,7 +274,7 @@ async function mockProductBrands(
 
 async function mockProductCategories(
   session: mongoose.mongo.ClientSession,
-  count: number = 5
+  count: number = 5,
 ): Promise<any> {
   console.log("⏳ ", "Mocking product categories...");
 
@@ -305,7 +307,7 @@ async function mockProductCategories(
 
 async function mockProductOs(
   session: mongoose.mongo.ClientSession,
-  count: number = 5
+  count: number = 5,
 ): Promise<any> {
   console.log("⏳ ", "Mocking product operating systems...");
 
@@ -319,7 +321,7 @@ async function mockProductOs(
     for (let i = 0; i < count; i++) {
       const os = {
         name: `${faker.commerce.productAdjective()} ${faker.string.alphanumeric(
-          5
+          5,
         )}`, // unique
         logoUrl: faker.image.avatar(),
         description: faker.lorem.sentence(),
@@ -341,13 +343,13 @@ async function mockProduct(
   session: mongoose.mongo.ClientSession,
   brands: IProductBrand[],
   categories: IProductCategory[],
-  count: number = 10
+  count: number = 10,
 ): Promise<any> {
   console.log("⏳ ", "Mocking products...");
 
   if (brands.length === 0 || categories.length === 0) {
     throw new Error(
-      "Brands, categories, and OS must be mocked before products."
+      "Brands, categories, and OS must be mocked before products.",
     );
   }
 
@@ -393,7 +395,7 @@ async function mockProductModels(
   session: mongoose.mongo.ClientSession,
   products: IProduct[],
   osId: IProductOs[],
-  { min = 1, max = 4 } = {}
+  { min = 1, max = 4 } = {},
 ): Promise<any> {
   console.log("⏳ ", "Mocking product models...");
 
@@ -426,7 +428,7 @@ async function mockProductModels(
             null,
             {
               rating: faker.helpers.arrayElement(
-                PRODUCT_MOCK_OPTIONS.MODEL_WATER_RESISTANCE_OPTIONS
+                PRODUCT_MOCK_OPTIONS.MODEL_WATER_RESISTANCE_OPTIONS,
               ),
               description: faker.helpers.arrayElement([
                 null,
@@ -439,28 +441,28 @@ async function mockProductModels(
             {
               healths: genArrayWithRandEles(
                 PRODUCT_MOCK_OPTIONS.MODEL_HEALTH_FEATURES_OPTIONS as any,
-                randNum(1, 3)
+                randNum(1, 3),
               ),
               sports: genArrayWithRandEles(
                 PRODUCT_MOCK_OPTIONS.MODEL_SPORTS_FEATURES_OPTIONS as any,
-                randNum(1, 3)
+                randNum(1, 3),
               ),
               specials: genArrayWithRandEles(
                 PRODUCT_MOCK_OPTIONS.MODEL_SPECIAL_FEATURES_OPTIONS as any,
-                randNum(1, 3)
+                randNum(1, 3),
               ),
             },
           ]),
           supportedAppsForNotifications: genArrayWithRandEles(
             PRODUCT_MOCK_OPTIONS.MODEL_SUPPORTED_APPS_FOR_NOTIFICATIONS_OPTIONS as any,
-            randNum(1, 3)
+            randNum(1, 3),
           ),
         };
 
         const config = {
           connectivities: genArrayWithRandEles(
             PRODUCT_MOCK_OPTIONS.MODEL_CONNECTIVITY_OPTIONS as any,
-            randNum(1, 3)
+            randNum(1, 3),
           ),
           camera: faker.helpers.arrayElement([
             null,
@@ -468,12 +470,12 @@ async function mockProductModels(
               resolutionMp: faker.number.int({ min: 0, max: 108 }),
               features: genArrayWithRandEles(
                 PRODUCT_MOCK_OPTIONS.MODEL_CAMERA_FEATURES_OPTIONS as any,
-                randNum(1, 3)
+                randNum(1, 3),
               ),
             },
           ]),
           chipset: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.MODEL_CHIPSET_OPTIONS
+            PRODUCT_MOCK_OPTIONS.MODEL_CHIPSET_OPTIONS,
           ),
           memory: {
             ramBytes: faker.number.int({
@@ -488,15 +490,15 @@ async function mockProductModels(
           osId: osId[randNum(0, osId.length - 1)]._id,
           compatiblePhoneOs: genArrayWithRandEles(
             PRODUCT_MOCK_OPTIONS.MODEL_COMPATIBLE_PHONE_OS_OPTIONS as any,
-            randNum(1, 3)
+            randNum(1, 3),
           ),
           appsConnect: genArrayWithRandEles(
             PRODUCT_MOCK_OPTIONS.MODEL_APPS_CONNECT_OPTIONS as any,
-            randNum(1, 3)
+            randNum(1, 3),
           ),
           sensors: genArrayWithRandEles(
             PRODUCT_MOCK_OPTIONS.MODEL_SENSORS_OPTIONS as any,
-            randNum(1, 3)
+            randNum(1, 3),
           ),
         };
 
@@ -510,7 +512,7 @@ async function mockProductModels(
           },
           timeFullChargeMin: faker.number.int({ min: 30, max: 180 }),
           chargingType: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.MODEL_BATTERY_CHARGE_TYPE_OPTIONS
+            PRODUCT_MOCK_OPTIONS.MODEL_BATTERY_CHARGE_TYPE_OPTIONS,
           ),
         };
 
@@ -522,7 +524,7 @@ async function mockProductModels(
               max: 2.5,
             }),
             displayType: faker.helpers.arrayElement(
-              PRODUCT_MOCK_OPTIONS.MODEL_DISPLAY_TYPE_OPTIONS
+              PRODUCT_MOCK_OPTIONS.MODEL_DISPLAY_TYPE_OPTIONS,
             ),
           },
           brightness: {
@@ -534,10 +536,10 @@ async function mockProductModels(
             wPx: faker.number.int({ min: 1280, max: 3840 }),
           },
           glassMaterial: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.MODEL_SCREEN_GLASS_MATERIAL_OPTIONS
+            PRODUCT_MOCK_OPTIONS.MODEL_SCREEN_GLASS_MATERIAL_OPTIONS,
           ),
           bezelMaterial: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.MODEL_BEZEL_MATERIAL_OPTIONS
+            PRODUCT_MOCK_OPTIONS.MODEL_BEZEL_MATERIAL_OPTIONS,
           ),
           isCircular,
           diameterMm: isCircular
@@ -552,14 +554,14 @@ async function mockProductModels(
             : null,
           shape: isCircular ? "round" : "rectangular",
           refreshRateHz: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.MODEL_SCREEN_REFRESH_RATE_OPTIONS
+            PRODUCT_MOCK_OPTIONS.MODEL_SCREEN_REFRESH_RATE_OPTIONS,
           ),
         };
 
         const model = {
           productId: product._id,
           name: `${faker.commerce.productName()} ${faker.string.alphanumeric(
-            5
+            5,
           )}`, // unique
           priceCents:
             stockPriceCents + faker.number.int({ min: 10_00, max: 100_00 }),
@@ -570,11 +572,11 @@ async function mockProductModels(
           battery,
           screen,
           caseMaterial: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.MODEL_CASE_MATERIAL_OPTIONS
+            PRODUCT_MOCK_OPTIONS.MODEL_CASE_MATERIAL_OPTIONS,
           ),
           watchWeightMg: faker.number.int({ min: 50, max: 200 }),
           compatibleBandLugWidthMm: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.MODEL_COMPATIBLE_BAND_LUG_WIDTH_MM_OPTIONS
+            PRODUCT_MOCK_OPTIONS.MODEL_COMPATIBLE_BAND_LUG_WIDTH_MM_OPTIONS,
           ),
           releaseDate: faker.date.past(),
           createdBy: sysUserId,
@@ -597,7 +599,7 @@ async function mockProductModels(
 async function mockModelVariations(
   session: mongoose.mongo.ClientSession,
   productModels: IProductModel[],
-  { min = 1, max = 4 } = {}
+  { min = 1, max = 4 } = {},
 ): Promise<any> {
   console.log("⏳ ", "Mocking product model variations...");
 
@@ -640,7 +642,7 @@ async function mockModelVariations(
           widthMm: model.compatibleBandLugWidthMm,
           lugWidthMm: model.compatibleBandLugWidthMm,
           material: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.VARIATION_BAND_MATERIAL_OPTIONS
+            PRODUCT_MOCK_OPTIONS.VARIATION_BAND_MATERIAL_OPTIONS,
           ),
           colors: [
             {
@@ -649,14 +651,14 @@ async function mockModelVariations(
             },
           ],
           claspType: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.VARIATION_BAND_CLASP_TYPE_OPTIONS
+            PRODUCT_MOCK_OPTIONS.VARIATION_BAND_CLASP_TYPE_OPTIONS,
           ),
           adjustableRange: {
             minMm: faker.number.int({ min: 130, max: 160 }),
             maxMm: faker.number.int({ min: 170, max: 210 }),
           },
           style: faker.helpers.arrayElement(
-            PRODUCT_MOCK_OPTIONS.VARIATION_BAND_STYLE_OPTIONS
+            PRODUCT_MOCK_OPTIONS.VARIATION_BAND_STYLE_OPTIONS,
           ),
           quickRelease: faker.datatype.boolean(),
           waterResistance: faker.datatype.boolean(),
@@ -685,7 +687,7 @@ async function mockModelVariations(
 
     const createdVariations = await ModelVariation.insertMany(
       variationsToCreate,
-      { session }
+      { session },
     );
     console.log("✅ Mocked product model variations successfully.");
     return createdVariations;
@@ -696,7 +698,7 @@ async function mockModelVariations(
 
 async function mockVariationInstances(
   session: mongoose.mongo.ClientSession,
-  modelVariations: IModelVariation[]
+  modelVariations: IModelVariation[],
 ): Promise<any> {
   console.log("⏳ ", "Mocking product model variation instances...");
 
@@ -730,26 +732,26 @@ async function mockVariationInstances(
 
     const createdInstances = await VariationInstance.insertMany(
       instancesToCreate,
-      { session }
+      { session },
     );
     console.log("✅ Mocked product model variation instances successfully.");
     return createdInstances;
   } catch (error) {
     throw new Error(
-      `Error mocking product model variation instances: ${error}`
+      `Error mocking product model variation instances: ${error}`,
     );
   }
 }
 
 async function mockInventoryMovements(
   session: mongoose.mongo.ClientSession,
-  variationInstances: IVariationInstance[]
+  variationInstances: IVariationInstance[],
 ): Promise<any> {
   console.log("⏳ ", "Mocking inventory movements...");
 
   if (variationInstances.length === 0) {
     throw new Error(
-      "Variation instances must be mocked before inventory movements."
+      "Variation instances must be mocked before inventory movements.",
     );
   }
 
@@ -793,7 +795,7 @@ async function mockBuyerMe(
     password: string;
     birth: Date;
     gender: (typeof USER_GENDER_OPTIONS)[number];
-  }
+  },
 ): Promise<IUser> {
   console.log("⏳ ", "Mocking buyer...");
 
@@ -834,7 +836,7 @@ async function mockBuyerMe(
 
 async function mockCompleteOrder(
   session: mongoose.mongo.ClientSession,
-  userId: mongoose.Types.ObjectId
+  userId: mongoose.Types.ObjectId,
 ): Promise<IOrder> {
   console.log("⏳ ", "Mocking complete order...");
 
@@ -953,7 +955,7 @@ async function mockCompleteOrder(
     ]).session(session);
     if (variations.length < 2) {
       throw new Error(
-        "Not enough variations with stockQuantity >= 2 to create a complete order."
+        "Not enough variations with stockQuantity >= 2 to create a complete order.",
       );
     }
     // For each variation, find 1 instance for first variation, 2 for second.
@@ -1063,7 +1065,7 @@ async function mockCompleteOrder(
       VariationInstance.updateMany(
         { _id: { $in: allInstanceIdsToUpdate } },
         { $set: { isActive: false } },
-        { session }
+        { session },
       ),
       InventoryMovement.insertMany(inventoryMovementsToCreate, { session }),
       Order.create([completeOrder], { session }),
@@ -1078,7 +1080,7 @@ async function mockCompleteOrder(
 
 export async function mockPendingOrder(
   session: mongoose.mongo.ClientSession,
-  userId: mongoose.Types.ObjectId
+  userId: mongoose.Types.ObjectId,
 ): Promise<IOrder> {
   console.log("⏳ ", "Mocking pending order...");
 
@@ -1130,7 +1132,7 @@ export async function mockPendingOrder(
     ]).session(session);
     if (variations.length < 2) {
       throw new Error(
-        "Not enough variations with stockQuantity >= 1 to create a pending order."
+        "Not enough variations with stockQuantity >= 1 to create a pending order.",
       );
     }
     // For each variation, find 1 instance.
@@ -1229,7 +1231,7 @@ export async function mockPendingOrder(
       VariationInstance.updateMany(
         { _id: { $in: allInstanceIdsToUpdate } },
         { $set: { isActive: false } },
-        { session }
+        { session },
       ),
       InventoryMovement.insertMany(inventoryMovementsToCreate, { session }),
       Order.create([pendingOrder], { session }),
@@ -1244,7 +1246,7 @@ export async function mockPendingOrder(
 // mock return at the beginning of return process
 async function mockOrderReturn(
   session: mongoose.mongo.ClientSession,
-  orderId: mongoose.Types.ObjectId
+  orderId: mongoose.Types.ObjectId,
 ): Promise<IOrderReturn> {
   console.log("⏳ ", "Mocking order return...");
 
@@ -1288,7 +1290,7 @@ async function mockOrderReturn(
     const returnReasonId = await ReturnReason.findOne().session(session).lean();
     if (!returnReasonId) {
       throw new Error(
-        "No return reasons found. Please mock return reasons first."
+        "No return reasons found. Please mock return reasons first.",
       );
     }
 
@@ -1348,7 +1350,7 @@ async function mockOrderReturn(
 
 export async function mockProviders(
   session: mongoose.mongo.ClientSession,
-  count: number = 3
+  count: number = 3,
 ): Promise<any[]> {
   console.log("⏳ ", "Mocking providers...");
 
@@ -1382,7 +1384,7 @@ export async function mockProviderAddresses(
   session: mongoose.mongo.ClientSession,
   providers: IProvider[],
   { min = 1, max = 3 } = {},
-  deleteExisting: boolean = true
+  deleteExisting: boolean = true,
 ): Promise<any[]> {
   console.log("⏳ ", "Mocking provider addresses...");
 
@@ -1402,53 +1404,18 @@ export async function mockProviderAddresses(
 
     for (const provider of providers) {
       const count = randNum(min, max);
+
+      const globalAddress = getRandGlobalAddress();
       for (let i = 0; i < count; i++) {
-        let randProvince: any, randDistrict: any, randWard: any;
-        let districtsInProvince: { total: number; data: any[] },
-          wardsInDistrict: { total: number; data: any[] };
-
-        // Loop to ensure we get a valid province, district, and ward
-        do {
-          // Pick a random province
-          randProvince = provinces.data[randNum(0, provinces.total - 1)];
-
-          // Pick a random district from the province
-          districtsInProvince = getDistrictsByProvinceCode(randProvince.code);
-          if (districtsInProvince.total > 0) {
-            randDistrict =
-              districtsInProvince.data[
-                randNum(0, districtsInProvince.total - 1)
-              ];
-
-            // Pick a random ward code from the district
-            wardsInDistrict = getWardsByDistrictCode(randDistrict.code);
-            if (wardsInDistrict.total > 0) {
-              randWard =
-                wardsInDistrict.data[randNum(0, wardsInDistrict.total - 1)];
-            }
-          }
-        } while (!randWard); // Continue until a valid ward is found
-
-        const addressDetails = {
-          street: faker.location.streetAddress(),
-          apartmentNumber: faker.location.buildingNumber(),
-          wardCode: randWard.code,
-          districtCode: randDistrict.code,
-          cityProvinceCode: randProvince.code,
-        };
-
         addressesToCreate.push({
           providerId: provider._id,
           name: faker.location.direction(),
-          ...addressDetails,
-          countryCode: VN_COUNTRY_CODE,
-          phoneNumber: faker.phone.number(),
-          fullAddress: formatAddress(addressDetails),
+          ...globalAddress,
           location: {
-            type: "Point",
+            locationType: "point",
             coordinates: [
-              Number.parseFloat(faker.location.longitude().toFixed(6)),
-              Number.parseFloat(faker.location.latitude().toFixed(6)),
+              globalAddress.location.longitude,
+              globalAddress.location.latitude,
             ],
           },
           notes: faker.lorem.sentence(),
@@ -1493,7 +1460,7 @@ export async function mockAllData(): Promise<void> {
     const modelVariations = await mockModelVariations(session, productModels);
     const variationInstances = await mockVariationInstances(
       session,
-      modelVariations
+      modelVariations,
     );
     await session.commitTransaction();
     console.log("✅ Product data committed.");
@@ -1543,7 +1510,7 @@ function genRandImgUrls(
     width: number;
     height: number;
     category: string;
-  }
+  },
 ): string[] {
   const urls: string[] = [];
 
@@ -1552,7 +1519,7 @@ function genRandImgUrls(
       faker.image.urlPicsumPhotos({
         width: specs.width,
         height: specs.height,
-      })
+      }),
     );
   }
   return urls;
@@ -1561,4 +1528,38 @@ function genRandImgUrls(
 function genArrayWithRandEles(eles: any[], count: number): any[] {
   const shuffled = eles.sort(() => 0.5 - Math.random());
   return shuffled.slice(0, count);
+}
+
+function getRandGlobalAddress(): Pick<
+  ProviderAddressCreate,
+  | "countryCode"
+  | "addressLine1"
+  | "locality"
+  | "adminAreaL1"
+  | "postalCode"
+  | "phoneNumber"
+  | "location"
+> {
+  const randomLocaleKeys =
+    COUNTRY_LOCALE_KEYS[randNum(0, COUNTRY_LOCALE_KEYS.length - 1)];
+  const customFaker = new Faker({
+    locale: [
+      allLocales[randomLocaleKeys.split("_")[0] as keyof typeof allLocales],
+      allLocales.en,
+      allLocales.base,
+    ],
+  });
+
+  return {
+    countryCode: randomLocaleKeys.split("_")[1],
+    addressLine1: customFaker.location.streetAddress(),
+    adminAreaL1: customFaker.location.state() || customFaker.location.city(),
+    postalCode: customFaker.location.zipCode(),
+    locality: customFaker.location.city(),
+    phoneNumber: customFaker.phone.number(),
+    location: {
+      longitude: Number.parseFloat(customFaker.location.longitude().toFixed(6)),
+      latitude: Number.parseFloat(customFaker.location.latitude().toFixed(6)),
+    },
+  };
 }

@@ -16,13 +16,14 @@ import {
 import { HttpError } from "../../utils/errorHandler";
 import mongoose, { Types } from "mongoose";
 import UserAddress from "../../models/user/userAddress.model";
-import { formatAddress, isValidAddress } from "../../../common/utils.common";
+import { formatAddress, isValidVnAddress } from "../../../common/utils.common";
+import { VN_COUNTRY_CODE } from "../../../common/configs.common";
 
 // --- ADMIN FUNCTIONS ---
 export async function getAllByUserId(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing get user addresses request...");
 
@@ -31,13 +32,13 @@ export async function getAllByUserId(
     return next(
       new HttpError(
         500,
-        "isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (!isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -65,7 +66,7 @@ export async function getAllByUserId(
       data: {
         total: addresses.length,
         addresses: addresses.map((address) =>
-          formatUserAddressResponse(address)
+          formatUserAddressResponse(address),
         ),
       },
     } as SuccessResponse<UserAddressListResponse>);
@@ -78,7 +79,7 @@ export async function getAllByUserId(
 export async function create(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing create user address request...");
 
@@ -87,13 +88,13 @@ export async function create(
     return next(
       new HttpError(
         500,
-        "isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (!isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -128,7 +129,7 @@ export async function create(
 
     // Business logic
     if (
-      !isValidAddress({
+      !isValidVnAddress({
         wardCode,
         districtCode,
         cityProvinceCode,
@@ -141,7 +142,7 @@ export async function create(
       await UserAddress.updateMany(
         { userId, isDefault: true },
         { $set: { isDefault: false } },
-        { session }
+        { session },
       );
     } else {
       // Case when first address create but isDefault = false
@@ -191,7 +192,7 @@ export async function create(
 export async function getSelfAll(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing get user addresses request...");
 
@@ -199,7 +200,7 @@ export async function getSelfAll(
   if (!isPresent(userId)) {
     throw new HttpError(
       500,
-      "User ID not found, this should be handled in middlewares."
+      "User ID not found, this should be handled in middlewares.",
     );
   }
 
@@ -216,7 +217,7 @@ export async function getSelfAll(
       data: {
         total: addresses.length,
         addresses: addresses.map((address) =>
-          formatUserAddressResponse(address)
+          formatUserAddressResponse(address),
         ),
       },
     } as SuccessResponse<UserAddressListResponse>);
@@ -229,7 +230,7 @@ export async function getSelfAll(
 export async function update(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing update self user address request...");
 
@@ -241,8 +242,8 @@ export async function update(
     return next(
       new HttpError(
         500,
-        "userId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { userId: userIdFromParams, addressId } = req.params;
@@ -251,9 +252,21 @@ export async function update(
 
   if (isBuyerOnly && targetUserId !== reqUserId) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
+
+  const {
+    name,
+    street,
+    apartmentNumber,
+    wardCode,
+    districtCode,
+    cityProvinceCode,
+    location,
+    phoneNumber,
+    isDefault,
+  } = req.body as UserAddressUpdate;
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -272,18 +285,6 @@ export async function update(
     }
 
     // Business logic
-    const {
-      name,
-      street,
-      apartmentNumber,
-      wardCode,
-      districtCode,
-      cityProvinceCode,
-      location,
-      phoneNumber,
-      isDefault,
-    } = req.body as UserAddressUpdate;
-
     const updatedName = name || address.name;
     const updatedStreet = street || address.street;
     const updatedApartmentNumber = apartmentNumber || address.apartmentNumber;
@@ -300,7 +301,7 @@ export async function update(
       updatedCityProvinceCode !== address.cityProvinceCode
     ) {
       if (
-        !isValidAddress({
+        !isValidVnAddress({
           wardCode: updatedWardCode,
           districtCode: updatedDistrictCode,
           cityProvinceCode: updatedCityProvinceCode,
@@ -315,6 +316,7 @@ export async function update(
         wardCode: updatedWardCode,
         districtCode: updatedDistrictCode,
         cityProvinceCode: updatedCityProvinceCode,
+        countryCode: VN_COUNTRY_CODE,
       });
     }
 
@@ -332,7 +334,7 @@ export async function update(
         await UserAddress.updateMany(
           { userId: targetUserId, isDefault: true },
           { $set: { isDefault: false } },
-          { session }
+          { session },
         );
       }
     }
@@ -343,11 +345,9 @@ export async function update(
     address.wardCode = updatedWardCode;
     address.districtCode = updatedDistrictCode;
     address.cityProvinceCode = updatedCityProvinceCode;
-    if (location)
-      address.location = {
-        locationType: "point",
-        coordinates: [location.longitude, location.latitude],
-      };
+    if (location) {
+      address.location.coordinates = [location.longitude, location.latitude];
+    }
     address.phoneNumber = updatedPhoneNumber;
     address.isDefault = updatedIsDefault;
 
@@ -372,7 +372,7 @@ export async function update(
 export async function remove(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing delete self user address request...");
 
@@ -384,8 +384,8 @@ export async function remove(
     return next(
       new HttpError(
         500,
-        "userId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { userId: userIdFromParams, addressId } = req.params;
@@ -396,7 +396,7 @@ export async function remove(
     if (isBuyerOnly && targetUserId !== reqUserId) {
       throw new HttpError(
         403,
-        "You do not have permission to perform this action."
+        "You do not have permission to perform this action.",
       );
     }
 
@@ -412,7 +412,7 @@ export async function remove(
       throw new HttpError(404, "Address not found.");
     }
 
-    // Business logic
+    // Can't delete default address
     if (address.isDefault) {
       throw new HttpError(400, "You cannot delete the default address.");
     }
@@ -432,7 +432,7 @@ export async function remove(
 export async function createSelf(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing create user address request...");
 
@@ -441,8 +441,8 @@ export async function createSelf(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled in middlewares."
-      )
+        "User ID not found, this should be handled in middlewares.",
+      ),
     );
   }
   const {
@@ -462,7 +462,7 @@ export async function createSelf(
 
   try {
     if (
-      !isValidAddress({
+      !isValidVnAddress({
         wardCode,
         districtCode,
         cityProvinceCode,
@@ -475,7 +475,7 @@ export async function createSelf(
       await UserAddress.updateMany(
         { userId, isDefault: true },
         { $set: { isDefault: false } },
-        { session }
+        { session },
       );
     }
 
@@ -516,7 +516,7 @@ export async function createSelf(
 export async function getSelf(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing get user address request...");
 
@@ -525,8 +525,8 @@ export async function getSelf(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled in middlewares."
-      )
+        "User ID not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { addressId } = req.params;
@@ -558,7 +558,7 @@ export async function getSelf(
 export async function getSelfDefault(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing get user default address request...");
 
@@ -567,8 +567,8 @@ export async function getSelfDefault(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled in middlewares."
-      )
+        "User ID not found, this should be handled in middlewares.",
+      ),
     );
   }
 

@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import {
   isValidEmail,
-  isValidPhoneNumber,
   removeOddSpaces,
-} from "../../../common/utils.common";
-import { HttpError } from "../errorHandler";
+} from "../../../../common/utils.common";
+import { HttpError } from "../../errorHandler";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 export function sanitizeProviderInput(
   req: Request,

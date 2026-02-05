@@ -16,7 +16,7 @@ import userPaymentMethodRoute from "./routes/user/userPaymentMethod.route";
 import roleRoute from "./routes/role/role.route";
 import permissionRoute from "./routes/role/permission.route";
 import webhookRoute from "./routes/webhook.route";
-import providerRoute from "./routes/provider.route";
+import providerRoute from "./routes/inventory/provider.route";
 import withdrawalRequestRoute from "./routes/withdrawalRequest/withdrawalRequest.route";
 import withdrawalStateRoute from "./routes/withdrawalRequest/withdrawalState.route";
 
@@ -42,10 +42,10 @@ import returnStateRoute from "./routes/returnRefund/returnState.route";
 import refundStateRoute from "./routes/returnRefund/refundState.route";
 import returnReasonRoute from "./routes/returnRefund/returnReason.route";
 
-import grnRoute from "./routes/grn/grn.route";
-import grnStateRoute from "./routes/grn/grnState.route";
+import grnRoute from "./routes/inventory/grn.route";
+import grnStateRoute from "./routes/inventory/grnState.route";
 
-import inventoryMovementTypeRoute from "./routes/grn/inventoryMovementType.route";
+import inventoryMovementTypeRoute from "./routes/inventory/inventoryMovementType.route";
 
 import { errorHandler as errorHandlerMiddleware } from "./utils/middlewares/error.middleware";
 import connectDB from "./db/connectDB";

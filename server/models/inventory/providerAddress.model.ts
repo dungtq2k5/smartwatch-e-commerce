@@ -4,14 +4,14 @@ import { VN_COUNTRY_CODE } from "../../../common/configs.common";
 export interface IProviderAddress extends Document<Types.ObjectId> {
   providerId: Types.ObjectId;
   name: string;
-  street: string;
-  apartmentNumber: string;
-  wardCode: string;
-  districtCode: string;
-  cityProvinceCode: string;
   countryCode: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  locality: string;
+  adminAreaL1: string;
+  adminAreaL2: string | null;
+  postalCode: string;
   phoneNumber: string;
-  fullAddress: string;
   location: {
     locationType: "point";
     coordinates: [number, number]; // [longitude, latitude]
@@ -34,36 +34,38 @@ const providerAddressSchema: Schema<IProviderAddress> = new Schema(
       type: String,
       required: true,
     },
-    street: {
-      type: String,
-      required: true,
-    },
-    apartmentNumber: {
-      type: String,
-      required: true,
-    },
-    wardCode: {
-      type: String,
-      required: true,
-    },
-    districtCode: {
-      type: String,
-      required: true,
-    },
-    cityProvinceCode: {
-      type: String,
-      required: true,
-    },
     countryCode: {
       type: String,
       required: false,
       default: VN_COUNTRY_CODE,
     },
-    phoneNumber: {
+    addressLine1: {
       type: String,
       required: true,
     },
-    fullAddress: {
+    addressLine2: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    locality: {
+      type: String,
+      required: true,
+    },
+    adminAreaL1: {
+      type: String,
+      required: true,
+    },
+    adminAreaL2: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    postalCode: {
+      type: String,
+      required: true,
+    },
+    phoneNumber: {
       type: String,
       required: true,
     },
@@ -99,13 +101,13 @@ const providerAddressSchema: Schema<IProviderAddress> = new Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Ensure one default address per provider
 providerAddressSchema.index(
   { providerId: 1, isDefault: 1 },
-  { unique: true, partialFilterExpression: { isDefault: true } }
+  { unique: true, partialFilterExpression: { isDefault: true } },
 );
 
 const ProviderAddress: Model<IProviderAddress> =
