@@ -51,7 +51,7 @@ router.patch(
   verifyEmptyBody,
   inputSanitizer("update contact-info"),
   verifyUserInput("update contact info"),
-  userController.updateSelfContactInfo
+  userController.updateSelfContactInfo,
 );
 
 router.patch(
@@ -61,7 +61,7 @@ router.patch(
   verifyEmptyBody,
   inputSanitizer("update general-info"),
   verifyUserInput("update"),
-  userController.updateSelfGeneralInfo
+  userController.updateSelfGeneralInfo,
 );
 
 router.patch(
@@ -70,7 +70,7 @@ router.patch(
   verifyPermission("u_usr"),
   verifyEmptyBody,
   verifyUserInput("update password"),
-  userController.updateSelfPassword
+  userController.updateSelfPassword,
 );
 
 router.patch(
@@ -79,7 +79,7 @@ router.patch(
   verifyPermission("u_usr"),
   verifyEmptyBody,
   verifyUserInput("set password"),
-  userController.setSelfPassword
+  userController.setSelfPassword,
 );
 
 router.delete("/me", verifyPermission("d_usr"), userController.deleteSelf);
@@ -91,21 +91,7 @@ router.post(
   verifyEmptyBody,
   inputSanitizer("create user"),
   verifyUserInput("create"),
-  userController.create
-);
-
-router.get(
-  "/sys-user-id",
-  verifyPermission("r_usr"),
-  userController.getSystemUserId
-);
-
-router.get("/:userId", verifyPermission("r_usr"), userController.get);
-
-router.get(
-  "/:userId/details",
-  verifyPermission("r_usr"),
-  userController.getDetails
+  userController.create,
 );
 
 router.get(
@@ -113,8 +99,22 @@ router.get(
   verifyPermission("r_usr"),
   inputSanitizer("user search"),
   verifyUserInput("search"),
-  userController.search
+  userController.search,
 );
+
+router.get(
+  "/sys-user-id",
+  verifyPermission("r_usr"),
+  userController.getSystemUserId,
+);
+
+router.get(
+  "/:userId/details",
+  verifyPermission("r_usr"),
+  userController.getDetails,
+);
+
+router.get("/:userId", verifyPermission("r_usr"), userController.get);
 
 router.patch(
   "/:userId/email",
@@ -122,7 +122,7 @@ router.patch(
   verifyEmptyBody,
   inputSanitizer("update email"),
   verifyUserInput("update email"),
-  userController.updateEmail
+  userController.updateEmail,
 );
 
 router.patch(
@@ -130,7 +130,7 @@ router.patch(
   verifyPermission("u_usr"),
   verifyEmptyBody,
   verifyUserInput("update phone number"),
-  userController.updatePhoneNumber
+  userController.updatePhoneNumber,
 );
 
 router.patch(
@@ -139,7 +139,7 @@ router.patch(
   verifyEmptyBody,
   inputSanitizer("update general-info"),
   verifyUserInput("update"),
-  userController.updateGeneralInfo
+  userController.updateGeneralInfo,
 );
 
 router.delete("/:userId", verifyPermission("d_usr"), userController.remove);
@@ -149,7 +149,7 @@ router.delete(
   verifyPermission("d_usr"),
   inputSanitizer("delete many"),
   verifyUserInput("delete many"),
-  userController.removeBulk
+  userController.removeBulk,
 );
 
 // -- routes for address
@@ -159,13 +159,13 @@ router.post(
   verifyEmptyBody,
   sanitizeAddressInput,
   verifyAddressInput("create"),
-  addressController.create
+  addressController.create,
 );
 
 router.get(
   "/:userId/addresses",
   verifyPermission("r_usr_addr"),
-  addressController.getAllByUserId
+  addressController.getAllByUserId,
 );
 
 router.patch(
@@ -174,13 +174,13 @@ router.patch(
   verifyEmptyBody,
   sanitizeAddressInput,
   verifyAddressInput("update"),
-  addressController.update
+  addressController.update,
 );
 
 router.delete(
   "/:userId/addresses/:addressId",
   verifyPermission("d_usr_addr"),
-  addressController.remove
+  addressController.remove,
 );
 
 export default router;

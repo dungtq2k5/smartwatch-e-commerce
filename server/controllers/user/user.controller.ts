@@ -76,7 +76,7 @@ import { formatError } from "../../../common/utils.common";
 export async function create(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing create user request...");
 
@@ -85,8 +85,8 @@ export async function create(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled in middlewares."
-      )
+        "User ID not found, this should be handled in middlewares.",
+      ),
     );
   }
   const {
@@ -115,13 +115,13 @@ export async function create(
     if (!email && isEmailVerified) {
       throw new HttpError(
         400,
-        "Email cannot be empty when isEmailVerified is true."
+        "Email cannot be empty when isEmailVerified is true.",
       );
     }
     if (!phoneNumber && isPhoneNumberVerified) {
       throw new HttpError(
         400,
-        "Phone number cannot be empty when isPhoneNumberVerified is true."
+        "Phone number cannot be empty when isPhoneNumberVerified is true.",
       );
     }
 
@@ -152,7 +152,7 @@ export async function create(
       await Role.updateMany(
         { _id: { $in: roleIds } },
         { $inc: { userAssigned: 1 } },
-        { session }
+        { session },
       );
 
       const reqUserIdObjId = new Types.ObjectId(reqUserId);
@@ -198,7 +198,7 @@ export async function create(
 export async function get(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing get user request...");
 
@@ -207,13 +207,13 @@ export async function get(
     return next(
       new HttpError(
         500,
-        "isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -247,7 +247,7 @@ export async function get(
 export async function getSystemUserId(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing get system user ID request...");
 
@@ -256,13 +256,13 @@ export async function getSystemUserId(
     return next(
       new HttpError(
         500,
-        "isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -281,7 +281,7 @@ export async function getSystemUserId(
 export async function getDetails(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing get user details request...");
 
@@ -290,13 +290,13 @@ export async function getDetails(
     return next(
       new HttpError(
         500,
-        "isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -332,7 +332,7 @@ export async function getDetails(
 export async function search(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing search users request...");
   const isBuyerOnly = req["auth"]?.isBuyerOnly;
@@ -340,13 +340,13 @@ export async function search(
     return next(
       new HttpError(
         500,
-        "isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -399,12 +399,12 @@ export async function search(
           data: [{ $sort: sortStage }, { $skip: offset }, { $limit: limit }],
         },
       },
-    ]);
+    ]).then((results) => results[0]);
 
-    const users: AdminUserResponse[] = aggregationResult[0].data.map(
-      (user: any) => formatAdminUserResponse(user)
+    const users: AdminUserResponse[] = aggregationResult.data.map((user: any) =>
+      formatAdminUserResponse(user),
     );
-    const total = aggregationResult[0].metadata[0]?.total || 0;
+    const total = aggregationResult.metadata[0]?.total || 0;
 
     res.status(200).json({
       success: true,
@@ -428,7 +428,7 @@ export async function search(
 export async function updateGeneralInfo(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing update user request...");
 
@@ -440,20 +440,20 @@ export async function updateGeneralInfo(
     return next(
       new HttpError(
         500,
-        "User ID or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "User ID or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
   const { userId } = req.params;
   if (userId === reqUserId) {
     return next(
-      new HttpError(400, "You cannot update your own account as an admin.")
+      new HttpError(400, "You cannot update your own account as an admin."),
     );
   }
 
@@ -501,20 +501,20 @@ export async function updateGeneralInfo(
         await Role.updateMany(
           { _id: { $in: roleIdsToRemove } },
           { $inc: { userAssigned: -1 } },
-          { session }
+          { session },
         );
         user.roles.splice(0, user.roles.length); // Clear roles
       }
     } else if (updatedRoleIds) {
       const currentRoleIds = user.roles!.map(
-        (role) => role.id.toString() as string
+        (role) => role.id.toString() as string,
       );
 
       const rolesToAdd = updatedRoleIds.filter(
-        (id) => !currentRoleIds.includes(id)
+        (id) => !currentRoleIds.includes(id),
       );
       const rolesToRemove = currentRoleIds.filter(
-        (id) => !updatedRoleIds.includes(id)
+        (id) => !updatedRoleIds.includes(id),
       );
 
       if (rolesToAdd.length > 0) {
@@ -528,7 +528,7 @@ export async function updateGeneralInfo(
         await Role.updateMany(
           { _id: { $in: rolesToAdd } },
           { $inc: { userAssigned: 1 } },
-          { session }
+          { session },
         );
 
         const reqUserIdObjId = new Types.ObjectId(reqUserId);
@@ -537,7 +537,7 @@ export async function updateGeneralInfo(
             id: new Types.ObjectId(id),
             assignedBy: reqUserIdObjId,
             assignedAt: new Date(),
-          }))
+          })),
         );
       }
 
@@ -545,7 +545,7 @@ export async function updateGeneralInfo(
         await Role.updateMany(
           { _id: { $in: rolesToRemove } },
           { $inc: { userAssigned: -1 } },
-          { session }
+          { session },
         );
         rolesToRemove.forEach((removeId) => {
           user.roles = user.roles.filter((role) => !role.id.equals(removeId));
@@ -572,7 +572,7 @@ export async function updateGeneralInfo(
         await sendLockAccountChangeEmail(
           user.email,
           user.fullName,
-          updatedIsLocked
+          updatedIsLocked,
         );
       } else if (user.phoneNumber) {
         await sendLockAccountChangeSms(user.phoneNumber, updatedIsLocked);
@@ -598,7 +598,7 @@ export async function updateGeneralInfo(
 export async function updateEmail(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing update user email request...");
 
@@ -610,20 +610,20 @@ export async function updateEmail(
     return next(
       new HttpError(
         500,
-        "reqUserId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "reqUserId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
   const { userId } = req.params;
   if (userId === reqUserId) {
     return next(
-      new HttpError(400, "You cannot update your own email as an admin.")
+      new HttpError(400, "You cannot update your own email as an admin."),
     );
   }
 
@@ -660,7 +660,7 @@ export async function updateEmail(
     if (!updatedEmail && updatedIsEmailVerified) {
       throw new HttpError(
         400,
-        "Email cannot be empty when isEmailVerified is true."
+        "Email cannot be empty when isEmailVerified is true.",
       );
     }
 
@@ -704,7 +704,7 @@ export async function updateEmail(
         oldEmail || "No email",
         updatedEmail || "No email",
         user.fullName,
-        updatedIsEmailVerified
+        updatedIsEmailVerified,
       );
       /*
         Verification changed from:
@@ -715,7 +715,7 @@ export async function updateEmail(
       await sendEmailVerifiedEmail(
         updatedEmail as string,
         user.fullName,
-        updatedIsEmailVerified
+        updatedIsEmailVerified,
       );
     }
 
@@ -738,7 +738,7 @@ export async function updateEmail(
 export async function updatePhoneNumber(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing update user phone number request...");
 
@@ -750,20 +750,23 @@ export async function updatePhoneNumber(
     return next(
       new HttpError(
         500,
-        "reqUserId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "reqUserId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
   const { userId } = req.params;
   if (userId === reqUserId) {
     return next(
-      new HttpError(400, "You cannot update your own phone number as an admin.")
+      new HttpError(
+        400,
+        "You cannot update your own phone number as an admin.",
+      ),
     );
   }
 
@@ -803,7 +806,7 @@ export async function updatePhoneNumber(
     if (!updatedPhoneNumber && updatedIsPhoneNumberVerified) {
       throw new HttpError(
         400,
-        "Phone number cannot be empty when isPhoneNumberVerified is true."
+        "Phone number cannot be empty when isPhoneNumberVerified is true.",
       );
     }
 
@@ -846,7 +849,7 @@ export async function updatePhoneNumber(
           oldPhoneNumber || "No phone number",
           updatedPhoneNumber || "No phone number",
           user.fullName,
-          updatedIsPhoneNumberVerified
+          updatedIsPhoneNumberVerified,
         );
       } else {
         const recipients = oldPhoneNumber ? [oldPhoneNumber] : [];
@@ -855,7 +858,7 @@ export async function updatePhoneNumber(
           recipients,
           oldPhoneNumber || "No phone number",
           updatedPhoneNumber || "No phone number",
-          updatedIsPhoneNumberVerified
+          updatedIsPhoneNumberVerified,
         );
       }
       /*
@@ -867,13 +870,13 @@ export async function updatePhoneNumber(
         await sendPhoneNumberVerifiedEmail(
           user.email,
           user.fullName,
-          updatedIsPhoneNumberVerified
+          updatedIsPhoneNumberVerified,
         );
       } else {
         await sendPhoneNumberVerifiedSms(
           updatedPhoneNumber as string,
           user.fullName,
-          updatedIsPhoneNumberVerified
+          updatedIsPhoneNumberVerified,
         );
       }
     }
@@ -897,7 +900,7 @@ export async function updatePhoneNumber(
 export async function remove(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing delete user request...");
 
@@ -909,20 +912,20 @@ export async function remove(
     return next(
       new HttpError(
         500,
-        "User ID or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "User ID or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
   const { userId } = req.params;
   if (reqUserId === userId) {
     return next(
-      new HttpError(400, "You cannot delete your own account as an admin.")
+      new HttpError(400, "You cannot delete your own account as an admin."),
     );
   }
 
@@ -959,7 +962,7 @@ export async function remove(
 export async function removeBulk(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing bulk delete users request...");
 
@@ -971,13 +974,13 @@ export async function removeBulk(
     return next(
       new HttpError(
         500,
-        "User ID or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "User ID or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -990,7 +993,7 @@ export async function removeBulk(
     if (userIdsToDelete.length > MAX_USERS_TO_DELETE_BULK) {
       throw new HttpError(
         400,
-        `Cannot delete more than ${MAX_USERS_TO_DELETE_BULK} users at once.`
+        `Cannot delete more than ${MAX_USERS_TO_DELETE_BULK} users at once.`,
       );
     }
 
@@ -998,7 +1001,7 @@ export async function removeBulk(
     if (userIdsToDelete.includes(reqUserId)) {
       throw new HttpError(
         400,
-        "You cannot delete your own account as an admin."
+        "You cannot delete your own account as an admin.",
       );
     }
 
@@ -1031,7 +1034,7 @@ export async function removeBulk(
 export async function updateSelfContactInfo(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing update user contact info request...");
 
@@ -1040,15 +1043,15 @@ export async function updateSelfContactInfo(
     return next(
       new HttpError(
         500,
-        "User ID or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "User ID or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
 
   // Check only buyer perform this action
   if (!isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -1058,8 +1061,8 @@ export async function updateSelfContactInfo(
     return next(
       new HttpError(
         500,
-        "User data not found, this should be handled by middlewares."
-      )
+        "User data not found, this should be handled by middlewares.",
+      ),
     );
   }
 
@@ -1083,7 +1086,7 @@ export async function updateSelfContactInfo(
         `${type} already exists in another account. If you sure this is your ${type},
           we think you has registered an account with this ${type} before.
           If you want to update your ${type} for the current account,
-          we recommend you to login with this ${type} first and change or delete the existing account.`
+          we recommend you to login with this ${type} first and change or delete the existing account.`,
       );
     }
 
@@ -1091,7 +1094,7 @@ export async function updateSelfContactInfo(
     if (type === "email" && value === user.email && user.isEmailVerified) {
       throw new HttpError(
         400,
-        "New email cannot be the same as current email."
+        "New email cannot be the same as current email.",
       );
     } else if (
       type === "phoneNumber" &&
@@ -1100,7 +1103,7 @@ export async function updateSelfContactInfo(
     ) {
       throw new HttpError(
         400,
-        "New phone number cannot be the same as current phone number."
+        "New phone number cannot be the same as current phone number.",
       );
     }
 
@@ -1122,7 +1125,7 @@ export async function updateSelfContactInfo(
           expiresAt: new Date(Date.now() + VERIFICATION_CODE_TTL),
         },
       ],
-      { session }
+      { session },
     );
 
     // Send verification code
@@ -1153,7 +1156,7 @@ export async function updateSelfContactInfo(
 export async function deleteSelf(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing delete user request...");
 
@@ -1162,13 +1165,13 @@ export async function deleteSelf(
     return next(
       new HttpError(
         500,
-        "User ID or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "User ID or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (!isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -1177,8 +1180,8 @@ export async function deleteSelf(
     return next(
       new HttpError(
         500,
-        "User data not found, this should be handled by middlewares."
-      )
+        "User data not found, this should be handled by middlewares.",
+      ),
     );
   }
 
@@ -1215,7 +1218,7 @@ export async function deleteSelf(
 export async function getSelf(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing get self user request...");
 
@@ -1224,8 +1227,8 @@ export async function getSelf(
     return next(
       new HttpError(
         500,
-        "isBuyerOnly or user not found, this should be handled in middlewares."
-      )
+        "isBuyerOnly or user not found, this should be handled in middlewares.",
+      ),
     );
   }
 
@@ -1246,7 +1249,7 @@ export async function getSelf(
 export async function updateSelfGeneralInfo(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing update user request...");
   const user = req["user"];
@@ -1254,8 +1257,8 @@ export async function updateSelfGeneralInfo(
     return next(
       new HttpError(
         500,
-        "User data not found, this should be handled by middlewares."
-      )
+        "User data not found, this should be handled by middlewares.",
+      ),
     );
   }
 
@@ -1298,7 +1301,7 @@ export async function updateSelfGeneralInfo(
 export async function updateSelfPassword(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing update user password request...");
   const user = req["user"];
@@ -1306,8 +1309,8 @@ export async function updateSelfPassword(
     return next(
       new HttpError(
         500,
-        "User data not found, this should be handled by middlewares."
-      )
+        "User data not found, this should be handled by middlewares.",
+      ),
     );
   }
 
@@ -1318,7 +1321,7 @@ export async function updateSelfPassword(
     if (user.authProvider !== "local") {
       throw new HttpError(
         403,
-        "This action is not available for accounts created with provider(Google)."
+        "This action is not available for accounts created with provider(Google).",
       );
     }
 
@@ -1330,7 +1333,7 @@ export async function updateSelfPassword(
     if (currentPassword === newPassword) {
       throw new HttpError(
         400,
-        "New password cannot be the same as current password."
+        "New password cannot be the same as current password.",
       );
     }
 
@@ -1352,7 +1355,7 @@ export async function updateSelfPassword(
 export async function setSelfPassword(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing set user password request...");
   const user = req["user"];
@@ -1360,8 +1363,8 @@ export async function setSelfPassword(
     return next(
       new HttpError(
         500,
-        "User data not found, this should be handled by middlewares."
-      )
+        "User data not found, this should be handled by middlewares.",
+      ),
     );
   }
 
@@ -1372,7 +1375,7 @@ export async function setSelfPassword(
     if (user.authProvider === "local") {
       throw new HttpError(
         403,
-        "Password has already been set for this account."
+        "Password has already been set for this account.",
       );
     }
 
@@ -1453,12 +1456,12 @@ async function hasConstraints(userId: Types.ObjectId): Promise<boolean> {
     if (hasConstraints) {
       console.log(
         `▶️ `,
-        `Critical constraints found for user: ${userId}. Soft delete required.`
+        `Critical constraints found for user: ${userId}. Soft delete required.`,
       );
     } else {
       console.log(
         `▶️ `,
-        `No critical constraints found for user: ${userId}. Hard delete is possible.`
+        `No critical constraints found for user: ${userId}. Hard delete is possible.`,
       );
     }
 
@@ -1471,7 +1474,7 @@ async function hasConstraints(userId: Types.ObjectId): Promise<boolean> {
 async function executeDeletion(
   userToDelete: IUser,
   deletedBy: Types.ObjectId,
-  session: mongoose.ClientSession
+  session: mongoose.ClientSession,
 ): Promise<void> {
   try {
     if (userToDelete.isDeleted) return;
@@ -1481,7 +1484,7 @@ async function executeDeletion(
     await Role.updateMany(
       { _id: { $in: roleIds } },
       { $inc: { userAssigned: -1 } },
-      { session }
+      { session },
     );
 
     // Anonymizing stripCustomerId if has
@@ -1513,7 +1516,7 @@ async function executeDeletion(
         }
         await stripe.customers.update(
           userToDelete.stripeCustomerId,
-          customerData
+          customerData,
         );
         console.log("✅ ", "Stripe customer data anonymized successfully.");
       } catch (error) {
@@ -1533,7 +1536,7 @@ async function executeDeletion(
             deletedBy,
           },
         },
-        { session }
+        { session },
       );
       return;
     }
