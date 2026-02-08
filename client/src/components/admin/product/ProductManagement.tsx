@@ -1320,7 +1320,7 @@ export default function ProductManagement() {
           title: `Delete selected products (${
             modal.productIdsToDelete?.length || "N/A"
           })`,
-          body: "Are you sure you want to delete all selected products? All the related data (models, variants, etc.) will also be deleted. This action cannot be undone.",
+          body: "Are you sure you want to delete all the selected products? All the related data (models, variants, etc.) will also be deleted. This action cannot be undone.",
           cancelText: "Cancel",
           submitText: "Delete products",
         }}

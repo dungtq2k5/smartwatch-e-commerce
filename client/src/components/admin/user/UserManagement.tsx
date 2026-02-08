@@ -311,7 +311,7 @@ export default function UserManagement() {
         getCsvVal: () => null,
       },
     }),
-    [admin?.id, canDeleteUser, canEditUser, getRole]
+    [admin?.id, canDeleteUser, canEditUser, getRole],
   );
 
   const [process, setProcess] = useState<Process>({
@@ -385,7 +385,7 @@ export default function UserManagement() {
               ? urlIsLocked
               : undefined,
           sortBy: USER_SEARCH_SORT_OPTIONS.includes(
-            urlSortBy as (typeof USER_SEARCH_SORT_OPTIONS)[number]
+            urlSortBy as (typeof USER_SEARCH_SORT_OPTIONS)[number],
           )
             ? (urlSortBy as SearchForm["sortBy"])
             : undefined,
@@ -469,7 +469,7 @@ export default function UserManagement() {
         id: SELECTION_TOAST_ID,
         duration: Infinity,
         position: "top-center",
-      }
+      },
     );
 
     setSelectionToastId(SELECTION_TOAST_ID);
@@ -503,7 +503,7 @@ export default function UserManagement() {
           : value,
       }));
     },
-    [process.isProcessing, setSearchParams]
+    [process.isProcessing, setSearchParams],
   );
 
   const handleSearchSubmit = useCallback(
@@ -545,7 +545,7 @@ export default function UserManagement() {
         return prev;
       });
     },
-    [process.isProcessing, searchForm, setSearchParams]
+    [process.isProcessing, searchForm, setSearchParams],
   );
 
   const handleClearFilters = useCallback((): void => {
@@ -569,7 +569,7 @@ export default function UserManagement() {
 
       setSearchParams((prev) => ({ ...prev, sortBy }));
     },
-    [process.isProcessing, setSearchParams]
+    [process.isProcessing, setSearchParams],
   );
 
   const handleOffsetChange = useCallback(
@@ -590,7 +590,7 @@ export default function UserManagement() {
         return prev;
       });
     },
-    [process.isProcessing, setSearchParams]
+    [process.isProcessing, setSearchParams],
   );
 
   const handleSelectUser = useCallback(
@@ -631,7 +631,7 @@ export default function UserManagement() {
             updatedSelectedUserIds.push(userId);
           } else {
             updatedSelectedUserIds = updatedSelectedUserIds.filter(
-              (id) => id !== userId
+              (id) => id !== userId,
             );
           }
         }
@@ -641,7 +641,7 @@ export default function UserManagement() {
           : updatedSelectedUserIds;
       });
     },
-    [process.isProcessing, users]
+    [process.isProcessing, users],
   );
 
   // Also handle loading effects
@@ -680,7 +680,7 @@ export default function UserManagement() {
                 isDesc={isDesc}
                 onClick={() => {
                   handleSort(
-                    isAsc ? colDisplay.sortKey.desc : colDisplay.sortKey.asc
+                    isAsc ? colDisplay.sortKey.desc : colDisplay.sortKey.asc,
                   );
                 }}
               />
@@ -795,7 +795,7 @@ export default function UserManagement() {
       setDisplayFields(fields);
       toast.success("Config display has been updated.");
     },
-    [setDisplayFields]
+    [setDisplayFields],
   );
 
   const handleResetConfigDisplay = useCallback((): void => {
@@ -847,16 +847,16 @@ export default function UserManagement() {
 
       // Use the current exportable + visible fields and their order for the CSV
       const exportableFields = displayFields.filter(
-        (field) => field.exportable && field.visible
+        (field) => field.exportable && field.visible,
       );
       const headers = exportableFields.map(
-        (field) => TABLE_COL_DISPLAY[field.name].label
+        (field) => TABLE_COL_DISPLAY[field.name].label,
       );
       const getVals = (
-        user: AdminUserResponse
+        user: AdminUserResponse,
       ): (string | number | boolean | null)[] => {
         return exportableFields.map((field) =>
-          TABLE_COL_DISPLAY[field.name].getCsvVal(user)
+          TABLE_COL_DISPLAY[field.name].getCsvVal(user),
         );
       };
 
@@ -864,11 +864,11 @@ export default function UserManagement() {
         `${PROJECT_NAME.toLowerCase()}-users-exports-${new Date().toISOString()}.csv`,
         headers,
         usersToExport.users,
-        getVals
+        getVals,
       );
 
       toast.success(
-        `Exported ${usersToExport.users.length} users successfully.`
+        `Exported ${usersToExport.users.length} users successfully.`,
       );
     } catch (error) {
       toast.error(formatError(error));
@@ -941,7 +941,7 @@ export default function UserManagement() {
     try {
       await deleteUserBulk({ userIds: modal.userIdsToDelete });
       toast.success(
-        `${modal.userIdsToDelete.length} users deleted successfully.`
+        `${modal.userIdsToDelete.length} users deleted successfully.`,
       );
 
       // Refresh list by re-triggering the useEffect
@@ -1185,7 +1185,7 @@ export default function UserManagement() {
           title: `Delete selected users (${
             modal.userIdsToDelete?.length || "N/A"
           })`,
-          body: `Are you sure you want to all the selected users? This action will delete ${
+          body: `Are you sure you want to delete all the selected users? This action will delete ${
             modal.userIdsToDelete?.length || "N/A"
           } user(s) in the system and cannot be undone.`,
           cancelText: "Cancel",
