@@ -309,7 +309,7 @@ export async function update(
     await brand.save({ session });
 
     const createdByUser = await User.findById(brand.createdBy)
-      .select("fullName")
+      .select("_id fullName")
       .lean()
       .session(session);
     if (!createdByUser) {

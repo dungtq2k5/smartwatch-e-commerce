@@ -304,7 +304,7 @@ export async function update(
     await os.save({ session });
 
     const createdByUser = await User.findById(os.createdBy)
-      .select("fullName")
+      .select("_id fullName")
       .lean()
       .session(session);
     if (!createdByUser) {

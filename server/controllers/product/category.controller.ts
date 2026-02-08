@@ -299,7 +299,7 @@ export async function update(
     await category.save({ session });
 
     const createdByUser = await User.findById(category.createdBy)
-      .select("fullName")
+      .select("_id fullName")
       .lean()
       .session(session);
     if (!createdByUser) {
