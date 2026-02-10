@@ -14,8 +14,10 @@ import {
   SuccessResponse,
 } from "../../../common/types.common";
 import Provider from "../../models/inventory/provider.model";
-import { formatAddress } from "../../../common/utils.common";
-import { CountryCode, isValidPhoneNumber } from "libphonenumber-js";
+import {
+  formatAddress,
+  getCountryFromPhoneNumber,
+} from "../../../common/utils.common";
 import User from "../../models/user/user.model";
 import postalCodeValidator from "postal-codes-js";
 
@@ -38,7 +40,6 @@ export async function create(
   const { providerId } = req.params;
   const {
     name,
-    countryCode,
     addressLine1,
     addressLine2,
     locality,
@@ -90,7 +91,6 @@ export async function create(
     const newAddress = new ProviderAddress({
       providerId,
       name,
-      countryCode,
       addressLine1,
       addressLine2,
       locality,
@@ -199,7 +199,6 @@ export async function update(
   const { providerId, addressId } = req.params;
   const {
     name,
-    countryCode,
     addressLine1,
     addressLine2,
     locality,
@@ -239,7 +238,6 @@ export async function update(
     }
 
     const updatedName = name || address.name;
-    const updatedCountryCode = countryCode || address.countryCode;
     const updatedAddressLine1 = addressLine1 || address.addressLine1;
     const updatedAddressLine2 =
       addressLine2 !== undefined ? addressLine2 : address.addressLine2;
@@ -252,28 +250,22 @@ export async function update(
     const updatedNotes = notes !== undefined ? notes : address.notes;
     const updatedIsDefault = isDefault ?? address.isDefault;
 
-    // Check phone number match with country code
-    if (
-      (updatedPhoneNumber !== address.phoneNumber ||
-        updatedCountryCode !== address.countryCode) &&
-      !isValidPhoneNumber(updatedPhoneNumber, updatedCountryCode as CountryCode)
-    ) {
-      throw new HttpError(
-        400,
-        "phoneNumber is not valid for the given countryCode.",
-      );
-    }
-
     // Check postal code match with country code
-    if (
-      (updatedPostalCode !== address.postalCode ||
-        updatedCountryCode !== address.countryCode) &&
-      !postalCodeValidator.validate(updatedPostalCode, updatedCountryCode)
-    ) {
-      throw new HttpError(
-        400,
-        "postalCode is not valid for the given countryCode.",
-      );
+    if (updatedPostalCode !== address.postalCode) {
+      const countryCode = getCountryFromPhoneNumber(updatedPhoneNumber)?.code;
+      if (!countryCode) {
+        throw new HttpError(
+          400,
+          "phoneNumber is not valid, can't detect country code from it.",
+        );
+      }
+
+      if (!postalCodeValidator.validate(countryCode, updatedPostalCode)) {
+        throw new HttpError(
+          400,
+          "postalCode is not valid for the given countryCode.",
+        );
+      }
     }
 
     /**
@@ -296,7 +288,6 @@ export async function update(
     }
 
     address.name = updatedName;
-    address.countryCode = updatedCountryCode;
     address.addressLine1 = updatedAddressLine1;
     address.addressLine2 = updatedAddressLine2;
     address.locality = updatedLocality;

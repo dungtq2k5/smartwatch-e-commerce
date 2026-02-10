@@ -1,10 +1,8 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
-import { VN_COUNTRY_CODE } from "../../../common/configs.common";
 
 export interface IProviderAddress extends Document<Types.ObjectId> {
   providerId: Types.ObjectId;
   name: string;
-  countryCode: string;
   addressLine1: string;
   addressLine2: string | null;
   locality: string;
@@ -33,11 +31,6 @@ const providerAddressSchema: Schema<IProviderAddress> = new Schema(
     name: {
       type: String,
       required: true,
-    },
-    countryCode: {
-      type: String,
-      required: false,
-      default: VN_COUNTRY_CODE,
     },
     addressLine1: {
       type: String,

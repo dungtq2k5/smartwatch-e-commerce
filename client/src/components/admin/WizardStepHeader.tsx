@@ -1,48 +1,54 @@
-import { memo, useMemo } from "react";
-import type { ProductCreationWizardStep } from "../../utils/types";
-import useCreationWizardStore from "../../store/admin/creationWizardStore";
-import { PRODUCT_CREATION_WIZARD_STEPS } from "../../configs";
+import { memo, useMemo, type JSX } from "react";
 import Title from "./Title";
 
+type WizardStepHeaderProps<T extends string> = {
+  currStep: T;
+  title: React.ReactNode;
+  parentTitle: string;
+  parentLink: string;
+  className?: string;
+  // Wizard configuration
+  isWizardActive: boolean;
+  wizardStartStep: T | null;
+  allWizardSteps: readonly T[];
+};
+
 const WizardStepHeader = memo(
-  ({
+  <T extends string>({
     currStep,
     title,
     parentTitle,
     parentLink,
     className,
-  }: {
-    currStep: ProductCreationWizardStep;
-    title: React.ReactNode;
-    parentTitle: string;
-    parentLink: string;
-    className?: string;
-  }) => {
-    const { isActive, startStep } = useCreationWizardStore();
-
+    isWizardActive,
+    wizardStartStep,
+    allWizardSteps,
+  }: WizardStepHeaderProps<T>) => {
     const { curr, total } = useMemo((): {
       curr: number;
       total: number;
     } => {
-      const startIdx = PRODUCT_CREATION_WIZARD_STEPS.indexOf(
-        startStep || "product"
-      );
-      const currIdx = PRODUCT_CREATION_WIZARD_STEPS.indexOf(currStep);
+      if (!isWizardActive || !wizardStartStep) {
+        return { curr: 0, total: 0 };
+      }
 
-      // If somehow invalid or wizard not active -> return 0/0
+      const startIdx = allWizardSteps.indexOf(wizardStartStep);
+      const currIdx = allWizardSteps.indexOf(currStep);
+
+      // If somehow invalid -> return 0/0
       if (startIdx === -1 || currIdx === -1) {
         return { curr: 0, total: 0 };
       }
 
       return {
         curr: currIdx - startIdx + 1,
-        total: PRODUCT_CREATION_WIZARD_STEPS.length - startIdx,
+        total: allWizardSteps.length - startIdx,
       };
-    }, [currStep, startStep]);
+    }, [allWizardSteps, currStep, isWizardActive, wizardStartStep]);
 
     return (
       <>
-        {isActive && startStep ? (
+        {isWizardActive && wizardStartStep ? (
           <div className={className}>
             {/* Wizard Progress UI */}
             <div className="d-flex align-items-center justify-content-between mb-2">
@@ -83,7 +89,7 @@ const WizardStepHeader = memo(
         )}
       </>
     );
-  }
-);
+  },
+) as <T extends string>(props: WizardStepHeaderProps<T>) => JSX.Element;
 
 export default WizardStepHeader;

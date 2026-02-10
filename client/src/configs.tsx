@@ -22,6 +22,7 @@ import type {
   AdminProductDisplayableField,
   AdminProductModelDisplayableField,
   AdminProductOsDisplayableField,
+  AdminProviderDisplayableField,
   AdminUserDisplayableField,
   AdminVariationInstanceDisplayableField,
   GrnDisplayField,
@@ -32,6 +33,8 @@ import type {
   ProductDisplayField,
   ProductModelDisplayField,
   ProductOsDisplayField,
+  ProviderCreationWizardStep,
+  ProviderDisplayField,
   UserDisplayField,
   VariationInstanceDisplayField,
 } from "./utils/types";
@@ -415,6 +418,19 @@ export const PRODUCT_OS_FIELD_LABEL_LEGEND: Readonly<
   actions: "Actions",
 };
 
+export const PROVIDER_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminProviderDisplayableField, string>
+> = {
+  id: "ID",
+  fullName: "Full Name",
+  email: "Email",
+  phoneNumber: "Phone Number",
+  createdBy: "Created By",
+  createdAt: "Created At",
+  updatedAt: "Updated At",
+  actions: "Actions",
+};
+
 export const DEFAULT_ADMIN_USER_DISPLAY_FIELDS: UserDisplayField[] = [
   { name: "id", visible: false, exportable: true },
   { name: "fullName", visible: true, exportable: true },
@@ -532,6 +548,18 @@ export const DEFAULT_ADMIN_PRODUCT_CATEGORY_DISPLAY_FIELDS: ProductCategoryDispl
 export const DEFAULT_ADMIN_PRODUCT_OS_DISPLAY_FIELDS: ProductOsDisplayField[] =
   DEFAULT_ADMIN_PRODUCT_BRAND_DISPLAY_FIELDS;
 
+export const DEFAULT_ADMIN_PROVIDER_DISPLAY_FIELDS: ProviderDisplayField[] =
+  [
+    { name: "id", visible: true, exportable: true },
+    { name: "fullName", visible: true, exportable: true },
+    { name: "email", visible: true, exportable: true },
+    { name: "phoneNumber", visible: true, exportable: true },
+    { name: "createdBy", visible: false, exportable: true },
+    { name: "createdAt", visible: true, exportable: true },
+    { name: "updatedAt", visible: false, exportable: true },
+    { name: "actions", visible: true, exportable: false },
+  ];
+
 export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   visa: (
     <FontAwesomeIcon
@@ -573,6 +601,7 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   productCategoryManagementDisplayFields:
     DEFAULT_ADMIN_PRODUCT_CATEGORY_DISPLAY_FIELDS,
   productOsManagementDisplayFields: DEFAULT_ADMIN_PRODUCT_OS_DISPLAY_FIELDS,
+  providerManagementDisplayFields: DEFAULT_ADMIN_PROVIDER_DISPLAY_FIELDS,
 };
 
 export const GRN_FILE_IMPORT_WORKSHEET_NAME = "grn-import-template"; // Must match with the worksheet name in the Excel template file
@@ -584,6 +613,13 @@ export const PRODUCT_CREATION_WIZARD_STEPS: ProductCreationWizardStep[] = [
   "grn",
 ]; // Order matters
 
+export const PROVIDER_CREATION_WIZARD_STEPS: ProviderCreationWizardStep[] = [
+  "provider",
+  "address",
+]; // Order matters
+
 export const DISABLED_TITLE_FOR_VIEWING = "You don't have permission to view";
 export const DISABLED_TITLE_FOR_PERFORMING =
   "You don't have permission to perform";
+
+export const DEFAULT_PHONE_COUNTRY_CODE = "VN"; // Vietnam

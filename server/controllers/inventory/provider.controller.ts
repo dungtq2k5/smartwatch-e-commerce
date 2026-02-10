@@ -4,22 +4,30 @@ import { HttpError } from "../../utils/errorHandler";
 import {
   formatProviderDetailsResponse,
   formatProviderResponse,
+  formatProviderResponseLite,
   isPresent,
 } from "../../utils/utils";
 import {
+  ProviderBulkDelete,
   ProviderCreate,
   ProviderListResponse,
+  ProviderListResponseLite,
   ProviderResponse,
+  ProviderSearchQuery,
   ProviderUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import Grn from "../../models/inventory/grn.model";
 import {
+  DEFAULT_SEARCH_LIMIT,
   OPTIMIZE_CREATED_BY_PIPELINE,
   OPTIMIZE_PIPELINE,
 } from "../../configs/configs";
 import ProviderAddress from "../../models/inventory/providerAddress.model";
+import User from "../../models/user/user.model";
+import { MAX_PROVIDERS_TO_DELETE_BULK } from "../../../common/configs.common";
+import { formatError } from "../../../common/utils.common";
 
 export async function create(
   req: Request,
@@ -28,12 +36,12 @@ export async function create(
 ): Promise<void> {
   console.log("▶️ ", "Creating provider...");
 
-  const reqUserId = req["auth"]?.userId;
-  if (!isPresent(reqUserId)) {
+  const user = req["user"];
+  if (!isPresent(user)) {
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled by middlewares.",
+        "Request user not found, this should be handled by middlewares.",
       ),
     );
   }
@@ -63,7 +71,7 @@ export async function create(
       fullName,
       email,
       phoneNumber,
-      createdBy: new Types.ObjectId(reqUserId),
+      createdBy: user._id,
     });
 
     await provider.save();
@@ -71,7 +79,10 @@ export async function create(
     res.status(201).json({
       success: true,
       message: "Provider created successfully.",
-      data: formatProviderResponse(provider),
+      data: formatProviderResponse({
+        ...provider.toObject(),
+        createdBy: { _id: user._id, fullName: user.fullName },
+      }),
     } as SuccessResponse<ProviderResponse>);
     console.log("✅ ", "Provider created successfully.");
   } catch (error) {
@@ -93,8 +104,21 @@ export async function get(
       throw new HttpError(404, "Provider not found.");
     }
 
-    const provider = await Provider.findById(providerId).lean();
-    if (!provider || provider.isDeleted) {
+    const provider = await Provider.aggregate([
+      { $match: { _id: new Types.ObjectId(providerId), isDeleted: false } },
+      OPTIMIZE_PIPELINE,
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+    ]).then((results) => results[0]);
+    if (!provider) {
       throw new HttpError(404, "Provider not found.");
     }
 
@@ -117,16 +141,19 @@ export async function getAll(
   console.log("▶️ ", "Fetching all providers...");
 
   try {
-    const providers = await Provider.find({ isDeleted: false }).lean();
+    const providers = await Provider.find({ isDeleted: false })
+      .select("_id fullName")
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.status(200).json({
       success: true,
       message: "Providers fetched successfully.",
       data: {
         total: providers.length,
-        providers: providers.map(formatProviderResponse),
+        providers: providers.map(formatProviderResponseLite),
       },
-    } as SuccessResponse<ProviderListResponse>);
+      } as SuccessResponse<ProviderListResponseLite>);
     console.log("✅ ", "Providers fetched successfully.");
   } catch (error) {
     next(error);
@@ -198,6 +225,85 @@ export async function getDetails(
   }
 }
 
+export async function search(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Searching providers...");
+  const reqQuery = req["sanitizedQuery"] as ProviderSearchQuery;
+
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const query: any = { isDeleted: false };
+
+  const searchTerm = reqQuery.searchTerm;
+  if (searchTerm) {
+    query.$or = [
+      {
+        _id: Types.ObjectId.isValid(searchTerm)
+          ? new Types.ObjectId(searchTerm)
+          : undefined,
+      },
+      { fullName: { $regex: searchTerm, $options: "i" } },
+      { email: { $regex: searchTerm, $options: "i" } },
+      { phoneNumber: { $regex: `^${searchTerm}`, $options: "i" } },
+    ];
+  }
+
+  const sort = (reqQuery.sortBy || "createdAt").split("_");
+  const sortField = sort[0];
+  const sortBy = sort[1] === "desc" ? -1 : 1;
+  const sortStage: any = { [sortField]: sortBy, _id: 1 };
+
+  try {
+    const aggregationResult = await Provider.aggregate([
+      { $match: query },
+      OPTIMIZE_PIPELINE,
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $sort: sortStage }, { $skip: offset }, { $limit: limit }],
+        },
+      },
+    ]).then((results) => results[0]);
+
+    const providers: ProviderResponse[] = aggregationResult.data.map(
+      formatProviderResponse,
+    );
+    const total = aggregationResult.metadata[0]?.total || 0;
+
+    res.status(200).json({
+      success: true,
+      message: "Providers searched successfully.",
+      data: {
+        total,
+        providers: {
+          total: providers.length,
+          providers,
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<ProviderListResponse>);
+    console.log("✅ ", "Providers searched successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function update(
   req: Request,
   res: Response,
@@ -207,12 +313,15 @@ export async function update(
   const { providerId } = req.params;
   const { fullName, email, phoneNumber } = req.body as ProviderUpdate;
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     // Check exists
     if (!Types.ObjectId.isValid(providerId)) {
       throw new HttpError(404, "Provider not found.");
     }
-    const provider = await Provider.findById(providerId);
+    const provider = await Provider.findById(providerId).session(session);
     if (!provider || provider.isDeleted) {
       throw new HttpError(404, "Provider not found.");
     }
@@ -259,16 +368,32 @@ export async function update(
     provider.fullName = updatedFullname;
     provider.email = updatedEmail;
     provider.phoneNumber = updatedPhoneNumber;
-    await provider.save();
+    await provider.save({ session });
+
+    const createdByUser = await User.findById(provider.createdBy)
+      .select("_id fullName")
+      .lean()
+      .session(session);
+    if (!createdByUser) {
+      throw new HttpError(500, "Creator user not found.");
+    }
+
+    await session.commitTransaction();
 
     res.status(200).json({
       success: true,
       message: "Provider updated successfully.",
-      data: formatProviderResponse(provider),
+      data: formatProviderResponse({
+        ...provider.toObject(),
+        createdBy: { _id: createdByUser._id, fullName: createdByUser.fullName },
+      }),
     } as SuccessResponse<ProviderResponse>);
     console.log("✅ ", "Provider updated successfully.");
   } catch (error) {
+    await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
   }
 }
 
@@ -290,18 +415,23 @@ export async function remove(
   }
   const { providerId } = req.params;
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     // Check exists
     if (!Types.ObjectId.isValid(providerId)) {
       throw new HttpError(404, "Provider not found.");
     }
-    const provider = await Provider.findById(providerId);
+    const provider = await Provider.findById(providerId).session(session);
     if (!provider || provider.isDeleted) {
       throw new HttpError(404, "Provider not found.");
     }
 
     // Execute deletion
-    await executeDeletion(provider, new Types.ObjectId(reqUserId));
+    await executeDeletion(provider, new Types.ObjectId(reqUserId), session);
+
+    await session.commitTransaction();
 
     res.status(200).json({
       success: true,
@@ -309,7 +439,65 @@ export async function remove(
     } as SuccessResponse);
     console.log("✅ ", "Provider deleted successfully.");
   } catch (error) {
+    await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
+export async function removeBulk(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Bulk deleting providers...");
+
+  const reqUserId = req["auth"]?.userId;
+  if (!isPresent(reqUserId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID not found, this should be handled by middlewares.",
+      ),
+    );
+  }
+
+  const { providerIds: providerIdsToDelete } = req.body as ProviderBulkDelete;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (providerIdsToDelete.length > MAX_PROVIDERS_TO_DELETE_BULK) {
+      throw new HttpError(
+        400,
+        `Cannot delete more than ${MAX_PROVIDERS_TO_DELETE_BULK} providers at once.`,
+      );
+    }
+
+    // Delete providers, if provider not found, skip
+    for (const providerId of providerIdsToDelete) {
+      const provider = Types.ObjectId.isValid(providerId)
+        ? await Provider.findById(providerId).session(session)
+        : null;
+      if (provider && !provider.isDeleted) {
+        await executeDeletion(provider, new Types.ObjectId(reqUserId), session);
+      }
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "Providers deleted successfully.",
+    } as SuccessResponse);
+    console.log("✅ ", "Providers deleted successfully.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
   }
 }
 
@@ -351,13 +539,13 @@ async function hasConstraints(
 async function executeDeletion(
   providerToDelete: IProvider,
   deletedBy: Types.ObjectId,
+  session: mongoose.ClientSession,
 ): Promise<void> {
   console.log("▶️ ", "Executing deletion of provider...");
 
-  const session = await Provider.startSession();
-  session.startTransaction();
-
   try {
+    if (providerToDelete.isDeleted) return;
+
     if (await hasConstraints(providerToDelete._id)) {
       await Provider.findByIdAndUpdate(
         providerToDelete._id,
@@ -378,11 +566,6 @@ async function executeDeletion(
     );
     await Provider.findByIdAndDelete(providerToDelete._id, { session });
   } catch (error) {
-    await session.abortTransaction();
-    console.error("❌ ", "Error deleting provider:", error);
-    throw error;
-  } finally {
-    await session.commitTransaction();
-    session.endSession();
+    throw new Error(formatError(error));
   }
 }

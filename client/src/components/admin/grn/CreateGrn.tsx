@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import useProviderStore from "../../../store/admin/providerStore";
+import useProviderStore from "../../../store/admin/grn/providerStore";
 import useGrnStore from "../../../store/admin/grn/grnStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
 import type { FormInput } from "../../../utils/types";
@@ -31,15 +31,15 @@ import {
 import { GRN_FILE_IMPORT_EXTENSIONS } from "../../../../../common/configs.common";
 import ExcelTemplates from "../../../assets/templates/excel-templates.xlsx";
 import ExcelJS from "exceljs";
-import useCreationWizardStore from "../../../store/admin/creationWizardStore";
+import useCreationWizardStore from "../../../store/admin/wizard/creationWizardStore";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
-import WizardStepHeader from "../WizardStepHeader";
 import CreateGrnSkeleton from "../skeleton/CreateGrnSkeleton";
 import Btn from "../../common/Btn";
 import Label from "../../common/Label";
 import Input from "../../common/Input";
 import Select from "../../common/Select";
 import Textarea from "../../common/Textarea";
+import CreateProductWizardHeader from "../product/CreateProductWizardHeader";
 
 type Process = {
   isProcessing: boolean;
@@ -71,7 +71,7 @@ export default function CreateGrn() {
   const wizard = useCreationWizardStore();
 
   const { fetchVariationLite } = useVariationStore();
-  const { providers, fetchProviders } = useProviderStore();
+  const { allProvidersLite: providers, fetchAllProviders } = useProviderStore();
   const { grnStates, fetchGrnStates } = useGrnStateStore();
   const { createGrn } = useGrnStore();
 
@@ -119,7 +119,7 @@ export default function CreateGrn() {
         const [fetchedVariation, fetchedProviders, fetchedGrnStates] =
           await Promise.all([
             fetchVariationLite(variationId),
-            providers ? Promise.resolve(providers) : fetchProviders(),
+            providers ? Promise.resolve(providers) : fetchAllProviders(),
             grnStates ? Promise.resolve(grnStates) : fetchGrnStates(),
           ]);
 
@@ -198,8 +198,7 @@ export default function CreateGrn() {
       const currFile = formData.file.val;
       // Filter duplicated files
       if (
-        currFile &&
-        currFile.name === file.name &&
+        currFile?.name === file.name &&
         currFile.size === file.size &&
         currFile.type === file.type
       ) {
@@ -450,7 +449,7 @@ export default function CreateGrn() {
       ) : (
         <>
           {/* Heading */}
-          <WizardStepHeader
+          <CreateProductWizardHeader
             currStep="grn"
             title={`Import GRN for ${variation.name}`}
             parentTitle="Variation Management"

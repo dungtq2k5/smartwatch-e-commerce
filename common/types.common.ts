@@ -1,3 +1,4 @@
+import type { CountryCode } from "libphonenumber-js";
 import {
   ORDER_VARIATION_INSTANCE_STATES,
   PERMISSION_LIST,
@@ -22,6 +23,7 @@ import {
   PRODUCT_CATEGORY_SORT_OPTIONS,
   PRODUCT_OS_SORT_OPTIONS,
   FIREBASE_STORAGE_BUCKET_NAMES,
+  PROVIDER_SEARCH_SORT_OPTIONS,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -924,6 +926,35 @@ export type InstanceConditionListResponse = {
   conditions: InstanceConditionResponse[];
 };
 
+export type ProviderAddressCreate = {
+  name: string;
+  addressLine1: string;
+  addressLine2?: string | null;
+  locality: string;
+  adminAreaL1: string;
+  adminAreaL2?: string | null;
+  postalCode: string;
+  phoneNumber: string;
+  location: {
+    longitude: number;
+    latitude: number;
+  };
+  notes?: string | null;
+  isDefault?: boolean;
+};
+
+export type ProviderAddressUpdate = Partial<ProviderAddressCreate>;
+
+export type ProviderAddressResponse = NoneOptional<
+  Omit<ProviderAddressCreate, "location">
+> & {
+  id: string;
+  providerId: string;
+  location: GeoJSONPoint;
+  createdAt: string;
+  updatedAt: string;
+} & CreatedBy;
+
 export type ProviderCreate = {
   fullName: string;
   email: string;
@@ -935,16 +966,38 @@ export type ProviderResponse = {
   fullName: string;
   email: string;
   phoneNumber: string;
-  createdBy: string;
   createdAt: string;
   updatedAt: string;
-};
-export type ProviderListResponse = {
-  total: number;
-  providers: ProviderResponse[];
+} & CreatedBy;
+
+export type ProviderDetailsResponse = ProviderResponse & {
+  addresses: {
+    total: number;
+    addresses: ProviderAddressResponse[];
+  };
 };
 
+export type ProviderListResponse = PaginatedResponse<
+  "providers",
+  ProviderResponse
+>;
+
 export type ProviderUpdate = Partial<ProviderCreate>;
+
+export type ProviderSearchQuery = SearchQuery<
+  (typeof PROVIDER_SEARCH_SORT_OPTIONS)[number]
+>;
+
+export type ProviderBulkDelete = {
+  providerIds: string[];
+};
+
+export type ProviderResponseLite = Pick<ProviderResponse, "id" | "fullName">;
+
+export type ProviderListResponseLite = {
+  total: number;
+  providers: ProviderResponseLite[];
+};
 
 export type StateResponse = {
   id: string;
@@ -1513,6 +1566,12 @@ export type InventoryMovementTypeListResponse = {
 
 export type FirebaseBucket = (typeof FIREBASE_STORAGE_BUCKET_NAMES)[number];
 
+export type CountryListEntry = {
+  code: CountryCode;
+  name: string;
+  dialCode: string;
+};
+
 // --- HELPER TYPES ---
 
 export type NoneOptional<T> = {
@@ -1551,7 +1610,7 @@ export type DeepNonePartial<T> = {
     : T[K];
 };
 
-type CreatedBy = {
+export type CreatedBy = {
   createdBy: {
     id: string;
     fullName: string;

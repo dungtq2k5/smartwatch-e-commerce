@@ -36,14 +36,14 @@ import type { ProductCreate } from "../../../../../common/types.common";
 import ApiError from "../../common/ApiError";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
-import useCreationWizardStore from "../../../store/admin/creationWizardStore";
-import WizardStepHeader from "../WizardStepHeader";
+import useCreationWizardStore from "../../../store/admin/wizard/creationWizardStore";
 import CreateProductSkeleton from "../skeleton/CreateProductSkeleton";
 import Btn from "../../common/Btn";
 import Input from "../../common/Input";
 import Select from "../../common/Select";
 import Textarea from "../../common/Textarea";
 import Label from "../../common/Label";
+import CreateProductWizardHeader from "./CreateProductWizardHeader";
 
 type Process = {
   isProcessing: boolean;
@@ -463,7 +463,7 @@ export default function CreateProduct() {
       ) : (
         <>
           {/* Heading */}
-          <WizardStepHeader
+          <CreateProductWizardHeader
             currStep="product"
             title="Create new Product"
             parentTitle="Product Management"

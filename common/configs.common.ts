@@ -104,7 +104,7 @@ export const USER_SEARCH_SORT_OPTIONS = [
   "userBalanceCents_asc",
 ] as const;
 
-export const VN_COUNTRY_CODE = "84"; // Vietnam's country code
+export const VN_COUNTRY_CODE = "VN"; // Vietnam's country code
 
 export const AUTH_PROVIDER_OPTIONS = ["local", "google"] as const;
 
@@ -378,6 +378,8 @@ export const MAX_PRODUCT_OS_TO_DELETE_BULK = 5;
 
 export const MAX_PRODUCT_IMG_UPLOAD = 8; // Max 8 images per product
 
+export const MAX_PROVIDERS_TO_DELETE_BULK = 5;
+
 export const MODEL_VARIATION_SEARCH_SORT_OPTIONS = [
   "name_desc",
   "name_asc",
@@ -438,4 +440,23 @@ export const FIREBASE_STORAGE_BUCKET_NAMES = [
   "product-image",
   "order-return",
   "product-logo",
+] as const;
+
+// For mocking global addresses
+export const COUNTRY_LOCALE_KEYS = [
+  "en_US",
+  "vi_VN",
+  "en_GB",
+  "fr_FR",
+  "de_DE",
+  "fr_CA",
+] as const;
+
+export const PROVIDER_SEARCH_SORT_OPTIONS = [
+  "fullName_desc",
+  "fullName_asc",
+  "createdAt_desc",
+  "createdAt_asc",
+  "updatedAt_desc",
+  "updatedAt_asc",
 ] as const;

@@ -23,8 +23,11 @@
     - lodash.debounce for geocoding (geographic coordinates).
     - jspdf, html2canvas for generating PDF file with content.
     - exceljs for handling Excel files.
+    - react-phone-number-input for telephone input.
   - Faker for mocking data.
   - multer, exceljs for handling multipart/form-data (file uploads).
+  - libphonenumber-js, i18n-iso-countries for handling telephone input.
+  - postal-codes-js for handling postal code validation.
 
 - 📝 Todos:
   - Frontend:
@@ -61,6 +64,7 @@
     - Also save import GRN file to db ❌.
     - Use 'joi' or 'express-validator' for validating request body ❌.
     - Add 'createdBy' field for user schema (also handle chicken or egg first problem) ❌.
+    - Create a dedicated postman collection for API testing ❌.
 
   - Database init:
     - Init roles & permissions ✅.

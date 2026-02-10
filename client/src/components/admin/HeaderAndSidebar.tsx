@@ -33,6 +33,7 @@ const HeaderAndSidebar = memo(() => {
     canReadProductBrand,
     canReadCategory,
     canReadOs,
+    canReadProvider,
   ] = [
     useHasPermission("r_usr"),
     useHasPermission("r_product"),
@@ -43,6 +44,7 @@ const HeaderAndSidebar = memo(() => {
     useHasPermission("r_product_brand"),
     useHasPermission("r_product_cat"),
     useHasPermission("r_product_os"),
+    useHasPermission("r_provider_inventory"),
   ];
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
@@ -190,6 +192,15 @@ const HeaderAndSidebar = memo(() => {
               >
                 <FontAwesomeIcon icon={faBox} className="me-2" />
                 GRN
+              </NavLink>
+            )}
+            {canReadProvider && (
+              <NavLink
+                to="/admin/providers"
+                className="list-group-item list-group-item-action"
+              >
+                <FontAwesomeIcon icon={faBox} className="me-2" />
+                Provider
               </NavLink>
             )}
           </div>

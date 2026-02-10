@@ -4,12 +4,10 @@ import {
   isValidCoordinates,
   removeAllSpaces,
   removeOddSpaces,
-  isValidCountryCode,
 } from "../../../../common/utils.common";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import { HttpError } from "../../errorHandler";
 import { isPresent } from "../../utils";
-import postalCodes from "postal-codes-js";
 
 export function sanitizeProviderAddressInput(
   req: Request,
@@ -19,7 +17,6 @@ export function sanitizeProviderAddressInput(
   console.log("▶️ ", "Sanitizing provider address input...");
   const {
     name,
-    countryCode,
     addressLine1,
     addressLine2,
     locality,
@@ -32,9 +29,6 @@ export function sanitizeProviderAddressInput(
 
   if (typeof name === "string") {
     req.body.name = removeOddSpaces(name);
-  }
-  if (typeof countryCode === "string") {
-    req.body.countryCode = removeAllSpaces(countryCode).toUpperCase();
   }
   if (typeof addressLine1 === "string") {
     req.body.addressLine1 = removeOddSpaces(addressLine1);
@@ -55,7 +49,7 @@ export function sanitizeProviderAddressInput(
     req.body.postalCode = removeAllSpaces(postalCode);
   }
   if (typeof phoneNumber === "string") {
-    req.body.phoneNumber = removeAllSpaces(phoneNumber);
+    req.body.phoneNumber = removeOddSpaces(phoneNumber);
   }
   if (typeof notes === "string") {
     req.body.notes = removeOddSpaces(notes);
@@ -78,7 +72,6 @@ export function verifyProviderAddressInput(
           console.log("Validating create address input...");
           const {
             name,
-            countryCode,
             addressLine1,
             addressLine2,
             locality,
@@ -123,52 +116,16 @@ export function verifyProviderAddressInput(
           ) {
             errors.push("adminAreaL2 must be a non-empty string or null.");
           }
-
-          let postalCodeValid = true;
           if (typeof postalCode !== "string") {
             errors.push("postalCode is required.");
-            postalCodeValid = false;
           } else if (!postalCode) {
             errors.push("postalCode is invalid.");
-            postalCodeValid = false;
           }
-
-          let countryCodeValid = true;
-          if (!countryCode) {
-            errors.push("countryCode is required.");
-            countryCodeValid = false;
-          } else if (!isValidCountryCode(countryCode)) {
-            errors.push("countryCode is invalid.");
-            countryCodeValid = false;
-          }
-
-          let phoneNumberValid = true;
           if (!phoneNumber) {
             errors.push("phoneNumber is required.");
-            phoneNumberValid = false;
           } else if (!isValidPhoneNumber(phoneNumber)) {
             errors.push("phoneNumber is invalid.");
-            phoneNumberValid = false;
           }
-
-          if (countryCodeValid) {
-            if (
-              phoneNumberValid &&
-              !isValidPhoneNumber(phoneNumber, countryCode)
-            ) {
-              errors.push(
-                "phoneNumber is not valid for the given countryCode.",
-              );
-            }
-
-            if (
-              postalCodeValid &&
-              !postalCodes.validate(countryCode, postalCode)
-            ) {
-              errors.push("postalCode is not valid for the given countryCode.");
-            }
-          }
-
           if (!location) {
             errors.push("location is required.");
           } else if (
@@ -204,7 +161,6 @@ export function verifyProviderAddressInput(
           console.log("Validating update address input...");
           const {
             name,
-            countryCode,
             addressLine1,
             addressLine2,
             locality,
@@ -256,13 +212,6 @@ export function verifyProviderAddressInput(
           ) {
             errors.push("postalCode must be a non-empty string.");
           }
-          if (countryCode !== undefined) {
-            if (typeof countryCode !== "string" || !countryCode) {
-              errors.push("countryCode must be a non-empty string.");
-            } else if (!isValidCountryCode(countryCode)) {
-              errors.push("countryCode is invalid.");
-            }
-          }
           if (phoneNumber !== undefined) {
             if (typeof phoneNumber !== "string" || !phoneNumber) {
               errors.push("phoneNumber must be a non-empty string.");
@@ -270,8 +219,6 @@ export function verifyProviderAddressInput(
               errors.push("phoneNumber is invalid.");
             }
           }
-          // Let controller handle if countryCode and phoneNumber match
-          // Let controller handle if countryCode and postalCode match
           if (location !== undefined) {
             if (
               !isNoneArrObj(location) ||

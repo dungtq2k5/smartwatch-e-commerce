@@ -9,6 +9,7 @@ import type {
   AdminUserResponse,
   GrnDetailsItem,
   OrderReturnSearchQuery,
+  ProviderResponse,
   UserCartResponse,
   VariationInstanceResponse,
 } from "../../../common/types.common";
@@ -106,6 +107,10 @@ export type AdminProductOsDisplayableField =
   | keyof Omit<AdminProductOsResponse, "logoUrl">
   | "actions";
 
+export type AdminProviderDisplayableField =
+  | keyof ProviderResponse
+  | "actions";
+
 export type TableColDisplay<Item, SortOption> = {
   label: string; // For header display
   thClassName?: string; // Additional className for <th>
@@ -153,6 +158,9 @@ export type ProductCategoryDisplayField =
 export type ProductOsDisplayField =
   DisplayField<AdminProductOsDisplayableField>;
 
+export type ProviderDisplayField =
+  DisplayField<AdminProviderDisplayableField>;
+
 export type AdminConfig = {
   userManagementDisplayFields: UserDisplayField[];
   productManagementDisplayFields: ProductDisplayField[];
@@ -163,6 +171,7 @@ export type AdminConfig = {
   productBrandManagementDisplayFields: ProductBrandDisplayField[];
   productCategoryManagementDisplayFields: ProductCategoryDisplayField[];
   productOsManagementDisplayFields: ProductOsDisplayField[];
+  providerManagementDisplayFields: ProviderDisplayField[];
 };
 
 export type ProductCreationWizardStep =
@@ -170,6 +179,10 @@ export type ProductCreationWizardStep =
   | "model"
   | "variation"
   | "grn";
+
+export type ProviderCreationWizardStep =
+  | "provider"
+  | "address";
 
 export type CustomInputProps = {
   error?: string | null;

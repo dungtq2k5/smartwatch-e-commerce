@@ -751,23 +751,29 @@ export function formatProviderResponse(
     fullName: provider.fullName,
     email: provider.email,
     phoneNumber: provider.phoneNumber,
-    createdBy: provider.createdBy,
+    createdBy: {
+      id: provider.createdBy._id,
+      fullName: provider.createdBy.fullName,
+    },
     createdAt: provider.createdAt,
     updatedAt: provider.updatedAt,
+  };
+}
+
+export function formatProviderResponseLite(
+  provider: any,
+): commonType.ProviderResponseLite {
+  return {
+    id: provider._id,
+    fullName: provider.fullName,
   };
 }
 
 export function formatProviderDetailsResponse(
   provider: any,
 ): commonType.ProviderDetailsResponse {
-  const { createdBy, ...restData } = formatProviderResponse(provider);
-
   return {
-    ...restData,
-    createdBy: {
-      id: provider.createdBy._id,
-      fullName: provider.createdBy.fullName,
-    },
+    ...formatProviderResponse(provider),
     addresses: {
       total: provider.addresses.length,
       addresses: provider.addresses.map((addr: any) =>
@@ -1190,9 +1196,7 @@ export function formatGrnResponse(grn: any): commonType.GrnResponse {
   };
 }
 
-export function formatGrnDetailsResponse(
-  grn: any,
-): commonType.GrnDetailsItem {
+export function formatGrnDetailsResponse(grn: any): commonType.GrnDetailsItem {
   const { providerId, ...restData } = formatGrnResponse(grn);
 
   return {

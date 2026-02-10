@@ -40,14 +40,14 @@ import useProductStore from "../../../store/admin/product/productStore";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import TxtListInput from "../TxtListInput";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
-import useCreationWizardStore from "../../../store/admin/creationWizardStore";
-import WizardStepHeader from "../WizardStepHeader";
+import useCreationWizardStore from "../../../store/admin/wizard/creationWizardStore";
 import CreateModelSkeleton from "../skeleton/CreateModelSkeleton";
 import Btn from "../../common/Btn";
 import Input from "../../common/Input";
 import Label from "../../common/Label";
 import Textarea from "../../common/Textarea";
 import Select from "../../common/Select";
+import CreateProductWizardHeader from "./CreateProductWizardHeader";
 
 type Process = {
   isProcessing: boolean;
@@ -1200,7 +1200,7 @@ export default function CreateModel() {
       ) : (
         <>
           {/* Heading */}
-          <WizardStepHeader
+          <CreateProductWizardHeader
             currStep="model"
             title={`Create new Model for ${product.name}`}
             parentTitle="Model Management"

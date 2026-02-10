@@ -72,6 +72,9 @@ import OsManagement from "./components/admin/product/OsManagement.tsx";
 import CreateOs from "./components/admin/product/CreateOs.tsx";
 import DetailOs from "./components/admin/product/DetailOs.tsx";
 import EditOs from "./components/admin/product/EditOs.tsx";
+import ProviderManagement from "./components/admin/grn/ProviderManagement.tsx";
+import CreateProvider from "./components/admin/grn/CreateProvider.tsx";
+import EditProvider from "./components/admin/grn/EditProvider.tsx";
 
 export default function App() {
   // DEV for testing
@@ -111,13 +114,12 @@ export default function App() {
       {isAdminPage ? (
         <Routes>
           <Route path="/admin">
-            {/* TODO CRUD:
+            {/* TODO admin features
               - dashboard
               - order management
+              - return management
+              - withdraw request management
               - role management
-              - inventory management
-              - instance management
-              - grn management (create - from variation, edit, detail)
               - provider management
             */}
             <Route element={<AdminNotAuthRoute />}>
@@ -203,6 +205,15 @@ export default function App() {
                   <Route path=":id">
                     <Route index element={<DetailGrn />} />
                     <Route path="edit" element={<EditGrn />} />
+                  </Route>
+                </Route>
+
+                <Route path="providers">
+                  <Route index element={<ProviderManagement />} />
+                  <Route path="create" element={<CreateProvider />} />
+                  <Route path=":id">
+                    <Route index element={<div>Provider Detail - to be implemented</div>} />
+                    <Route path="edit" element={<EditProvider />} />
                   </Route>
                 </Route>
               </Route>

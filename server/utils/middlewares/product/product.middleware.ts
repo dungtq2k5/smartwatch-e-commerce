@@ -291,11 +291,19 @@ export function verifyProductInput(
             sortBy,
           } = req["sanitizedQuery"] || req.query;
 
-          if (limit !== undefined && !isValidNumString(limit)) {
-            errors.push("limit must be a valid number string.");
+          if (limit !== undefined) {
+            if (!isValidNumString(limit)) {
+              errors.push("limit must be a valid number string.");
+            } else if (Number(limit) <= 0) {
+              errors.push("limit must be greater than 0.");
+            }
           }
-          if (offset !== undefined && !isValidNumString(offset)) {
-            errors.push("offset must be a valid number string.");
+          if (offset !== undefined) {
+            if (!isValidNumString(offset)) {
+              errors.push("offset must be a valid number string.");
+            } else if (Number(offset) < 0) {
+              errors.push("offset must be greater than or equal to 0.");
+            }
           }
           if (
             searchTerm !== undefined &&

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ProductCreationWizardStep } from "../../utils/types";
+import type { ProductCreationWizardStep } from "../../../utils/types";
 
 type WizardStep = ProductCreationWizardStep | null;
 

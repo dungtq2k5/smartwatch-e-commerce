@@ -18,7 +18,7 @@ import useRefreshStore from "../../../store/admin/refreshStore";
 import toast from "react-hot-toast";
 import { DISABLED_TITLE_FOR_VIEWING, WAITING_EMOJI } from "../../../configs";
 import ApiError from "../../common/ApiError";
-import useProviderStore from "../../../store/admin/providerStore";
+import useProviderStore from "../../../store/admin/grn/providerStore";
 import Title from "../Title";
 import DetailUserLink from "../DetailUserLink";
 import Btn from "../../common/Btn";
@@ -55,7 +55,7 @@ export default function EditGrn() {
 
   const { grnStates, fetchGrnStates } = useGrnStateStore();
   const { movementTypes, fetchMovementTypes } = useInventoryMovementTypeStore();
-  const { providers, fetchProviders } = useProviderStore();
+  const { allProvidersLite: providers, fetchProviders } = useProviderStore();
   const { fetchGrn, updateGrn } = useGrnStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 

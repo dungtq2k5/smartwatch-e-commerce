@@ -39,12 +39,12 @@ import ApiError from "../../common/ApiError";
 import ColorListInput from "../ColorListInput";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
-import useCreationWizardStore from "../../../store/admin/creationWizardStore";
-import WizardStepHeader from "../WizardStepHeader";
+import useCreationWizardStore from "../../../store/admin/wizard/creationWizardStore";
 import CreateVariationSkeleton from "../skeleton/CreateVariationSkeleton";
 import Btn from "../../common/Btn";
 import Label from "../../common/Label";
 import Input from "../../common/Input";
+import CreateProductWizardHeader from "./CreateProductWizardHeader";
 
 type Process = {
   isProcessing: boolean;
@@ -730,7 +730,7 @@ export default function CreateVariation() {
       ) : (
         <>
           {/* Heading */}
-          <WizardStepHeader
+          <CreateProductWizardHeader
             currStep="variation"
             title={`Create new Variation for ${model.name}`}
             parentTitle="Variation Management"

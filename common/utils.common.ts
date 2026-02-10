@@ -1,4 +1,3 @@
-import type { UserAddressFormat } from "../client/src/utils/types.ts";
 import {
   BUYER_RETURN_REASON_MAX_LENGTH,
   BUYER_RETURN_REASON_MIN_LENGTH,
@@ -10,12 +9,21 @@ import {
   USERNAME_MIN_LENGTH,
   VN_COUNTRY_CODE,
 } from "./configs.common.ts";
-import type { DeepPartial, UserAddressCompare } from "./types.common.ts";
+import type {
+  CountryListEntry,
+  DeepPartial,
+  UserAddressCompare,
+  UserAddressFormat,
+} from "./types.common.ts";
 import { districts, wards, provinces } from "./vnAddresses.ts";
-import { isValidPhoneNumber } from "libphonenumber-js";
+import parsePhoneNumberFromString, {
+  getCountryCallingCode,
+  isValidPhoneNumber,
+  type CountryCode,
+} from "libphonenumber-js";
 import countries from "i18n-iso-countries";
 
-countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
+countries.registerLocale(await import("i18n-iso-countries/langs/en.json"));
 
 export function removeOddSpaces(val: string): string {
   return val.replaceAll(/\s+/g, " ").trim();
@@ -422,6 +430,45 @@ export function deepCompare(a: any, b: any): boolean {
   }
 
   return false;
+}
+
+export function getCountryList(): CountryListEntry[] {
+  const obj = countries.getNames("en", { select: "official" });
+
+  return Object.entries(obj)
+    .map(([code, name]) => {
+      const countryCode = code as CountryCode;
+      let dialCode = "";
+
+      try {
+        // libphonenumber-js helper
+        dialCode = `+${getCountryCallingCode(countryCode)}`;
+      } catch {
+        // Some ISO codes might not have a dial code in libphonenumber-js
+        dialCode = "";
+      }
+
+      return {
+        code: countryCode,
+        name,
+        dialCode,
+      };
+    })
+    .filter((country) => country.dialCode !== ""); // Filter out countries with no dial code
+}
+
+export function getCountryFromPhoneNumber(
+  e164PhoneNumber: string,
+): CountryListEntry | undefined {
+  const phoneNumber = parsePhoneNumberFromString(e164PhoneNumber);
+
+  if (!phoneNumber || !phoneNumber.country) return;
+
+  return {
+    code: phoneNumber.country,
+    name: countries.getName(phoneNumber.country, "en") || phoneNumber.country,
+    dialCode: `+${phoneNumber.countryCallingCode}`,
+  };
 }
 
 // --- VALIDATION UTILS ---

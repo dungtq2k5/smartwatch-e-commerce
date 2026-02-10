@@ -2,7 +2,7 @@ import express from "express";
 import { verifyPermission } from "../../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../../utils/middlewares/general.middleware";
 import {
-  sanitizeProviderInput,
+  inputSanitizer as sanitizeProviderInput,
   verifyProviderInput,
 } from "../../utils/middlewares/provider/provider.middleware";
 import {
@@ -11,6 +11,8 @@ import {
   getAll,
   getDetails,
   remove,
+  removeBulk,
+  search,
   update,
 } from "../../controllers/inventory/provider.controller";
 import * as providerAddressController from "../../controllers/inventory/providerAddress.controller";
@@ -25,12 +27,24 @@ router.post(
   "/",
   verifyPermission("c_provider_inventory"),
   verifyEmptyBody,
-  sanitizeProviderInput,
+  sanitizeProviderInput("create"),
   verifyProviderInput("create"),
   create,
 );
 
-router.get("/", verifyPermission("r_provider_inventory"), getAll);
+router.get(
+  "/",
+  verifyPermission("r_provider_inventory"),
+  sanitizeProviderInput("search"),
+  verifyProviderInput("search"),
+  search
+);
+
+router.get(
+  "/all",
+  verifyPermission("r_provider_inventory"),
+  getAll
+);
 
 router.get(
   "/:providerId/details",
@@ -44,9 +58,17 @@ router.patch(
   "/:providerId",
   verifyPermission("u_provider_inventory"),
   verifyEmptyBody,
-  sanitizeProviderInput,
+  sanitizeProviderInput("update"),
   verifyProviderInput("update"),
   update,
+);
+
+router.delete(
+  "/many",
+  verifyPermission("d_provider_inventory"),
+  sanitizeProviderInput("delete many"),
+  verifyProviderInput("delete many"),
+  removeBulk,
 );
 
 router.delete("/:providerId", verifyPermission("d_provider_inventory"), remove);
