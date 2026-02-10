@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import useProductBrandStore from "../../../store/admin/product/brandStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import type { AdminProductBrandResponse as ProductBrandResponse } from "../../../../../common/types.common";
-import useUserStore from "../../../store/admin/userStore";
 import { formatError } from "../../../../../common/utils.common";
 import defaultLogo from "../../../assets/default-product.webp";
 import ApiError from "../../common/ApiError";
@@ -23,7 +22,6 @@ export default function DetailBrand() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchBrand } = useProductBrandStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
@@ -38,7 +36,7 @@ export default function DetailBrand() {
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [apiErr, setApiErr] = useState<string | null>(null);
 
-  // Fetch and set initial data: sysUserId, brandDetails
+  // Fetch and set initial data: brandDetails
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       setIsInitializing(true);
@@ -47,12 +45,7 @@ export default function DetailBrand() {
       try {
         if (!id) throw new Error("Brand ID is missing");
 
-        const [fetchedBrandDetails] = await Promise.all([
-          fetchBrand(id),
-          sysUserId ? Promise.resolve() : fetchSysUserId(),
-        ]);
-
-        setBrandDetails(fetchedBrandDetails);
+        setBrandDetails(await fetchBrand(id));
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
@@ -70,8 +63,6 @@ export default function DetailBrand() {
         <DetailBrandSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
-      ) : !sysUserId ? (
-        <ApiError errorMessage="System user ID not found." />
       ) : !brandDetails ? (
         <ApiError errorMessage="Brand details not found." />
       ) : (

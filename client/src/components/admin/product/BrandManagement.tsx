@@ -22,7 +22,6 @@ import type {
   ProductBrandDisplayField as BrandDisplayField,
 } from "../../../utils/types";
 import { Link, useSearchParams } from "react-router-dom";
-import useUserStore from "../../../store/admin/userStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useConfigStore from "../../../store/admin/configStore";
 import useProductBrandStore from "../../../store/admin/product/brandStore";
@@ -101,7 +100,6 @@ export default function BrandManagement() {
   renderCount.current += 1;
   console.log(`BrandManagement render count: ${renderCount.current}`);
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchBrands, deleteBrand, deleteBrandBulk } = useProductBrandStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
   const {
@@ -244,8 +242,6 @@ export default function BrandManagement() {
       setApiErr(null);
 
       try {
-        if (!sysUserId) await fetchSysUserId();
-
         const [urlLimit, urlOffset, urlSearchTerm, urlSortBy] = [
           searchParams.get("limit"),
           searchParams.get("offset"),

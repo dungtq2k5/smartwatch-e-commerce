@@ -75,6 +75,7 @@ import EditOs from "./components/admin/product/EditOs.tsx";
 import ProviderManagement from "./components/admin/grn/ProviderManagement.tsx";
 import CreateProvider from "./components/admin/grn/CreateProvider.tsx";
 import EditProvider from "./components/admin/grn/EditProvider.tsx";
+import DetailProvider from "./components/admin/grn/DetailProvider.tsx";
 
 export default function App() {
   // DEV for testing
@@ -212,7 +213,7 @@ export default function App() {
                   <Route index element={<ProviderManagement />} />
                   <Route path="create" element={<CreateProvider />} />
                   <Route path=":id">
-                    <Route index element={<div>Provider Detail - to be implemented</div>} />
+                    <Route index element={<DetailProvider />} />
                     <Route path="edit" element={<EditProvider />} />
                   </Route>
                 </Route>

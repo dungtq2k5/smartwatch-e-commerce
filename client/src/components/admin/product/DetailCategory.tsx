@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import useProductCategoryStore from "../../../store/admin/product/categoryStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import type { AdminProductCategoryResponse as ProductCategoryResponse } from "../../../../../common/types.common";
-import useUserStore from "../../../store/admin/userStore";
 import { formatError } from "../../../../../common/utils.common";
 import ApiError from "../../common/ApiError";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
@@ -22,7 +21,6 @@ export default function DetailCategory() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchCategory } = useProductCategoryStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
@@ -36,7 +34,7 @@ export default function DetailCategory() {
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [apiErr, setApiErr] = useState<string | null>(null);
 
-  // Fetch and set initial data: sysUserId, categoryDetails
+  // Fetch and set initial data: categoryDetails
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       setIsInitializing(true);
@@ -44,13 +42,8 @@ export default function DetailCategory() {
 
       try {
         if (!id) throw new Error("Category ID is missing");
-
-        const [fetchedCategoryDetails] = await Promise.all([
-          fetchCategory(id),
-          sysUserId ? Promise.resolve() : fetchSysUserId(),
-        ]);
-
-        setCategoryDetails(fetchedCategoryDetails);
+        
+        setCategoryDetails(await fetchCategory(id));
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
@@ -68,8 +61,6 @@ export default function DetailCategory() {
         <DetailCategorySkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
-      ) : !sysUserId ? (
-        <ApiError errorMessage="System user ID not found." />
       ) : !categoryDetails ? (
         <ApiError errorMessage="Category details not found." />
       ) : (

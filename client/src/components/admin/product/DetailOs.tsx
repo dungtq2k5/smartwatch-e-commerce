@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import useProductOsStore from "../../../store/admin/product/osStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import type { AdminProductOsResponse as ProductOsResponse } from "../../../../../common/types.common";
-import useUserStore from "../../../store/admin/userStore";
 import { formatError } from "../../../../../common/utils.common";
 import defaultLogo from "../../../assets/default-product.webp";
 import ApiError from "../../common/ApiError";
@@ -23,7 +22,6 @@ export default function DetailOs() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchOs } = useProductOsStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
@@ -36,7 +34,7 @@ export default function DetailOs() {
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [apiErr, setApiErr] = useState<string | null>(null);
 
-  // Fetch and set initial data: sysUserId, osDetails
+  // Fetch and set initial data: osDetails
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       setIsInitializing(true);
@@ -45,12 +43,7 @@ export default function DetailOs() {
       try {
         if (!id) throw new Error("OS ID is missing");
 
-        const [fetchedOsDetails] = await Promise.all([
-          fetchOs(id),
-          sysUserId ? Promise.resolve() : fetchSysUserId(),
-        ]);
-
-        setOsDetails(fetchedOsDetails);
+        setOsDetails(await fetchOs(id));
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
@@ -68,8 +61,6 @@ export default function DetailOs() {
         <DetailOsSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
-      ) : !sysUserId ? (
-        <ApiError errorMessage="System user ID not found." />
       ) : !osDetails ? (
         <ApiError errorMessage="OS details not found." />
       ) : (

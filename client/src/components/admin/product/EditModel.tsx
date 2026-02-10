@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import useUserStore from "../../../store/admin/userStore";
 import useModelStore from "../../../store/admin/product/modelStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
@@ -147,7 +146,6 @@ export function EditModel() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { oses, fetchOses } = useProductOsStore();
   const { fetchModel, updateModel } = useModelStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
@@ -248,7 +246,7 @@ export function EditModel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imgPreviews, setImgPreviews] = useState<string[]>([]);
 
-  // Fetch set data on initial load: sysUserId, model, formData
+  // Fetch set data on initial load: model, formData
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       setProcess((prev) => ({
@@ -263,7 +261,6 @@ export function EditModel() {
 
         const [fetchedModel] = await Promise.all([
           fetchModel(id),
-          sysUserId ? Promise.resolve() : fetchSysUserId(),
           oses ? Promise.resolve() : fetchOses(),
         ]);
 
@@ -1399,8 +1396,6 @@ export function EditModel() {
         <ApiError errorMessage="Operating system data not found." />
       ) : !model ? (
         <ApiError errorMessage="Model data not found." />
-      ) : !sysUserId ? (
-        <ApiError errorMessage="System user ID not found." />
       ) : (
         <>
           {/* Heading */}

@@ -3,7 +3,6 @@ import type { FormInput } from "../../../utils/types";
 import type { FormData as CreateFormData } from "./CreateVariation";
 import { useNavigate, useParams } from "react-router-dom";
 import useVariationStore from "../../../store/admin/product/variationStore";
-import useUserStore from "../../../store/admin/userStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
 import type {
@@ -70,7 +69,6 @@ export default function EditVariation() {
 
   const navigate = useNavigate();
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchVariation, updateVariation } = useVariationStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
@@ -117,7 +115,7 @@ export default function EditVariation() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imgPreviews, setImgPreviews] = useState<string[]>([]);
 
-  // Fetch set data on initial load: sysUserId, variation, formData
+  // Fetch set data on initial load: variation, formData
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       setProcess((prev) => ({
@@ -130,10 +128,7 @@ export default function EditVariation() {
       try {
         if (!id) throw new Error("Variation ID is missing");
 
-        const [fetchedVariation] = await Promise.all([
-          fetchVariation(id),
-          sysUserId ? Promise.resolve() : fetchSysUserId(),
-        ]);
+        const fetchedVariation = await fetchVariation(id);
 
         setVariation(fetchedVariation);
         updateFormData(fetchedVariation);
@@ -839,8 +834,6 @@ export default function EditVariation() {
         <EditVariationSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
-      ) : !sysUserId ? (
-        <ApiError errorMessage="System user ID data not found." />
       ) : !variation ? (
         <ApiError errorMessage="Variation data not found." />
       ) : (

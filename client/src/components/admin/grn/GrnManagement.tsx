@@ -30,7 +30,6 @@ import type {
   TableColDisplay as GeneralTableColDisplay,
   GrnDisplayField,
 } from "../../../utils/types";
-import useUserStore from "../../../store/admin/userStore";
 import useGrnStateStore from "../../../store/admin/grn/grnStateStore";
 import useGrnStore from "../../../store/admin/grn/grnStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
@@ -102,7 +101,6 @@ export default function GrnManagement() {
   renderCount.current += 1;
   console.log("GrnManagement render count:", renderCount.current);
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { grnStates, fetchGrnStates, getGrnState } = useGrnStateStore();
   const { fetchGrns } = useGrnStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
@@ -242,7 +240,6 @@ export default function GrnManagement() {
 
       try {
         // Pre-fetch necessary data
-        if (!sysUserId) await fetchSysUserId();
         if (!grnStates) await fetchGrnStates();
 
         const [

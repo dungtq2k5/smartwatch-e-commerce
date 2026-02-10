@@ -22,7 +22,6 @@ import type {
   ProductOsDisplayField as OsDisplayField,
 } from "../../../utils/types";
 import { Link, useSearchParams } from "react-router-dom";
-import useUserStore from "../../../store/admin/userStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useConfigStore from "../../../store/admin/configStore";
 import useProductOsStore from "../../../store/admin/product/osStore";
@@ -101,7 +100,6 @@ export default function OsManagement() {
   renderCount.current += 1;
   console.log(`OsManagement render count: ${renderCount.current}`);
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchOses, deleteOs, deleteOsBulk } = useProductOsStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
   const {
@@ -238,8 +236,6 @@ export default function OsManagement() {
       setApiErr(null);
 
       try {
-        if (!sysUserId) await fetchSysUserId();
-
         const [urlLimit, urlOffset, urlSearchTerm, urlSortBy] = [
           searchParams.get("limit"),
           searchParams.get("offset"),

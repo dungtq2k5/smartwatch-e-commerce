@@ -46,7 +46,6 @@ import {
   WARNING_EMOJI,
 } from "../../../configs";
 import Pagination from "../../common/Pagination";
-import useUserStore from "../../../store/admin/userStore";
 import type {
   AdminProductDisplayableField,
   TableColDisplay as GeneralTableColDisplay,
@@ -112,7 +111,6 @@ export default function ProductManagement() {
   renderCount.current += 1;
   console.log("ProductManagement render count:", renderCount.current);
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchProducts, deleteProduct, deleteProductBulk } = useProductStore();
   const { brands, getBrand, fetchBrands } = useProductBrandStore();
   const { categories, getCategory, fetchCategories } =
@@ -364,7 +362,6 @@ export default function ProductManagement() {
       try {
         // Pre-fetch brands and categories for filter selects, getSync functions
         await Promise.all([
-          sysUserId ? Promise.resolve() : fetchSysUserId(),
           brands ? Promise.resolve() : fetchBrands(),
           categories ? Promise.resolve() : fetchCategories(),
         ]);

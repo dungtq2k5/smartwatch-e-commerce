@@ -59,7 +59,6 @@ import Btn from "../../common/Btn";
 import Pagination from "../../common/Pagination";
 import ConfigDisplayModal from "../modal/ConfigDisplayModal";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
-import useUserStore from "../../../store/admin/userStore";
 
 type Process = {
   isProcessing: boolean;
@@ -103,7 +102,6 @@ export default function ProviderManagement() {
   renderCount.current += 1;
   console.log(`UserManagement render count: ${renderCount.current}`);
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchProviders, deleteProvider, deleteProviderBulk } =
     useProviderStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
@@ -238,8 +236,6 @@ export default function ProviderManagement() {
       setApiErr(null);
 
       try {
-        if (!sysUserId) await fetchSysUserId();
-
         const [urlLimit, urlOffset, urlSearchTerm, urlSortBy] = [
           searchParams.get("limit"),
           searchParams.get("offset"),

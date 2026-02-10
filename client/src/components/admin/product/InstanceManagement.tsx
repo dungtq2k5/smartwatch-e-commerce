@@ -31,7 +31,6 @@ import type {
   TableColDisplay as GeneralTableColDisplay,
   VariationInstanceDisplayField,
 } from "../../../utils/types";
-import useUserStore from "../../../store/admin/userStore";
 import useInstanceStore from "../../../store/admin/product/instanceStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useConfigStore from "../../../store/admin/configStore";
@@ -105,7 +104,6 @@ export default function InstanceManagement() {
 
   const navigate = useNavigate();
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { instanceConditions, fetchInstanceConditions, getInstanceCondition } =
     useInstanceConditionStore();
   const { fetchInstances } = useInstanceStore();
@@ -289,11 +287,8 @@ export default function InstanceManagement() {
       setApiErr(null);
 
       try {
-        // Pre-fetch sysUserId, instanceConditions for getSync functions
-        await Promise.all([
-          sysUserId ? Promise.resolve() : fetchSysUserId(),
-          instanceConditions ? Promise.resolve() : fetchInstanceConditions(),
-        ]);
+        // Pre-fetch instanceConditions for getSync functions
+        await (instanceConditions ? Promise.resolve() : fetchInstanceConditions());
 
         const [
           urlLimit,

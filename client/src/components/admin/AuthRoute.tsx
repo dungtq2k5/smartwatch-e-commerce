@@ -6,6 +6,7 @@ import useRoleStore from "../../store/admin/roleStore";
 import { formatError } from "../../../../common/utils.common";
 import Loading from "../common/Loading";
 import ApiError from "../common/ApiError";
+import useUserStore from "../../store/admin/userStore";
 
 const AuthRoute = memo(() => {
   // DEV temp for testing
@@ -16,11 +17,12 @@ const AuthRoute = memo(() => {
   const { admin } = useAuthStore();
   const { roles, fetchRoles } = useRoleStore();
   const { permissions, fetchPermissions } = usePermissionStore();
+  const { sysUserId, fetchSysUserId } = useUserStore();
 
   const [isInitializing, setIsInitializing] = useState(false);
   const [apiErr, setApiErr] = useState<string | null>(null);
 
-  // Re-fetch roles & permissions on page load if admin exists to use usePermission hook properly later on
+  // Re-fetch roles, permissions, and sysUserId on page load if admin exists to use hook properly later on
   useEffect(() => {
     const handleFetchInitialData = async (): Promise<void> => {
       if (admin) {
@@ -31,6 +33,7 @@ const AuthRoute = memo(() => {
           await Promise.all([
             roles ? Promise.resolve() : fetchRoles(),
             permissions ? Promise.resolve() : fetchPermissions(),
+            sysUserId ? Promise.resolve() : fetchSysUserId(),
           ]);
         } catch (error) {
           setApiErr(formatError(error));

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import useUserStore from "../../../store/admin/userStore";
 import useGrnStore from "../../../store/admin/grn/grnStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import type {
@@ -24,7 +23,6 @@ export default function DetailGrn() {
 
   const { id } = useParams();
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { grnStates, fetchGrnStates, getGrnState } = useGrnStateStore();
   const { fetchGrnDetails } = useGrnStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
@@ -52,7 +50,6 @@ export default function DetailGrn() {
 
         const [fetchedGrnDetails] = await Promise.all([
           fetchGrnDetails(id, "desc"),
-          sysUserId ? Promise.resolve() : fetchSysUserId(),
           grnStates ? Promise.resolve() : fetchGrnStates(),
         ]);
 
@@ -77,8 +74,6 @@ export default function DetailGrn() {
         <p>Loading...</p> // TODO skeleton loading
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
-      ) : !sysUserId ? (
-        <ApiError errorMessage="System user data not found." />
       ) : !grnStates ? (
         <ApiError errorMessage="GRN state data not found." />
       ) : !grnDetails || !currGrnDetails ? (

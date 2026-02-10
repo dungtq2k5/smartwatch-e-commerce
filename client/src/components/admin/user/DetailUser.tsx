@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import useRoleStore from "../../../store/admin/roleStore";
 import type { AdminUserDetailsResponse } from "../../../../../common/types.common";
 import { centsToUSD, formatError } from "../../../../../common/utils.common";
@@ -14,6 +14,7 @@ import DetailUserSkeleton from "../skeleton/DetailUserSkeleton";
 import Title from "../Title";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
 import LinkBtn from "../../common/LinkBtn";
+import DetailUserLink from "../DetailUserLink";
 
 export default function DetailUser() {
   // DEV temp for testing
@@ -25,7 +26,7 @@ export default function DetailUser() {
   const navigate = useNavigate();
 
   const { roles, fetchRoles } = useRoleStore();
-  const { sysUserId, fetchSysUserId, fetchUserDetails } = useUserStore();
+  const { fetchUserDetails } = useUserStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
   const canEditUser = useHasPermission("u_usr");
@@ -47,7 +48,6 @@ export default function DetailUser() {
         const [fetchedUserDetail] = await Promise.all([
           fetchUserDetails(id),
           roles ? Promise.resolve() : fetchRoles(),
-          sysUserId ? Promise.resolve() : fetchSysUserId(),
         ]);
 
         setUserDetails(fetchedUserDetail);
@@ -72,8 +72,6 @@ export default function DetailUser() {
         <ApiError errorMessage="Roles data not found." />
       ) : !userDetails ? (
         <ApiError errorMessage="User detail data not found." />
-      ) : !sysUserId ? (
-        <ApiError errorMessage="System user ID not found." />
       ) : (
         <>
           {/* Heading CHECKPOINT... */}
@@ -239,13 +237,9 @@ export default function DetailUser() {
                             title={userRole.assignedBy}
                           >
                             By:{" "}
-                            {userRole.assignedBy === sysUserId ? (
-                              "system"
-                            ) : (
-                              <Link to={`/admin/users/${userRole.assignedBy}`}>
-                                {userRole.assignedBy}
-                              </Link>
-                            )}
+                            <DetailUserLink userId={userRole.assignedBy}>
+                              {userRole.assignedBy}
+                            </DetailUserLink>
                           </small>
                         </div>
                       );

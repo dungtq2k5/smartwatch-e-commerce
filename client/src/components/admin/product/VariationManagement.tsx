@@ -31,7 +31,6 @@ import type {
   TableColDisplay as GeneralTableColDisplay,
   ModelVariationDisplayField,
 } from "../../../utils/types";
-import useUserStore from "../../../store/admin/userStore";
 import useVariationStore from "../../../store/admin/product/variationStore";
 import useConfigStore from "../../../store/admin/configStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
@@ -112,7 +111,6 @@ export default function VariationManagement() {
 
   const navigate = useNavigate();
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchVariations, deleteVariation, deleteVariationBulk } =
     useVariationStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
@@ -377,9 +375,6 @@ export default function VariationManagement() {
       setApiErr(null);
 
       try {
-        // Pre-fetch sysUserId for getSync functions
-        if (!sysUserId) await fetchSysUserId();
-
         const [
           urlLimit,
           urlOffset,

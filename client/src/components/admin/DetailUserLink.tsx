@@ -14,7 +14,7 @@ const DetailUserLink = memo(({ userId, ...props }: DetailUserLinkProps) => {
   const { sysUserId, fetchSysUserId } = useUserStore();
 
   const [isInitializing, setIsInitializing] = useState<boolean>(
-    sysUserId === null
+    sysUserId === null,
   );
 
   useEffect(() => {

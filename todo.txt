@@ -65,6 +65,7 @@
     - Use 'joi' or 'express-validator' for validating request body ❌.
     - Add 'createdBy' field for user schema (also handle chicken or egg first problem) ❌.
     - Create a dedicated postman collection for API testing ❌.
+    - Create a dedicate postman collection for API testing and attach to README ❌.
 
   - Database init:
     - Init roles & permissions ✅.

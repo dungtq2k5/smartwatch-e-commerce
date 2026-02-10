@@ -22,7 +22,6 @@ import type {
   ProductCategoryDisplayField as CategoryDisplayField,
 } from "../../../utils/types";
 import { Link, useSearchParams } from "react-router-dom";
-import useUserStore from "../../../store/admin/userStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useConfigStore from "../../../store/admin/configStore";
 import useProductCategoryStore from "../../../store/admin/product/categoryStore";
@@ -104,7 +103,6 @@ export default function CategoryManagement() {
   renderCount.current += 1;
   console.log(`CategoryManagement render count: ${renderCount.current}`);
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchCategories, deleteCategory, deleteCategoryBulk } =
     useProductCategoryStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
@@ -241,8 +239,6 @@ export default function CategoryManagement() {
       setApiErr(null);
 
       try {
-        if (!sysUserId) await fetchSysUserId();
-
         const [urlLimit, urlOffset, urlSearchTerm, urlSortBy] = [
           searchParams.get("limit"),
           searchParams.get("offset"),

@@ -21,7 +21,6 @@ import {
   PRODUCT_MODEL_SEARCH_SORT_OPTIONS as MODEL_SEARCH_SORT_OPTIONS,
   PROJECT_NAME,
 } from "../../../../../common/configs.common";
-import useUserStore from "../../../store/admin/userStore";
 import useModelStore from "../../../store/admin/product/modelStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useConfigStore from "../../../store/admin/configStore";
@@ -113,7 +112,6 @@ export default function ModelManagement() {
 
   const navigate = useNavigate();
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchModels, deleteModel, deleteModelBulk } = useModelStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
   const {
@@ -348,9 +346,6 @@ export default function ModelManagement() {
       setApiErr(null);
 
       try {
-        // Pre-fetch sysUserId for getSync functions
-        if (!sysUserId) await fetchSysUserId();
-
         const [
           urlLimit,
           urlOffset,

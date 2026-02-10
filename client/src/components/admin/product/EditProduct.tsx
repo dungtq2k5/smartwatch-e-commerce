@@ -38,7 +38,6 @@ import {
 } from "../../../utils/utils";
 import ApiError from "../../common/ApiError";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
-import useUserStore from "../../../store/admin/userStore";
 import Title from "../Title";
 import DetailUserLink from "../DetailUserLink";
 import LinkBtn from "../../common/LinkBtn";
@@ -77,7 +76,6 @@ export function EditProduct() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { brands, fetchBrands } = useProductBrandStore();
   const { categories, fetchCategories } = useProductCategoryStore();
   const { fetchProduct, updateProduct } = useProductStore();
@@ -113,7 +111,7 @@ export function EditProduct() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imgPreviews, setImgPreviews] = useState<string[]>([]);
 
-  // Fetch set data on initial load: sysUserId, product, brands, categories, formData
+  // Fetch set data on initial load: product, brands, categories, formData
   useEffect(() => {
     const handleFetchSetInitialData = async (): Promise<void> => {
       setProcess((prev) => ({
@@ -131,7 +129,6 @@ export function EditProduct() {
             fetchProduct(id),
             brands ? Promise.resolve(brands) : fetchBrands(),
             categories ? Promise.resolve(categories) : fetchCategories(),
-            sysUserId ? Promise.resolve() : fetchSysUserId(),
           ],
         );
 
@@ -563,8 +560,6 @@ export function EditProduct() {
         <ApiError errorMessage="Product categories data is not found." />
       ) : !product ? (
         <ApiError errorMessage="Product data is not found." />
-      ) : !sysUserId ? (
-        <ApiError errorMessage="System user ID data not found." />
       ) : (
         <>
           {/* Heading */}
@@ -607,7 +602,11 @@ export function EditProduct() {
 
                     {/* Description */}
                     <div className="mb-3">
-                      <Label htmlFor="description" className="form-label" required>
+                      <Label
+                        htmlFor="description"
+                        className="form-label"
+                        required
+                      >
                         Description
                       </Label>
                       <Textarea

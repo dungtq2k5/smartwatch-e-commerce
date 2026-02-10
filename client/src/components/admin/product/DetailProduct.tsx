@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import useUserStore from "../../../store/admin/userStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import type {
   AdminModelVariationResponse,
@@ -53,7 +52,6 @@ export default function DetailProduct() {
 
   const { id } = useParams();
 
-  const { sysUserId, fetchSysUserId } = useUserStore();
   const { fetchProductDetails } = useProductStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
@@ -103,12 +101,7 @@ export default function DetailProduct() {
       try {
         if (!id) throw new Error("Product ID is missing.");
 
-        const [productDetail] = await Promise.all([
-          fetchProductDetails(id),
-          sysUserId ? Promise.resolve() : fetchSysUserId(),
-        ]);
-
-        setProductDetails(productDetail);
+        setProductDetails(await fetchProductDetails(id));
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
