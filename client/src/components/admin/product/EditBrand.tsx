@@ -288,7 +288,8 @@ export default function EditBrand() {
             return;
           }
 
-          await updateBrand(brand.id, changedData);
+          const updatedBrand = await updateBrand(brand.id, changedData);
+          setBrand((prev) => (prev ? { ...prev, ...updatedBrand } : prev));
           toast.success("Product brand information updated successfully.");
         } catch (error) {
           toast.error(formatError(error));

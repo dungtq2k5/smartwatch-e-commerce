@@ -316,14 +316,14 @@ export async function update(
     res.status(200).json({
       success: true,
       message: "Product os updated successfully.",
-      data: formatProductOsResponse({
+      data: formatAdminProductOsResponse({
         ...os.toObject(),
         createdBy: {
           _id: os.createdBy,
           fullName: createdByUser.fullName,
         },
       }),
-    } as SuccessResponse<ProductOsResponse>);
+    } as SuccessResponse<AdminProductOsResponse>);
     console.log("✅ ", "Product os updated successfully.");
   } catch (error) {
     await session.abortTransaction();

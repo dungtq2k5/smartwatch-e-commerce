@@ -197,7 +197,13 @@ export default function EditCategory() {
             return;
           }
 
-          await updateCategory(category.id, changedData);
+          const updatedCategory = await updateCategory(
+            category.id,
+            changedData,
+          );
+          setCategory((prev) =>
+            prev ? { ...prev, ...updatedCategory } : prev,
+          );
           toast.success("Product category information updated successfully.");
         } catch (error) {
           toast.error(formatError(error));

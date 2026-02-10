@@ -311,14 +311,14 @@ export async function update(
     res.status(200).json({
       success: true,
       message: "Product category updated successfully.",
-      data: formatProductCategoryResponse({
+      data: formatAdminProductCategoryResponse({
         ...category.toObject(),
         createdBy: {
           _id: category.createdBy,
           fullName: createdByUser.fullName,
         },
       }),
-    } as SuccessResponse<ProductCategoryResponse>);
+    } as SuccessResponse<AdminProductCategoryResponse>);
     console.log("✅ ", "Product category updated successfully.");
   } catch (error) {
     await session.abortTransaction();

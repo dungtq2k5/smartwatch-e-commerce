@@ -288,7 +288,8 @@ export default function EditOs() {
             return;
           }
 
-          await updateOs(os.id, changedData);
+          const updatedOs = await updateOs(os.id, changedData);
+          setOs((prev) => (prev ? { ...prev, ...updatedOs } : prev));
           toast.success("Product OS information updated successfully.");
         } catch (error) {
           toast.error(formatError(error));

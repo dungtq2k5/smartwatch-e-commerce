@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import useProviderStore from "../../../store/admin/grn/providerStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
-import { WAITING_EMOJI } from "../../../configs";
+import { DISABLED_TITLE_FOR_VIEWING, WAITING_EMOJI } from "../../../configs";
 import type {
   ProviderResponse,
   ProviderUpdate,
@@ -29,6 +29,7 @@ import InvalidMsg from "../../common/InvalidInputMsg";
 import Btn from "../../common/Btn";
 import PhoneInput from "react-phone-number-input";
 import useRefreshStore from "../../../store/admin/refreshStore";
+import DetailUserLink from "../DetailUserLink";
 
 type Process = {
   isProcessing: boolean;
@@ -54,7 +55,10 @@ export default function EditProvider() {
   const { fetchProvider, updateProvider } = useProviderStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
-  const canEditProvider = useHasPermission("u_provider_inventory");
+  const [canEditProvider, canReadUser] = [
+    useHasPermission("u_provider_inventory"),
+    useHasPermission("r_usr"),
+  ];
 
   const [provider, setProvider] = useState<
     (ProviderResponse & { countryCode?: CountryCode }) | null
@@ -234,7 +238,13 @@ export default function EditProvider() {
             return;
           }
 
-          await updateProvider(provider.id, changedData);
+          const updatedProvider = await updateProvider(
+            provider.id,
+            changedData,
+          );
+          setProvider((prev) =>
+            prev ? { ...prev, ...updatedProvider } : prev,
+          );
           toast.success("Provider updated successfully.");
         } catch (error) {
           toast.error(formatError(error));
@@ -250,18 +260,6 @@ export default function EditProvider() {
     [canEditProvider, formData, process.isProcessing, provider, updateProvider],
   );
 
-  const handleDiscard = useCallback((): void => {
-    if (process.isProcessing) {
-      toast("Another action is in progress. Please wait.", {
-        icon: WAITING_EMOJI,
-      });
-      return;
-    }
-
-    navigate(-1);
-  }, [navigate, process.isProcessing]);
-
-  // TODO Display uneditable fields: createdAt, createdBy, updatedAt.
   return (
     <>
       {process.isInitializing ? (
