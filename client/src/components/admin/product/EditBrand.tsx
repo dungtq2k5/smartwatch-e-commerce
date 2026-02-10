@@ -516,7 +516,7 @@ export default function EditBrand() {
               loading={process.isUpdating}
               form="editBrandForm"
             >
-              Update
+              Update Brand
             </Btn>
           </div>
         </>

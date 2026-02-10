@@ -27,7 +27,6 @@ import {
 } from "../../../../../common/configs.common";
 import InvalidInputMsg from "../../common/InvalidInputMsg";
 import Btn from "../../common/Btn";
-import Loading from "../../common/Loading";
 import Input from "../../common/Input";
 import Textarea from "../../common/Textarea";
 import Label from "../../common/Label";
@@ -517,7 +516,7 @@ export default function EditOs() {
               loading={process.isUpdating}
               form="editOsForm"
             >
-              Update
+              Update OS
             </Btn>
           </div>
         </>

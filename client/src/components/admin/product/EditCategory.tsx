@@ -366,7 +366,7 @@ export default function EditCategory() {
               loading={process.isUpdating}
               form="editCategoryForm"
             >
-              Update
+              Update Category
             </Btn>
           </div>
         </>
