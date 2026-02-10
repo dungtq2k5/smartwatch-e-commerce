@@ -117,7 +117,7 @@ export default function EditOs() {
 
     handleFetchSetInitial();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshSignal]);
+  }, [id, refreshSignal]);
 
   const handleRemoveLogo = useCallback((): void => {
     if (process.isProcessing) {

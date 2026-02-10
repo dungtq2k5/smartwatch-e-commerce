@@ -100,7 +100,7 @@ export default function EditCategory() {
 
     handleFetchSetInitial();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshSignal]);
+  }, [id, refreshSignal]);
 
   const handleChange = useCallback(
     async (

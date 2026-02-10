@@ -28,6 +28,7 @@ import Input from "../../common/Input";
 import InvalidMsg from "../../common/InvalidInputMsg";
 import Btn from "../../common/Btn";
 import PhoneInput from "react-phone-number-input";
+import useRefreshStore from "../../../store/admin/refreshStore";
 
 type Process = {
   isProcessing: boolean;
@@ -51,6 +52,7 @@ export default function EditProvider() {
   const navigate = useNavigate();
 
   const { fetchProvider, updateProvider } = useProviderStore();
+  const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
   const canEditProvider = useHasPermission("u_provider_inventory");
 
@@ -111,7 +113,7 @@ export default function EditProvider() {
 
     handleFetchSetInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [id, refreshSignal]);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -259,6 +261,7 @@ export default function EditProvider() {
     navigate(-1);
   }, [navigate, process.isProcessing]);
 
+  // TODO Display uneditable fields: createdAt, createdBy, updatedAt.
   return (
     <>
       {process.isInitializing ? (
