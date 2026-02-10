@@ -279,93 +279,166 @@ export default function EditProvider() {
             className="mb-4"
           />
 
-          <div className="card shadow-sm">
-            <div className="card-body p-4">
-              <form onSubmit={handleSubmit}>
-                {/* Full Name */}
-                <div className="row">
-                  <div className="mb-3">
-                    <Label htmlFor="fullName" required>
-                      Full Name
-                    </Label>
-                    <Input
-                      type="text"
-                      id="fullName"
-                      name="fullName"
-                      className="form-control"
-                      placeholder={provider.fullName}
-                      value={formData.fullName.val}
-                      onChange={handleChange}
-                      disabled={process.isProcessing}
-                      required
-                      error={formData.fullName.err}
-                      autoComplete="off"
-                    />
-                  </div>
-
-                  {/* Email */}
-                  <div className="mb-3">
-                    <Label htmlFor="email" required>
-                      Email
-                    </Label>
-                    <Input
-                      type="email"
-                      id="email"
-                      name="email"
-                      className="form-control"
-                      placeholder={provider.email}
-                      value={formData.email.val}
-                      onChange={handleChange}
-                      disabled={process.isProcessing}
-                      required
-                      error={formData.email.err}
-                      autoComplete="email"
-                    />
-                  </div>
-
-                  {/* Phone Number */}
-                  <div className="mb-3">
-                    <Label htmlFor="phoneNumber" required>
-                      Phone Number
-                    </Label>
-                    <PhoneInput
-                      id="phoneNumber"
-                      name="phoneNumber"
-                      defaultCountry={provider.countryCode}
-                      value={formData.phoneNumber.val}
-                      onChange={handlePhoneChange}
-                      className={formData.phoneNumber.err ? "is-invalid" : ""}
-                      disabled={process.isProcessing}
-                      placeholder={provider.phoneNumber}
-                      international // Force E.164 format
-                    />
-                    {formData.phoneNumber.err && (
-                      <InvalidMsg msg={formData.phoneNumber.err} />
-                    )}
-                  </div>
+          <div className="row">
+            {/* Left Column - Form */}
+            <div className="col-lg-8">
+              <div className="card shadow-sm">
+                <div className="card-header">
+                  <h2 className="fs-5 mb-0">General Information</h2>
                 </div>
+                <div className="card-body p-4">
+                  <form onSubmit={handleSubmit} id="editProviderForm">
+                    {/* Full Name */}
+                    <div className="row">
+                      <div className="mb-3">
+                        <Label htmlFor="fullName" required>
+                          Full Name
+                        </Label>
+                        <Input
+                          type="text"
+                          id="fullName"
+                          name="fullName"
+                          className="form-control"
+                          placeholder={provider.fullName}
+                          value={formData.fullName.val}
+                          onChange={handleChange}
+                          disabled={process.isProcessing}
+                          required
+                          error={formData.fullName.err}
+                          autoComplete="off"
+                        />
+                      </div>
 
-                {/* Action Buttons */}
-                <div className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={handleDiscard}
-                    disabled={process.isProcessing}
-                  >
-                    Discard
-                  </button>
-                  <Btn
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={process.isProcessing}
-                    loading={process.isUpdating}
-                  >
-                    Update Provider
-                  </Btn>
+                      {/* Email */}
+                      <div className="mb-3">
+                        <Label htmlFor="email" required>
+                          Email
+                        </Label>
+                        <Input
+                          type="email"
+                          id="email"
+                          name="email"
+                          className="form-control"
+                          placeholder={provider.email}
+                          value={formData.email.val}
+                          onChange={handleChange}
+                          disabled={process.isProcessing}
+                          required
+                          error={formData.email.err}
+                          autoComplete="email"
+                        />
+                      </div>
+
+                      {/* Phone Number */}
+                      <div className="mb-3">
+                        <Label htmlFor="phoneNumber" required>
+                          Phone Number
+                        </Label>
+                        <PhoneInput
+                          id="phoneNumber"
+                          name="phoneNumber"
+                          defaultCountry={provider.countryCode}
+                          value={formData.phoneNumber.val}
+                          onChange={handlePhoneChange}
+                          className={
+                            formData.phoneNumber.err ? "is-invalid" : ""
+                          }
+                          disabled={process.isProcessing}
+                          placeholder={provider.phoneNumber}
+                          international // Force E.164 format
+                        />
+                        {formData.phoneNumber.err && (
+                          <InvalidMsg msg={formData.phoneNumber.err} />
+                        )}
+                      </div>
+                    </div>
+                  </form>
                 </div>
-              </form>
+              </div>
             </div>
+
+            {/* Right Column - Additional Info */}
+            <div className="col-lg-4">
+              <div className="card shadow-sm mb-4">
+                <div className="card-header">
+                  <h2 className="fs-5 mb-0">Additional Information</h2>
+                </div>
+                <div className="card-body">
+                  <div className="mb-3">
+                    <label htmlFor="id" className="form-label">
+                      ID
+                    </label>
+                    <input
+                      type="text"
+                      id="id"
+                      className="form-control"
+                      value={provider.id}
+                      disabled
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <p className="form-label mb-2">Created by</p>
+                    <DetailUserLink
+                      userId={provider.createdBy.id}
+                      title="View user details"
+                      disabled={!canReadUser}
+                      disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+                      className="form-control bg-grey--g"
+                    >
+                      {provider.createdBy.fullName}
+                    </DetailUserLink>
+                  </div>
+
+                  <div className="mb-3">
+                    <label htmlFor="createdAt" className="form-label">
+                      Created at
+                    </label>
+                    <input
+                      type="text"
+                      id="createdAt"
+                      className="form-control"
+                      value={new Date(provider.createdAt).toLocaleString()}
+                      disabled
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label htmlFor="updatedAt" className="form-label">
+                      Updated at
+                    </label>
+                    <input
+                      type="text"
+                      id="updatedAt"
+                      className="form-control"
+                      value={new Date(provider.updatedAt).toLocaleString()}
+                      disabled
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="d-flex justify-content-end gap-2 mt-4">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => navigate(-1)}
+              disabled={process.isProcessing}
+            >
+              Discard
+            </button>
+            <Btn
+              type="submit"
+              className="btn btn-primary"
+              disabled={process.isProcessing}
+              loading={process.isUpdating}
+              form="editProviderForm"
+            >
+              Update Provider
+            </Btn>
           </div>
         </>
       )}
