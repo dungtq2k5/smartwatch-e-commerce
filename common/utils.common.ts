@@ -471,6 +471,14 @@ export function getCountryFromPhoneNumber(
   };
 }
 
+export function getGoogleMapsUrl(
+  longitude: number,
+  latitude: number,
+  zoomLevel: number = 17,
+): string {
+  return `https://www.google.com/maps/place/${latitude},${longitude}/@${latitude},${longitude},${zoomLevel}z`;
+}
+
 // --- VALIDATION UTILS ---
 
 export function isValidUserFullName(fullName: any): boolean {

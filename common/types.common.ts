@@ -949,7 +949,6 @@ export type ProviderAddressResponse = NoneOptional<
   Omit<ProviderAddressCreate, "location">
 > & {
   id: string;
-  providerId: string;
   location: GeoJSONPoint;
   createdAt: string;
   updatedAt: string;

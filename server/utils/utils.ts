@@ -788,9 +788,7 @@ export function formatProviderAddressResponse(
 ): commonType.ProviderAddressResponse {
   return {
     id: address._id,
-    providerId: address.providerId,
     name: address.name,
-    countryCode: address.countryCode,
     addressLine1: address.addressLine1,
     addressLine2: address.addressLine2,
     locality: address.locality,
