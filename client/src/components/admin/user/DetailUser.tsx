@@ -11,6 +11,9 @@ import { faBank, faCreditCard } from "@fortawesome/free-solid-svg-icons";
 import { CARD_BRAND_ICONS } from "../../../configs";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import DetailUserSkeleton from "../skeleton/DetailUserSkeleton";
+import Title from "../Title";
+import useHasPermission from "../../../hooks/admin/useHasPermission";
+import LinkBtn from "../../common/LinkBtn";
 
 export default function DetailUser() {
   // DEV temp for testing
@@ -25,9 +28,10 @@ export default function DetailUser() {
   const { sysUserId, fetchSysUserId, fetchUserDetails } = useUserStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
-  const [userDetails, setUserDetails] = useState<AdminUserDetailsResponse | null>(
-    null
-  );
+  const canEditUser = useHasPermission("u_usr");
+
+  const [userDetails, setUserDetails] =
+    useState<AdminUserDetailsResponse | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [apiErr, setApiErr] = useState<string | null>(null);
 
@@ -72,23 +76,18 @@ export default function DetailUser() {
         <ApiError errorMessage="System user ID not found." />
       ) : (
         <>
-          {/* Heading */}
+          {/* Heading CHECKPOINT... */}
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <div className="d-flex justify-content-between align-items-center">
-              <h1 className="fs-2 mb-0 d-flex gap-2">
-                <Link
-                  to={"/admin/users"}
-                  className="text-decoration-none text-black"
-                >
-                  User Management
-                </Link>
-                <p className="mb-0 fw-light">/</p>
-                User #ID {userDetails.id}
-              </h1>
-            </div>
-            <Link to={`./edit`} className="btn btn-primary">
-              Edit this User
-            </Link>
+            <Title
+              title={`Detail User #ID - ${userDetails.id}`}
+              parentTitle="User Management"
+              parentLink="/admin/users"
+            />
+            {canEditUser && (
+              <LinkBtn to="./edit" className="btn btn-primary">
+                Edit this User
+              </LinkBtn>
+            )}
           </div>
 
           <div className="row">
@@ -224,7 +223,7 @@ export default function DetailUser() {
                   {userDetails.roles.length > 0 ? (
                     userDetails.roles.map((userRole) => {
                       const roleInfo = roles.roles.find(
-                        (r) => r.id === userRole.id
+                        (r) => r.id === userRole.id,
                       );
                       return (
                         <div key={userRole.id} className="list-group-item">

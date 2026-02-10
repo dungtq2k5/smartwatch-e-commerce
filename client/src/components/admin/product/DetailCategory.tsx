@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import useProductCategoryStore from "../../../store/admin/product/categoryStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import type { AdminProductCategoryResponse as ProductCategoryResponse } from "../../../../../common/types.common";
@@ -10,6 +10,8 @@ import useHasPermission from "../../../hooks/admin/useHasPermission";
 import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
 import DetailUserLink from "../DetailUserLink";
 import DetailCategorySkeleton from "../skeleton/DetailCategorySkeleton";
+import Title from "../Title";
+import LinkBtn from "../../common/LinkBtn";
 
 export default function DetailCategory() {
   // DEV temp for testing
@@ -29,9 +31,8 @@ export default function DetailCategory() {
     useHasPermission("r_usr"),
   ];
 
-  const [categoryDetails, setCategoryDetails] = useState<ProductCategoryResponse | null>(
-    null,
-  );
+  const [categoryDetails, setCategoryDetails] =
+    useState<ProductCategoryResponse | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [apiErr, setApiErr] = useState<string | null>(null);
 
@@ -75,30 +76,15 @@ export default function DetailCategory() {
         <>
           {/* Heading */}
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <div className="d-flex justify-content-between align-items-center">
-              <h1 className="fs-2 mb-0 d-flex gap-2">
-                <Link
-                  to={"/admin/product-categories"}
-                  className="text-decoration-none text-black"
-                >
-                  Category Management
-                </Link>
-                <p className="mb-0 fw-light">/</p>
-                Category #ID {categoryDetails.id}
-              </h1>
-            </div>
-            {canEditCategory ? (
-              <Link to={`./edit`} className="btn btn-primary">
+            <Title
+              title={`Detail Category - ${categoryDetails.name}`}
+              parentTitle="Category Management"
+              parentLink="/admin/product-categories"
+            />
+            {canEditCategory && (
+              <LinkBtn to={`./edit`} className="btn btn-primary">
                 Edit this Category
-              </Link>
-            ) : (
-              <button
-                className="btn btn-primary"
-                disabled
-                title={DISABLED_TITLE_FOR_VIEWING}
-              >
-                Edit this Category
-              </button>
+              </LinkBtn>
             )}
           </div>
 

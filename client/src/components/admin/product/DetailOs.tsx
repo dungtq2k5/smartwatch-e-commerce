@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import useProductOsStore from "../../../store/admin/product/osStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import type { AdminProductOsResponse as ProductOsResponse } from "../../../../../common/types.common";
@@ -11,6 +11,8 @@ import useHasPermission from "../../../hooks/admin/useHasPermission";
 import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
 import DetailUserLink from "../DetailUserLink";
 import DetailOsSkeleton from "../skeleton/DetailOsSkeleton";
+import Title from "../Title";
+import LinkBtn from "../../common/LinkBtn";
 
 export default function DetailOs() {
   // DEV temp for testing
@@ -74,30 +76,15 @@ export default function DetailOs() {
         <>
           {/* Heading */}
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <div className="d-flex justify-content-between align-items-center">
-              <h1 className="fs-2 mb-0 d-flex gap-2">
-                <Link
-                  to={"/admin/product-oses"}
-                  className="text-decoration-none text-black"
-                >
-                  OS Management
-                </Link>
-                <p className="mb-0 fw-light">/</p>
-                OS #ID {osDetails.id}
-              </h1>
-            </div>
-            {canEditOs ? (
-              <Link to={`./edit`} className="btn btn-primary">
+            <Title
+              title={`Detail OS - ${osDetails.name}`}
+              parentTitle="OS Management"
+              parentLink="/admin/product-oses"
+            />
+            {canEditOs && (
+              <LinkBtn to="./edit" className="btn btn-primary">
                 Edit this OS
-              </Link>
-            ) : (
-              <button
-                className="btn btn-primary"
-                disabled
-                title={DISABLED_TITLE_FOR_VIEWING}
-              >
-                Edit this OS
-              </button>
+              </LinkBtn>
             )}
           </div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import useProductBrandStore from "../../../store/admin/product/brandStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import type { AdminProductBrandResponse as ProductBrandResponse } from "../../../../../common/types.common";
@@ -11,6 +11,8 @@ import useHasPermission from "../../../hooks/admin/useHasPermission";
 import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
 import DetailUserLink from "../DetailUserLink";
 import DetailBrandSkeleton from "../skeleton/DetailBrandSkeleton";
+import Title from "../Title";
+import LinkBtn from "../../common/LinkBtn";
 
 export default function DetailBrand() {
   // DEV temp for testing
@@ -76,30 +78,15 @@ export default function DetailBrand() {
         <>
           {/* Heading */}
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <div className="d-flex justify-content-between align-items-center">
-              <h1 className="fs-2 mb-0 d-flex gap-2">
-                <Link
-                  to={"/admin/product-brands"}
-                  className="text-decoration-none text-black"
-                >
-                  Brand Management
-                </Link>
-                <p className="mb-0 fw-light">/</p>
-                Brand #ID {brandDetails.id}
-              </h1>
-            </div>
-            {canEditBrand ? (
-              <Link to={`./edit`} className="btn btn-primary">
+            <Title
+              title={`Detail Brand - ${brandDetails.name}`}
+              parentTitle="Brand Management"
+              parentLink="/admin/product-brands"
+            />
+            {canEditBrand && (
+              <LinkBtn to={`./edit`} className="btn btn-primary">
                 Edit this Brand
-              </Link>
-            ) : (
-              <button
-                className="btn btn-primary"
-                disabled
-                title={DISABLED_TITLE_FOR_VIEWING}
-              >
-                Edit this Brand
-              </button>
+              </LinkBtn>
             )}
           </div>
 
