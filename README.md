@@ -1,12 +1,12 @@
-# Smartwatch E-Commerce System
+# Smartwatch E-Commerce System ⌚
 
 > 🚧 **Work In Progress**: This project is currently under active development.
 
-## Project Overview
+## Project Overview 👀
 
 This is my personal project about high-fidelity e-commerce system dedicated to selling smartwatches developed using [MERN](https://www.mongodb.com/resources/languages/mern-stack) tech stack. All the functionalities and features are implemented to be as much close to a real-world production system as possible.
 
-## Tech Stack
+## Tech Stack 🛠️
 
 **Frontend** ([`client/`](client/))
 
@@ -28,7 +28,7 @@ This is my personal project about high-fidelity e-commerce system dedicated to s
 
 * Shared TypeScript types and utility functions used by both client and server to ensure type safety across the network boundary.
 
-## Project Structure
+## Project Structure 🗂️
 
 ```text
 .
@@ -38,7 +38,7 @@ This is my personal project about high-fidelity e-commerce system dedicated to s
 └── ...
 ```
 
-## Getting Started
+## Getting Started 🚀
 
 ### Prerequisites
 
@@ -128,4 +128,3 @@ This is my personal project about high-fidelity e-commerce system dedicated to s
 * For the first time creating the database please uncomment the `await seedAllCollections()` in [`server/index.ts`](./server//index.ts) to initialize all necessary data when first time run the server or database is empty then comment it back after that.
 
 * To mock all data for testing/viewing purposes please do the same as above with the `await mockAllData()` in [`server/index.ts`](./server//index.ts).
-  
