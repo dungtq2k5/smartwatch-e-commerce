@@ -26,6 +26,7 @@ import parsePhoneNumberFromString, {
   type CountryCode,
 } from "libphonenumber-js";
 import countries from "i18n-iso-countries";
+import { validate as postalCodeValidate } from "postal-codes-js";
 
 countries.registerLocale(await import("i18n-iso-countries/langs/en.json"));
 
@@ -320,8 +321,8 @@ export function compareUserAddress(
     address1.districtCode === address2.districtCode &&
     address1.cityProvinceCode === address2.cityProvinceCode &&
     address1.countryCode === address2.countryCode &&
-    address1.location.coordinates[0] === address2.location.coordinates[0] && // long
-    address1.location.coordinates[1] === address2.location.coordinates[1] && // lat
+    address1.location.coordinates[0] === address2.location.coordinates[0] && // lat
+    address1.location.coordinates[1] === address2.location.coordinates[1] && // long
     address1.phoneNumber === address2.phoneNumber
   );
 }
@@ -488,13 +489,13 @@ export function getGoogleMapsUrl(
 export function isValidUserFullName(fullName: any): boolean {
   if (typeof fullName !== "string") return false;
 
-  if (containsEmoji(fullName)) return false;
-
   if (
     fullName.length < USERNAME_MIN_LENGTH ||
     fullName.length > USERNAME_MAX_LENGTH
   )
     return false;
+
+  if (containsEmoji(fullName)) return false;
 
   // Regex to allow Unicode letters and spaces,
   // and ensure at least one non-whitespace character.
@@ -633,8 +634,8 @@ export function containsEmoji(text: any): boolean {
 }
 
 export function isValidCoordinates(coords: {
-  longitude: number;
   latitude: number;
+  longitude: number;
 }): boolean {
   const { longitude, latitude } = coords;
   return (
@@ -716,6 +717,14 @@ export function isValidGeneralAddress(address: any): boolean {
  */
 export function nonEmptyList<T>(...args: T[]): boolean {
   return args.some((arg) => Array.isArray(arg) && arg.length > 0);
+}
+
+export function isValidPostalCode(countryCode: any, postalCode: any): boolean {
+  if (typeof countryCode !== "string" || (typeof postalCode !== "string" && typeof postalCode !== "number")) {
+    return false;
+  }
+
+  return postalCodeValidate(countryCode, postalCode) === true;
 }
 
 // --- ADDRESS UTILS ---

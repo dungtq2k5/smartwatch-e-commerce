@@ -245,7 +245,7 @@ export default function Address() {
 
           {/* Modals */}
           <ConfirmSubmitModal
-            show={modal.addressIdToDelete !== undefined}
+            show={!!modal.addressIdToDelete}
             onHide={closeModal}
             onSubmit={handleSubmitDeleteAddress}
             custom={{

@@ -12,7 +12,7 @@ export interface IProviderAddress extends Document<Types.ObjectId> {
   phoneNumber: string;
   location: {
     locationType: "point";
-    coordinates: [number, number]; // [longitude, latitude]
+    coordinates: [number, number]; // [latitude, longitude]
   };
   notes: string | null;
   isDefault: boolean;
@@ -71,7 +71,7 @@ const providerAddressSchema: Schema<IProviderAddress> = new Schema(
           default: "point",
         },
         coordinates: {
-          type: [Number], // [longitude, latitude]
+          type: [Number], // [latitude, longitude]
           required: true,
         },
       },

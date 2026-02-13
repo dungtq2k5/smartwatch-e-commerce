@@ -1,13 +1,16 @@
 export default function Loading({
   loadingMsg,
-}: Readonly<{ loadingMsg?: string }>) {
+  className,
+}: Readonly<{ loadingMsg?: string; className?: string }>) {
   // DEV temp for testing
   // const renderCount = useRef(0);
   // renderCount.current += 1;
   // console.log("Loading rendered", renderCount.current);
 
   return (
-    <div className="d-flex justify-content-center align-items-center h-100 w-100">
+    <div
+      className={`d-flex justify-content-center align-items-center h-100 w-100 ${className || ""}`}
+    >
       <div className="spinner-border text-primary spinner-sm">
         <span className="visually-hidden">Loading...</span>
       </div>

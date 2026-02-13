@@ -14,6 +14,7 @@ import {
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import type {
+  AddressFormData,
   AdminConfig,
   AdminGrnDisplayableField,
   AdminModelVariationDisplayableField,
@@ -33,6 +34,7 @@ import type {
   ProductDisplayField,
   ProductModelDisplayField,
   ProductOsDisplayField,
+  ProviderAddressFormData,
   ProviderCreationWizardStep,
   ProviderDisplayField,
   UserDisplayField,
@@ -548,17 +550,16 @@ export const DEFAULT_ADMIN_PRODUCT_CATEGORY_DISPLAY_FIELDS: ProductCategoryDispl
 export const DEFAULT_ADMIN_PRODUCT_OS_DISPLAY_FIELDS: ProductOsDisplayField[] =
   DEFAULT_ADMIN_PRODUCT_BRAND_DISPLAY_FIELDS;
 
-export const DEFAULT_ADMIN_PROVIDER_DISPLAY_FIELDS: ProviderDisplayField[] =
-  [
-    { name: "id", visible: true, exportable: true },
-    { name: "fullName", visible: true, exportable: true },
-    { name: "email", visible: true, exportable: true },
-    { name: "phoneNumber", visible: true, exportable: true },
-    { name: "createdBy", visible: false, exportable: true },
-    { name: "createdAt", visible: true, exportable: true },
-    { name: "updatedAt", visible: false, exportable: true },
-    { name: "actions", visible: true, exportable: false },
-  ];
+export const DEFAULT_ADMIN_PROVIDER_DISPLAY_FIELDS: ProviderDisplayField[] = [
+  { name: "id", visible: true, exportable: true },
+  { name: "fullName", visible: true, exportable: true },
+  { name: "email", visible: true, exportable: true },
+  { name: "phoneNumber", visible: true, exportable: true },
+  { name: "createdBy", visible: false, exportable: true },
+  { name: "createdAt", visible: true, exportable: true },
+  { name: "updatedAt", visible: false, exportable: true },
+  { name: "actions", visible: true, exportable: false },
+];
 
 export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   visa: (
@@ -623,3 +624,42 @@ export const DISABLED_TITLE_FOR_PERFORMING =
   "You don't have permission to perform";
 
 export const DEFAULT_PHONE_COUNTRY_CODE = "VN"; // Vietnam
+
+/**
+ * A central location in Ho Chi Minh City, Vietnam, represented as [latitude, longitude].
+ * This can be used as a default location for various features like address creation, map centering, etc.
+ */
+export const VN_HCM_CITY_CENTRAL_LOCATION: [10.762622, 106.660172] = [
+  10.762622, 106.660172,
+] as const;
+
+export const DEFAULT_CITY_PROVINCE_CODE = "79"; // Ho Chi Minh City
+export const DEFAULT_DISTRICT_CODE = "771"; // District 10
+export const DEFAULT_WARD_CODE = "27202"; // Ward 12
+
+export const DEFAULT_USER_ADDRESS_FORM_DATA: AddressFormData = {
+  name: { val: "" },
+  phoneNumber: { val: "" },
+  apartmentNumber: { val: "" },
+  street: { val: "" },
+  cityProvinceCode: DEFAULT_CITY_PROVINCE_CODE,
+  districtCode: DEFAULT_DISTRICT_CODE,
+  wardCode: DEFAULT_WARD_CODE,
+  location: VN_HCM_CITY_CENTRAL_LOCATION,
+  isDefault: false,
+} as const;
+
+export const DEFAULT_PROVIDER_ADDRESS_FORM_DATA: ProviderAddressFormData = {
+  name: { val: "" },
+  addressLine1: { val: "" },
+  addressLine2: { val: "" },
+  locality: { val: "" },
+  adminAreaL1: { val: "" },
+  adminAreaL2: { val: "" },
+  postalCode: { val: "" },
+  phoneNumber: { val: "" },
+  /** Represent [latitude, longitude] location for the address */
+  location: VN_HCM_CITY_CENTRAL_LOCATION,
+  notes: { val: "" },
+  isDefault: false,
+};

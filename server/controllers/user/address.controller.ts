@@ -163,7 +163,7 @@ export async function create(
       districtCode,
       cityProvinceCode,
       location: {
-        coordinates: [location.longitude, location.latitude],
+        coordinates: [location.latitude, location.longitude],
       },
       phoneNumber,
       fullAddress: formatAddress(req.body),
@@ -346,7 +346,7 @@ export async function update(
     address.districtCode = updatedDistrictCode;
     address.cityProvinceCode = updatedCityProvinceCode;
     if (location) {
-      address.location.coordinates = [location.longitude, location.latitude];
+      address.location.coordinates = [location.latitude, location.longitude];
     }
     address.phoneNumber = updatedPhoneNumber;
     address.isDefault = updatedIsDefault;
@@ -488,7 +488,7 @@ export async function createSelf(
       districtCode,
       cityProvinceCode,
       location: {
-        coordinates: [location.longitude, location.latitude],
+        coordinates: [location.latitude, location.longitude],
       },
       phoneNumber,
       fullAddress: formatAddress(req.body),

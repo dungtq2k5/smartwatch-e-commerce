@@ -179,7 +179,8 @@ export type UserSelfPasswordSet = {
 
 export type GeoJSONPoint = {
   readonly locationType: "point";
-  coordinates: [number, number]; // [longitude, latitude]
+  /** Represent [latitude, longitude] location for the address */
+  coordinates: [number, number];
 };
 
 export type BaseUserAddress = {
@@ -231,8 +232,8 @@ export type UserAddressCreate = Omit<
   | "isDefault"
 > & {
   location: {
-    longitude: number;
     latitude: number;
+    longitude: number;
   };
   isDefault?: boolean;
 };
@@ -936,8 +937,8 @@ export type ProviderAddressCreate = {
   postalCode: string;
   phoneNumber: string;
   location: {
-    longitude: number;
     latitude: number;
+    longitude: number;
   };
   notes?: string | null;
   isDefault?: boolean;

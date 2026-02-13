@@ -297,7 +297,7 @@ export default function EditGrn() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO loading skeleton
+        <p>Loading...</p> // TODO Loading skeleton
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !grnStates ? (

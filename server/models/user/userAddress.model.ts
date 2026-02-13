@@ -14,7 +14,7 @@ export interface IUserAddress extends Document<Types.ObjectId> {
   fullAddress: string;
   location: {
     locationType: "point";
-    coordinates: [number, number]; // [longitude, latitude]
+    coordinates: [number, number]; // [latitude, longitude]
   };
   isDefault: boolean;
   createdAt: Date;
@@ -75,7 +75,7 @@ const userAddressSchema: Schema<IUserAddress> = new Schema(
           default: "point",
         },
         coordinates: {
-          type: [Number], // [longitude, latitude]
+          type: [Number], // [latitude, longitude]
           required: true,
         },
       },

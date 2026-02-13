@@ -216,8 +216,8 @@ async function mockUserAddresses(
           location: {
             locationType: "point",
             coordinates: [
-              Number.parseFloat(faker.location.longitude().toFixed(6)),
               Number.parseFloat(faker.location.latitude().toFixed(6)),
+              Number.parseFloat(faker.location.longitude().toFixed(6)),
             ],
           },
           isDefault: i === 0, // First address is default
@@ -1414,8 +1414,8 @@ export async function mockProviderAddresses(
           location: {
             locationType: "point",
             coordinates: [
-              globalAddress.location.longitude,
               globalAddress.location.latitude,
+              globalAddress.location.longitude,
             ],
           },
           notes: faker.lorem.sentence(),
@@ -1556,8 +1556,8 @@ function getRandGlobalAddress(): Pick<
     locality: customFaker.location.city(),
     phoneNumber: customFaker.phone.number(),
     location: {
-      longitude: Number.parseFloat(customFaker.location.longitude().toFixed(6)),
       latitude: Number.parseFloat(customFaker.location.latitude().toFixed(6)),
+      longitude: Number.parseFloat(customFaker.location.longitude().toFixed(6)),
     },
   };
 }

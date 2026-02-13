@@ -173,7 +173,7 @@ export const uploadFile = async (
             ? productLogoStorage
             : returnImgStorage;
 
-    const fileName = new Date().getTime() + "_" + file.name; // Ensure unique name
+    const fileName = Date.now() + "_" + file.name; // Ensure unique name
     const storageRef = ref(storage, fileName);
     const uploadTaskSnapshot = await uploadBytes(storageRef, file);
     const downloadUrl = await getDownloadURL(uploadTaskSnapshot.ref);
@@ -561,4 +561,20 @@ export async function countExcelFileRows(file: File): Promise<number> {
     console.error("Excel parsing error:", error);
     return 0;
   }
+}
+
+export function getGeocodeAddress(
+  address: string,
+  onSuccess: (lat: number, lng: number) => void,
+  onError: (errorMsg: string) => void,
+): void {
+  const geocoder = new google.maps.Geocoder();
+  geocoder.geocode({ address }, (results, status) => {
+    if (status === google.maps.GeocoderStatus.OK && results?.[0]) {
+      const location = results[0].geometry.location;
+      onSuccess(location.lat(), location.lng());
+    } else {
+      onError(`Geocode was not successful for the following reason: ${status}`);
+    }
+  });
 }

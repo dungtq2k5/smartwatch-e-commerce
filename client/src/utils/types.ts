@@ -29,7 +29,8 @@ export type AddressFormData = {
   cityProvinceCode: string;
   districtCode: string;
   wardCode: string;
-  location: [number, number]; // [longitude, latitude]
+  /** Represent [latitude, longitude] location for the address */
+  location: [number, number];
   isDefault: boolean;
 };
 
@@ -187,4 +188,19 @@ export type ProviderCreationWizardStep =
 export type CustomInputProps = {
   error?: string | null;
   neverShowErrorMessage?: boolean;
+};
+
+export type ProviderAddressFormData = {
+  name: FormInput;
+  addressLine1: FormInput;
+  addressLine2: FormInput;
+  locality: FormInput;
+  adminAreaL1: FormInput;
+  adminAreaL2: FormInput;
+  postalCode: FormInput;
+  phoneNumber: FormInput;
+  /** Represent [latitude, longitude] location for the address */
+  location: [number, number];
+  notes: FormInput;
+  isDefault: boolean;
 };

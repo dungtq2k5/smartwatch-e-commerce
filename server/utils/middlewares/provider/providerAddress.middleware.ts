@@ -130,21 +130,21 @@ export function verifyProviderAddressInput(
             errors.push("location is required.");
           } else if (
             !isNoneArrObj(location) ||
-            location.longitude === undefined ||
-            location.latitude === undefined
+            location.latitude === undefined ||
+            location.longitude === undefined
           ) {
             errors.push(
               "location must be an object with latitude and longitude.",
             );
           } else if (
-            typeof location.longitude !== "number" ||
-            typeof location.latitude !== "number"
+            typeof location.latitude !== "number" ||
+            typeof location.longitude !== "number"
           ) {
             errors.push("location latitude and longitude must be numbers.");
           } else if (
             !isValidCoordinates({
-              longitude: location.longitude,
               latitude: location.latitude,
+              longitude: location.longitude,
             })
           ) {
             errors.push("location latitude and longitude are out of bounds.");
@@ -222,21 +222,21 @@ export function verifyProviderAddressInput(
           if (location !== undefined) {
             if (
               !isNoneArrObj(location) ||
-              !location.longitude ||
-              !location.latitude
+              !location.latitude ||
+              !location.longitude
             ) {
               errors.push(
                 "location must be an object with latitude and longitude.",
               );
             } else if (
-              typeof location.longitude !== "number" ||
-              typeof location.latitude !== "number"
+              typeof location.latitude !== "number" ||
+              typeof location.longitude !== "number"
             ) {
               errors.push("location latitude and longitude must be numbers.");
             } else if (
               !isValidCoordinates({
-                longitude: location.longitude,
                 latitude: location.latitude,
+                longitude: location.longitude,
               })
             ) {
               errors.push("location latitude and longitude are out of bounds.");

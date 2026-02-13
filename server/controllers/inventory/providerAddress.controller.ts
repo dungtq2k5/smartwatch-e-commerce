@@ -17,9 +17,9 @@ import Provider from "../../models/inventory/provider.model";
 import {
   formatAddress,
   getCountryFromPhoneNumber,
+  isValidPostalCode,
 } from "../../../common/utils.common";
 import User from "../../models/user/user.model";
-import postalCodeValidator from "postal-codes-js";
 
 export async function create(
   req: Request,
@@ -100,7 +100,7 @@ export async function create(
       phoneNumber,
       fullAddress: formatAddress(req.body),
       location: {
-        coordinates: [location.longitude, location.latitude],
+        coordinates: [location.latitude, location.longitude],
       },
       notes,
       isDefault: !!isDefault,
@@ -260,7 +260,7 @@ export async function update(
         );
       }
 
-      if (!postalCodeValidator.validate(countryCode, updatedPostalCode)) {
+      if (!isValidPostalCode(countryCode, updatedPostalCode)) {
         throw new HttpError(
           400,
           "postalCode is not valid for the given countryCode.",
@@ -296,7 +296,7 @@ export async function update(
     address.postalCode = updatedPostalCode;
     address.phoneNumber = updatedPhoneNumber;
     if (location) {
-      address.location.coordinates = [location.longitude, location.latitude];
+      address.location.coordinates = [location.latitude, location.longitude];
     }
     address.notes = updatedNotes;
     address.isDefault = updatedIsDefault;

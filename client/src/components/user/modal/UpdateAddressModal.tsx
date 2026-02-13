@@ -3,6 +3,7 @@ import { provinces } from "../../../../../common/vnAddresses";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AddressFormData } from "../../../utils/types";
 import {
+  capFirstLetter,
   formatError,
   getCityProvince,
   getDistrict,
@@ -21,13 +22,18 @@ import type {
   UserAddressUpdate,
 } from "../../../../../common/types.common";
 import toast from "react-hot-toast";
-import { useJsApiLoader } from "@react-google-maps/api";
 import debounce from "lodash.debounce";
 import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";
-import AddressMapInput from "../../user/AddressMapInput";
-import { WAITING_EMOJI } from "../../../configs";
+import AddressMapInput from "../../common/AddressMapInput";
+import {
+  DEFAULT_USER_ADDRESS_FORM_DATA,
+  WAITING_EMOJI,
+} from "../../../configs";
 import Btn from "../../common/Btn";
+import useCustomJsApiLoader from "../../../hooks/admin/useCustomJsApiLoader";
+import { getGeocodeAddress } from "../../../utils/utils";
+import InvalidMsg from "../../common/InvalidInputMsg";
 
 type Process = {
   isProcessing: boolean;
@@ -54,8 +60,8 @@ const UpdateAddressModal = memo(
 
     const { fetchAddress, updateAddress } = useUserAddressStore();
 
-    const [address, setAddress] = useState<UserSelfAddressResponse | undefined>(
-      undefined
+    const [address, setAddress] = useState<UserSelfAddressResponse | null>(
+      null,
     );
 
     const [process, setProcess] = useState<Process>({
@@ -66,14 +72,7 @@ const UpdateAddressModal = memo(
     const [apiErr, setApiErr] = useState<string | null>(null);
 
     const [formData, setFormData] = useState<AddressFormData>({
-      name: { val: "" },
-      phoneNumber: { val: "" },
-      apartmentNumber: { val: "" },
-      street: { val: "" },
-      cityProvinceCode: "",
-      districtCode: "",
-      wardCode: "",
-      location: [106.6297, 10.8231], // Default to Ho Chi Minh City
+      ...DEFAULT_USER_ADDRESS_FORM_DATA,
       isDefault: isOnlyOneAddress,
     });
 
@@ -88,21 +87,23 @@ const UpdateAddressModal = memo(
           setApiErr(null);
 
           try {
-            const addressRes = await fetchAddress(addressId);
-            setAddress(addressRes);
+            const fetchedAddress = await fetchAddress(addressId);
+            setAddress(fetchedAddress);
+
+            const copiedAddress = structuredClone(fetchedAddress); // To avoid direct state mutation
             setFormData({
-              name: { val: addressRes.name },
-              phoneNumber: { val: addressRes.phoneNumber },
-              apartmentNumber: { val: addressRes.apartmentNumber },
-              street: { val: addressRes.street },
-              cityProvinceCode: addressRes.cityProvinceCode,
-              districtCode: addressRes.districtCode,
-              wardCode: addressRes.wardCode,
+              name: { val: copiedAddress.name },
+              phoneNumber: { val: copiedAddress.phoneNumber },
+              apartmentNumber: { val: copiedAddress.apartmentNumber },
+              street: { val: copiedAddress.street },
+              cityProvinceCode: copiedAddress.cityProvinceCode,
+              districtCode: copiedAddress.districtCode,
+              wardCode: copiedAddress.wardCode,
               location: [
-                addressRes.location.coordinates[0],
-                addressRes.location.coordinates[1],
+                copiedAddress.location.coordinates[0],
+                copiedAddress.location.coordinates[1],
               ],
-              isDefault: addressRes.isDefault,
+              isDefault: copiedAddress.isDefault,
             });
           } catch (error) {
             setApiErr(formatError(error));
@@ -120,17 +121,10 @@ const UpdateAddressModal = memo(
       }
 
       setTimeout(() => {
-        setAddress(undefined);
+        setAddress(null);
         setApiErr(null);
         setFormData({
-          name: { val: "" },
-          phoneNumber: { val: "" },
-          apartmentNumber: { val: "" },
-          street: { val: "" },
-          cityProvinceCode: "",
-          districtCode: "",
-          wardCode: "",
-          location: [106.6297, 10.8231],
+          ...DEFAULT_USER_ADDRESS_FORM_DATA,
           isDefault: isOnlyOneAddress,
         });
       }, 200); // Delay to allow modal to close before resetting
@@ -138,12 +132,9 @@ const UpdateAddressModal = memo(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [addressId, isOnlyOneAddress]);
 
-    const { isLoaded: isMapLoaded } = useJsApiLoader({
-      id: "google-map-script",
-      googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    });
+    const { isLoaded: isMapLoaded } = useCustomJsApiLoader();
 
-    const mapRef = useRef<google.maps.Map | undefined>(undefined);
+    const mapRef = useRef<google.maps.Map | null>(null);
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
       mapRef.current = map;
@@ -154,10 +145,10 @@ const UpdateAddressModal = memo(
         if (!isMapLoaded || !mapRef.current) return;
 
         const provinceName = getCityProvince(
-          addressData.cityProvinceCode
+          addressData.cityProvinceCode,
         )?.name_with_type;
         const districtName = getDistrict(
-          addressData.districtCode
+          addressData.districtCode,
         )?.name_with_type;
         const wardName = getWard(addressData.wardCode)?.name_with_type;
 
@@ -173,27 +164,21 @@ const UpdateAddressModal = memo(
 
         if (!addressString) return;
 
-        const geocoder = new google.maps.Geocoder();
-        geocoder.geocode({ address: addressString }, (results, status) => {
-          if (status === "OK" && results?.[0]) {
-            const location = results[0].geometry.location;
-            const lng = location.lng();
-            const lat = location.lat();
-
+        getGeocodeAddress(
+          addressString,
+          (lat, lng) => {
             setFormData((prev) => ({
               ...prev,
-              location: [lng, lat],
+              location: [lat, lng],
             }));
-            mapRef.current?.panTo({ lng, lat });
-          } else {
-            console.error(
-              "Geocode was not successful for the following reason:",
-              status
-            );
-          }
-        });
+            mapRef.current?.panTo({ lat, lng });
+          },
+          (error) => {
+            console.error(error);
+          },
+        );
       },
-      [isMapLoaded]
+      [isMapLoaded],
     );
 
     const debouncedGeocode = useMemo(() => {
@@ -202,6 +187,7 @@ const UpdateAddressModal = memo(
 
     useEffect(() => {
       if (formData.street.val) debouncedGeocode(formData);
+
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       formData.street.val,
@@ -217,7 +203,7 @@ const UpdateAddressModal = memo(
         const lat = e.latLng.lat();
         setFormData((prev) => ({
           ...prev,
-          location: [lng, lat],
+          location: [lat, lng],
         }));
       }
     }, []);
@@ -237,14 +223,17 @@ const UpdateAddressModal = memo(
             return;
           }
 
-          let err = "";
+          let err = undefined;
           if (!val) {
             err = `${capFirstLetter(name)} is required`;
           } else if (name === "name" && !isValidGeneralName(val)) {
             err = "Full name is invalid";
           } else if (name === "phoneNumber" && !isValidVnPhoneNumber(val)) {
             err = "Phone number is invalid";
-          } else if (name === "apartmentNumber" && !isValidGeneralAddress(val)) {
+          } else if (
+            name === "apartmentNumber" &&
+            !isValidGeneralAddress(val)
+          ) {
             err = "Apartment/Building number is invalid";
           } else if (name === "street" && !isValidGeneralAddress(val)) {
             err = "Street address is invalid";
@@ -292,7 +281,7 @@ const UpdateAddressModal = memo(
           }
         }
       },
-      [process.isProcessing]
+      [process.isProcessing],
     );
 
     const handleSubmit = useCallback(
@@ -368,8 +357,8 @@ const UpdateAddressModal = memo(
               formData.location[1] !== address.location.coordinates[1]
             ) {
               changedData.location = {
-                longitude: formData.location[0],
-                latitude: formData.location[1],
+                latitude: formData.location[0],
+                longitude: formData.location[1],
               };
             }
             return changedData;
@@ -410,7 +399,7 @@ const UpdateAddressModal = memo(
         updateAddress,
         onSuccess,
         onHide,
-      ]
+      ],
     );
 
     return (
@@ -420,7 +409,7 @@ const UpdateAddressModal = memo(
         </Modal.Header>
 
         {process.isFetching ? (
-          <Loading loadingMsg="Loading address details..." />
+          <Loading loadingMsg="Loading address details..." className="p-4" />
         ) : apiErr ? (
           <div className="p-4">
             <ApiError errorMessage={apiErr} />
@@ -448,13 +437,7 @@ const UpdateAddressModal = memo(
                     />
                     <label htmlFor="name">Full name</label>
                     {formData.name.err && (
-                      <div className="text-danger small mt-1">
-                        <FontAwesomeIcon
-                          icon={faTriangleExclamation}
-                          className="me-2"
-                        />
-                        {formData.name.err}
-                      </div>
+                      <InvalidMsg msg={formData.name.err} />
                     )}
                   </div>
                 </div>
@@ -475,13 +458,7 @@ const UpdateAddressModal = memo(
                     />
                     <label htmlFor="phoneNumber">Phone number</label>
                     {formData.phoneNumber.err && (
-                      <div className="text-danger small mt-1">
-                        <FontAwesomeIcon
-                          icon={faTriangleExclamation}
-                          className="me-2"
-                        />
-                        {formData.phoneNumber.err}
-                      </div>
+                      <InvalidMsg msg={formData.phoneNumber.err} />
                     )}
                   </div>
                 </div>
@@ -517,7 +494,7 @@ const UpdateAddressModal = memo(
                       value={formData.districtCode}
                     >
                       {getDistrictsByProvinceCode(
-                        formData.cityProvinceCode
+                        formData.cityProvinceCode,
                       ).data.map((district) => (
                         <option key={district.code} value={district.code}>
                           {district.name_with_type}
@@ -543,7 +520,7 @@ const UpdateAddressModal = memo(
                           <option key={ward.code} value={ward.code}>
                             {ward.name_with_type}
                           </option>
-                        )
+                        ),
                       )}
                     </select>
                     <label htmlFor="wardCode">Ward</label>
@@ -564,13 +541,7 @@ const UpdateAddressModal = memo(
                     />
                     <label htmlFor="street">Street</label>
                     {formData.street.err && (
-                      <div className="text-danger small mt-1">
-                        <FontAwesomeIcon
-                          icon={faTriangleExclamation}
-                          className="me-2"
-                        />
-                        {formData.street.err}
-                      </div>
+                      <InvalidMsg msg={formData.street.err} />
                     )}
                   </div>
                 </div>
@@ -649,7 +620,7 @@ const UpdateAddressModal = memo(
         )}
       </Modal>
     );
-  }
+  },
 );
 
 export default UpdateAddressModal;

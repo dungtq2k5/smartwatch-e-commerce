@@ -3,6 +3,7 @@ import { provinces } from "../../../../../common/vnAddresses";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AddressFormData } from "../../../utils/types";
 import {
+  capFirstLetter,
   formatError,
   getCityProvince,
   getDistrict,
@@ -13,23 +14,20 @@ import {
   isValidVnPhoneNumber,
   isValidGeneralAddress,
 } from "../../../../../common/utils.common";
-import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import useUserAddressStore from "../../../store/user/addressStore";
 import type { UserAddressCreate } from "../../../../../common/types.common";
 import toast from "react-hot-toast";
-import { useJsApiLoader } from "@react-google-maps/api";
 import debounce from "lodash.debounce";
-import AddressMapInput from "../../user/AddressMapInput";
+import AddressMapInput from "../../common/AddressMapInput";
 import { VN_COUNTRY_CODE } from "../../../../../common/configs.common";
-import { WAITING_EMOJI } from "../../../configs";
+import {
+  DEFAULT_USER_ADDRESS_FORM_DATA,
+  WAITING_EMOJI,
+} from "../../../configs";
 import Btn from "../../common/Btn";
-
-const defaultCityProvinceCode = provinces.data[0].code;
-const defaultDistrictCode = getDistrictsByProvinceCode(defaultCityProvinceCode)
-  .data[0].code;
-const defaultWardCode =
-  getWardsByDistrictCode(defaultDistrictCode).data[0].code;
+import useCustomJsApiLoader from "../../../hooks/admin/useCustomJsApiLoader";
+import { getGeocodeAddress } from "../../../utils/utils";
+import InvalidMsg from "../../common/InvalidInputMsg";
 
 const CreateAddressModal = memo(
   ({
@@ -52,20 +50,10 @@ const CreateAddressModal = memo(
 
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    const { isLoaded: isMapLoaded } = useJsApiLoader({
-      id: "google-map-script",
-      googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    });
+    const { isLoaded: isMapLoaded } = useCustomJsApiLoader();
 
     const [formData, setFormData] = useState<AddressFormData>({
-      name: { val: "" },
-      phoneNumber: { val: "" },
-      apartmentNumber: { val: "" },
-      street: { val: "" },
-      cityProvinceCode: defaultCityProvinceCode,
-      districtCode: defaultDistrictCode,
-      wardCode: defaultWardCode,
-      location: [106.7001, 10.7756], // Default to a central location in HCM City
+      ...DEFAULT_USER_ADDRESS_FORM_DATA,
       isDefault: isFirstAddress,
     });
 
@@ -73,14 +61,7 @@ const CreateAddressModal = memo(
 
     const handleClose = useCallback((): void => {
       setFormData({
-        name: { val: "" },
-        phoneNumber: { val: "" },
-        apartmentNumber: { val: "" },
-        street: { val: "" },
-        cityProvinceCode: defaultCityProvinceCode,
-        districtCode: defaultDistrictCode,
-        wardCode: defaultWardCode,
-        location: [106.7001, 10.7756],
+        ...DEFAULT_USER_ADDRESS_FORM_DATA,
         isDefault: isFirstAddress,
       });
       onHide();
@@ -91,14 +72,14 @@ const CreateAddressModal = memo(
     }, []);
 
     const geocodeAddress = useCallback(
-      (addressData: AddressFormData) => {
+      (addressData: AddressFormData): void => {
         if (!isMapLoaded || !mapRef.current) return;
 
         const provinceName = getCityProvince(
-          addressData.cityProvinceCode
+          addressData.cityProvinceCode,
         )?.name_with_type;
         const districtName = getDistrict(
-          addressData.districtCode
+          addressData.districtCode,
         )?.name_with_type;
         const wardName = getWard(addressData.wardCode)?.name_with_type;
 
@@ -114,27 +95,21 @@ const CreateAddressModal = memo(
 
         if (!addressString) return;
 
-        const geocoder = new google.maps.Geocoder();
-        geocoder.geocode({ address: addressString }, (results, status) => {
-          if (status === "OK" && results?.[0]) {
-            const location = results[0].geometry.location;
-            const lng = location.lng();
-            const lat = location.lat();
-
+        getGeocodeAddress(
+          addressString,
+          (lat, lng) => {
             setFormData((prev) => ({
               ...prev,
-              location: [lng, lat],
+              location: [lat, lng],
             }));
-            mapRef.current?.panTo({ lng, lat });
-          } else {
-            console.error(
-              "Geocode was not successful for the following reason:",
-              status
-            );
-          }
-        });
+            mapRef.current?.panTo({ lat, lng });
+          },
+          (error) => {
+            console.error(error);
+          },
+        );
       },
-      [isMapLoaded]
+      [isMapLoaded],
     );
 
     const debouncedGeocode = useMemo(() => {
@@ -143,7 +118,8 @@ const CreateAddressModal = memo(
 
     useEffect(() => {
       if (formData.street.val) debouncedGeocode(formData);
-      // Remove formData is don't want infinite loop
+
+      // Remove formData if don't want infinite loop
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       formData.street.val,
@@ -155,17 +131,18 @@ const CreateAddressModal = memo(
 
     const handleMapMarkerDrag = useCallback((e: google.maps.MapMouseEvent) => {
       if (e.latLng) {
-        const lng = e.latLng.lng();
         const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
         setFormData((prev) => ({
           ...prev,
-          location: [lng, lat],
+          location: [lat, lng],
         }));
       }
     }, []);
 
     const handleChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+        if (isSubmitting) return;
         const { name, value: val } = e.target;
 
         if (e.target.tagName === "INPUT") {
@@ -177,14 +154,17 @@ const CreateAddressModal = memo(
             return;
           }
 
-          let err = "";
+          let err = undefined;
           if (!val) {
             err = `${capFirstLetter(name)} is required`;
           } else if (name === "name" && !isValidGeneralName(val)) {
             err = "Full name is invalid";
           } else if (name === "phoneNumber" && !isValidVnPhoneNumber(val)) {
             err = "Phone number is invalid";
-          } else if (name === "apartmentNumber" && !isValidGeneralAddress(val)) {
+          } else if (
+            name === "apartmentNumber" &&
+            !isValidGeneralAddress(val)
+          ) {
             err = "Apartment/Building number is invalid";
           } else if (name === "street" && !isValidGeneralAddress(val)) {
             err = "Street address is invalid";
@@ -232,7 +212,7 @@ const CreateAddressModal = memo(
           }
         }
       },
-      []
+      [],
     );
 
     const handleSubmit = useCallback(
@@ -295,8 +275,8 @@ const CreateAddressModal = memo(
             wardCode: formData.wardCode,
             countryCode: VN_COUNTRY_CODE,
             location: {
-              longitude: formData.location[0],
-              latitude: formData.location[1],
+              latitude: formData.location[0],
+              longitude: formData.location[1],
             },
             isDefault: formData.isDefault,
           };
@@ -314,7 +294,7 @@ const CreateAddressModal = memo(
           }
         }
       },
-      [createAddress, formData, handleClose, isSubmitting, onSuccess]
+      [createAddress, formData, handleClose, isSubmitting, onSuccess],
     );
 
     return (
@@ -340,15 +320,7 @@ const CreateAddressModal = memo(
                     autoComplete="name"
                   />
                   <label htmlFor="name">Full name</label>
-                  {formData.name.err && (
-                    <div className="text-danger small mt-1">
-                      <FontAwesomeIcon
-                        icon={faTriangleExclamation}
-                        className="me-2"
-                      />
-                      {formData.name.err}
-                    </div>
-                  )}
+                  {formData.name.err && <InvalidMsg msg={formData.name.err} />}
                 </div>
               </div>
 
@@ -368,13 +340,7 @@ const CreateAddressModal = memo(
                   />
                   <label htmlFor="phoneNumber">Phone number</label>
                   {formData.phoneNumber.err && (
-                    <div className="text-danger small mt-1">
-                      <FontAwesomeIcon
-                        icon={faTriangleExclamation}
-                        className="me-2"
-                      />
-                      {formData.phoneNumber.err}
-                    </div>
+                    <InvalidMsg msg={formData.phoneNumber.err} />
                   )}
                 </div>
               </div>
@@ -410,7 +376,7 @@ const CreateAddressModal = memo(
                     value={formData.districtCode}
                   >
                     {getDistrictsByProvinceCode(
-                      formData.cityProvinceCode
+                      formData.cityProvinceCode,
                     ).data.map((district) => (
                       <option key={district.code} value={district.code}>
                         {district.name_with_type}
@@ -436,7 +402,7 @@ const CreateAddressModal = memo(
                         <option key={ward.code} value={ward.code}>
                           {ward.name_with_type}
                         </option>
-                      )
+                      ),
                     )}
                   </select>
                   <label htmlFor="wardCode">Ward</label>
@@ -457,13 +423,7 @@ const CreateAddressModal = memo(
                   />
                   <label htmlFor="street">Street</label>
                   {formData.street.err && (
-                    <div className="text-danger small mt-1">
-                      <FontAwesomeIcon
-                        icon={faTriangleExclamation}
-                        className="me-2"
-                      />
-                      {formData.street.err}
-                    </div>
+                    <InvalidMsg msg={formData.street.err} />
                   )}
                 </div>
               </div>
@@ -482,13 +442,7 @@ const CreateAddressModal = memo(
                   />
                   <label htmlFor="apartmentNumber">Apartment/Building</label>
                   {formData.apartmentNumber.err && (
-                    <div className="text-danger small mt-1">
-                      <FontAwesomeIcon
-                        icon={faTriangleExclamation}
-                        className="me-2"
-                      />
-                      {formData.apartmentNumber.err}
-                    </div>
+                    <InvalidMsg msg={formData.apartmentNumber.err} />
                   )}
                 </div>
               </div>
@@ -534,12 +488,14 @@ const CreateAddressModal = memo(
               className="btn btn-primary"
               disabled={isSubmitting}
               loading={isSubmitting}
-            >Create address</Btn>
+            >
+              Create address
+            </Btn>
           </Modal.Footer>
         </form>
       </Modal>
     );
-  }
+  },
 );
 
 export default CreateAddressModal;

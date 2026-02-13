@@ -58,7 +58,7 @@ export default function CreateProvider() {
     useState<boolean>(false);
 
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
       if (process.isProcessing) return;
 
       const { name, value: val } = e.target;
@@ -81,7 +81,7 @@ export default function CreateProvider() {
   );
 
   const handlePhoneChange = useCallback(
-    (val?: E164Number) => {
+    (val?: E164Number): void => {
       if (process.isProcessing) return;
 
       setFormData((prev) => ({
@@ -232,9 +232,9 @@ export default function CreateProvider() {
                   value={formData.fullName.val}
                   onChange={handleChange}
                   disabled={process.isProcessing}
-                  required
                   error={formData.fullName.err}
                   autoComplete="off"
+                  required
                 />
               </div>
 
@@ -252,9 +252,9 @@ export default function CreateProvider() {
                   value={formData.email.val}
                   onChange={handleChange}
                   disabled={process.isProcessing}
-                  required
                   error={formData.email.err}
                   autoComplete="email"
+                  required
                 />
               </div>
 

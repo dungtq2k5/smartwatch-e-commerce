@@ -120,7 +120,7 @@ export default function EditProvider() {
   }, [id, refreshSignal]);
 
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
       if (process.isProcessing) return;
 
       const { name, value: val } = e.target;
@@ -143,7 +143,7 @@ export default function EditProvider() {
   );
 
   const handlePhoneChange = useCallback(
-    (val?: E164Number) => {
+    (val?: E164Number): void => {
       if (process.isProcessing) return;
 
       setFormData((prev) => ({
