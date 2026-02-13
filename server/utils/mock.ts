@@ -1532,7 +1532,6 @@ function genArrayWithRandEles(eles: any[], count: number): any[] {
 
 function getRandGlobalAddress(): Pick<
   ProviderAddressCreate,
-  | "countryCode"
   | "addressLine1"
   | "locality"
   | "adminAreaL1"
@@ -1551,7 +1550,6 @@ function getRandGlobalAddress(): Pick<
   });
 
   return {
-    countryCode: randomLocaleKeys.split("_")[1],
     addressLine1: customFaker.location.streetAddress(),
     adminAreaL1: customFaker.location.state() || customFaker.location.city(),
     postalCode: customFaker.location.zipCode(),
