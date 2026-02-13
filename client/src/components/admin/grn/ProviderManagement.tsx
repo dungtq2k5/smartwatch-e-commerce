@@ -100,7 +100,7 @@ export default function ProviderManagement() {
   // DEV temp for testing
   const renderCount = useRef(0);
   renderCount.current += 1;
-  console.log(`UserManagement render count: ${renderCount.current}`);
+  console.log(`ProviderManagement render count: ${renderCount.current}`);
 
   const { fetchProviders, deleteProvider, deleteProviderBulk } =
     useProviderStore();
@@ -813,7 +813,7 @@ export default function ProviderManagement() {
     <>
       {/* Heading */}
       <div className="d-flex justify-content-between align-items-center mb-2">
-        <h1 className="h2">User management</h1>
+        <h1 className="h2">Provider management</h1>
         <div className="d-flex gap-3">
           <LinkBtn
             to="create"
@@ -853,7 +853,7 @@ export default function ProviderManagement() {
         {/* Filters */}
         <div className="card-header bg-white p-3">
           <form onSubmit={handleSearchSubmit}>
-            <div className="row g-2">
+            <div className="row g-2 justify-content-between">
               <div className="col-lg-3 col-md-6">
                 <div className="input-group">
                   <label htmlFor="searchTerm" hidden aria-hidden>
