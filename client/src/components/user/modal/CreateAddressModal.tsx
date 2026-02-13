@@ -9,9 +9,9 @@ import {
   getDistrictsByProvinceCode,
   getWard,
   getWardsByDistrictCode,
-  isValidUserFullName,
+  isValidGeneralName,
   isValidVnPhoneNumber,
-  removeOddSpaces,
+  isValidGeneralAddress,
 } from "../../../../../common/utils.common";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -179,14 +179,14 @@ const CreateAddressModal = memo(
 
           let err = "";
           if (!val) {
-            err = `${name} is required`;
-          } else if (name === "name" && !isValidUserFullName(val)) {
+            err = `${capFirstLetter(name)} is required`;
+          } else if (name === "name" && !isValidGeneralName(val)) {
             err = "Full name is invalid";
           } else if (name === "phoneNumber" && !isValidVnPhoneNumber(val)) {
             err = "Phone number is invalid";
-          } else if (name === "apartmentNumber" && !removeOddSpaces(val)) {
+          } else if (name === "apartmentNumber" && !isValidGeneralAddress(val)) {
             err = "Apartment/Building number is invalid";
-          } else if (name === "street" && !removeOddSpaces(val)) {
+          } else if (name === "street" && !isValidGeneralAddress(val)) {
             err = "Street address is invalid";
           }
 
@@ -252,7 +252,7 @@ const CreateAddressModal = memo(
           if (!newFormData.name.val) {
             newFormData.name.err = "Full name is required";
             allValid = false;
-          } else if (!isValidUserFullName(newFormData.name.val)) {
+          } else if (!isValidGeneralName(newFormData.name.val)) {
             newFormData.name.err = "Full name is invalid";
             allValid = false;
           }
@@ -267,7 +267,7 @@ const CreateAddressModal = memo(
             newFormData.apartmentNumber.err =
               "Apartment/Building number is required";
             allValid = false;
-          } else if (!removeOddSpaces(newFormData.apartmentNumber.val)) {
+          } else if (!isValidGeneralAddress(newFormData.apartmentNumber.val)) {
             newFormData.apartmentNumber.err =
               "Apartment/Building number is invalid";
             allValid = false;
@@ -275,7 +275,7 @@ const CreateAddressModal = memo(
           if (!newFormData.street.val) {
             newFormData.street.err = "Street address is required";
             allValid = false;
-          } else if (!removeOddSpaces(newFormData.street.val)) {
+          } else if (!isValidGeneralAddress(newFormData.street.val)) {
             newFormData.street.err = "Street address is invalid";
             allValid = false;
           }

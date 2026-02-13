@@ -7,6 +7,9 @@ export const PASSWORD_HINT_MESSAGE = `Password must be between ${PASSWORD_MIN_LE
 export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 20;
 
+export const GENERAL_NAME_MIN_LENGTH = 3;
+export const GENERAL_NAME_MAX_LENGTH = 100;
+
 export const VERIFICATION_TOKEN_LENGTH = 6;
 export const VERIFICATION_TOKEN_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -460,3 +463,6 @@ export const PROVIDER_SEARCH_SORT_OPTIONS = [
   "updatedAt_desc",
   "updatedAt_asc",
 ] as const;
+
+export const ADDRESS_MIN_LENGTH = 3;
+export const ADDRESS_MAX_LENGTH = 60;

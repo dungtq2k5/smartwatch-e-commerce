@@ -1,6 +1,10 @@
 import {
+  ADDRESS_MAX_LENGTH,
+  ADDRESS_MIN_LENGTH,
   BUYER_RETURN_REASON_MAX_LENGTH,
   BUYER_RETURN_REASON_MIN_LENGTH,
+  GENERAL_NAME_MAX_LENGTH,
+  GENERAL_NAME_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PRODUCT_NAME_MAX_LENGTH,
@@ -500,6 +504,19 @@ export function isValidUserFullName(fullName: any): boolean {
   return fullNameRegex.test(fullName);
 }
 
+export function isValidGeneralName(name: any): boolean {
+  if (typeof name !== "string") return false;
+
+  const formattedName = removeOddSpaces(name);
+  if (
+    formattedName.length < GENERAL_NAME_MIN_LENGTH ||
+    formattedName.length > GENERAL_NAME_MAX_LENGTH
+  )
+    return false;
+
+  return !containsEmoji(formattedName);
+}
+
 export function isValidEmail(email: any): boolean {
   if (typeof email !== "string") return false; // Handle non-string input
 
@@ -657,6 +674,29 @@ export function isValidBooleanString(
 ): boolString is "true" | "false" {
   if (typeof boolString !== "string") return false;
   return ["true", "false"].includes(boolString);
+}
+
+export function isValidGeneralAddress(address: any): boolean {
+  if (typeof address !== "string") return false;
+
+  const formattedAddress = removeOddSpaces(address);
+
+  if (
+    formattedAddress.length < ADDRESS_MIN_LENGTH ||
+    formattedAddress.length > ADDRESS_MAX_LENGTH
+  )
+    return false;
+
+  // Emoji & Special Character Check
+  // This regex allows standard letters, numbers, and common address punctuation (/, -, .)
+  const addressRegex = /^[a-zA-Z0-9\s,.\/\-\u00C0-\u1EF9]+$/;
+  if (!addressRegex.test(formattedAddress)) return false;
+
+  // Prevent "asdfasdf" or "11111"
+  const repeatingCharRegex = /(.)\1{4,}/;
+  if (repeatingCharRegex.test(formattedAddress)) return false;
+
+  return true;
 }
 
 /**
