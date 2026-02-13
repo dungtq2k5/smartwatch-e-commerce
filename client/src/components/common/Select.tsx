@@ -17,7 +17,7 @@ const Select = memo(
               : ""
           }`}
         />
-        {neverShowErrorMessage && error && <InvalidInputMsg msg={error} />}
+        {!neverShowErrorMessage && error && <InvalidInputMsg msg={error} />}
       </>
     );
   },
