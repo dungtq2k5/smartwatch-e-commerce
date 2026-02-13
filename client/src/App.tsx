@@ -121,7 +121,6 @@ export default function App() {
               - return management
               - withdraw request management
               - role management
-              - provider management
             */}
             <Route element={<AdminNotAuthRoute />}>
               <Route path="login" element={<AdminLogin />} />

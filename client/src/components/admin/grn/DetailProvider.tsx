@@ -19,6 +19,7 @@ import EditProviderAddressModal from "../modal/EditProviderAddressModal";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import useProviderAddressStore from "../../../store/admin/grn/providerAddressStore";
 import toast from "react-hot-toast";
+import useProviderWizardStore from "../../../store/admin/wizard/providerWizardStore";
 
 type Modal = {
   createAddress: boolean;
@@ -35,6 +36,7 @@ export default function DetailProvider() {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const wizard = useProviderWizardStore();
   const { fetchProviderDetails } = useProviderStore();
   const { deleteProviderAddress } = useProviderAddressStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
@@ -65,6 +67,15 @@ export default function DetailProvider() {
         if (!id) throw new Error("OS ID is missing");
 
         setProviderDetails(await fetchProviderDetails(id));
+
+        if (
+          wizard.isActive &&
+          wizard.context.providerId === id &&
+          wizard.currStep === "address"
+        ) {
+          setModal((prev) => ({ ...prev, createAddress: true }));
+          wizard.reset();
+        }
       } catch (error) {
         setApiErr(formatError(error));
       } finally {

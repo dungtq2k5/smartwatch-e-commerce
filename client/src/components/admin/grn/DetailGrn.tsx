@@ -71,7 +71,7 @@ export default function DetailGrn() {
   return (
     <>
       {isInitializing ? (
-        <p>Loading...</p> // TODO skeleton loading
+        <p>Loading...</p> // TODO Loading skeleton
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !grnStates ? (

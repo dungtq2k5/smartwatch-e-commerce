@@ -199,7 +199,8 @@ export default function CreateProvider() {
     if (!wizard.isActive) wizard.startFlow("provider");
     wizard.nextStep("address");
 
-    navigate(`/admin/providers/${providerId}/addresses/create`, {
+    // Go to provider details page and auto open create address modal based on wizard state
+    navigate(`/admin/providers/${providerId}`, {
       replace: true,
     });
   }, [navigate, process.isProcessing, wizard]);
