@@ -1,20 +1,30 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import useProviderStore from "../../../store/admin/grn/providerStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
-import type { ProviderDetailsResponse } from "../../../../../common/types.common";
-import {
-  formatError,
-  getGoogleMapsUrl,
-} from "../../../../../common/utils.common";
+import type {
+  ProviderAddressResponse,
+  ProviderDetailsResponse,
+} from "../../../../../common/types.common";
+import { formatError } from "../../../../../common/utils.common";
 import ApiError from "../../common/ApiError";
 import Title from "../Title";
 import DetailUserLink from "../DetailUserLink";
 import LinkBtn from "../../common/LinkBtn";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMapLocation } from "@fortawesome/free-solid-svg-icons";
-import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
+import { DISABLED_TITLE_FOR_VIEWING, WAITING_EMOJI } from "../../../configs";
+import ProviderAddressCard from "./ProviderAddressCard";
+import CreateProviderAddressModal from "../modal/CreateProviderAddressModal";
+import EditProviderAddressModal from "../modal/EditProviderAddressModal";
+import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
+import useProviderAddressStore from "../../../store/admin/grn/providerAddressStore";
+import toast from "react-hot-toast";
+
+type Modal = {
+  createAddress: boolean;
+  addressIdToEdit?: string;
+  addressIdToDelete?: string;
+};
 
 export default function DetailProvider() {
   // DEV temp for testing
@@ -26,6 +36,7 @@ export default function DetailProvider() {
   const navigate = useNavigate();
 
   const { fetchProviderDetails } = useProviderStore();
+  const { deleteProviderAddress } = useProviderAddressStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
   const [canEditProvider, canReadUser] = [
@@ -37,6 +48,12 @@ export default function DetailProvider() {
     useState<ProviderDetailsResponse | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [apiErr, setApiErr] = useState<string | null>(null);
+
+  const [modal, setModal] = useState<Modal>({
+    createAddress: false,
+    addressIdToEdit: undefined,
+    addressIdToDelete: undefined,
+  });
 
   // Fetch and set initial data: providerDetails
   useEffect(() => {
@@ -58,6 +75,98 @@ export default function DetailProvider() {
     handleFetchSetInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, refreshSignal]);
+
+  const handleSubmitDeleteAddress = useCallback(async (): Promise<void> => {
+    if (isInitializing) {
+      toast("Another action is in progress. Please wait.", {
+        icon: WAITING_EMOJI,
+      });
+      return;
+    }
+    if (!id) {
+      toast.error("Provider ID is missing.");
+      return;
+    }
+    if (!modal.addressIdToDelete) {
+      toast.error("No address selected for deletion.");
+      return;
+    }
+
+    try {
+      await deleteProviderAddress(id, modal.addressIdToDelete);
+
+      // Remove deleted address from local state
+      setProviderDetails((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          addresses: {
+            total: prev.addresses.total - 1,
+            addresses: prev.addresses.addresses.filter(
+              (addr) => addr.id !== modal.addressIdToDelete,
+            ),
+          },
+        };
+      });
+
+      toast.success("Address deleted successfully.");
+    } catch (error) {
+      toast.error(formatError(error));
+    }
+  }, [deleteProviderAddress, id, isInitializing, modal.addressIdToDelete]);
+
+  const onSuccessCreateAddress = useCallback(
+    (newAddress: ProviderAddressResponse) => {
+      setProviderDetails((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          addresses: {
+            total: prev.addresses.total + 1,
+            addresses: [...prev.addresses.addresses, newAddress],
+          },
+        };
+      });
+    },
+    [],
+  );
+
+  const onSuccessEditAddress = useCallback(
+    (updatedAddress: ProviderAddressResponse) => {
+      setProviderDetails((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          addresses: {
+            total: prev.addresses.total,
+            addresses: prev.addresses.addresses.map((addr) =>
+              addr.id === updatedAddress.id ? updatedAddress : addr,
+            ),
+          },
+        };
+      });
+    },
+    [],
+  );
+
+  const onEditAddress = useCallback((addressId: string) => {
+    setModal((prev) => ({
+      ...prev,
+      addressIdToEdit: addressId,
+    }));
+  }, []);
+
+  const onDeleteAddress = useCallback((addressId: string) => {
+    setModal((prev) => ({ ...prev, addressIdToDelete: addressId }));
+  }, []);
+
+  const closeModal = useCallback((): void => {
+    setModal({
+      createAddress: false,
+      addressIdToEdit: undefined,
+      addressIdToDelete: undefined,
+    });
+  }, []);
 
   return (
     <>
@@ -163,6 +272,19 @@ export default function DetailProvider() {
                   <h2 className="fs-5 card-title mb-0">
                     Provider Addresses ({providerDetails.addresses.total})
                   </h2>
+                  {canEditProvider && (
+                    <div>
+                      <button
+                        type="button"
+                        className="btn btn-link p-0"
+                        onClick={() =>
+                          setModal((prev) => ({ ...prev, createAddress: true }))
+                        }
+                      >
+                        + Create address
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div
                   className="card-body"
@@ -174,127 +296,16 @@ export default function DetailProvider() {
                     </p>
                   ) : (
                     <div className="row g-3">
-                      {providerDetails.addresses.addresses.map((address) => {
-                        const [longitude, latitude] = [
-                          address.location.coordinates[0],
-                          address.location.coordinates[1],
-                        ];
-
-                        return (
-                          <div key={address.id} className="col-12">
-                            <div className="card border">
-                              <div className="card-body">
-                                <div className="d-flex justify-content-between align-items-start mb-2">
-                                  <h3 className="fs-6 mb-0 fw-semibold">
-                                    {address.name}
-                                    {address.isDefault && (
-                                      <span className="badge bg-primary ms-2">
-                                        Default
-                                      </span>
-                                    )}
-                                  </h3>
-                                  <div className="d-flex gap-3">
-                                    <LinkBtn
-                                      to={getGoogleMapsUrl(longitude, latitude)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      title="View on Google Maps"
-                                    >
-                                      <FontAwesomeIcon
-                                        icon={faMapLocation}
-                                        className="me-1"
-                                      />
-                                      Map
-                                    </LinkBtn>
-                                    {canEditProvider && (
-                                      <LinkBtn
-                                        to={`./addresses/${address.id}/edit`}
-                                        title="Edit this Address"
-                                      >
-                                        Edit
-                                      </LinkBtn>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="mb-2">
-                                  <strong className="text-muted small d-block">
-                                    Address:
-                                  </strong>
-                                  <p className="mb-0">
-                                    {address.addressLine1}
-                                    {address.addressLine2 &&
-                                      `, ${address.addressLine2}`}
-                                  </p>
-                                  <p className="mb-0">
-                                    {address.locality}, {address.adminAreaL1}
-                                    {address.adminAreaL2 &&
-                                      `, ${address.adminAreaL2}`}
-                                  </p>
-                                  <p className="mb-0">{address.postalCode}</p>
-                                </div>
-
-                                <div className="mb-2">
-                                  <strong className="text-muted small d-block">
-                                    Phone Number:
-                                  </strong>
-                                  <p className="mb-0">{address.phoneNumber}</p>
-                                </div>
-
-                                {address.notes && (
-                                  <div className="mb-2">
-                                    <strong className="text-muted small d-block">
-                                      Notes:
-                                    </strong>
-                                    <p className="mb-0">{address.notes}</p>
-                                  </div>
-                                )}
-
-                                <div className="mb-2">
-                                  <strong className="text-muted small d-block">
-                                    Coordinates:
-                                  </strong>
-                                  <p className="mb-0">
-                                    Lat: {address.location.coordinates[1]}, Lon:{" "}
-                                    {address.location.coordinates[0]}
-                                  </p>
-                                </div>
-
-                                <hr className="my-2" />
-
-                                <div className="row g-2 small text-muted">
-                                  <div className="col-6">
-                                    <strong>Created:</strong>
-                                    <br />
-                                    {new Date(
-                                      address.createdAt,
-                                    ).toLocaleString()}
-                                  </div>
-                                  <div className="col-6">
-                                    <strong>Updated:</strong>
-                                    <br />
-                                    {new Date(
-                                      address.updatedAt,
-                                    ).toLocaleString()}
-                                  </div>
-                                  <div className="col-12">
-                                    <strong>Created By:</strong>
-                                    <br />
-                                    <DetailUserLink
-                                      userId={address.createdBy.id}
-                                      title="View user details"
-                                      disabled={!canReadUser}
-                                      disabledtitle={DISABLED_TITLE_FOR_VIEWING}
-                                    >
-                                      {address.createdBy.fullName}
-                                    </DetailUserLink>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {providerDetails.addresses.addresses.map((address) => (
+                        <ProviderAddressCard
+                          key={address.id}
+                          address={address}
+                          canEditProvider={canEditProvider}
+                          canReadUser={canReadUser}
+                          onEdit={onEditAddress}
+                          onDelete={onDeleteAddress}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
@@ -312,6 +323,36 @@ export default function DetailProvider() {
               Go Back
             </button>
           </div>
+
+          {/* Modals */}
+          <ConfirmSubmitModal
+            show={!!modal.addressIdToDelete}
+            onHide={closeModal}
+            onSubmit={handleSubmitDeleteAddress}
+            custom={{
+              action: "delete",
+              title: "Delete Address",
+              body: "Are you sure you want to delete this address? This action cannot be undone.",
+              cancelText: "Cancel",
+              submitText: "Delete",
+            }}
+          />
+
+          <CreateProviderAddressModal
+            providerId={providerDetails.id}
+            isFirstAddress={providerDetails.addresses.total === 0}
+            show={modal.createAddress}
+            onHide={closeModal}
+            onSuccess={onSuccessCreateAddress}
+          />
+
+          <EditProviderAddressModal
+            providerId={providerDetails.id}
+            addressId={modal.addressIdToEdit}
+            isOnlyOneAddress={providerDetails.addresses.total === 1}
+            onHide={closeModal}
+            onSuccess={onSuccessEditAddress}
+          />
         </>
       )}
     </>
