@@ -153,7 +153,7 @@ export async function getAll(
         total: providers.length,
         providers: providers.map(formatProviderResponseLite),
       },
-      } as SuccessResponse<ProviderListResponseLite>);
+    } as SuccessResponse<ProviderListResponseLite>);
     console.log("✅ ", "Providers fetched successfully.");
   } catch (error) {
     next(error);
@@ -349,7 +349,9 @@ export async function update(
       const existingProvider = await Provider.findOne({
         isDeleted: false,
         $or: orCondition,
-      }).lean();
+      })
+        .session(session)
+        .lean();
       if (existingProvider) {
         const existsField =
           existingProvider.fullName === updatedFullname

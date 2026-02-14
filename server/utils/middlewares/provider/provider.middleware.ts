@@ -38,19 +38,10 @@ function sanitizeProviderSearchInput(
   console.log("▶️ ", "Sanitizing provider search input...");
   // Since req.query can't be modified so we create a new query obj for the request
   const sanitizedQuery = { ...req.query };
-  const { searchTerm, fullName, email, phoneNumber } = sanitizedQuery;
+  const { searchTerm } = sanitizedQuery;
 
   if (typeof searchTerm === "string") {
     sanitizedQuery.searchTerm = removeOddSpaces(searchTerm);
-  }
-  if (typeof fullName === "string") {
-    sanitizedQuery.fullName = removeOddSpaces(fullName);
-  }
-  if (typeof email === "string") {
-    sanitizedQuery.email = removeAllSpaces(email).toLowerCase();
-  }
-  if (typeof phoneNumber === "string") {
-    sanitizedQuery.phoneNumber = removeOddSpaces(phoneNumber);
   }
 
   req["sanitizedQuery"] = sanitizedQuery;
@@ -138,15 +129,8 @@ export function verifyProviderInput(
         }
         case "search": {
           console.log("Validating provider search input...");
-          const {
-            limit,
-            offset,
-            searchTerm,
-            fullName,
-            email,
-            phoneNumber,
-            sortBy,
-          } = req["sanitizedQuery"] || req.query;
+          const { limit, offset, searchTerm, sortBy } =
+            req["sanitizedQuery"] || req.query;
 
           if (limit !== undefined) {
             if (!isValidNumString(limit)) {
@@ -167,18 +151,6 @@ export function verifyProviderInput(
             (typeof searchTerm !== "string" || !searchTerm)
           ) {
             errors.push("searchTerm must be a non-empty string.");
-          }
-          if (
-            fullName !== undefined &&
-            (typeof fullName !== "string" || !fullName)
-          ) {
-            errors.push("fullName must be a non-empty string.");
-          }
-          if (email !== undefined && !isValidEmail(email)) {
-            errors.push("email is not valid.");
-          }
-          if (phoneNumber !== undefined && !isValidPhoneNumber(phoneNumber)) {
-            errors.push("phoneNumber is not valid.");
           }
           if (
             sortBy !== undefined &&

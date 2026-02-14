@@ -1292,7 +1292,7 @@ export async function updateDeliveryState(
 export async function handleOrderDeletion(
   orderToDelete: IOrder,
   session: mongoose.ClientSession,
-  options: { deleteOrderItself: boolean } = { deleteOrderItself: true }
+  { deleteOrderItself = true } = {},
 ): Promise<void> {
   console.log("▶️ ", `Deleting order ${orderToDelete._id}...`);
 
