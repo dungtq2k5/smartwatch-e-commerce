@@ -46,7 +46,7 @@ import { DEFAULT_SEARCH_LIMIT, OPTIMIZE_PIPELINE } from "../../configs/configs";
 export async function createSelf(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Creating order...");
 
@@ -55,8 +55,8 @@ export async function createSelf(
     return next(
       new HttpError(
         500,
-        "User ID is missing, this should handled by middleware."
-      )
+        "User ID is missing, this should handled by middleware.",
+      ),
     );
   }
 
@@ -86,7 +86,7 @@ export async function createSelf(
       throw new HttpError(404, "Payment method not found.");
     }
     const paymentMethodLookupId = getPaymentMethodLookupId(
-      new Types.ObjectId(paymentMethodId)
+      new Types.ObjectId(paymentMethodId),
     );
 
     /*
@@ -138,7 +138,7 @@ export async function createSelf(
           stopSelling: false,
         },
         { $inc: { stockQuantity: -quantity } },
-        { session, new: false } // returns the document before update
+        { session, new: false }, // returns the document before update
       ).populate({
         path: "productModelId",
         select: "priceCents stopSelling isDeleted",
@@ -179,12 +179,12 @@ export async function createSelf(
     if (!user) {
       throw new HttpError(
         500,
-        "User information is missing, this should handled by middleware."
+        "User information is missing, this should handled by middleware.",
       );
     }
     const subtotalCents = orderItemsInsert.reduce(
       (sum, item) => sum + item.totalCents,
-      0
+      0,
     );
     let appliedBalanceCents = 0;
     let finalAmountCents = subtotalCents;
@@ -198,7 +198,7 @@ export async function createSelf(
       await User.findByIdAndUpdate(
         userId,
         { $inc: { userBalanceCents: -balanceToApply } },
-        { session }
+        { session },
       );
     }
 
@@ -254,7 +254,7 @@ export async function createSelf(
           id: getOrderStateId("2"), // confirmed
           notes,
           createdBy: sysUserId,
-        }
+        },
       );
       order.orderDate = new Date();
       await executeCartDeletion(userId, items, session);
@@ -298,7 +298,7 @@ export async function createSelf(
 export async function get(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Getting order by ID...");
 
@@ -307,8 +307,8 @@ export async function get(
     return next(
       new HttpError(
         500,
-        "User ID or role is missing, this should handled by middleware."
-      )
+        "User ID or role is missing, this should handled by middleware.",
+      ),
     );
   }
   const { orderId } = req.params;
@@ -327,7 +327,7 @@ export async function get(
     if (!order.userId.equals(userId) && isBuyerOnly) {
       throw new HttpError(
         403,
-        "You do not have permission to view this order."
+        "You do not have permission to view this order.",
       );
     }
 
@@ -345,7 +345,7 @@ export async function get(
 export async function getDetails(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Getting order details by ID...");
 
@@ -354,8 +354,8 @@ export async function getDetails(
     return next(
       new HttpError(
         500,
-        "User ID or role is missing, this should handled by middleware."
-      )
+        "User ID or role is missing, this should handled by middleware.",
+      ),
     );
   }
   const { orderId } = req.params;
@@ -382,7 +382,7 @@ export async function getDetails(
     if (!order.userId.equals(userId) && isBuyerOnly) {
       throw new HttpError(
         403,
-        "You do not have permission to view this order."
+        "You do not have permission to view this order.",
       );
     }
 
@@ -399,29 +399,41 @@ export async function getDetails(
 
 // Handle both buyer and admin search
 export function search(
-  type: "admin search" | "self search"
+  type: "admin search" | "self search",
 ): (req: Request, res: Response, next: NextFunction) => Promise<void> {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     console.log("▶️ ", "Searching orders...");
 
-    const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+    const [userId, isBuyerOnly] = [
+      req["auth"]?.userId,
+      req["auth"]?.isBuyerOnly,
+    ];
     if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
       return next(
         new HttpError(
           500,
-          "User ID or role is missing, this should handled by middleware."
-        )
+          "User ID or role is missing, this should handled by middleware.",
+        ),
       );
     }
     if (type === "admin search" && isBuyerOnly) {
       return next(
-        new HttpError(403, "You do not have permission to perform this action.")
+        new HttpError(
+          403,
+          "You do not have permission to perform this action.",
+        ),
       );
     }
 
     const reqQuery = req["sanitizedQuery"] as OrderSearchQuery;
 
-    const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
+    const limit = reqQuery.limit
+      ? Number.parseInt(reqQuery.limit, 10)
+      : DEFAULT_SEARCH_LIMIT;
     const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
     const baseMatch: any = {};
     const exprConditions: any[] = [];
@@ -459,7 +471,10 @@ export function search(
           return new Types.ObjectId(id);
         });
         exprConditions.push({
-          $in: [{ $arrayElemAt: ["$paymentStates.id", -1] }, paymentStateObjIds],
+          $in: [
+            { $arrayElemAt: ["$paymentStates.id", -1] },
+            paymentStateObjIds,
+          ],
         });
       }
 
@@ -591,7 +606,7 @@ export function search(
 export async function updateSelf(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Updating self order...");
 
@@ -600,8 +615,8 @@ export async function updateSelf(
     return next(
       new HttpError(
         500,
-        "User ID or role is missing, this should handled by middleware."
-      )
+        "User ID or role is missing, this should handled by middleware.",
+      ),
     );
   }
   const { orderId } = req.params;
@@ -623,7 +638,7 @@ export async function updateSelf(
     if (isBuyerOnly && order.userId.toString() !== userId) {
       throw new HttpError(
         403,
-        "You do not have permission to update this order."
+        "You do not have permission to update this order.",
       );
     }
 
@@ -656,7 +671,7 @@ export async function updateSelf(
       // completed
       throw new HttpError(
         400,
-        "Order cannot be updated after it has been completed or cancelled."
+        "Order cannot be updated after it has been completed or cancelled.",
       );
     }
 
@@ -670,7 +685,7 @@ export async function updateSelf(
         throw new HttpError(404, "Order state not found.");
       }
       const orderStateLookupId = getOrderStateLookupId(
-        new Types.ObjectId(stateId)
+        new Types.ObjectId(stateId),
       );
 
       // Can't update order state if non-COD paymentState isn't paid yet
@@ -683,7 +698,7 @@ export async function updateSelf(
       if (!isCOD && !isPaid) {
         throw new HttpError(
           400,
-          "Cannot update delivery state for non-COD orders that haven't been paid yet."
+          "Cannot update delivery state for non-COD orders that haven't been paid yet.",
         );
       }
 
@@ -693,13 +708,13 @@ export async function updateSelf(
         case "6": {
           const latestDeliveryStateId = getLatestStateId(order.deliveryStates);
           const latestDeliveryStateLevel = getDeliveryStateLevel(
-            latestDeliveryStateId
+            latestDeliveryStateId,
           );
           if (latestDeliveryStateLevel !== 6 || latestOrderStateLevel !== 5) {
             // delivered
             throw new HttpError(
               400,
-              "Order must be in 'delivered' state to update to 'completed'."
+              "Order must be in 'delivered' state to update to 'completed'.",
             );
           }
 
@@ -711,7 +726,7 @@ export async function updateSelf(
             // "placed"
             throw new HttpError(
               400,
-              "Order can only be cancelled before it is placed."
+              "Order can only be cancelled before it is placed.",
             );
           }
 
@@ -719,7 +734,7 @@ export async function updateSelf(
           if (!buyerCancelReasonId) {
             throw new HttpError(
               400,
-              "Cancel reason is required to cancel order."
+              "Cancel reason is required to cancel order.",
             );
           }
 
@@ -751,7 +766,7 @@ export async function updateSelf(
                   userBalanceCents: order.paymentSummary.appliedBalanceCents,
                 },
               },
-              { session }
+              { session },
             );
             order.paymentStates.push({
               id: getPaymentStateId("5"),
@@ -772,7 +787,7 @@ export async function updateSelf(
         default: {
           throw new HttpError(
             403,
-            "You do not have permission to update order state."
+            "You do not have permission to update order state.",
           );
         }
       }
@@ -807,7 +822,7 @@ export async function updateSelf(
       ) {
         throw new HttpError(
           400,
-          "Delivery address can only be updated before the order is shipped."
+          "Delivery address can only be updated before the order is shipped.",
         );
       }
 
@@ -837,7 +852,7 @@ export async function updateSelf(
 export async function fulfillItem(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Fulfilling order item...");
 
@@ -846,14 +861,14 @@ export async function fulfillItem(
     return next(
       new HttpError(
         500,
-        "User ID or role is missing, this should handled by middleware."
-      )
+        "User ID or role is missing, this should handled by middleware.",
+      ),
     );
   }
   // Check permission
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -889,7 +904,7 @@ export async function fulfillItem(
       // confirmed
       throw new HttpError(
         400,
-        "Order must be in 'confirmed' state to fulfill items."
+        "Order must be in 'confirmed' state to fulfill items.",
       );
     }
 
@@ -901,7 +916,7 @@ export async function fulfillItem(
     for (const { variationId, instanceIds } of items) {
       // Check item exists in order
       const orderItem = order.items.find((oi) =>
-        oi.variationId.equals(variationId)
+        oi.variationId.equals(variationId),
       );
       if (!orderItem) {
         throw new HttpError(404, "Order item not found.");
@@ -910,7 +925,7 @@ export async function fulfillItem(
       if (instanceIds.length !== orderItem.quantity) {
         throw new HttpError(
           400,
-          `The number of instances provided (${instanceIds.length}) does not match the order item quantity (${orderItem.quantity}).`
+          `The number of instances provided (${instanceIds.length}) does not match the order item quantity (${orderItem.quantity}).`,
         );
       }
 
@@ -924,7 +939,7 @@ export async function fulfillItem(
       if (validInstancesCount !== instanceIds.length) {
         throw new HttpError(
           404,
-          "One or more provided product instances are invalid, already sold, or do not match the variation."
+          "One or more provided product instances are invalid, already sold, or do not match the variation.",
         );
       }
 
@@ -948,7 +963,7 @@ export async function fulfillItem(
       await VariationInstance.updateMany(
         { _id: { $in: instanceIds } },
         { $set: { isActive: false, inactiveAt: new Date() } },
-        { session }
+        { session },
       );
 
       // Create inventory movements
@@ -1001,7 +1016,7 @@ export async function fulfillItem(
 export async function updateDeliveryState(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Updating order...");
 
@@ -1010,13 +1025,13 @@ export async function updateDeliveryState(
     return next(
       new HttpError(
         500,
-        "User ID or role is missing, this should handled by middleware."
-      )
+        "User ID or role is missing, this should handled by middleware.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -1086,7 +1101,7 @@ export async function updateDeliveryState(
       // completed or cancelled
       throw new HttpError(
         400,
-        "Order cannot be updated after it has been completed or cancelled."
+        "Order cannot be updated after it has been completed or cancelled.",
       );
     }
 
@@ -1104,7 +1119,7 @@ export async function updateDeliveryState(
         throw new HttpError(404, "Delivery state not found.");
       }
       const deliveryStateLevel = getDeliveryStateLevel(
-        new Types.ObjectId(deliveryStateId)
+        new Types.ObjectId(deliveryStateId),
       );
 
       // Can't update deliveryStateId if non-COD order isn't paid yet
@@ -1116,15 +1131,15 @@ export async function updateDeliveryState(
       if (!isCOD && !isPaid) {
         throw new HttpError(
           400,
-          "Cannot update delivery state for non-COD orders that haven't been paid yet."
+          "Cannot update delivery state for non-COD orders that haven't been paid yet.",
         );
       }
 
       const deliveryStateLookupId = getDeliveryStateLookupId(
-        new Types.ObjectId(deliveryStateId)
+        new Types.ObjectId(deliveryStateId),
       );
       const latestDeliveryStateLookupId = getDeliveryStateLookupId(
-        latestDeliveryStateId
+        latestDeliveryStateId,
       );
 
       // Handle special case: update from "delivery failed" to "delivery rescheduled"
@@ -1133,7 +1148,7 @@ export async function updateDeliveryState(
         if (latestDeliveryStateLookupId !== "7") {
           throw new HttpError(
             400,
-            "Latest delivery state must be 'delivery failed' to update to 'delivery rescheduled'."
+            "Latest delivery state must be 'delivery failed' to update to 'delivery rescheduled'.",
           );
         }
       } else {
@@ -1143,7 +1158,7 @@ export async function updateDeliveryState(
         ) {
           throw new HttpError(
             400,
-            "Delivery state can only be updated forward, not backward."
+            "Delivery state can only be updated forward, not backward.",
           );
         }
 
@@ -1192,7 +1207,7 @@ export async function updateDeliveryState(
               // out for delivery
               throw new HttpError(
                 400,
-                "Latest delivery state must be 'out for delivery' to update to 'delivery failed'."
+                "Latest delivery state must be 'out for delivery' to update to 'delivery failed'.",
               );
             }
             break;
@@ -1201,13 +1216,13 @@ export async function updateDeliveryState(
           case 9: {
             if (
               !order.deliveryStates.some(
-                (ds) => getDeliveryStateLookupId(ds.id) === "7"
+                (ds) => getDeliveryStateLookupId(ds.id) === "7",
               )
             ) {
               // delivery failed
               throw new HttpError(
                 400,
-                "Order can only be cancelled if it has at least one 'delivery failed' state."
+                "Order can only be cancelled if it has at least one 'delivery failed' state.",
               );
             }
 
@@ -1230,7 +1245,7 @@ export async function updateDeliveryState(
                     userBalanceCents: order.paymentSummary.appliedBalanceCents,
                   },
                 },
-                { session }
+                { session },
               );
               order.paymentStates.push({
                 id: getPaymentStateId("5"),
@@ -1264,7 +1279,7 @@ export async function updateDeliveryState(
       if (updatedEstimateReceivedDate <= order.createdAt) {
         throw new HttpError(
           400,
-          "Estimated received date must be greater than order created date."
+          "Estimated received date must be greater than order created date.",
         );
       }
       order.estimateReceivedDate = updatedEstimateReceivedDate;
@@ -1317,14 +1332,14 @@ export async function handleOrderDeletion(
     }));
 
     const allInstances = orderToDelete.items.flatMap((item) =>
-      item.instances.map((instance) => instance.id)
+      item.instances.map((instance) => instance.id),
     );
 
     // If the order was never fulfilled, it won't have instances.
     // We only need to restore stock and handle the order document.
     if (allInstances.length === 0) {
       await ModelVariation.bulkWrite(variationStockUpdates, { session });
-      if (options.deleteOrderItself) {
+      if (deleteOrderItself) {
         await Order.findByIdAndDelete(orderToDelete._id, { session });
       }
       return;
@@ -1352,25 +1367,25 @@ export async function handleOrderDeletion(
           movementTypeId: saleOutMovementTypeId,
           movementDate: { $gte: orderToDelete.createdAt },
         },
-        { session }
+        { session },
       ),
     ]);
 
     // Remove the order itself if specified
-    if (options.deleteOrderItself) {
+    if (deleteOrderItself) {
       await Order.findByIdAndDelete(orderToDelete._id, { session });
     } else {
       // Otherwise update every instanceId.status to "cancelled"
       await Order.updateOne(
         { _id: orderToDelete._id },
         { $set: { "items.$[].instances.$[].status": "cancelled" } },
-        { session }
+        { session },
       );
     }
 
     console.log(
       `✅ `,
-      `Order ${orderToDelete._id} and its related data have been successfully deleted.`
+      `Order ${orderToDelete._id} and its related data have been successfully deleted.`,
     );
   } catch (error) {
     console.error("❌ ", "Error deleting order:", error);
@@ -1381,7 +1396,7 @@ export async function handleOrderDeletion(
 export async function executeCartDeletion(
   userId: Types.ObjectId | string,
   orderItems: { variationId: Types.ObjectId | string; quantity: number }[],
-  session: mongoose.ClientSession
+  session: mongoose.ClientSession,
 ): Promise<void> {
   console.log("▶️ ", `Deleting cart for user ${userId}...`);
 
@@ -1392,28 +1407,24 @@ export async function executeCartDeletion(
     }).session(session);
 
     if (carts.length > 0) {
-      const bulkOps = orderItems
-        .map((orderItem) => {
-          const cartItem = carts.find((ci) =>
-            ci.variationId.equals(orderItem.variationId)
-          );
+      const bulkOps: any = [];
+      for (const orderItem of orderItems) {
+        const cartItem = carts.find((ci) =>
+          ci.variationId.equals(orderItem.variationId),
+        );
+        if (!cartItem) continue;
 
-          if (!cartItem) return [];
-
-          if (orderItem.quantity >= cartItem.quantity!) {
-            return [{ deleteOne: { filter: { _id: cartItem._id } } }];
-          }
-
-          return [
-            {
-              updateOne: {
-                filter: { _id: cartItem._id },
-                update: { $inc: { quantity: -orderItem.quantity } },
-              },
+        if (orderItem.quantity >= cartItem.quantity!) {
+          bulkOps.push({ deleteOne: { filter: { _id: cartItem._id } } });
+        } else {
+          bulkOps.push({
+            updateOne: {
+              filter: { _id: cartItem._id },
+              update: { $inc: { quantity: -orderItem.quantity } },
             },
-          ];
-        })
-        .flat();
+          });
+        }
+      }
 
       if (bulkOps.length > 0) {
         await Cart.bulkWrite(bulkOps, { session });
@@ -1422,7 +1433,7 @@ export async function executeCartDeletion(
 
     console.log(
       `✅ `,
-      `Cart for user ${userId} has been successfully deleted.`
+      `Cart for user ${userId} has been successfully deleted.`,
     );
   } catch (error) {
     console.error("❌ ", "Error deleting cart:", error);
@@ -1433,7 +1444,7 @@ export async function executeCartDeletion(
 // Handle refund, add paymentStates and update user.userBalanceCents if needed
 async function handleCancelRefund(
   order: IOrder,
-  session: mongoose.ClientSession
+  session: mongoose.ClientSession,
 ): Promise<void> {
   console.log("▶️ ", `Executing refund for order ${order._id}...`);
 
@@ -1453,12 +1464,12 @@ async function handleCancelRefund(
         await user.save({ session });
         console.log(
           `✅ `,
-          `Restored ${appliedBalanceCents} cents to user ${user._id} balance.`
+          `Restored ${appliedBalanceCents} cents to user ${user._id} balance.`,
         );
       }
       console.log(
         `✅ `,
-        `No monetary refund needed for order ${order._id}. Process completed.`
+        `No monetary refund needed for order ${order._id}. Process completed.`,
       );
       return;
     }
@@ -1469,13 +1480,13 @@ async function handleCancelRefund(
         await createRefund(order.transaction.paymentIntentId, amountToRefund);
         console.log(
           `✅ `,
-          `Successfully refunded ${amountToRefund} cents for order ${order._id} via Stripe.`
+          `Successfully refunded ${amountToRefund} cents for order ${order._id} via Stripe.`,
         );
       } catch (stripeError) {
         console.error(
           "❌ ",
           `Stripe refund failed for order ${order._id}. Refunding to user balance as a fallback.`,
-          stripeError
+          stripeError,
         );
 
         const sysUserId = getSysUserId();
@@ -1495,7 +1506,7 @@ async function handleCancelRefund(
     } else {
       // Fallback to user balance if no Stripe transaction or customer ID
       console.log(
-        `Refunding to user balance for order ${order._id} as no Stripe transaction or customer ID found.`
+        `Refunding to user balance for order ${order._id} as no Stripe transaction or customer ID found.`,
       );
       user.userBalanceCents += amountToRefund;
       order.paymentStates.push({
@@ -1511,7 +1522,7 @@ async function handleCancelRefund(
       user.userBalanceCents += appliedBalanceCents;
       console.log(
         `✅ `,
-        `Restored ${appliedBalanceCents} cents to user ${user._id} balance.`
+        `Restored ${appliedBalanceCents} cents to user ${user._id} balance.`,
       );
     }
 
@@ -1521,7 +1532,7 @@ async function handleCancelRefund(
     console.error(
       "❌ ",
       `Error executing refund for order ${order._id}:`,
-      error
+      error,
     );
     throw error;
   }
