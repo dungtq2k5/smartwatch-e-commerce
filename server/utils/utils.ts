@@ -760,9 +760,9 @@ export function formatProviderResponse(
   };
 }
 
-export function formatProviderResponseLite(
+export function formatProviderResponseLight(
   provider: any,
-): commonType.ProviderResponseLite {
+): commonType.ProviderResponseLight {
   return {
     id: provider._id,
     fullName: provider.fullName,

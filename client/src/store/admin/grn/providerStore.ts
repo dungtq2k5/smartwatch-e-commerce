@@ -4,7 +4,7 @@ import type {
   ProviderCreate,
   ProviderDetailsResponse,
   ProviderListResponse,
-  ProviderListResponseLite,
+  ProviderListResponseLight,
   ProviderResponse,
   ProviderSearchQuery,
   ProviderUpdate,
@@ -18,9 +18,9 @@ import { patch, post, remove, retrieve } from "../../../utils/utils";
 import { MAX_PROVIDERS_TO_DELETE_BULK } from "../../../../../common/configs.common";
 
 type ProviderState = {
-  allProvidersLite: ProviderListResponseLite | null;
+  allProvidersLite: ProviderListResponseLight | null;
 
-  fetchAllProviders: () => Promise<ProviderListResponseLite>;
+  fetchAllProviders: () => Promise<ProviderListResponseLight>;
   fetchProviders: (
     query?: ProviderSearchQuery,
   ) => Promise<ProviderListResponse>;
@@ -43,7 +43,7 @@ type ProviderState = {
 const useProviderStore = create<ProviderState>((set, get) => ({
   allProvidersLite: null,
 
-  async fetchAllProviders(): Promise<ProviderListResponseLite> {
+  async fetchAllProviders(): Promise<ProviderListResponseLight> {
     const { allProvidersLite } = get();
     if (allProvidersLite) {
       return structuredClone(allProvidersLite);
@@ -53,7 +53,7 @@ const useProviderStore = create<ProviderState>((set, get) => ({
       const res = await retrieve(`${PROVIDER_URL}/all/`);
       if (!res.success) throw new Error(res.message);
 
-      const data = res.data as ProviderListResponseLite;
+      const data = res.data as ProviderListResponseLight;
       set({ allProvidersLite: data });
       return structuredClone(data);
     } catch (error) {

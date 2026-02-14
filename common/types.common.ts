@@ -992,11 +992,11 @@ export type ProviderBulkDelete = {
   providerIds: string[];
 };
 
-export type ProviderResponseLite = Pick<ProviderResponse, "id" | "fullName">;
+export type ProviderResponseLight = Pick<ProviderResponse, "id" | "fullName">;
 
-export type ProviderListResponseLite = {
+export type ProviderListResponseLight = {
   total: number;
-  providers: ProviderResponseLite[];
+  providers: ProviderResponseLight[];
 };
 
 export type StateResponse = {

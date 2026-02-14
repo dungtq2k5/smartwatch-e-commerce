@@ -4,14 +4,14 @@ import { HttpError } from "../../utils/errorHandler";
 import {
   formatProviderDetailsResponse,
   formatProviderResponse,
-  formatProviderResponseLite,
+  formatProviderResponseLight,
   isPresent,
 } from "../../utils/utils";
 import {
   ProviderBulkDelete,
   ProviderCreate,
   ProviderListResponse,
-  ProviderListResponseLite,
+  ProviderListResponseLight,
   ProviderResponse,
   ProviderSearchQuery,
   ProviderUpdate,
@@ -151,9 +151,9 @@ export async function getAll(
       message: "Providers fetched successfully.",
       data: {
         total: providers.length,
-        providers: providers.map(formatProviderResponseLite),
+        providers: providers.map(formatProviderResponseLight),
       },
-    } as SuccessResponse<ProviderListResponseLite>);
+    } as SuccessResponse<ProviderListResponseLight>);
     console.log("✅ ", "Providers fetched successfully.");
   } catch (error) {
     next(error);
