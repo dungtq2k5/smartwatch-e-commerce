@@ -41,7 +41,9 @@ import useRoleStore from "../../store/admin/roleStore";
  * };
  * ```
  */
-export default function useHasPermission(permissionCode: PermissionCode): boolean {
+export default function useHasPermission(
+  permissionCode: PermissionCode,
+): boolean {
   const { admin } = useAuthStore();
   const { roles } = useRoleStore();
   const { permissions } = usePermissionStore();
@@ -49,7 +51,7 @@ export default function useHasPermission(permissionCode: PermissionCode): boolea
   const hasPermission = useMemo((): boolean => {
     if (!admin || !roles || !permissions) {
       console.warn(
-        "Admin, roles, or permissions data is missing. Please re-fetching them before use this hook."
+        "Admin, roles, or permissions data is missing. Please re-fetching them before use this hook.",
       );
       return false;
     }
@@ -60,7 +62,7 @@ export default function useHasPermission(permissionCode: PermissionCode): boolea
 
       for (const rolePermission of role.permissions) {
         const permission = permissions.permissions.find(
-          (p) => p.id === rolePermission.id
+          (p) => p.id === rolePermission.id,
         );
         if (permission?.code === permissionCode) {
           return true;

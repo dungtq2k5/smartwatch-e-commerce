@@ -16,11 +16,12 @@ import {
   RETURN_POLICY_DAYS,
 } from "../configs/configs";
 import * as commonType from "../../common/types.common";
-import mongoose, { Types } from "mongoose";
+import mongoose, { FlattenMaps, Types } from "mongoose";
 import ModelVariation from "../models/product/modelVariation.model";
 import { appCache } from "../configs/cache";
 import { HttpError } from "./errorHandler";
 import { removeAllSpaces } from "../../common/utils.common";
+import { IPermission } from "../models/role/permission.model";
 
 export function isValidUrl(url: any): boolean {
   if (typeof url !== "string") return false;
@@ -386,7 +387,49 @@ export function formatRoleResponse(role: any): commonType.RoleResponse {
       assignedAt: p.assignedAt,
       assignedBy: p.assignedBy,
     })),
-    createdBy: role.createdBy,
+    createdBy: {
+      id: role.createdBy._id,
+      fullName: role.createdBy.fullName,
+    },
+    createdAt: role.createdAt,
+    updatedAt: role.updatedAt,
+  };
+}
+
+export function formatRoleResponseLight(
+  role: any,
+): commonType.RoleResponseLight {
+  return {
+    id: role._id,
+    name: role.name,
+    permissions: role.permissions.map((p: any) => ({
+      id: p.id,
+    })),
+  };
+}
+
+export function formatRoleDetailsResponse(
+  role: any,
+): commonType.RoleDetailsResponse {
+  return {
+    id: role._id,
+    name: role.name,
+    userAssigned: role.userAssigned,
+    permissions: {
+      total: role.permissions.length,
+      permissions: role.permissions.map((p: any) => ({
+        ...formatPermissionResponse(p),
+        assignedAt: p.assignedAt,
+        assignedBy: {
+          id: p.assignedBy._id,
+          fullName: p.assignedBy.fullName,
+        },
+      })),
+    },
+    createdBy: {
+      id: role.createdBy._id,
+      fullName: role.createdBy.fullName,
+    },
     createdAt: role.createdAt,
     updatedAt: role.updatedAt,
   };
@@ -396,7 +439,7 @@ export function formatPermissionResponse(
   permission: any,
 ): commonType.PermissionResponse {
   return {
-    id: permission._id,
+    id: permission._id || permission.id, // Handle both populated and non-populated cases
     name: permission.name,
     code: permission.code,
   };
@@ -1655,4 +1698,37 @@ export function getGrnStateLookupId(stateId: Types.ObjectId | string): string {
   }
 
   throw new Error(`GRN state with ID '${stateId}' not found in cache.`);
+}
+
+export function getPermission(
+  id: Types.ObjectId | string,
+): FlattenMaps<IPermission> &
+  Required<{
+    _id: Types.ObjectId;
+  }> & {
+    __v: number;
+  } {
+  const { permissions } = appCache;
+  if (!permissions) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const permission = permissions.find((perm) => perm._id.equals(id));
+  if (permission) return structuredClone(permission);
+
+  throw new Error(`Permission with ID '${id}' not found in cache.`);
+}
+
+export function getPermissions(): (FlattenMaps<IPermission> &
+  Required<{
+    _id: Types.ObjectId;
+  }> & {
+    __v: number;
+  })[] {
+  const { permissions } = appCache;
+  if (!permissions) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  return structuredClone(permissions);
 }

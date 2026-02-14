@@ -47,7 +47,7 @@ import {
 } from "../../common/types.common";
 import mongoose, { Types } from "mongoose";
 import { genRandomPassword } from "../../common/utils.common";
-import crypto from "crypto";
+import crypto from "node:crypto";
 import PasswordResetToken from "../models/user/passwordResetToken.model";
 import admin from "firebase-admin";
 import Role from "../models/role/role.model";

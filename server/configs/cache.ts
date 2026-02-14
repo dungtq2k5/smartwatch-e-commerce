@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { FlattenMaps, Types } from "mongoose";
 import Role from "../models/role/role.model";
 import User from "../models/user/user.model";
 import { SYSTEM_USER } from "./configs";
@@ -14,6 +14,7 @@ import PickupState from "../models/returnRefund/pickupState.model";
 import OrderState from "../models/order/orderState.model";
 import WithdrawalState from "../models/withdrawal/withdrawalState.model";
 import GrnState from "../models/inventory/grnState.model";
+import Permission, { IPermission } from "../models/role/permission.model";
 
 type LookupIdObjectIdWithLevel = {
   [lookupId: string]: {
@@ -42,6 +43,13 @@ type AppCache = {
   withdrawalStates?: LookupIdObjectIdWithLevel;
 
   grnStates?: LookupIdObjectId;
+
+  permissions?: (FlattenMaps<IPermission> &
+    Required<{
+      _id: Types.ObjectId;
+    }> & {
+      __v: number;
+    })[];
 };
 
 export const appCache: AppCache = {};
@@ -133,11 +141,11 @@ async function inventoryMovementTypesCache(): Promise<void> {
 
     console.log(
       "✅ ",
-      "Inventory movement types cache initialized successfully."
+      "Inventory movement types cache initialized successfully.",
     );
   } catch (error) {
     throw new Error(
-      `Error initializing inventory movement types cache: ${error}`
+      `Error initializing inventory movement types cache: ${error}`,
     );
   }
 }
@@ -323,6 +331,23 @@ async function grnStatesCache(): Promise<void> {
   }
 }
 
+async function permissionsCache(): Promise<void> {
+  console.log("🗂️ ", "Initializing permissions cache...");
+
+  try {
+    const permissions = await Permission.find().lean();
+    if (!permissions || permissions.length === 0) {
+      throw new Error("No permissions found in the database.");
+    }
+
+    appCache.permissions = permissions;
+
+    console.log("✅ ", "Permissions cache initialized successfully.");
+  } catch (error) {
+    throw new Error(`Error initializing permissions cache: ${error}`);
+  }
+}
+
 export async function initAppCache(): Promise<void> {
   console.log("🗂️ ", "Initializing application cache...");
 
@@ -348,6 +373,8 @@ export async function initAppCache(): Promise<void> {
       withdrawalStateCache(),
 
       grnStatesCache(),
+
+      permissionsCache(),
     ]);
 
     console.log("✅ ", "Application cache initialized successfully.");

@@ -1,20 +1,20 @@
 import { Request, Response, NextFunction } from "express";
-import Permissions from "../../models/role/permission.model";
 import {
   PermissionListResponse,
   SuccessResponse,
 } from "../../../common/types.common";
-import { formatPermissionResponse } from "../../utils/utils";
+import { formatPermissionResponse, getPermissions } from "../../utils/utils";
 
-export async function getAll(
+export function getAll(
   req: Request,
   res: Response,
-  next: NextFunction
-): Promise<void> {
+  next: NextFunction,
+): void {
   console.log("▶️ ", "Fetching all permission...");
 
   try {
-    const permissions = await Permissions.find().lean(); // No need to sort because the order will followed by PERMISSION_LIST
+    // const permissions = await Permissions.find().lean(); // No need to sort because the order will followed by PERMISSION_LIST
+    const permissions = getPermissions();
 
     res.status(200).json({
       success: true,

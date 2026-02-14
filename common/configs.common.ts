@@ -466,3 +466,14 @@ export const PROVIDER_SEARCH_SORT_OPTIONS = [
 
 export const ADDRESS_MIN_LENGTH = 3;
 export const ADDRESS_MAX_LENGTH = 60;
+
+export const ROLE_SEARCH_SORT_OPTIONS = [
+  "name_desc",
+  "name_asc",
+  "userAssigned_desc",
+  "userAssigned_asc",
+  "createdAt_desc",
+  "createdAt_asc",
+  "updatedAt_desc",
+  "updatedAt_asc",
+];

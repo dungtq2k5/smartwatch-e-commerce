@@ -24,6 +24,7 @@ import {
   PRODUCT_OS_SORT_OPTIONS,
   FIREBASE_STORAGE_BUCKET_NAMES,
   PROVIDER_SEARCH_SORT_OPTIONS,
+  ROLE_SEARCH_SORT_OPTIONS,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -384,11 +385,6 @@ export type UserSearchQuery = SearchQuery<
     isLocked: "true" | "false";
   }>;
 
-export type RoleCreate = {
-  name: string;
-  permissionIds?: string[] | null;
-};
-
 export type RoleResponse = {
   id: string;
   name: string;
@@ -398,20 +394,45 @@ export type RoleResponse = {
     assignedAt: string;
     assignedBy: string;
   }[];
-  createdBy: string;
   createdAt: string;
   updatedAt: string;
+} & CreatedBy;
+
+export type RoleDetailsResponse = Omit<RoleResponse, "permissions"> & {
+  permissions: {
+    total: number;
+    permissions: (PermissionResponse & {
+      assignedAt: string;
+      assignedBy: CreatedBy["createdBy"];
+    })[];
+  };
 };
 
-export type RoleListResponse = {
-  total: number;
-  roles: RoleResponse[];
-};
-
-export type RoleUpdate = {
-  name?: string;
+export type RoleCreate = {
+  name: string;
   permissionIds?: string[] | null;
 };
+
+export type RoleUpdate = Partial<RoleCreate>;
+
+export type RoleListResponse = PaginatedResponse<"roles", RoleResponse>;
+
+export type RoleResponseLight = {
+  id: string;
+  name: string;
+  permissions: {
+    id: string;
+  }[];
+};
+
+export type RoleListResponseLight = {
+  total: number;
+  roles: RoleResponseLight[];
+};
+
+export type RoleSearchQuery = SearchQuery<
+  (typeof ROLE_SEARCH_SORT_OPTIONS)[number]
+>;
 
 export type ProductCreate = {
   name: string;

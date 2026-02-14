@@ -1,32 +1,46 @@
-import { Request, Response, NextFunction } from "express";
+import e, { Request, Response, NextFunction } from "express";
 import {
   RoleCreate,
+  RoleDetailsResponse,
   RoleListResponse,
+  RoleListResponseLight,
   RoleResponse,
+  RoleSearchQuery,
   RoleUpdate,
   SuccessResponse,
 } from "../../../common/types.common";
 import Role from "../../models/role/role.model";
 import mongoose, { Types } from "mongoose";
-import { formatRoleResponse, isPresent } from "../../utils/utils";
+import {
+  formatRoleDetailsResponse,
+  formatRoleResponse,
+  formatRoleResponseLight,
+  getPermission,
+  isPresent,
+} from "../../utils/utils";
 import { HttpError } from "../../utils/errorHandler";
 import Permission from "../../models/role/permission.model";
 import User from "../../models/user/user.model";
+import {
+  DEFAULT_SEARCH_LIMIT,
+  OPTIMIZE_CREATED_BY_PIPELINE,
+  OPTIMIZE_PIPELINE,
+} from "../../configs/configs";
 
 export async function create(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Creating a new role...");
 
-  const reqUserId = req["auth"]?.userId;
-  if (!isPresent(reqUserId)) {
+  const reqUser = req["user"];
+  if (!isPresent(reqUser)) {
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled by middlewares."
-      )
+        "Request user not found, this should be handled by middlewares.",
+      ),
     );
   }
   const { name, permissionIds } = req.body as RoleCreate;
@@ -42,7 +56,6 @@ export async function create(
     }
 
     // Check permissions exist and create permission list
-    const reqUserIdObjId = new Types.ObjectId(reqUserId);
     let permissions: { id: Types.ObjectId; assignedBy: Types.ObjectId }[] = [];
     if (permissionIds) {
       if (permissionIds.length > 0) {
@@ -56,14 +69,14 @@ export async function create(
 
       permissions = permissionIds.map((id) => ({
         id: new Types.ObjectId(id),
-        assignedBy: reqUserIdObjId,
+        assignedBy: reqUser._id,
       }));
     }
 
     const newRole = new Role({
       name,
       permissions,
-      createdBy: reqUserIdObjId,
+      createdBy: reqUser._id,
     });
 
     await newRole.save({ session });
@@ -73,7 +86,13 @@ export async function create(
     res.status(201).json({
       success: true,
       message: "Role created successfully.",
-      data: formatRoleResponse(newRole),
+      data: formatRoleResponse({
+        ...newRole.toObject(),
+        createdBy: {
+          id: reqUser._id,
+          fullName: reqUser.fullName,
+        },
+      }),
     } as SuccessResponse<RoleResponse>);
     console.log("✅ ", "Role created successfully:", newRole.name);
   } catch (error) {
@@ -87,7 +106,7 @@ export async function create(
 export async function get(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Fetching role details...");
   const { roleId } = req.params;
@@ -97,7 +116,20 @@ export async function get(
     if (!Types.ObjectId.isValid(roleId)) {
       throw new HttpError(404, "Role not found.");
     }
-    const role = await Role.findById(roleId).lean();
+    const role = await Role.aggregate([
+      { $match: { _id: new Types.ObjectId(roleId) } },
+      OPTIMIZE_PIPELINE,
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+    ]).then((results) => results[0]);
     if (!role) {
       throw new HttpError(404, "Role not found.");
     }
@@ -116,21 +148,139 @@ export async function get(
 export async function getAll(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Fetching all roles...");
   try {
-    const roles = await Role.find().sort({ name: 1 }).lean();
+    const roles = await Role.find()
+      .select("_id name permissions")
+      .sort({ name: 1 })
+      .lean();
 
     res.status(200).json({
       success: true,
       message: "Roles fetched successfully.",
       data: {
         total: roles.length,
-        roles: roles.map(formatRoleResponse),
+        roles: roles.map(formatRoleResponseLight),
+      },
+    } as SuccessResponse<RoleListResponseLight>);
+    console.log("✅ ", "Roles fetched successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getDetails(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Fetching all roles with details...");
+  const { roleId } = req.params;
+
+  try {
+    // Check exists
+    if (!Types.ObjectId.isValid(roleId)) {
+      throw new HttpError(404, "Role not found.");
+    }
+
+    const role = await Role.findById(roleId)
+      .populate("createdBy", "_id fullName")
+      .populate("permissions.assignedBy", "_id fullName")
+      .lean();
+    if (!role) {
+      throw new HttpError(404, "Role not found.");
+    }
+
+    // Add "name" and "code" fields to each permission in the permission list
+    role.permissions = role.permissions.map((p) => {
+      const { name, code } = getPermission(p.id);
+      return { ...p, name, code };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Role details fetched successfully.",
+      data: formatRoleDetailsResponse(role),
+    } as SuccessResponse<RoleDetailsResponse>);
+    console.log("✅ ", "Role details fetched successfully");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function search(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Searching roles...");
+  const reqQuery = req["sanitizedQuery"] as RoleSearchQuery;
+
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const query: any = {};
+
+  const searchTerm = reqQuery.searchTerm;
+  if (searchTerm) {
+    query.$or = [
+      {
+        _id: Types.ObjectId.isValid(searchTerm)
+          ? new Types.ObjectId(searchTerm)
+          : undefined,
+      },
+      { name: { $regex: searchTerm, $options: "i" } },
+    ];
+  }
+
+  const sort = (reqQuery.sortBy || "createdAt").split("_");
+  const sortField = sort[0];
+  const sortBy = sort[1] === "desc" ? -1 : 1;
+  const sortStage: any = { [sortField]: sortBy, _id: 1 };
+
+  try {
+    const aggregateResult = await Role.aggregate([
+      { $match: query },
+      OPTIMIZE_PIPELINE,
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$createdBy" },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $sort: sortStage }, { $skip: offset }, { $limit: limit }],
+        },
+      },
+    ]).then((results) => results[0]);
+
+    console.log("Aggregate result:", JSON.stringify(aggregateResult, null, 2));
+    const roles: RoleResponse[] = aggregateResult.data.map(formatRoleResponse);
+    const total = aggregateResult.metadata[0]?.total || 0;
+
+    res.status(200).json({
+      success: true,
+      message: "Roles searched successfully.",
+      data: {
+        total,
+        roles: {
+          total: roles.length,
+          roles,
+        },
+        offset,
+        limit,
       },
     } as SuccessResponse<RoleListResponse>);
-    console.log("✅ ", "Roles fetched successfully.");
+    console.log("✅ ", "Roles searched successfully.");
   } catch (error) {
     next(error);
   }
@@ -139,7 +289,7 @@ export async function getAll(
 export async function update(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Updating role...");
 
@@ -148,18 +298,21 @@ export async function update(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled by middlewares."
-      )
+        "User ID not found, this should be handled by middlewares.",
+      ),
     );
   }
   const { roleId } = req.params;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
     // Check role exists
     if (!Types.ObjectId.isValid(roleId)) {
       throw new HttpError(404, "Role not found.");
     }
-    const role = await Role.findById(roleId);
+    const role = await Role.findById(roleId).session(session);
     if (!role) {
       throw new HttpError(404, "Role not found.");
     }
@@ -170,11 +323,13 @@ export async function update(
 
     const updatedName = name || role.name;
     if (updatedName !== role.name) {
-      const existingRole = await Role.findOne({ name: updatedName }).lean();
+      const existingRole = await Role.findOne({ name: updatedName })
+        .session(session)
+        .lean();
       if (existingRole) {
         throw new HttpError(
           409,
-          `Role with name '${updatedName}' already exists.`
+          `Role with name '${updatedName}' already exists.`,
         );
       }
       role.name = updatedName;
@@ -184,17 +339,20 @@ export async function update(
       role.permissions?.splice(0, role.permissions.length); // Clear all permissions
     } else if (updatedPermissionIds) {
       const currentPermissionIds = role.permissions.map(
-        (p) => p.id.toString() as string
+        (p) => p.id.toString() as string,
       );
 
       // Permission to add
       const permissionIdsToAdd = updatedPermissionIds.filter(
-        (id) => !currentPermissionIds.includes(id)
+        (id) => !currentPermissionIds.includes(id),
       );
       if (permissionIdsToAdd.length > 0) {
-        const permissionCount = await Permission.countDocuments({
-          _id: { $in: permissionIdsToAdd },
-        });
+        const permissionCount = await Permission.countDocuments(
+          {
+            _id: { $in: permissionIdsToAdd },
+          },
+          { session },
+        );
         if (permissionCount !== permissionIdsToAdd.length) {
           throw new HttpError(400, "One or more permissions do not exist.");
         }
@@ -205,39 +363,58 @@ export async function update(
             id: new Types.ObjectId(id),
             assignedBy: reqUserIdObjId,
             assignedAt: new Date(),
-          }))
+          })),
         );
       }
 
       // Permission to remove
       const permissionIdsToRemove = currentPermissionIds.filter(
-        (id) => !updatedPermissionIds.includes(id)
+        (id) => !updatedPermissionIds.includes(id),
       );
       if (permissionIdsToRemove.length > 0) {
         role.permissions = role.permissions.filter(
           (permission) =>
-            !permissionIdsToRemove.includes(permission.id.toString())
+            !permissionIdsToRemove.includes(permission.id.toString()),
         );
       }
     }
 
-    await role.save();
+    await role.save({ session });
+
+    const createdByUser = await User.findById(role.createdBy)
+      .select("_id fullName")
+      .lean()
+      .session(session);
+    if (!createdByUser) {
+      throw new HttpError(500, "Creator user not found.");
+    }
+
+    await session.commitTransaction();
 
     res.status(200).json({
       success: true,
       message: "Role updated successfully.",
-      data: formatRoleResponse(role),
+      data: formatRoleResponse({
+        ...role.toObject(),
+        createdBy: {
+          id: createdByUser._id,
+          fullName: createdByUser.fullName,
+        },
+      }),
     } as SuccessResponse<RoleResponse>);
-    console.log("✅ ", "Role updated successfully:", role.name);
+    console.log("✅ ", "Role updated successfully");
   } catch (error) {
+    await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
   }
 }
 
 export async function remove(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Deleting role...");
   const { roleId } = req.params;
@@ -261,7 +438,7 @@ export async function remove(
     await User.updateMany(
       { "roles.id": role._id },
       { $pull: { roles: { id: role._id } } },
-      { session }
+      { session },
     );
 
     // Delete the role
@@ -272,7 +449,7 @@ export async function remove(
     res.status(200).json({
       success: true,
       message: "Role deleted successfully.",
-    } as SuccessResponse<null>);
+    } as SuccessResponse);
     console.log("✅ ", "Role deleted successfully:", role.name);
   } catch (error) {
     await session.abortTransaction();
