@@ -21,7 +21,7 @@ router.post(
   verifyEmptyBody,
   sanitizeCartInput,
   verifyCartInput("create many"),
-  createBulkSelf
+  createBulkSelf,
 );
 
 router.post(
@@ -29,7 +29,7 @@ router.post(
   verifyPermission("c_usr_cart"),
   verifyEmptyBody,
   verifyCartInput("create"),
-  createSelf
+  createSelf,
 );
 
 router.get("/me", verifyPermission("r_usr_cart"), getSelfAll);
@@ -39,7 +39,7 @@ router.patch(
   verifyPermission("u_usr_cart"),
   verifyEmptyBody,
   verifyCartInput("update"),
-  updateSelf
+  updateSelf,
 );
 
 router.delete("/me/:variationId", verifyPermission("d_usr_cart"), removeSelf);

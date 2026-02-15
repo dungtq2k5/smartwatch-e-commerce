@@ -60,7 +60,7 @@ import { DEFAULT_SEARCH_LIMIT } from "../../configs/configs";
 export async function create(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Returning order...");
 
@@ -69,8 +69,8 @@ export async function create(
     return next(
       new HttpError(
         500,
-        "userId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { orderId } = req.params;
@@ -119,19 +119,19 @@ export async function create(
       // delivered, completed
       throw new HttpError(
         400,
-        "Order can't be returned. Order state is not 'delivered' or 'completed'."
+        "Order can't be returned. Order state is not 'delivered' or 'completed'.",
       );
     }
 
     const latestDeliveryStateId = getLatestStateId(order.deliveryStates);
     const latestDeliveryStateLevel = getDeliveryStateLevel(
-      latestDeliveryStateId
+      latestDeliveryStateId,
     );
     if (latestDeliveryStateLevel !== 6) {
       // delivered
       throw new HttpError(
         400,
-        "Order can't be returned. Delivery state is not 'delivered'."
+        "Order can't be returned. Delivery state is not 'delivered'.",
       );
     }
 
@@ -142,7 +142,7 @@ export async function create(
       // paid
       throw new HttpError(
         400,
-        "Order can't be returned. Payment state is not 'paid'."
+        "Order can't be returned. Payment state is not 'paid'.",
       );
     }
 
@@ -170,7 +170,7 @@ export async function create(
     if (imageUrls && imageUrls.length > MAX_ORDER_RETURN_IMG_UPLOAD) {
       throw new HttpError(
         400,
-        `You can upload up to ${MAX_ORDER_RETURN_IMG_UPLOAD} images.`
+        `You can upload up to ${MAX_ORDER_RETURN_IMG_UPLOAD} images.`,
       );
     }
 
@@ -196,7 +196,7 @@ export async function create(
       if (formattedEstimatePickupDate <= now) {
         throw new HttpError(
           400,
-          "Estimated pickup date must be in the future."
+          "Estimated pickup date must be in the future.",
         );
       }
       if (
@@ -207,7 +207,7 @@ export async function create(
           400,
           `Estimated pickup date must be within ${
             MAX_ESTIMATE_PICKUP_TIME_GAP / (24 * 60 * 60 * 1000)
-          } days from now.`
+          } days from now.`,
         );
       }
     }
@@ -239,7 +239,7 @@ export async function create(
 
     for (const { variationId, instanceIds } of itemsToReturn) {
       const orderItem = order.items.find((oi) =>
-        oi.variationId.equals(variationId)
+        oi.variationId.equals(variationId),
       );
       if (!orderItem) {
         throw new HttpError(404, "Order item not found.");
@@ -251,14 +251,14 @@ export async function create(
       // Validate each instance ID from the request *before* doing any calculations.
       for (const instanceId of instanceIds) {
         const instanceInOrder = orderItem.instances.find((inst) =>
-          inst.id.equals(instanceId)
+          inst.id.equals(instanceId),
         );
 
         // Check 1: Does this instance even belong to this order item?
         if (!instanceInOrder) {
           throw new HttpError(
             400,
-            `Item instance with ID ${instanceId} was not found in this order.`
+            `Item instance with ID ${instanceId} was not found in this order.`,
           );
         }
 
@@ -266,7 +266,7 @@ export async function create(
         if (instanceInOrder.state !== "ordered") {
           throw new HttpError(
             400,
-            `Item ${instanceInOrder.sku} cannot be returned as it is not in the 'ordered' state.`
+            `Item ${instanceInOrder.sku} cannot be returned as it is not in the 'ordered' state.`,
           );
         }
 
@@ -303,7 +303,7 @@ export async function create(
       {
         arrayFilters: [{ "inst.id": { $in: allInstanceIdsToUpdate } }],
         session,
-      }
+      },
     );
 
     // Refund calculation
@@ -358,7 +358,7 @@ export async function create(
 export async function get(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Getting return order...");
 
@@ -367,8 +367,8 @@ export async function get(
     return next(
       new HttpError(
         500,
-        "userId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { returnId } = req.params;
@@ -412,7 +412,7 @@ export async function get(
 export async function getDetails(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Getting return order details...");
 
@@ -421,8 +421,8 @@ export async function getDetails(
     return next(
       new HttpError(
         500,
-        "userId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { returnId } = req.params;
@@ -468,10 +468,10 @@ export async function getDetails(
 }
 
 // search within orderId
-export async function search(
+export async function searchWithOrderId(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Searching return orders...");
 
@@ -480,14 +480,16 @@ export async function search(
     return next(
       new HttpError(
         500,
-        "userId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { orderId } = req.params;
   const reqQuery = req["sanitizedQuery"] as OrderReturnSearchQuery;
 
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
   const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
 
   try {
@@ -534,10 +536,10 @@ export async function search(
 }
 
 // search without orderId
-export async function searchAll(
+export async function search(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Searching all return orders...");
 
@@ -546,13 +548,15 @@ export async function searchAll(
     return next(
       new HttpError(
         500,
-        "userId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   const reqQuery = req["sanitizedQuery"] as OrderReturnSearchQuery;
 
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
   const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
   const query: any = {};
 
@@ -602,7 +606,7 @@ export async function searchAll(
 export async function updateSelf(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Updating return order...");
 
@@ -611,8 +615,8 @@ export async function updateSelf(
     return next(
       new HttpError(
         500,
-        "userId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { returnId } = req.params;
@@ -656,7 +660,7 @@ export async function updateSelf(
       // pending approval
       throw new HttpError(
         400,
-        "Return order can't be updated. Return state is not 'pending approval'."
+        "Return order can't be updated. Return state is not 'pending approval'.",
       );
     }
 
@@ -689,7 +693,7 @@ export async function updateSelf(
     if (imageUrls && imageUrls.length > MAX_ORDER_RETURN_IMG_UPLOAD) {
       throw new HttpError(
         400,
-        `You can upload up to ${MAX_ORDER_RETURN_IMG_UPLOAD} images.`
+        `You can upload up to ${MAX_ORDER_RETURN_IMG_UPLOAD} images.`,
       );
     }
 
@@ -724,7 +728,7 @@ export async function updateSelf(
       if (formattedEstimatePickupDate <= now) {
         throw new HttpError(
           400,
-          "Estimated pickup date must be in the future."
+          "Estimated pickup date must be in the future.",
         );
       }
       if (
@@ -735,7 +739,7 @@ export async function updateSelf(
           400,
           `Estimated pickup date must be within ${
             MAX_ESTIMATE_PICKUP_TIME_GAP / (24 * 60 * 60 * 1000)
-          } days from now.`
+          } days from now.`,
         );
       }
 
@@ -745,13 +749,13 @@ export async function updateSelf(
     // Update stateId (only to "cancelled")
     if (stateId) {
       const returnStateLookupId = getReturnStateLookupId(
-        new Types.ObjectId(stateId)
+        new Types.ObjectId(stateId),
       );
       if (returnStateLookupId !== "7") {
         // cancelled
         throw new HttpError(
           400,
-          "You can only update return state to 'cancelled' state."
+          "You can only update return state to 'cancelled' state.",
         );
       }
 
@@ -769,17 +773,17 @@ export async function updateSelf(
         {
           arrayFilters: [{ "inst.id": { $in: allInstanceIdsToUpdate } }],
           session,
-        }
+        },
       );
     }
 
     // Update imageUrls on Firebase Storage
     if (imageUrls && imageUrls.length > 0) {
       const imgUrlToRemove = orderReturn.imageUrls.filter(
-        (url) => !imageUrls.includes(url)
+        (url) => !imageUrls.includes(url),
       );
       if (imgUrlToRemove.length > 0) {
-        await deleteManyFileFromFirebaseStorage(imgUrlToRemove, "return-image");
+        await deleteManyFileFromFirebaseStorage(imgUrlToRemove, "order-return");
       }
     }
     orderReturn.imageUrls =
@@ -807,7 +811,7 @@ export async function updateSelf(
 export async function updateState(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Updating return order state...");
 
@@ -816,8 +820,8 @@ export async function updateState(
     return next(
       new HttpError(
         500,
-        "userId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { returnId } = req.params;
@@ -839,7 +843,7 @@ export async function updateState(
     if (isBuyerOnly) {
       throw new HttpError(
         403,
-        "You do not have permission to perform this action."
+        "You do not have permission to perform this action.",
       );
     }
 
@@ -860,7 +864,7 @@ export async function updateState(
       // refunded, cancelled, declined
       throw new HttpError(
         400,
-        "Return order state can't be updated. Return state is in 'refunded', 'cancelled' or 'declined' state."
+        "Return order state can't be updated. Return state is in 'refunded', 'cancelled' or 'declined' state.",
       );
     }
 
@@ -896,7 +900,7 @@ export async function updateState(
           // approved
           throw new HttpError(
             400,
-            "You had approved this return order. You can't decline it."
+            "You had approved this return order. You can't decline it.",
           );
         }
         orderReturn.states.push({
@@ -919,7 +923,7 @@ export async function updateState(
           {
             arrayFilters: [{ "inst.id": { $in: allInstanceIdsToUpdate } }],
             session,
-          }
+          },
         );
         break;
       }
@@ -931,7 +935,7 @@ export async function updateState(
           // items returned
           throw new HttpError(
             400,
-            "Return state can only be updated to 'refunding' state if the latest return state is 'items returned' state."
+            "Return state can only be updated to 'refunding' state if the latest return state is 'items returned' state.",
           );
         }
 
@@ -969,7 +973,7 @@ export async function updateState(
 export async function updatePickupState(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Updating return order pickup state...");
 
@@ -978,8 +982,8 @@ export async function updatePickupState(
     return next(
       new HttpError(
         500,
-        "userId or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { returnId } = req.params;
@@ -1001,7 +1005,7 @@ export async function updatePickupState(
     if (isBuyerOnly) {
       throw new HttpError(
         403,
-        "You do not have permission to perform this action."
+        "You do not have permission to perform this action.",
       );
     }
 
@@ -1024,7 +1028,7 @@ export async function updatePickupState(
       // not in approved, items returning, items returned
       throw new HttpError(
         400,
-        "Return order pickup state can't be updated. Return must be approved and not finalized."
+        "Return order pickup state can't be updated. Return must be approved and not finalized.",
       );
     }
 
@@ -1041,7 +1045,7 @@ export async function updatePickupState(
 
       // Handle special case: pickup failed -> pickup rescheduled
       const pickupStateLookupId = getPickupStateLookupId(
-        new Types.ObjectId(pickupStateId)
+        new Types.ObjectId(pickupStateId),
       );
       if (pickupStateLookupId === "7") {
         // pickup rescheduled
@@ -1051,13 +1055,13 @@ export async function updatePickupState(
           // pickup failed
           throw new HttpError(
             400,
-            "You can only update pickup state to 'pickup rescheduled' state if the latest pickup state is 'pickup failed' state."
+            "You can only update pickup state to 'pickup rescheduled' state if the latest pickup state is 'pickup failed' state.",
           );
         }
       } else {
         // Can only be updated forward
         const pickupStateLevel = getPickupStateLevel(
-          new Types.ObjectId(pickupStateId)
+          new Types.ObjectId(pickupStateId),
         );
         const latestPickupStateLevel = getPickupStateLevel(latestPickupStateId);
         if (pickupStateLevel <= latestPickupStateLevel) {
@@ -1115,7 +1119,7 @@ export async function updatePickupState(
       if (formattedEstimatePickupDate <= now) {
         throw new HttpError(
           400,
-          "Estimated pickup date must be in the future."
+          "Estimated pickup date must be in the future.",
         );
       }
       if (
@@ -1126,7 +1130,7 @@ export async function updatePickupState(
           400,
           `Estimated pickup date must be within ${
             MAX_ESTIMATE_PICKUP_TIME_GAP / (24 * 60 * 60 * 1000)
-          } days from now.`
+          } days from now.`,
         );
       }
 
@@ -1156,7 +1160,7 @@ export async function updatePickupState(
 // Handle refund logic, add returnState and refundState for orderReturn, update user balance if needed.
 async function handleRefund(
   orderReturn: IOrderReturn,
-  session: mongoose.ClientSession
+  session: mongoose.ClientSession,
 ): Promise<void> {
   console.log("▶️ ", "Executing refund...");
 
@@ -1191,7 +1195,7 @@ async function handleRefund(
       // pending
       throw new HttpError(
         400,
-        "Refund can't be executed. Refund state is not 'pending'."
+        "Refund can't be executed. Refund state is not 'pending'.",
       );
     }
 
@@ -1225,7 +1229,7 @@ async function handleRefund(
         try {
           const refund = await createRefund(
             order.transaction.paymentIntentId,
-            toCardCents
+            toCardCents,
           );
 
           // Create refundTransaction
@@ -1244,13 +1248,13 @@ async function handleRefund(
 
           console.log(
             `✅ `,
-            `Successfully refunded ${toCardCents} cents for return ${orderReturn._id} via Stripe.`
+            `Successfully refunded ${toCardCents} cents for return ${orderReturn._id} via Stripe.`,
           );
         } catch (stripeError) {
           console.error(
             "❌ ",
             `Stripe refund failed for return ${orderReturn._id}. Refunding to user balance as a fallback.`,
-            stripeError
+            stripeError,
           );
 
           orderReturn.refundStates.push({
@@ -1270,7 +1274,7 @@ async function handleRefund(
       } else {
         // Fallback to user balance if no Stripe transaction or customerId
         console.log(
-          `Refunding to user balance for return ${orderReturn._id} as no Stripe transaction or customer ID found.`
+          `Refunding to user balance for return ${orderReturn._id} as no Stripe transaction or customer ID found.`,
         );
         user.userBalanceCents += toCardCents;
         orderReturn.refundStates.push({
@@ -1285,13 +1289,13 @@ async function handleRefund(
     await user.save({ session });
     console.log(
       "✅ ",
-      `Refund process completed for return ${orderReturn._id}.`
+      `Refund process completed for return ${orderReturn._id}.`,
     );
   } catch (error) {
     console.error(
       "❌ ",
       `Error executing refund for return ${orderReturn._id}:`,
-      error
+      error,
     );
     throw error;
   }
@@ -1299,7 +1303,7 @@ async function handleRefund(
 
 async function executeItemsReturned(
   orderToReturn: IOrderReturn,
-  session: mongoose.ClientSession
+  session: mongoose.ClientSession,
 ): Promise<void> {
   console.log("▶️ ", "Executing items return...");
 
@@ -1336,7 +1340,7 @@ async function executeItemsReturned(
           quantity: 1,
           notes: "Return from customer",
         };
-      })
+      }),
     );
 
     const variationStockUpdates = orderToReturn.items.map((item) => ({
@@ -1359,14 +1363,14 @@ async function executeItemsReturned(
             },
           ],
           session,
-        }
+        },
       ),
 
       // Update instances conditionId
       VariationInstance.updateMany(
         { _id: { $in: allInstanceIdsToUpdate } },
         { $set: { conditionId: getInstanceConditionId("2") } }, // used
-        { session }
+        { session },
       ),
 
       // Create inventory movements
@@ -1377,13 +1381,13 @@ async function executeItemsReturned(
     ]);
     console.log(
       "✅ ",
-      `Items return executed for return ${orderToReturn._id}.`
+      `Items return executed for return ${orderToReturn._id}.`,
     );
   } catch (error) {
     console.error(
       "❌ ",
       `Error executing items return for return ${orderToReturn._id}:`,
-      error
+      error,
     );
     throw error;
   }

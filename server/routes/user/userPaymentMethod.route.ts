@@ -15,15 +15,15 @@ const router = express.Router();
 router.post(
   "/me/setup-intent",
   verifyPermission("c_usr_paym"),
-  createSetupIntent
+  createSetupIntent,
 );
 
 router.post(
   "/me",
-  verifyPermission("r_usr_paym"),
+  verifyPermission("c_usr_paym"),
   verifyEmptyBody,
   verifyPaymentMethodInput("create"),
-  attachSelfPaymentMethod
+  attachSelfPaymentMethod,
 );
 
 router.get("/me", verifyPermission("r_usr_paym"), getSelfAll);
@@ -31,7 +31,7 @@ router.get("/me", verifyPermission("r_usr_paym"), getSelfAll);
 router.patch(
   "/me/:methodId/set-default",
   verifyPermission("u_usr_paym"),
-  setSelfAsDefault
+  setSelfAsDefault,
 );
 
 router.delete("/me/:methodId", verifyPermission("d_usr_paym"), removeSelf);

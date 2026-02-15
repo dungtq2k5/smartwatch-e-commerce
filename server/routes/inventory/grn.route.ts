@@ -8,7 +8,13 @@ import {
   verifyGrnInput,
 } from "../../utils/middlewares/grn.middleware";
 import { GRN_FILE_IMPORT_MAX_SIZE } from "../../../common/configs.common";
-import { create, get, getDetails, search, update } from "../../controllers/inventory/grn.controller";
+import {
+  create,
+  get,
+  getDetails,
+  search,
+  update,
+} from "../../controllers/inventory/grn.controller";
 
 const router = express.Router();
 
@@ -27,36 +33,28 @@ router.post(
   parseExcelToJson,
   inputSanitizer("create"),
   verifyGrnInput("create"),
-  create
+  create,
 );
 
-router.get(
-  "/:id/details",
-  verifyPermission("r_grn"),
-  getDetails
-);
+router.get("/:grnId/details", verifyPermission("r_grn"), getDetails);
 
-router.get(
-  "/:id",
-  verifyPermission("r_grn"),
-  get
-);
+router.get("/:grnId", verifyPermission("r_grn"), get);
 
 router.get(
   "/",
   verifyPermission("r_grn"),
   inputSanitizer("search"),
   verifyGrnInput("search"),
-  search
+  search,
 );
 
 router.patch(
-  "/:id",
+  "/:grnId",
   verifyPermission("u_grn"),
   verifyEmptyBody,
   inputSanitizer("update"),
   verifyGrnInput("update"),
-  update
+  update,
 );
 
 export default router;

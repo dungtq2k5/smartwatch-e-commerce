@@ -476,4 +476,4 @@ export const ROLE_SEARCH_SORT_OPTIONS = [
   "createdAt_asc",
   "updatedAt_desc",
   "updatedAt_asc",
-];
+] as const;

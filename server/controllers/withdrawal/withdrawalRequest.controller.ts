@@ -21,6 +21,7 @@ import type {
   ApproveWithdrawalRequest,
   RejectWithdrawalRequest,
   SelfWithdrawalRequestSearchQuery,
+  WithdrawalRequestCreate,
 } from "../../../common/types.common";
 import UserBankAccount from "../../models/user/userBankAccount.model";
 import stripe from "../../configs/stripe.config";
@@ -30,7 +31,7 @@ import { DEFAULT_SEARCH_LIMIT } from "../../configs/configs";
 export async function createRequest(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Creating withdrawal request...");
 
@@ -39,12 +40,12 @@ export async function createRequest(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled by middlewares."
-      )
+        "User ID not found, this should be handled by middlewares.",
+      ),
     );
   }
 
-  const { amountCents, bankAccountId } = req.body;
+  const { amountCents, bankAccountId } = req.body as WithdrawalRequestCreate;
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -67,7 +68,7 @@ export async function createRequest(
     if (amountCents < MIN_WITHDRAWAL_AMOUNT_CENTS) {
       throw new HttpError(
         400,
-        `Minimum withdrawal amount is ${MIN_WITHDRAWAL_AMOUNT_CENTS} cents.`
+        `Minimum withdrawal amount is ${MIN_WITHDRAWAL_AMOUNT_CENTS} cents.`,
       );
     }
 
@@ -81,7 +82,7 @@ export async function createRequest(
     if (!bankAccount) {
       throw new HttpError(
         400,
-        "Invalid or unverified bank account. Please verify your bank account first."
+        "Invalid or unverified bank account. Please verify your bank account first.",
       );
     }
 
@@ -95,7 +96,7 @@ export async function createRequest(
     if (existingPendingRequest) {
       throw new HttpError(
         400,
-        "You already have a pending withdrawal request. Please wait for it to be processed."
+        "You already have a pending withdrawal request. Please wait for it to be processed.",
       );
     }
 
@@ -142,7 +143,7 @@ export async function createRequest(
 export async function searchSelf(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Getting user's withdrawal requests...");
 
@@ -151,13 +152,15 @@ export async function searchSelf(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled by middlewares."
-      )
+        "User ID not found, this should be handled by middlewares.",
+      ),
     );
   }
 
   const reqQuery = req.query as SelfWithdrawalRequestSearchQuery;
-  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : DEFAULT_SEARCH_LIMIT;
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
   const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
 
   try {
@@ -191,7 +194,7 @@ export async function searchSelf(
 export async function getSelf(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Getting user's withdrawal request by ID...");
 
@@ -200,8 +203,8 @@ export async function getSelf(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled by middlewares."
-      )
+        "User ID not found, this should be handled by middlewares.",
+      ),
     );
   }
   const { requestId } = req.params;
@@ -232,7 +235,7 @@ export async function getSelf(
 export async function cancelRequest(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Cancelling withdrawal request...");
 
@@ -241,8 +244,8 @@ export async function cancelRequest(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled by middlewares."
-      )
+        "User ID not found, this should be handled by middlewares.",
+      ),
     );
   }
   const { requestId } = req.params;
@@ -280,7 +283,7 @@ export async function cancelRequest(
       {
         $inc: { userBalanceCents: withdrawalRequest.amountCents },
       },
-      { session }
+      { session },
     );
 
     withdrawalRequest.states.push({
@@ -311,7 +314,7 @@ export async function cancelRequest(
 export async function approveRequest(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Approve withdrawal request...");
 
@@ -323,13 +326,13 @@ export async function approveRequest(
     return next(
       new HttpError(
         500,
-        "Request user ID or role is missing, this should be handled by middlewares."
-      )
+        "Request user ID or role is missing, this should be handled by middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You don not have permission to perform this action.")
+      new HttpError(403, "You don not have permission to perform this action."),
     );
   }
 
@@ -344,9 +347,8 @@ export async function approveRequest(
     if (!Types.ObjectId.isValid(requestId)) {
       throw new HttpError(404, "Request not found.");
     }
-    const withdrawalRequest = await WithdrawalRequest.findById(
-      requestId
-    ).session(session);
+    const withdrawalRequest =
+      await WithdrawalRequest.findById(requestId).session(session);
     if (!withdrawalRequest) {
       throw new HttpError(404, "Request not found.");
     }
@@ -381,7 +383,7 @@ export async function approveRequest(
         id: getWithdrawalStateId("3"), // processing
         notes: "Processing withdrawal via Stripe",
         createdBy: sysUserId,
-      }
+      },
     );
 
     let resMsg: string = "";
@@ -405,13 +407,13 @@ export async function approveRequest(
         "❌ ",
         "Stripe transfer creation failed:",
         stripeError,
-        ".This request will be updated as failed."
+        ".This request will be updated as failed.",
       );
 
       await User.findByIdAndUpdate(
         withdrawalRequest.userId,
         { $inc: { userBalanceCents: withdrawalRequest.amountCents } },
-        { session }
+        { session },
       );
 
       withdrawalRequest.failureReason = stripeError.message;
@@ -444,7 +446,7 @@ export async function approveRequest(
 export async function rejectRequest(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Reject withdrawal request...");
 
@@ -456,13 +458,13 @@ export async function rejectRequest(
     return next(
       new HttpError(
         500,
-        "Request user ID or role is missing, this should be handled by middlewares."
-      )
+        "Request user ID or role is missing, this should be handled by middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You don not have permission to perform this action.")
+      new HttpError(403, "You don not have permission to perform this action."),
     );
   }
 
@@ -477,9 +479,8 @@ export async function rejectRequest(
     if (!Types.ObjectId.isValid(requestId)) {
       throw new HttpError(404, "Request not found.");
     }
-    const withdrawalRequest = await WithdrawalRequest.findById(
-      requestId
-    ).session(session);
+    const withdrawalRequest =
+      await WithdrawalRequest.findById(requestId).session(session);
     if (!withdrawalRequest) {
       throw new HttpError(404, "Request not found.");
     }
@@ -504,7 +505,7 @@ export async function rejectRequest(
       {
         $inc: { userBalanceCents: withdrawalRequest.amountCents },
       },
-      { session }
+      { session },
     );
 
     withdrawalRequest.states.push({

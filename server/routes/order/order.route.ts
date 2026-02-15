@@ -23,7 +23,7 @@ router.post(
   verifyEmptyBody,
   returnInputSanitizer("order return"),
   verifyOrderReturnInput("create"),
-  returnController.create
+  returnController.create,
 );
 
 // search within orderId
@@ -32,7 +32,7 @@ router.get(
   verifyPermission("r_order_return"),
   returnInputSanitizer("order return search"),
   verifyOrderReturnInput("search"),
-  returnController.search
+  returnController.searchWithOrderId,
 );
 
 // --- ROUTES FOR ORDER ---
@@ -42,7 +42,7 @@ router.post(
   verifyEmptyBody,
   inputSanitizer("order"),
   verifyOrderInput("create"),
-  order.createSelf
+  order.createSelf,
 );
 
 router.post(
@@ -51,7 +51,7 @@ router.post(
   verifyEmptyBody,
   inputSanitizer("fulfill order item"),
   verifyOrderInput("update fulfill item"),
-  order.fulfillItem
+  order.fulfillItem,
 );
 
 router.get(
@@ -59,7 +59,7 @@ router.get(
   verifyPermission("r_order"),
   inputSanitizer("order search"),
   verifyOrderInput("search"),
-  order.search("admin search")
+  order.search("admin search"),
 );
 
 router.get(
@@ -67,7 +67,7 @@ router.get(
   verifyPermission("r_order"),
   inputSanitizer("order search"),
   verifyOrderInput("search"),
-  order.search("self search")
+  order.search("self search"),
 );
 
 router.get("/:orderId/details", verifyPermission("r_order"), order.getDetails);
@@ -79,7 +79,7 @@ router.patch(
   verifyPermission("u_order"),
   verifyEmptyBody,
   verifyOrderInput("update"),
-  order.updateSelf
+  order.updateSelf,
 );
 
 router.patch(
@@ -88,14 +88,14 @@ router.patch(
   verifyEmptyBody,
   inputSanitizer("order"),
   verifyOrderInput("update"),
-  order.updateDeliveryState
+  order.updateDeliveryState,
 );
 
 // -- ROUTES FOR STRIPE CHECKOUT SESSION
 router.post(
   "/:orderId/create-checkout-session",
   verifyPermission("c_order"),
-  createCheckoutSession
+  createCheckoutSession,
 );
 
 export default router;

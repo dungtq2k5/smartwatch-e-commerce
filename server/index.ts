@@ -52,7 +52,12 @@ import connectDB from "./db/connectDB";
 import { initAppCache } from "./configs/cache";
 import { HttpError } from "./utils/errorHandler";
 import { ROOT_URL } from "./configs/configs";
-import { mockAllData, mockPendingOrder, mockProviderAddresses, mockProviders } from "./utils/mock";
+import {
+  mockAllData,
+  mockPendingOrder,
+  mockProviderAddresses,
+  mockProviders,
+} from "./utils/mock";
 import mongoose from "mongoose";
 
 dotenv.config();
@@ -98,7 +103,7 @@ app.use(
     optionsSuccessStatus: 200, // For legacy browser support
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     exposedHeaders: ["Set-Cookie"],
-  })
+  }),
 );
 
 // IMPORTANT: Stripe webhook route must come BEFORE express.json()
@@ -155,12 +160,12 @@ app.use((req, res, next) => {
   next(
     new HttpError(
       404,
-      `Request not found: ${req.originalUrl} with ${req.method} method.`
-    )
+      `Request not found: ${req.originalUrl} with ${req.method} method.`,
+    ),
   );
 });
 app.use((err: any, req: Request, res: Response, next: NextFunction) =>
-  errorHandlerMiddleware(err, req, res, next)
+  errorHandlerMiddleware(err, req, res, next),
 );
 
 const port = process.env.SERVER_PORT;

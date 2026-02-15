@@ -66,6 +66,7 @@
     - Add 'createdBy' field for user schema (also handle chicken or egg first problem) ❌.
     - Create a dedicated postman collection for API testing ❌.
     - Create a dedicate postman collection for API testing and attach to README ❌.
+    - Optimize get all brand/category/os endpoints with lighter version ❌.
 
   - Database init:
     - Init roles & permissions ✅.

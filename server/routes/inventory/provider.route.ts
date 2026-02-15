@@ -37,14 +37,10 @@ router.get(
   verifyPermission("r_provider_inventory"),
   sanitizeProviderInput("search"),
   verifyProviderInput("search"),
-  search
+  search,
 );
 
-router.get(
-  "/all",
-  verifyPermission("r_provider_inventory"),
-  getAll
-);
+router.get("/all", verifyPermission("r_provider_inventory"), getAll);
 
 router.get(
   "/:providerId/details",

@@ -25,7 +25,7 @@ import { isValidObjectId } from "mongoose";
 function sanitizeModelInput(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   console.log("▶️ ", "Sanitizing product model input...");
   const { name, feature, config, battery, screen, caseMaterial } = req.body;
@@ -46,41 +46,41 @@ function sanitizeModelInput(
     if (isNoneArrObj(waterResistance) && !isEmptyObj(waterResistance)) {
       if (typeof waterResistance.rating === "string") {
         req.body.feature.waterResistance.rating = removeOddSpaces(
-          waterResistance.rating
+          waterResistance.rating,
         );
       }
       if (typeof waterResistance.description === "string") {
         req.body.feature.waterResistance.description = removeOddSpaces(
-          waterResistance.description
+          waterResistance.description,
         );
       }
     }
     if (isNoneArrObj(utilities) && !isEmptyObj(utilities)) {
       if (isArrayOfNonEmptyStrings(utilities.healths)) {
         req.body.feature.utilities.healths = utilities.healths.map(
-          (item: string) => removeOddSpaces(item)
+          (item: string) => removeOddSpaces(item),
         );
       }
       if (isArrayOfNonEmptyStrings(utilities.sports)) {
         req.body.feature.utilities.sports = utilities.sports.map(
-          (item: string) => removeOddSpaces(item)
+          (item: string) => removeOddSpaces(item),
         );
       }
       if (isArrayOfNonEmptyStrings(utilities.specials)) {
         req.body.feature.utilities.specials = utilities.specials.map(
-          (item: string) => removeOddSpaces(item)
+          (item: string) => removeOddSpaces(item),
         );
       }
       if (isArrayOfNonEmptyStrings(utilities.others)) {
         req.body.feature.utilities.others = utilities.others.map(
-          (item: string) => removeOddSpaces(item)
+          (item: string) => removeOddSpaces(item),
         );
       }
     }
     if (isArrayOfNonEmptyStrings(supportedAppsForNotifications)) {
       req.body.feature.supportedAppsForNotifications =
         supportedAppsForNotifications.map((item: string) =>
-          removeOddSpaces(item)
+          removeOddSpaces(item),
         );
     }
   }
@@ -96,7 +96,7 @@ function sanitizeModelInput(
 
     if (isArrayOfNonEmptyStrings(connectivities)) {
       req.body.config.connectivities = connectivities.map((item: string) =>
-        removeOddSpaces(item)
+        removeOddSpaces(item),
       );
     }
     if (
@@ -105,7 +105,7 @@ function sanitizeModelInput(
       isArrayOfNonEmptyStrings(camera.features)
     ) {
       req.body.config.camera.features = camera.features.map((item: string) =>
-        removeOddSpaces(item)
+        removeOddSpaces(item),
       );
     }
     if (typeof chipset === "string") {
@@ -113,17 +113,17 @@ function sanitizeModelInput(
     }
     if (isArrayOfNonEmptyStrings(compatiblePhoneOs)) {
       req.body.config.compatiblePhoneOs = compatiblePhoneOs.map(
-        (item: string) => removeOddSpaces(item)
+        (item: string) => removeOddSpaces(item),
       );
     }
     if (isArrayOfNonEmptyStrings(appsConnect)) {
       req.body.config.appsConnect = appsConnect.map((item: string) =>
-        removeOddSpaces(item)
+        removeOddSpaces(item),
       );
     }
     if (isArrayOfNonEmptyStrings(sensors)) {
       req.body.config.sensors = sensors.map((item: string) =>
-        removeOddSpaces(item)
+        removeOddSpaces(item),
       );
     }
   }
@@ -142,7 +142,7 @@ function sanitizeModelInput(
       typeof display.displayType === "string"
     ) {
       req.body.screen.display.displayType = removeOddSpaces(
-        display.displayType
+        display.displayType,
       );
     }
     if (typeof glassMaterial === "string") {
@@ -162,7 +162,7 @@ function sanitizeModelInput(
 function sanitizeModelSearchInput(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   console.log("▶️ ", "Sanitizing product model search input...");
   // Since req.query can't be modifiable so we create a new query obj for the request
@@ -183,7 +183,7 @@ function sanitizeModelSearchInput(
 function sanitizeModelDetailQuery(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   console.log("▶️ ", "Sanitizing product model detail query input...");
   const sanitizedQuery = { ...req.query };
@@ -191,7 +191,7 @@ function sanitizeModelDetailQuery(
 
   if (typeof variationStopSelling === "string") {
     sanitizedQuery.variationStopSelling = removeAllSpaces(
-      variationStopSelling.toLowerCase()
+      variationStopSelling.toLowerCase(),
     );
   }
 
@@ -202,7 +202,7 @@ function sanitizeModelDetailQuery(
 function sanitizeModelDeleteBulkInput(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   console.log("▶️ ", "Sanitizing product model delete bulk input...");
   const { modelIds } = req.body;
@@ -222,7 +222,7 @@ export function inputSanitizer(
     | "admin model search"
     | "model details"
     | "admin model details"
-    | "delete bulk"
+    | "delete many",
 ): (req: Request, res: Response, next: NextFunction) => void {
   switch (type) {
     case "model":
@@ -233,7 +233,7 @@ export function inputSanitizer(
     case "model details":
     case "admin model details":
       return sanitizeModelDetailQuery;
-    case "delete bulk":
+    case "delete many":
       return sanitizeModelDeleteBulkInput;
   }
 }
@@ -246,12 +246,12 @@ export function verifyModelInput(
     | "admin search"
     | "details"
     | "admin details"
-    | "delete bulk"
+    | "delete many",
 ): (req: Request, res: Response, next: NextFunction) => void {
   return async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> => {
     console.log("▶️ ", "Validating product model input...");
 
@@ -287,7 +287,7 @@ export function verifyModelInput(
             errors.push(
               `name must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
-              and cannot contain special characters.`
+              and cannot contain special characters.`,
             );
           }
           if (priceCents === undefined) {
@@ -338,7 +338,7 @@ export function verifyModelInput(
                   errors.push("waterResistance rating is required.");
                 } else if (typeof rating !== "string") {
                   errors.push(
-                    "waterResistance rating must be a non-empty string."
+                    "waterResistance rating must be a non-empty string.",
                   );
                 }
                 if (
@@ -346,7 +346,7 @@ export function verifyModelInput(
                   (typeof description !== "string" || !description)
                 ) {
                   errors.push(
-                    "waterResistance description must be a non-empty string."
+                    "waterResistance description must be a non-empty string.",
                   );
                 }
               }
@@ -359,12 +359,12 @@ export function verifyModelInput(
 
                 if (isPresent(healths) && !isArrayOfNonEmptyStrings(healths)) {
                   errors.push(
-                    "utilities healths must be an array of non-empty strings."
+                    "utilities healths must be an array of non-empty strings.",
                   );
                 }
                 if (isPresent(sports) && !isArrayOfNonEmptyStrings(sports)) {
                   errors.push(
-                    "utilities sports must be an array of non-empty strings."
+                    "utilities sports must be an array of non-empty strings.",
                   );
                 }
                 if (
@@ -372,12 +372,12 @@ export function verifyModelInput(
                   !isArrayOfNonEmptyStrings(specials)
                 ) {
                   errors.push(
-                    "utilities specials must be an array of non-empty strings."
+                    "utilities specials must be an array of non-empty strings.",
                   );
                 }
                 if (isPresent(others) && !isArrayOfNonEmptyStrings(others)) {
                   errors.push(
-                    "utilities others must be an array of non-empty strings."
+                    "utilities others must be an array of non-empty strings.",
                   );
                 }
               }
@@ -387,7 +387,7 @@ export function verifyModelInput(
               !isArrayOfNonEmptyStrings(supportedAppsForNotifications)
             ) {
               errors.push(
-                "supportedAppsForNotifications must be an array of non-empty strings."
+                "supportedAppsForNotifications must be an array of non-empty strings.",
               );
             }
           }
@@ -412,7 +412,7 @@ export function verifyModelInput(
               !isArrayOfNonEmptyStrings(connectivities)
             ) {
               errors.push(
-                "connectivities must be an array of non-empty strings."
+                "connectivities must be an array of non-empty strings.",
               );
             }
             if (isPresent(camera)) {
@@ -427,7 +427,7 @@ export function verifyModelInput(
                   resolutionMp < 0
                 ) {
                   errors.push(
-                    "camera resolution must be a non-negative number."
+                    "camera resolution must be a non-negative number.",
                   );
                 }
                 if (
@@ -435,7 +435,7 @@ export function verifyModelInput(
                   !isArrayOfNonEmptyStrings(features)
                 ) {
                   errors.push(
-                    "camera features must be an array of non-empty strings."
+                    "camera features must be an array of non-empty strings.",
                   );
                 }
               }
@@ -472,7 +472,7 @@ export function verifyModelInput(
               !isArrayOfNonEmptyStrings(compatiblePhoneOs)
             ) {
               errors.push(
-                "compatiblePhoneOs must be an array of non-empty strings."
+                "compatiblePhoneOs must be an array of non-empty strings.",
               );
             }
             if (
@@ -508,14 +508,14 @@ export function verifyModelInput(
                 errors.push("battery AOD on time is required.");
               } else if (typeof aodOnMin !== "number" || aodOnMin < 0) {
                 errors.push(
-                  "battery AOD on time must be a non-negative number."
+                  "battery AOD on time must be a non-negative number.",
                 );
               }
               if (aodOffMin === undefined) {
                 errors.push("battery AOD off time is required.");
               } else if (typeof aodOffMin !== "number" || aodOffMin < 0) {
                 errors.push(
-                  "battery AOD off time must be a non-negative number."
+                  "battery AOD off time must be a non-negative number.",
                 );
               }
               if (
@@ -523,7 +523,7 @@ export function verifyModelInput(
                 (typeof typicalUsageMin !== "number" || typicalUsageMin < 0)
               ) {
                 errors.push(
-                  "battery typical usage time must be a non-negative number."
+                  "battery typical usage time must be a non-negative number.",
                 );
               }
               if (
@@ -531,7 +531,7 @@ export function verifyModelInput(
                 (typeof standByMin !== "number" || standByMin < 0)
               ) {
                 errors.push(
-                  "battery stand by time must be a non-negative number."
+                  "battery stand by time must be a non-negative number.",
                 );
               }
             }
@@ -542,7 +542,7 @@ export function verifyModelInput(
               timeFullChargeMin <= 0
             ) {
               errors.push(
-                "battery time full charge must be a positive number."
+                "battery time full charge must be a positive number.",
               );
             }
             if (!chargingType) {
@@ -581,7 +581,7 @@ export function verifyModelInput(
                 diagonalSizeInch <= 0
               ) {
                 errors.push(
-                  "screen display diagonal size must be a positive number."
+                  "screen display diagonal size must be a positive number.",
                 );
               }
               if (!displayType) {
@@ -600,14 +600,14 @@ export function verifyModelInput(
                 errors.push("screen brightness min nits is required.");
               } else if (typeof minNits !== "number" || minNits < 0) {
                 errors.push(
-                  "screen brightness min nits must be a non-negative number."
+                  "screen brightness min nits must be a non-negative number.",
                 );
               }
               if (maxNits === undefined) {
                 errors.push("screen brightness max nits is required.");
               } else if (typeof maxNits !== "number" || maxNits < 0) {
                 errors.push(
-                  "screen brightness max nits must be a non-negative number."
+                  "screen brightness max nits must be a non-negative number.",
                 );
               }
             }
@@ -621,14 +621,14 @@ export function verifyModelInput(
                 errors.push("screen resolution height pixels is required.");
               } else if (typeof hPx !== "number" || hPx <= 0) {
                 errors.push(
-                  "screen resolution height pixels must be a positive number."
+                  "screen resolution height pixels must be a positive number.",
                 );
               }
               if (wPx === undefined) {
                 errors.push("screen resolution width pixels is required.");
               } else if (typeof wPx !== "number" || wPx <= 0) {
                 errors.push(
-                  "screen resolution width pixels must be a positive number."
+                  "screen resolution width pixels must be a positive number.",
                 );
               }
             }
@@ -649,20 +649,20 @@ export function verifyModelInput(
             } else if (isCircular) {
               if (diameterMm === undefined) {
                 errors.push(
-                  "screen diameter is required for circular screens."
+                  "screen diameter is required for circular screens.",
                 );
               } else if (typeof diameterMm !== "number" || diameterMm <= 0) {
                 errors.push("screen diameter must be a positive number.");
               }
               if (isPresent(dimension)) {
                 errors.push(
-                  "screen dimension must be null or not provided for circular screens."
+                  "screen dimension must be null or not provided for circular screens.",
                 );
               }
             } else if (!dimension) {
               // isCircular is false
               errors.push(
-                "screen dimension is required for non-circular screens."
+                "screen dimension is required for non-circular screens.",
               );
             } else if (!isNoneArrObj(dimension)) {
               errors.push("screen dimension must be an object.");
@@ -670,28 +670,28 @@ export function verifyModelInput(
               const { wMm, hMm, thicknessMm } = dimension;
               if (wMm === undefined) {
                 errors.push(
-                  "screen width is required for non-circular screens."
+                  "screen width is required for non-circular screens.",
                 );
               } else if (typeof wMm !== "number" || wMm <= 0) {
                 errors.push("screen width must be a positive number.");
               }
               if (hMm === undefined) {
                 errors.push(
-                  "screen height is required for non-circular screens."
+                  "screen height is required for non-circular screens.",
                 );
               } else if (typeof hMm !== "number" || hMm <= 0) {
                 errors.push("screen height must be a positive number.");
               }
               if (thicknessMm === undefined) {
                 errors.push(
-                  "screen thickness is required for non-circular screens."
+                  "screen thickness is required for non-circular screens.",
                 );
               } else if (typeof thicknessMm !== "number" || thicknessMm <= 0) {
                 errors.push("screen thickness must be a positive number.");
               }
               if (isPresent(diameterMm)) {
                 errors.push(
-                  "screen diameter must be null or not provided for non-circular screens."
+                  "screen diameter must be null or not provided for non-circular screens.",
                 );
               }
             }
@@ -756,7 +756,7 @@ export function verifyModelInput(
             errors.push(
               `name must be between
               ${PRODUCT_NAME_MIN_LENGTH} and ${PRODUCT_NAME_MAX_LENGTH} characters long,
-              and cannot contain special characters.`
+              and cannot contain special characters.`,
             );
           }
           if (
@@ -806,7 +806,7 @@ export function verifyModelInput(
                     (typeof rating !== "string" || !rating)
                   ) {
                     errors.push(
-                      "waterResistance rating must be a non-empty string."
+                      "waterResistance rating must be a non-empty string.",
                     );
                   }
                   if (
@@ -814,7 +814,7 @@ export function verifyModelInput(
                     (typeof description !== "string" || !description)
                   ) {
                     errors.push(
-                      "waterResistance description must be a non-empty string."
+                      "waterResistance description must be a non-empty string.",
                     );
                   }
                 }
@@ -830,12 +830,12 @@ export function verifyModelInput(
                     !isArrayOfNonEmptyStrings(healths)
                   ) {
                     errors.push(
-                      "utilities healths must be an array of non-empty strings."
+                      "utilities healths must be an array of non-empty strings.",
                     );
                   }
                   if (isPresent(sports) && !isArrayOfNonEmptyStrings(sports)) {
                     errors.push(
-                      "utilities sports must be an array of non-empty strings."
+                      "utilities sports must be an array of non-empty strings.",
                     );
                   }
                   if (
@@ -843,12 +843,12 @@ export function verifyModelInput(
                     !isArrayOfNonEmptyStrings(specials)
                   ) {
                     errors.push(
-                      "utilities specials must be an array of non-empty strings."
+                      "utilities specials must be an array of non-empty strings.",
                     );
                   }
                   if (isPresent(others) && !isArrayOfNonEmptyStrings(others)) {
                     errors.push(
-                      "utilities others must be an array of non-empty strings."
+                      "utilities others must be an array of non-empty strings.",
                     );
                   }
                 }
@@ -858,7 +858,7 @@ export function verifyModelInput(
                 !isArrayOfNonEmptyStrings(supportedAppsForNotifications)
               ) {
                 errors.push(
-                  "supportedAppsForNotifications must be an array of non-empty strings."
+                  "supportedAppsForNotifications must be an array of non-empty strings.",
                 );
               }
             }
@@ -883,7 +883,7 @@ export function verifyModelInput(
                 !isArrayOfNonEmptyStrings(connectivities)
               ) {
                 errors.push(
-                  "connectivities must be an array of non-empty strings."
+                  "connectivities must be an array of non-empty strings.",
                 );
               }
               if (isPresent(camera)) {
@@ -896,7 +896,7 @@ export function verifyModelInput(
                     (typeof resolutionMp !== "number" || resolutionMp < 0)
                   ) {
                     errors.push(
-                      "camera resolution must be a non-negative number."
+                      "camera resolution must be a non-negative number.",
                     );
                   }
                   if (
@@ -904,7 +904,7 @@ export function verifyModelInput(
                     !isArrayOfNonEmptyStrings(features)
                   ) {
                     errors.push(
-                      "camera features must be an array of non-empty strings."
+                      "camera features must be an array of non-empty strings.",
                     );
                   }
                 }
@@ -931,7 +931,7 @@ export function verifyModelInput(
                     (typeof storageBytes !== "number" || storageBytes < 0)
                   ) {
                     errors.push(
-                      "memory storage must be a non-negative number."
+                      "memory storage must be a non-negative number.",
                     );
                   }
                 }
@@ -944,7 +944,7 @@ export function verifyModelInput(
                 !isArrayOfNonEmptyStrings(compatiblePhoneOs)
               ) {
                 errors.push(
-                  "compatiblePhoneOs must be an array of non-empty strings."
+                  "compatiblePhoneOs must be an array of non-empty strings.",
                 );
               }
               if (
@@ -952,7 +952,7 @@ export function verifyModelInput(
                 !isArrayOfNonEmptyStrings(appsConnect)
               ) {
                 errors.push(
-                  "appsConnect must be an array of non-empty strings."
+                  "appsConnect must be an array of non-empty strings.",
                 );
               }
               if (isPresent(sensors) && !isArrayOfNonEmptyStrings(sensors)) {
@@ -987,7 +987,7 @@ export function verifyModelInput(
                     (typeof aodOnMin !== "number" || aodOnMin < 0)
                   ) {
                     errors.push(
-                      "battery AOD on time must be a non-negative number."
+                      "battery AOD on time must be a non-negative number.",
                     );
                   }
                   if (
@@ -995,7 +995,7 @@ export function verifyModelInput(
                     (typeof aodOffMin !== "number" || aodOffMin < 0)
                   ) {
                     errors.push(
-                      "battery AOD off time must be a non-negative number."
+                      "battery AOD off time must be a non-negative number.",
                     );
                   }
                   if (
@@ -1003,7 +1003,7 @@ export function verifyModelInput(
                     (typeof typicalUsageMin !== "number" || typicalUsageMin < 0)
                   ) {
                     errors.push(
-                      "battery typical usage time must be a non-negative number."
+                      "battery typical usage time must be a non-negative number.",
                     );
                   }
                   if (
@@ -1011,7 +1011,7 @@ export function verifyModelInput(
                     (typeof standByMin !== "number" || standByMin < 0)
                   ) {
                     errors.push(
-                      "battery stand by time must be a non-negative number."
+                      "battery stand by time must be a non-negative number.",
                     );
                   }
                 }
@@ -1022,7 +1022,7 @@ export function verifyModelInput(
                   timeFullChargeMin <= 0)
               ) {
                 errors.push(
-                  "battery time full charge must be a positive number."
+                  "battery time full charge must be a positive number.",
                 );
               }
               if (
@@ -1030,7 +1030,7 @@ export function verifyModelInput(
                 (typeof chargingType !== "string" || !chargingType)
               ) {
                 errors.push(
-                  "battery charging type must be a non-empty string."
+                  "battery charging type must be a non-empty string.",
                 );
               }
             }
@@ -1062,7 +1062,7 @@ export function verifyModelInput(
                       diagonalSizeInch <= 0)
                   ) {
                     errors.push(
-                      "screen display diagonal size must be a positive number."
+                      "screen display diagonal size must be a positive number.",
                     );
                   }
                   if (
@@ -1070,7 +1070,7 @@ export function verifyModelInput(
                     (typeof displayType !== "string" || !displayType)
                   ) {
                     errors.push(
-                      "screen display type must be a non-empty string."
+                      "screen display type must be a non-empty string.",
                     );
                   }
                 }
@@ -1085,7 +1085,7 @@ export function verifyModelInput(
                     (typeof minNits !== "number" || minNits < 0)
                   ) {
                     errors.push(
-                      "screen brightness min nits must be a non-negative number."
+                      "screen brightness min nits must be a non-negative number.",
                     );
                   }
                   if (
@@ -1093,7 +1093,7 @@ export function verifyModelInput(
                     (typeof maxNits !== "number" || maxNits < 0)
                   ) {
                     errors.push(
-                      "screen brightness max nits must be a non-negative number."
+                      "screen brightness max nits must be a non-negative number.",
                     );
                   }
                 }
@@ -1108,7 +1108,7 @@ export function verifyModelInput(
                     (typeof hPx !== "number" || hPx <= 0)
                   ) {
                     errors.push(
-                      "screen resolution height pixels must be a positive number."
+                      "screen resolution height pixels must be a positive number.",
                     );
                   }
                   if (
@@ -1116,7 +1116,7 @@ export function verifyModelInput(
                     (typeof wPx !== "number" || wPx <= 0)
                   ) {
                     errors.push(
-                      "screen resolution width pixels must be a positive number."
+                      "screen resolution width pixels must be a positive number.",
                     );
                   }
                 }
@@ -1126,7 +1126,7 @@ export function verifyModelInput(
                 (typeof glassMaterial !== "string" || !glassMaterial)
               ) {
                 errors.push(
-                  "screen glass material must be a non-empty string."
+                  "screen glass material must be a non-empty string.",
                 );
               }
               if (
@@ -1134,7 +1134,7 @@ export function verifyModelInput(
                 (typeof bezelMaterial !== "string" || !bezelMaterial)
               ) {
                 errors.push(
-                  "screen bezel material must be a non-empty string."
+                  "screen bezel material must be a non-empty string.",
                 );
               }
               // Depending on isCircular, either diameterMm or dimension must be provided, handled in controllers
@@ -1296,7 +1296,7 @@ export function verifyModelInput(
               Number.parseInt(stockPriceCentsMax, 10)
           ) {
             errors.push(
-              "stockPriceCentsMin cannot be greater than stockPriceCentsMax."
+              "stockPriceCentsMin cannot be greater than stockPriceCentsMax.",
             );
           }
           if (
@@ -1327,8 +1327,8 @@ export function verifyModelInput(
           ) {
             errors.push(
               `sortBy must be one of the following: ${PRODUCT_MODEL_SEARCH_SORT_OPTIONS.join(
-                ", "
-              )}.`
+                ", ",
+              )}.`,
             );
           }
           break;
@@ -1346,7 +1346,7 @@ export function verifyModelInput(
 
           break;
         }
-        case "delete bulk": {
+        case "delete many": {
           const { modelIds } = req.body;
 
           if (!Array.isArray(modelIds) || modelIds.length === 0) {
@@ -1355,7 +1355,7 @@ export function verifyModelInput(
             for (const [idx, id] of modelIds.entries()) {
               if (typeof id !== "string" || !id) {
                 errors.push(
-                  `modelIds[${idx}] is invalid. Each modelId must be a non-empty string.`
+                  `modelIds[${idx}] is invalid. Each modelId must be a non-empty string.`,
                 );
               }
             }

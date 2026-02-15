@@ -5,7 +5,7 @@ import {
   verifyOrderReturnInput,
 } from "../../utils/middlewares/orderReturn.middleware";
 import {
-  searchAll,
+  search,
   get,
   getDetails,
   updateSelf,
@@ -23,7 +23,7 @@ router.get(
   verifyPermission("r_order_return"),
   inputSanitizer("order return search"),
   verifyOrderReturnInput("search"),
-  searchAll
+  search
 );
 
 router.get("/:returnId", verifyPermission("r_order_return"), get);

@@ -24,7 +24,7 @@ router.post(
   verifyEmptyBody,
   inputSanitizer("model"),
   verifyModelInput("create"),
-  create
+  create,
 );
 
 router.get(
@@ -40,14 +40,10 @@ router.get(
   verifyPermission("r_product_model"),
   inputSanitizer("admin model details"),
   verifyModelInput("admin details"),
-  adminGetDetails
+  adminGetDetails,
 );
 
-router.get(
-  "/:modelId/admin",
-  verifyPermission("r_product_model"),
-  adminGet
-);
+router.get("/:modelId/admin", verifyPermission("r_product_model"), adminGet);
 
 router.get("/:modelId", get);
 
@@ -57,16 +53,16 @@ router.patch(
   verifyEmptyBody,
   inputSanitizer("model"),
   verifyModelInput("update"),
-  update
+  update,
 );
 
 router.delete(
-  "/bulk",
+  "/many",
   verifyPermission("d_product_model"),
   verifyEmptyBody,
-  inputSanitizer("delete bulk"),
-  verifyModelInput("delete bulk"),
-  removeBulk
+  inputSanitizer("delete many"),
+  verifyModelInput("delete many"),
+  removeBulk,
 );
 
 router.delete("/:modelId", verifyPermission("d_product_model"), remove);

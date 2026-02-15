@@ -36,7 +36,7 @@ import {
 export async function create(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Create GRN...");
 
@@ -45,8 +45,8 @@ export async function create(
     return next(
       new HttpError(
         500,
-        "Request user not found, this should be handled in middlewares."
-      )
+        "Request user not found, this should be handled in middlewares.",
+      ),
     );
   }
 
@@ -105,7 +105,7 @@ export async function create(
     const variationId = new Types.ObjectId(modelVariationId);
     const instanceSkuProps = await getPropsForInstanceSkuGen(
       variationId,
-      session
+      session,
     );
 
     for (const instance of instances) {
@@ -118,7 +118,7 @@ export async function create(
     }
     const createdInstances = await VariationInstance.insertMany(
       instancesToCreate,
-      { session }
+      { session },
     );
 
     // Create inventory movements for each instance
@@ -164,17 +164,17 @@ export async function create(
 export async function get(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Get GRN...");
-  const { id } = req.params;
+  const { grnId } = req.params;
 
   try {
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(grnId)) {
       throw new HttpError(404, "GRN not found.");
     }
     const grn = await Grn.aggregate([
-      { $match: { _id: new Types.ObjectId(id) } },
+      { $match: { _id: new Types.ObjectId(grnId) } },
       OPTIMIZE_PIPELINE,
       {
         $lookup: {
@@ -205,21 +205,21 @@ export async function get(
 export async function getDetails(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Get GRN details...");
-  const { id } = req.params;
+  const { grnId } = req.params;
 
   try {
     /* Business logic:
       - Get and return a list of GRN which connected to each other (reversedByGrnId).
     */
 
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(grnId)) {
       throw new HttpError(404, "GRN not found.");
     }
     const grns = await Grn.aggregate([
-      { $match: { _id: new Types.ObjectId(id) } },
+      { $match: { _id: new Types.ObjectId(grnId) } },
       // Find ancestors (past version that point to this one or its parents)
       {
         $graphLookup: {
@@ -295,7 +295,7 @@ export async function getDetails(
 export async function search(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Search GRNs...");
 
@@ -342,13 +342,13 @@ export async function search(
     if (reqQuery.totalPriceCentsMin) {
       query.totalPriceCents.$gte = Number.parseInt(
         reqQuery.totalPriceCentsMin,
-        10
+        10,
       );
     }
     if (reqQuery.totalPriceCentsMax) {
       query.totalPriceCents.$lte = Number.parseInt(
         reqQuery.totalPriceCentsMax,
-        10
+        10,
       );
     }
   }
@@ -407,7 +407,7 @@ export async function search(
     ]);
 
     const grns: GrnDetailsItem[] = aggregationResult[0].data.map(
-      formatGrnDetailsResponse
+      formatGrnDetailsResponse,
     );
     const total = aggregationResult[0].metadata[0]?.total || 0;
 
@@ -433,7 +433,7 @@ export async function search(
 export async function update(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Update GRN...");
 
@@ -442,12 +442,12 @@ export async function update(
     return next(
       new HttpError(
         500,
-        "Request user not found, this should be handled in middlewares."
-      )
+        "Request user not found, this should be handled in middlewares.",
+      ),
     );
   }
 
-  const { id } = req.params;
+  const { grnId } = req.params;
   const {
     name,
     providerId,
@@ -469,10 +469,10 @@ export async function update(
     */
 
     // Check GRN exists
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(grnId)) {
       throw new HttpError(404, "GRN not found.");
     }
-    const existingGrn = await Grn.findById(id).session(session);
+    const existingGrn = await Grn.findById(grnId).session(session);
     if (!existingGrn) {
       throw new HttpError(404, "GRN not found.");
     }
