@@ -29,7 +29,7 @@ import {
   faFileArrowUp,
 } from "@fortawesome/free-solid-svg-icons";
 import { GRN_FILE_IMPORT_EXTENSIONS } from "../../../../../common/configs.common";
-import ExcelTemplates from "../../../assets/templates/excel-templates.xlsx";
+import ExcelTemplates from "../../../assets/templates/importGrnTemplate.xlsx";
 import ExcelJS from "exceljs";
 import useCreationWizardStore from "../../../store/admin/wizard/creationWizardStore";
 import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
