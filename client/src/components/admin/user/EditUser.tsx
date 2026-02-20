@@ -78,7 +78,7 @@ export default function EditUser() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { roles, fetchRoles } = useRoleStore();
+  const { allRolesLite: roles, fetchRoles } = useRoleStore();
   const { fetchUser, updateUser, updateUserEmail, updateUserPhoneNumber } =
     useUserStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);

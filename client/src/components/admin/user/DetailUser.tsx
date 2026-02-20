@@ -25,7 +25,7 @@ export default function DetailUser() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { roles, fetchRoles } = useRoleStore();
+  const { allRolesLite: roles, fetchAllRoles } = useRoleStore();
   const { fetchUserDetails } = useUserStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
 
@@ -47,7 +47,7 @@ export default function DetailUser() {
 
         const [fetchedUserDetail] = await Promise.all([
           fetchUserDetails(id),
-          roles ? Promise.resolve() : fetchRoles(),
+          roles ? Promise.resolve() : fetchAllRoles(),
         ]);
 
         setUserDetails(fetchedUserDetail);

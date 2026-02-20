@@ -49,7 +49,7 @@ export default function CreateUser() {
 
   const navigate = useNavigate();
 
-  const { roles, fetchRoles } = useRoleStore();
+  const { allRolesLite: roles, fetchRoles } = useRoleStore();
   const { createUser } = useUserStore();
 
   const [formData, setFormData] = useState<FormData>({

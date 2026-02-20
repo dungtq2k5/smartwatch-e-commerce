@@ -105,7 +105,7 @@ export default function UserManagement() {
 
   const admin = useAuthStore((state) => state.admin);
   const { fetchUsers, deleteUser, deleteUserBulk } = useUserStore();
-  const { roles, getRole, fetchRoles } = useRoleStore();
+  const { allRolesLite: roles, getRole, fetchAllRoles } = useRoleStore();
   const refreshSignal = useRefreshStore((state) => state.signals.admin);
   const {
     config: { userManagementDisplayFields: displayFields },
@@ -346,7 +346,7 @@ export default function UserManagement() {
       setApiErr(null);
 
       try {
-        if (!roles) await fetchRoles(); // Pre-fetch roles to use getRole for display
+        if (!roles) await fetchAllRoles(); // Pre-fetch roles to use getRole for display
 
         const [
           urlLimit,

@@ -15,7 +15,7 @@ const AuthRoute = memo(() => {
   console.log("AuthRoute admin rendered", renderCount.current);
 
   const { admin } = useAuthStore();
-  const { roles, fetchRoles } = useRoleStore();
+  const { allRolesLite: roles, fetchAllRoles } = useRoleStore();
   const { permissions, fetchPermissions } = usePermissionStore();
   const { sysUserId, fetchSysUserId } = useUserStore();
 
@@ -31,7 +31,7 @@ const AuthRoute = memo(() => {
 
         try {
           await Promise.all([
-            roles ? Promise.resolve() : fetchRoles(),
+            roles ? Promise.resolve() : fetchAllRoles(),
             permissions ? Promise.resolve() : fetchPermissions(),
             sysUserId ? Promise.resolve() : fetchSysUserId(),
           ]);
@@ -45,7 +45,7 @@ const AuthRoute = memo(() => {
 
     handleFetchInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin]);
+  }, [admin]); // Refetch all roles if admin create/edit role because those methods will clear cached roles
 
   // Admin not exists -> not auth -> navigate to admin login page
   if (!admin) {

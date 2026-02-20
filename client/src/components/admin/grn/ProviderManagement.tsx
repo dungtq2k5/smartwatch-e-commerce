@@ -148,16 +148,16 @@ export default function ProviderManagement() {
       },
       createdBy: {
         label: PROVIDER_FIELD_LABEL_LEGEND["createdBy"] || "Created by",
-        tdContent: (product) => (
+        tdContent: (provider) => (
           <DetailUserLink
-            userId={product.createdBy.id}
+            userId={provider.createdBy.id}
             disabled={!canReadUser}
             disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
-            {product.createdBy.fullName}
+            {provider.createdBy.fullName}
           </DetailUserLink>
         ),
-        getCsvVal: (product) => product.createdBy.fullName,
+        getCsvVal: (provider) => provider.createdBy.fullName,
       },
       createdAt: {
         label: PROVIDER_FIELD_LABEL_LEGEND["createdAt"] || "Created at",

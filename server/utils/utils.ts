@@ -1730,5 +1730,5 @@ export function getPermissions(): (FlattenMaps<IPermission> &
     throw new Error("Application cache not initialized properly.");
   }
 
-  return structuredClone(permissions);
+  return permissions; // Don't use structuredClone because it will break all the ObjectId instances
 }

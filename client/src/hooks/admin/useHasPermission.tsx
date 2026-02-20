@@ -45,7 +45,7 @@ export default function useHasPermission(
   permissionCode: PermissionCode,
 ): boolean {
   const { admin } = useAuthStore();
-  const { roles } = useRoleStore();
+  const { allRolesLite: roles } = useRoleStore();
   const { permissions } = usePermissionStore();
 
   const hasPermission = useMemo((): boolean => {
