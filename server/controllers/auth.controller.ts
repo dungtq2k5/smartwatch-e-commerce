@@ -8,7 +8,7 @@ import {
   formatUserResponse,
   genJwtAndSetCookie,
   genVerificationCode,
-  getBuyerRoleId,
+  getSysBuyerRoleId,
   getJwtPayload,
   getSysUserId,
   isPresent,
@@ -228,7 +228,7 @@ export async function loginAdmin(
 
     if (
       !user ||
-      (user.roles.length === 1 && getBuyerRoleId().equals(user.roles[0].id)) || // isBuyerOnly
+      (user.roles.length === 1 && getSysBuyerRoleId().equals(user.roles[0].id)) || // isBuyerOnly
       user.isLocked ||
       !user.isEmailVerified ||
       !(await bcrypt.compare(password, user.password))
@@ -829,7 +829,7 @@ export async function checkAdminAuth(
     if (
       !user ||
       user.isDeleted ||
-      (user.roles.length === 1 && getBuyerRoleId().equals(user.roles[0].id)) // isBuyerOnly
+      (user.roles.length === 1 && getSysBuyerRoleId().equals(user.roles[0].id)) // isBuyerOnly
     ) {
       throw new HttpError(404, "User not found.");
     }
@@ -898,7 +898,7 @@ async function assignDefaultBuyerRole(
   session: mongoose.ClientSession
 ): Promise<{ roleId: Types.ObjectId; assignedBy: Types.ObjectId }> {
   try {
-    const buyerRoleId = getBuyerRoleId();
+    const buyerRoleId = getSysBuyerRoleId();
     const sysUserId = getSysUserId();
 
     await Role.updateOne(

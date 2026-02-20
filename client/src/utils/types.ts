@@ -8,8 +8,12 @@ import type {
   AdminProductResponse,
   AdminUserResponse,
   GrnDetailsItem,
+  Nullable,
   OrderReturnSearchQuery,
+  PermissionResponse,
   ProviderResponse,
+  RoleDetailsResponse,
+  RoleResponse,
   UserCartResponse,
   VariationInstanceResponse,
 } from "../../../common/types.common";
@@ -108,9 +112,9 @@ export type AdminProductOsDisplayableField =
   | keyof Omit<AdminProductOsResponse, "logoUrl">
   | "actions";
 
-export type AdminProviderDisplayableField =
-  | keyof ProviderResponse
-  | "actions";
+export type AdminProviderDisplayableField = keyof ProviderResponse | "actions";
+
+export type AdminRoleDisplayableField = keyof RoleResponse | "actions";
 
 export type TableColDisplay<Item, SortOption> = {
   label: string; // For header display
@@ -159,8 +163,9 @@ export type ProductCategoryDisplayField =
 export type ProductOsDisplayField =
   DisplayField<AdminProductOsDisplayableField>;
 
-export type ProviderDisplayField =
-  DisplayField<AdminProviderDisplayableField>;
+export type ProviderDisplayField = DisplayField<AdminProviderDisplayableField>;
+
+export type RoleDisplayField = DisplayField<AdminRoleDisplayableField>;
 
 export type AdminConfig = {
   userManagementDisplayFields: UserDisplayField[];
@@ -173,6 +178,7 @@ export type AdminConfig = {
   productCategoryManagementDisplayFields: ProductCategoryDisplayField[];
   productOsManagementDisplayFields: ProductOsDisplayField[];
   providerManagementDisplayFields: ProviderDisplayField[];
+  roleManagementDisplayFields: RoleDisplayField[];
 };
 
 export type ProductCreationWizardStep =
@@ -181,9 +187,7 @@ export type ProductCreationWizardStep =
   | "variation"
   | "grn";
 
-export type ProviderCreationWizardStep =
-  | "provider"
-  | "address";
+export type ProviderCreationWizardStep = "provider" | "address";
 
 export type CustomInputProps = {
   error?: string | null;
@@ -203,4 +207,22 @@ export type ProviderAddressFormData = {
   location: [number, number];
   notes: FormInput;
   isDefault: boolean;
+};
+
+export type PermissionFromRoleDetails =
+  RoleDetailsResponse["permissions"]["permissions"][number];
+
+export type GroupedPermissions<
+  T = PermissionResponse | PermissionFromRoleDetails,
+> = {
+  [category: string]: T[];
+};
+
+export type PermissionOperationKey = "create" | "read" | "update" | "delete";
+
+export type PermissionMatrix<
+  T = PermissionResponse | PermissionFromRoleDetails,
+> = {
+  category: string;
+  operations: Nullable<Record<PermissionOperationKey, T>>;
 };

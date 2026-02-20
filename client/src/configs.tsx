@@ -24,10 +24,12 @@ import type {
   AdminProductModelDisplayableField,
   AdminProductOsDisplayableField,
   AdminProviderDisplayableField,
+  AdminRoleDisplayableField,
   AdminUserDisplayableField,
   AdminVariationInstanceDisplayableField,
   GrnDisplayField,
   ModelVariationDisplayField,
+  PermissionOperationKey,
   ProductBrandDisplayField,
   ProductCategoryDisplayField,
   ProductCreationWizardStep,
@@ -37,6 +39,7 @@ import type {
   ProviderAddressFormData,
   ProviderCreationWizardStep,
   ProviderDisplayField,
+  RoleDisplayField,
   UserDisplayField,
   VariationInstanceDisplayField,
 } from "./utils/types";
@@ -433,6 +436,19 @@ export const PROVIDER_FIELD_LABEL_LEGEND: Readonly<
   actions: "Actions",
 };
 
+export const ROLE_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminRoleDisplayableField, string>
+> = {
+  id: "ID",
+  name: "Name",
+  userAssigned: "Users assigned",
+  permissions: "Total permissions",
+  createdBy: "Created By",
+  createdAt: "Created At",
+  updatedAt: "Updated At",
+  actions: "Actions",
+};
+
 export const DEFAULT_ADMIN_USER_DISPLAY_FIELDS: UserDisplayField[] = [
   { name: "id", visible: false, exportable: true },
   { name: "fullName", visible: true, exportable: true },
@@ -561,6 +577,16 @@ export const DEFAULT_ADMIN_PROVIDER_DISPLAY_FIELDS: ProviderDisplayField[] = [
   { name: "actions", visible: true, exportable: false },
 ];
 
+export const DEFAULT_ADMIN_ROLE_DISPLAY_FIELDS: RoleDisplayField[] = [
+  { name: "id", visible: true, exportable: true },
+  { name: "name", visible: true, exportable: true },
+  { name: "userAssigned", visible: true, exportable: true },
+  { name: "createdBy", visible: false, exportable: true },
+  { name: "createdAt", visible: true, exportable: true },
+  { name: "updatedAt", visible: false, exportable: true },
+  { name: "actions", visible: true, exportable: false },
+];
+
 export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   visa: (
     <FontAwesomeIcon
@@ -603,6 +629,7 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
     DEFAULT_ADMIN_PRODUCT_CATEGORY_DISPLAY_FIELDS,
   productOsManagementDisplayFields: DEFAULT_ADMIN_PRODUCT_OS_DISPLAY_FIELDS,
   providerManagementDisplayFields: DEFAULT_ADMIN_PROVIDER_DISPLAY_FIELDS,
+  roleManagementDisplayFields: DEFAULT_ADMIN_ROLE_DISPLAY_FIELDS,
 };
 
 export const GRN_FILE_IMPORT_WORKSHEET_NAME = "grn-import-template"; // Must match with the worksheet name in the Excel template file
@@ -663,3 +690,56 @@ export const DEFAULT_PROVIDER_ADDRESS_FORM_DATA: ProviderAddressFormData = {
   notes: { val: "" },
   isDefault: false,
 };
+
+export const PERMISSION_CATEGORIES_LEGEND: Record<string, string> = {
+  // --- USERS & AUTH ---
+  usr: "User",
+  user: "User",
+  users: "User",
+  usr_role: "User Role",
+  user_role: "User Role",
+  usr_addr: "User Address",
+  user_address: "User Address",
+  usr_paym: "User Payment Method",
+  user_payment: "User Payment Method",
+  usr_cart: "User Cart",
+  user_cart: "User Cart",
+  usr_bankacc: "User Bank Account",
+  user_bank: "User Bank Account",
+
+  // --- PRODUCTS & CATALOG ---
+  product: "Product",
+  products: "Product",
+  product_model: "Product Model",
+  prod_model: "Product Model",
+  model_variation: "Model Variation",
+  variation: "Model Variation",
+  variation_instance: "Variation Instance",
+  instance: "Variation Instance",
+  product_cat: "Product Category",
+  category: "Product Category",
+  product_brand: "Product Brand",
+  brand: "Product Brand",
+  product_os: "Product OS",
+  os: "Product OS",
+
+  // --- ORDERS & TRANSACTIONS ---
+  order: "Order",
+  orders: "Order",
+  order_return: "Order Return",
+  return: "Order Return",
+  withdrawal_req: "Withdrawal Request",
+  withdrawal: "Withdrawal Request",
+
+  // --- INVENTORY & LOGISTICS ---
+  grn: "Goods Receipt Note",
+  inventory: "Provider Inventory",
+  provider_inventory: "Provider Inventory",
+};
+
+export const PERMISSION_OPERATIONS: PermissionOperationKey[] = [
+  "create",
+  "read",
+  "update",
+  "delete",
+] as const;

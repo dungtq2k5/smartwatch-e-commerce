@@ -76,6 +76,10 @@ import ProviderManagement from "./components/admin/grn/ProviderManagement.tsx";
 import CreateProvider from "./components/admin/grn/CreateProvider.tsx";
 import EditProvider from "./components/admin/grn/EditProvider.tsx";
 import DetailProvider from "./components/admin/grn/DetailProvider.tsx";
+import RoleManagement from "./components/admin/role/RoleManagement.tsx";
+import CreateRole from "./components/admin/role/CreateRole.tsx";
+import DetailRole from "./components/admin/role/DetailRole.tsx";
+import EditRole from "./components/admin/role/EditRole.tsx";
 
 export default function App() {
   // DEV for testing
@@ -115,7 +119,7 @@ export default function App() {
       {isAdminPage ? (
         <Routes>
           <Route path="/admin">
-            {/* TODO admin features
+            {/* TODO Admin features
               - dashboard
               - order management
               - return management
@@ -214,6 +218,15 @@ export default function App() {
                   <Route path=":id">
                     <Route index element={<DetailProvider />} />
                     <Route path="edit" element={<EditProvider />} />
+                  </Route>
+                </Route>
+
+                <Route path="roles">
+                  <Route index element={<RoleManagement />} />
+                  <Route path="create" element={<CreateRole />} />
+                  <Route path=":id">
+                    <Route index element={<DetailRole />} />
+                    <Route path="edit" element={<EditRole />} />
                   </Route>
                 </Route>
               </Route>

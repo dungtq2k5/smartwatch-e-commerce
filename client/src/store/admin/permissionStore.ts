@@ -21,8 +21,8 @@ const usePermissionStore = create<PermissionState>((set, get) => ({
   getPermission(permissionId: string): PermissionResponse | undefined {
     return structuredClone(
       get().permissions?.permissions.find(
-        (permission) => permission.id === permissionId
-      )
+        (permission) => permission.id === permissionId,
+      ),
     );
   },
 
@@ -36,6 +36,7 @@ const usePermissionStore = create<PermissionState>((set, get) => ({
 
       const permissions = res.data as PermissionListResponse;
       set({ permissions });
+
       return structuredClone(permissions);
     } catch (error) {
       throw new Error(formatError(error));

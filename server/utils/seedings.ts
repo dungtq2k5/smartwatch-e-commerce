@@ -7,6 +7,8 @@ import {
   PERMISSION_LIST,
   BUYER_PERMISSION_LIST,
   ADMIN_USER,
+  SYS_BUYER_ROLE,
+  SYS_ADMIN_ROLE,
 } from "../configs/configs";
 import User from "../models/user/user.model";
 import GrnState from "../models/inventory/grnState.model";
@@ -26,12 +28,12 @@ import CancelReason from "../models/order/cancelReason.model";
 import WithdrawalState from "../models/withdrawal/withdrawalState.model";
 
 export async function createSystemUser(
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<Types.ObjectId> {
   // Return system user ID
   try {
     const systemUser = await User.findOne({ email: SYSTEM_USER.email }).session(
-      session
+      session,
     );
     if (systemUser) {
       console.log("System user already exists, no need to create.");
@@ -57,7 +59,7 @@ export async function createSystemUser(
 
 export async function seedGrnStates(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await GrnState.countDocuments().session(session);
@@ -98,7 +100,7 @@ export async function seedGrnStates(
 
 export async function seedInventoryMovementTypes(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await InventoryMovementType.countDocuments().session(session);
@@ -174,7 +176,7 @@ export async function seedInventoryMovementTypes(
 
 export async function seedDeliveryStates(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await DeliveryState.countDocuments().session(session);
@@ -257,7 +259,7 @@ export async function seedDeliveryStates(
 }
 
 export async function seedPaymentMethods(
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await PaymentMethod.countDocuments().session(session);
@@ -283,7 +285,7 @@ export async function seedPaymentMethods(
 
 export async function seedPaymentStates(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await PaymentState.countDocuments().session(session);
@@ -335,7 +337,7 @@ export async function seedPaymentStates(
 
 export async function seedOrderStates(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await OrderState.countDocuments().session(session);
@@ -404,7 +406,7 @@ export async function seedOrderStates(
 
 export async function seedOrderCancelReasons(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await CancelReason.countDocuments().session(session);
@@ -436,7 +438,7 @@ export async function seedOrderCancelReasons(
 
 export async function seedInstanceConditions(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await InstanceCondition.countDocuments().session(session);
@@ -482,7 +484,7 @@ export async function seedInstanceConditions(
 
 export async function seedRefundStates(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await RefundState.countDocuments().session(session);
@@ -530,7 +532,7 @@ export async function seedRefundStates(
 
 export async function seedReturnStates(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await ReturnState.countDocuments().session(session);
@@ -607,7 +609,7 @@ export async function seedReturnStates(
 
 export async function seedReturnReasons(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await ReturnReason.countDocuments().session(session);
@@ -645,7 +647,7 @@ export async function seedReturnReasons(
 
 export async function seedPickupStates(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await PickupState.countDocuments().session(session);
@@ -711,7 +713,7 @@ export async function seedPickupStates(
 }
 
 export async function seedPermissions(
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await Permission.countDocuments().session(session);
@@ -727,8 +729,8 @@ export async function seedPermissions(
   }
 }
 
-export async function seedRoles(
-  session: mongoose.mongo.ClientSession
+export async function seedBaseRoles(
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const roleCount = await Role.countDocuments().session(session);
@@ -744,7 +746,7 @@ export async function seedRoles(
     }
 
     const systemUser = await User.findOne({ email: SYSTEM_USER.email }).session(
-      session
+      session,
     );
     if (!systemUser) {
       console.log("No system user found, creating system user first...");
@@ -761,7 +763,7 @@ export async function seedRoles(
       .select("_id code");
 
     const buyerPermissionCodes: string[] = BUYER_PERMISSION_LIST.map(
-      (p) => p.code
+      (p) => p.code,
     );
     const buyerPermissionIds = permissions
       .filter((p) => buyerPermissionCodes.includes(p.code))
@@ -772,7 +774,7 @@ export async function seedRoles(
 
     const roles = [
       {
-        name: "admin",
+        name: SYS_ADMIN_ROLE.name,
         createdBy: systemUserId,
         userAssigned: 1, // Initial admin user will be assigned this role
         permissions: permissions.map((p) => ({
@@ -781,7 +783,7 @@ export async function seedRoles(
         })),
       },
       {
-        name: "buyer",
+        name: SYS_BUYER_ROLE.name,
         createdBy: systemUserId,
         permissions: buyerPermissionIds,
       },
@@ -794,12 +796,12 @@ export async function seedRoles(
   }
 }
 
-export async function createBaseAdminUser(
-  session: mongoose.mongo.ClientSession
+export async function seedBaseAdminUser(
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const adminUser = await User.findOne({ email: ADMIN_USER.email }).session(
-      session
+      session,
     );
     if (adminUser) {
       console.log("Base admin user already exists, no need to create.");
@@ -817,7 +819,7 @@ export async function createBaseAdminUser(
     const roleCount = await Role.countDocuments().session(session);
     if (roleCount === 0) {
       console.log("No roles found, seeding roles first...");
-      await seedRoles(session);
+      await seedBaseRoles(session);
     }
 
     const adminRole = (await Role.findOne({ name: "admin" })
@@ -841,7 +843,7 @@ export async function createBaseAdminUser(
           roles: [{ id: adminRole._id, assignedBy: systemUser._id }],
         },
       ],
-      { session }
+      { session },
     );
     console.log("✅ ", "Base admin user created successfully");
   } catch (error) {
@@ -851,7 +853,7 @@ export async function createBaseAdminUser(
 
 export async function seedWithdrawalStates(
   systemUserId: Types.ObjectId | string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ): Promise<void> {
   try {
     const count = await WithdrawalState.countDocuments().session(session);
@@ -945,8 +947,8 @@ export async function seedAllCollections(): Promise<void> {
     await seedReturnReasons(sysUserId, session);
 
     await seedPermissions(session);
-    await seedRoles(session);
-    await createBaseAdminUser(session);
+    await seedBaseRoles(session);
+    await seedBaseAdminUser(session);
 
     await seedWithdrawalStates(sysUserId, session);
 

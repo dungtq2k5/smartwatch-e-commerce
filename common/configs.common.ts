@@ -477,3 +477,5 @@ export const ROLE_SEARCH_SORT_OPTIONS = [
   "updatedAt_desc",
   "updatedAt_asc",
 ] as const;
+
+export const MAX_ROLES_TO_DELETE_BULK = 5;

@@ -46,7 +46,6 @@ const roleSchema: Schema<IRole> = new Schema(
       type: String,
       unique: true,
       required: true,
-      lowercase: true,
     },
     userAssigned: {
       type: Number,

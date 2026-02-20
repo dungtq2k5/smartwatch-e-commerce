@@ -1,4 +1,8 @@
-import type { FirebaseBucket, Response } from "../../../common/types.common";
+import type {
+  FirebaseBucket,
+  PermissionResponse,
+  Response,
+} from "../../../common/types.common";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import {
   productImgStorage,
@@ -30,8 +34,13 @@ import {
   readFileAsDataUrl,
   removeOddSpaces,
 } from "../../../common/utils.common";
-import { REFRESH_TOKEN_URL } from "../configs";
+import { PERMISSION_CATEGORIES_LEGEND, REFRESH_TOKEN_URL } from "../configs";
 import ExcelJS from "exceljs";
+import type {
+  GroupedPermissions,
+  PermissionFromRoleDetails,
+  PermissionMatrix,
+} from "./types";
 
 let isRefreshingToken = false; // Prevent "thundering herd" problem where multiple failed requests would all try to refresh the token simultaneously
 let failedReqQueue: {
@@ -317,6 +326,7 @@ export function exportToCsv<T>(
 
 export async function getExcelFileErrs(
   file: File,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   category: "grn",
 ): Promise<string[]> {
   const errors = [];
@@ -577,4 +587,70 @@ export function getGeocodeAddress(
       onError(`Geocode was not successful for the following reason: ${status}`);
     }
   });
+}
+
+/**
+ * Groups permissions by category based on their permission codes.
+ *
+ * @example
+ * const grouped = getGroupedPermissions(permissions);
+ * // Result: { user: [...], product: [...], ... }
+ */
+export function getGroupedPermissions<
+  T extends PermissionResponse | PermissionFromRoleDetails = PermissionResponse,
+>(permissions: T[]): GroupedPermissions<T> {
+  const grouped: GroupedPermissions<T> = {};
+
+  permissions.forEach((permission) => {
+    let category =
+      PERMISSION_CATEGORIES_LEGEND[
+        permission.code.split("_").slice(1).join("_")
+      ]; // Get everything after the first underscore as category
+
+    if (!category) {
+      console.warn(
+        `Permission code "${permission.code}" does not match any known category. Skipping grouping for this permission. Please check the PERMISSION_CATEGORIES_LEGEND for missing entries.`,
+      );
+      category = "uncategorized";
+    }
+
+    if (!grouped[category]) {
+      grouped[category] = [];
+    }
+
+    grouped[category].push(permission);
+  });
+
+  return grouped;
+}
+
+/**
+ * Converts grouped permissions into a matrix structure with CRUD operations.
+ * This is optimized for table-based UI rendering.
+ *
+ * @example
+ * const matrix = getPermissionMatrix(groupedPermissions);
+ * // Result: [{ category: "user", operations: { create: {...}, read: {...}, ... } }, ...]
+ */
+export function getPermissionsMatrix<
+  T extends PermissionResponse | PermissionFromRoleDetails = PermissionResponse,
+>(groupedPermissions: GroupedPermissions<T>): PermissionMatrix<T>[] {
+  return Object.entries(groupedPermissions).map(
+    ([category, categoryPermissions]) => {
+      const crudOps = {
+        create:
+          categoryPermissions.find((p) => p.code.startsWith("c_")) ?? null,
+        read: categoryPermissions.find((p) => p.code.startsWith("r_")) ?? null,
+        update:
+          categoryPermissions.find((p) => p.code.startsWith("u_")) ?? null,
+        delete:
+          categoryPermissions.find((p) => p.code.startsWith("d_")) ?? null,
+      };
+
+      return {
+        category,
+        operations: crudOps,
+      };
+    },
+  );
 }

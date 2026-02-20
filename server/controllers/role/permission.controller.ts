@@ -13,7 +13,6 @@ export function getAll(
   console.log("▶️ ", "Fetching all permission...");
 
   try {
-    // const permissions = await Permissions.find().lean(); // No need to sort because the order will followed by PERMISSION_LIST
     const permissions = getPermissions();
 
     res.status(200).json({

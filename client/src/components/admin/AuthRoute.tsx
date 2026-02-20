@@ -45,7 +45,7 @@ const AuthRoute = memo(() => {
 
     handleFetchInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin]); // Refetch all roles if admin create/edit role because those methods will clear cached roles
+  }, [admin, roles]); // Refetch all roles if admin create/edit role because those methods will clear cached roles
 
   // Admin not exists -> not auth -> navigate to admin login page
   if (!admin) {

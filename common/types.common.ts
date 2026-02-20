@@ -353,6 +353,7 @@ export type PermissionResponse = {
   name: string;
   code: PermissionCode;
 };
+
 export type PermissionListResponse = {
   total: number;
   permissions: PermissionResponse[];
@@ -433,6 +434,10 @@ export type RoleListResponseLight = {
 export type RoleSearchQuery = SearchQuery<
   (typeof ROLE_SEARCH_SORT_OPTIONS)[number]
 >;
+
+export type RoleBulkDelete = {
+  roleIds: string[];
+};
 
 export type ProductCreate = {
   name: string;
@@ -1656,3 +1661,7 @@ type SearchQuery<SortBy extends string | undefined = undefined> = Partial<{
   searchTerm: string;
   sortBy: SortBy;
 }>;
+
+export type Nullable<T> = {
+  [K in keyof T]: T[K] | null;
+};

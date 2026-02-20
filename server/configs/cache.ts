@@ -1,7 +1,7 @@
 import { FlattenMaps, Types } from "mongoose";
 import Role from "../models/role/role.model";
 import User from "../models/user/user.model";
-import { SYSTEM_USER } from "./configs";
+import { SYS_ADMIN_ROLE, SYS_BUYER_ROLE, SYSTEM_USER } from "./configs";
 import InstanceCondition from "../models/product/instanceCondition.model";
 import InventoryMovementType from "../models/inventory/inventoryMovementType.model";
 import DeliveryState from "../models/order/deliveryState.model";
@@ -24,8 +24,6 @@ type LookupIdObjectIdWithLevel = {
 };
 
 type AppCache = {
-  buyerRoleId?: Types.ObjectId;
-  adminRoleId?: Types.ObjectId;
   systemUserId?: Types.ObjectId;
 
   instanceConditions?: LookupIdObjectId;
@@ -50,43 +48,14 @@ type AppCache = {
     }> & {
       __v: number;
     })[];
+
+  sysBuyerRoleId?: Types.ObjectId;
+  sysAdminRoleId?: Types.ObjectId;
 };
 
 export const appCache: AppCache = {};
 
-async function buyerRoleIdCache(): Promise<void> {
-  console.log("🗂️ ", "Initializing buyer role ID cache...");
-  try {
-    const buyerRole = await Role.findOne({ name: "buyer" })
-      .select("_id")
-      .lean();
-    if (!buyerRole) {
-      throw new Error("'buyer' role not found in the database.");
-    }
-    appCache.buyerRoleId = buyerRole._id;
-    console.log("✅ ", "Buyer role ID cache initialized successfully.");
-  } catch (error) {
-    throw new Error(`Error initializing buyer role ID cache: ${error}`);
-  }
-}
-
-async function adminRoleIdCache(): Promise<void> {
-  console.log("🗂️ ", "Initializing admin role ID cache...");
-  try {
-    const adminRole = await Role.findOne({ name: "admin" })
-      .select("_id")
-      .lean();
-    if (!adminRole) {
-      throw new Error("'admin' role not found in the database.");
-    }
-    appCache.adminRoleId = adminRole._id;
-    console.log("✅ ", "Admin role ID cache initialized successfully.");
-  } catch (error) {
-    throw new Error(`Error initializing admin role ID cache: ${error}`);
-  }
-}
-
-async function systemUserIdCache(): Promise<void> {
+async function sysUserIdCache(): Promise<void> {
   console.log("🗂️ ", "Initializing system user ID cache...");
   try {
     const systemUser = await User.findOne({ email: SYSTEM_USER.email })
@@ -348,14 +317,48 @@ async function permissionsCache(): Promise<void> {
   }
 }
 
+async function sysRoleIdsCache(): Promise<void> {
+  console.log("🗂️ ", "Initializing system roles ID cache...")
+
+  try {
+    const baseRoles = await Role.find({
+      name: { $in: [SYS_BUYER_ROLE.name, SYS_ADMIN_ROLE.name] },
+    })
+      .select("_id name")
+      .lean();
+
+    if (!baseRoles || baseRoles.length === 0) {
+      throw new Error("System roles not found in the database.");
+    }
+
+    baseRoles.forEach((role) => {
+      if (role.name === SYS_BUYER_ROLE.name) {
+        appCache.sysBuyerRoleId = role._id;
+      } else if (role.name === SYS_ADMIN_ROLE.name) {
+        appCache.sysAdminRoleId = role._id;
+      }
+    });
+
+    if (!appCache.sysBuyerRoleId) {
+      throw new Error("System buyer role not found in the database.");
+    }
+    if (!appCache.sysAdminRoleId) {
+      throw new Error("system admin role not found in the database.");
+    }
+
+    console.log("✅ ", "Base roles ID cache initialized successfully.");
+  } catch (error) {
+    throw new Error(`Error initializing base role ID cache: ${error}`);
+  }
+}
+
 export async function initAppCache(): Promise<void> {
   console.log("🗂️ ", "Initializing application cache...");
 
   try {
     await Promise.all([
-      buyerRoleIdCache(),
-      adminRoleIdCache(),
-      systemUserIdCache(),
+      sysRoleIdsCache(),
+      sysUserIdCache(),
 
       instanceConditionsCache(),
       inventoryMovementTypesCache(),

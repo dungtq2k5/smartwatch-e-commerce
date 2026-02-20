@@ -1601,22 +1601,22 @@ export function getPickupStateLookupId(
   throw new Error(`Pickup state with ID '${stateId}' not found in cache.`);
 }
 
-export function getAdminRoleId(): Types.ObjectId {
-  const { adminRoleId } = appCache;
-  if (!adminRoleId) {
+export function getSysAdminRoleId(): Types.ObjectId {
+  const { sysAdminRoleId } = appCache;
+  if (!sysAdminRoleId) {
     throw new Error("Admin role ID not found in application cache.");
   }
 
-  return adminRoleId;
+  return sysAdminRoleId;
 }
 
-export function getBuyerRoleId(): Types.ObjectId {
-  const { buyerRoleId } = appCache;
-  if (!buyerRoleId) {
+export function getSysBuyerRoleId(): Types.ObjectId {
+  const { sysBuyerRoleId } = appCache;
+  if (!sysBuyerRoleId) {
     throw new Error("Buyer role ID not found in application cache.");
   }
 
-  return buyerRoleId;
+  return sysBuyerRoleId;
 }
 
 export function getWithdrawalStateId(lookupId: string): Types.ObjectId {
@@ -1714,7 +1714,7 @@ export function getPermission(
   }
 
   const permission = permissions.find((perm) => perm._id.equals(id));
-  if (permission) return structuredClone(permission);
+  if (permission) return permission; // Don't use structuredClone because it will break all the ObjectId instances
 
   throw new Error(`Permission with ID '${id}' not found in cache.`);
 }

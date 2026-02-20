@@ -4,6 +4,7 @@ import {
   faRotateRight,
   faUser,
   faBox,
+  faUserShield,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { memo, useCallback, useRef, useState } from "react";
@@ -34,6 +35,7 @@ const HeaderAndSidebar = memo(() => {
     canReadCategory,
     canReadOs,
     canReadProvider,
+    canReadRole,
   ] = [
     useHasPermission("r_usr"),
     useHasPermission("r_product"),
@@ -45,7 +47,9 @@ const HeaderAndSidebar = memo(() => {
     useHasPermission("r_product_cat"),
     useHasPermission("r_product_os"),
     useHasPermission("r_provider_inventory"),
+    useHasPermission("r_usr_role"),
   ];
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
   const toggleSidebar = useCallback((): void => {
@@ -201,6 +205,15 @@ const HeaderAndSidebar = memo(() => {
               >
                 <FontAwesomeIcon icon={faBox} className="me-2" />
                 Provider
+              </NavLink>
+            )}
+            {canReadRole && (
+              <NavLink
+                to="/admin/roles"
+                className="list-group-item list-group-item-action"
+              >
+                <FontAwesomeIcon icon={faUserShield} className="me-2" />
+                Role
               </NavLink>
             )}
           </div>

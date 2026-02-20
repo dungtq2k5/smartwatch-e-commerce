@@ -11,6 +11,7 @@ import {
   getAll,
   getDetails,
   remove,
+  removeBulk,
   search,
   update,
 } from "../../controllers/role/role.controller";
@@ -47,6 +48,14 @@ router.patch(
   inputSanitizer("update"),
   verifyRoleInput("update"),
   update,
+);
+
+router.delete(
+  "/many",
+  verifyPermission("d_usr_role"),
+  inputSanitizer("delete many"),
+  verifyRoleInput("delete many"),
+  removeBulk,
 );
 
 router.delete("/:roleId", verifyPermission("d_usr_role"), remove);

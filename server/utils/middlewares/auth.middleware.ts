@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { getBuyerRoleId, getJwtPayload } from "../utils";
+import { getSysBuyerRoleId, getJwtPayload } from "../utils";
 import { JWT_NAME } from "../../configs/configs";
 import { HttpError } from "../errorHandler";
 import { PermissionCode } from "../../../common/types.common";
@@ -122,7 +122,7 @@ export function verifyPermission(permissionCode: PermissionCode) {
 
       const roleIds = user.roles.map((role) => role.id.id);
       const isBuyerOnly =
-        roleIds.length === 1 && getBuyerRoleId().equals(roleIds[0]);
+        roleIds.length === 1 && getSysBuyerRoleId().equals(roleIds[0]);
 
       // Depopulate to make user object look like when use findById()
       user.depopulate("roles.id");

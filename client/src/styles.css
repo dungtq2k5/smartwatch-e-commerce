@@ -579,10 +579,12 @@ body {
 }
 
 .admin-main-content--g {
-  flex-grow: 1;
+  flex: 1;
   padding: 1.5rem;
   background-color: #f8f9fa;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
   /* Fix for flexbox overflow */
 }
 
@@ -835,6 +837,7 @@ body {
   }
 }
 
+/* Responsive adjustments */
 @media (max-width: 768px) {
   .admin-sidebar--g.open {
     position: absolute;
@@ -845,5 +848,14 @@ body {
 
   .admin-sidebar--g.closed {
     width: 0;
+  }
+
+  .table thead th {
+    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  .table tbody td {
+    padding: 0.5rem;
   }
 }

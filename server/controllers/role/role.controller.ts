@@ -1,5 +1,6 @@
 import e, { Request, Response, NextFunction } from "express";
 import {
+  RoleBulkDelete,
   RoleCreate,
   RoleDetailsResponse,
   RoleListResponse,
@@ -16,6 +17,8 @@ import {
   formatRoleResponse,
   formatRoleResponseLight,
   getPermission,
+  getSysAdminRoleId,
+  getSysBuyerRoleId,
   isPresent,
 } from "../../utils/utils";
 import { HttpError } from "../../utils/errorHandler";
@@ -26,6 +29,7 @@ import {
   OPTIMIZE_CREATED_BY_PIPELINE,
   OPTIMIZE_PIPELINE,
 } from "../../configs/configs";
+import { MAX_ROLES_TO_DELETE_BULK } from "../../../common/configs.common";
 
 export async function create(
   req: Request,
@@ -263,7 +267,6 @@ export async function search(
       },
     ]).then((results) => results[0]);
 
-    console.log("Aggregate result:", JSON.stringify(aggregateResult, null, 2));
     const roles: RoleResponse[] = aggregateResult.data.map(formatRoleResponse);
     const total = aggregateResult.metadata[0]?.total || 0;
 
@@ -312,6 +315,12 @@ export async function update(
     if (!Types.ObjectId.isValid(roleId)) {
       throw new HttpError(404, "Role not found.");
     }
+
+    // Check if is system roles -> cannot update system roles
+    if(getSysBuyerRoleId().equals(roleId) || getSysAdminRoleId().equals(roleId)) {
+      throw new HttpError(403, "System roles cannot be updated.");
+    }
+
     const role = await Role.findById(roleId).session(session);
     if (!role) {
       throw new HttpError(404, "Role not found.");
@@ -427,6 +436,12 @@ export async function remove(
     if (!Types.ObjectId.isValid(roleId)) {
       throw new HttpError(404, "Role not found.");
     }
+
+    // Check if is system roles -> cannot delete system roles
+    if(getSysBuyerRoleId().equals(roleId) || getSysAdminRoleId().equals(roleId)) {
+      throw new HttpError(403, "System roles cannot be deleted.");
+    }
+
     const role = await Role.findById(roleId).session(session);
     if (!role) {
       throw new HttpError(404, "Role not found.");
@@ -451,6 +466,57 @@ export async function remove(
       message: "Role deleted successfully.",
     } as SuccessResponse);
     console.log("✅ ", "Role deleted successfully:", role.name);
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
+export async function removeBulk(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Bulk deleting roles...");
+
+  const { roleIds: roleIdsToDelete } = req.body as RoleBulkDelete;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (roleIdsToDelete.length > MAX_ROLES_TO_DELETE_BULK) {
+      throw new HttpError(
+        400,
+        `Cannot delete more than ${MAX_ROLES_TO_DELETE_BULK} roles at once.`,
+      );
+    }
+
+    // If system roles are included in the deletion list, reject the request
+    const [sysBuyerRoleId, sysAdminRoleId] = [getSysBuyerRoleId(), getSysAdminRoleId()];
+    if (roleIdsToDelete.some((id) => sysBuyerRoleId.equals(id) || sysAdminRoleId.equals(id))) {
+      throw new HttpError(403, "System roles cannot be deleted.");
+    }
+
+    // Remove the roles from all users who have them assigned
+    await User.updateMany(
+      { "roles.id": { $in: roleIdsToDelete } },
+      { $pull: { roles: { id: { $in: roleIdsToDelete } } } },
+      { session },
+    );
+
+    // Delete roles, if role not found, skip
+    await Role.deleteMany({ _id: { $in: roleIdsToDelete } }, { session });
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "Roles deleted successfully.",
+    } as SuccessResponse);
+    console.log("✅ ", "Roles deleted successfully");
   } catch (error) {
     await session.abortTransaction();
     next(error);

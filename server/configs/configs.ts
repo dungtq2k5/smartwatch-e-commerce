@@ -21,6 +21,14 @@ export const ADMIN_USER = {
   gender: "other",
 } as const;
 
+export const SYS_BUYER_ROLE = {
+  name: "System Buyer",
+};
+
+export const SYS_ADMIN_ROLE = {
+  name: "System Admin",
+};
+
 // Order is matter
 export const PERMISSION_LIST = [
   // 68 permissions
