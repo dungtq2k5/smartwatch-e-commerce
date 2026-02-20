@@ -20,6 +20,8 @@ import { MAX_PROVIDERS_TO_DELETE_BULK } from "../../../../../common/configs.comm
 type ProviderState = {
   allProvidersLite: ProviderListResponseLight | null;
 
+  removeCachedProviders: () => void;
+
   fetchAllProviders: () => Promise<ProviderListResponseLight>;
   fetchProviders: (
     query?: ProviderSearchQuery,
@@ -42,6 +44,10 @@ type ProviderState = {
 
 const useProviderStore = create<ProviderState>((set, get) => ({
   allProvidersLite: null,
+
+  removeCachedProviders(): void {
+    set({ allProvidersLite: null });
+  },
 
   async fetchAllProviders(): Promise<ProviderListResponseLight> {
     const { allProvidersLite } = get();
@@ -113,7 +119,7 @@ const useProviderStore = create<ProviderState>((set, get) => ({
       const res = await post(`${PROVIDER_URL}`, provider);
       if (!res.success) throw new Error(res.message);
 
-      set({ allProvidersLite: null });
+      get().removeCachedProviders();
       return res.data as ProviderResponse;
     } catch (error) {
       throw new Error(formatError(error));
@@ -128,7 +134,7 @@ const useProviderStore = create<ProviderState>((set, get) => ({
       const res = await patch(PROVIDER_URL, providerId, providerData);
       if (!res.success) throw new Error(res.message);
 
-      set({ allProvidersLite: null });
+      get().removeCachedProviders();
       return res.data as ProviderResponse;
     } catch (error) {
       throw new Error(formatError(error));
@@ -140,7 +146,17 @@ const useProviderStore = create<ProviderState>((set, get) => ({
       const res = await remove(PROVIDER_URL, providerId);
       if (!res.success) throw new Error(res.message);
 
-      set({ allProvidersLite: null });
+      const { allProvidersLite } = get();
+      if (allProvidersLite) {
+        const foundProviderIdx = allProvidersLite.providers.findIndex(
+          (provider) => provider.id === providerId,
+        );
+        if (foundProviderIdx !== -1) {
+          allProvidersLite.total -= 1;
+          allProvidersLite.providers.splice(foundProviderIdx, 1);
+          set({ allProvidersLite });
+        }
+      }
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -160,7 +176,7 @@ const useProviderStore = create<ProviderState>((set, get) => ({
       const res = await remove(`${PROVIDER_URL}/many`, null, data);
       if (!res.success) throw new Error(res.message);
 
-      set({ allProvidersLite: null });
+      get().removeCachedProviders();
     } catch (error) {
       throw new Error(formatError(error));
     }
