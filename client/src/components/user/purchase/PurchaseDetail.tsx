@@ -53,7 +53,7 @@ export default function PurchaseDetail() {
   const { orderStates, fetchOrderStates, getOrderStateByLookupId } =
     useOrderStateStore();
   const {
-    fetchOrderDetail,
+    fetchOrderDetails,
     updateSelfOrder,
     checkItemAvailable,
     canChangeDeliveryAddress,
@@ -64,7 +64,7 @@ export default function PurchaseDetail() {
   } = useOrderStore();
   const { createManyCart } = useUserCartStore();
 
-  const [orderDetail, setOrderDetail] = useState<OrderDetailsResponse | null>(
+  const [orderDetails, setOrderDetails] = useState<OrderDetailsResponse | null>(
     null
   );
 
@@ -81,7 +81,7 @@ export default function PurchaseDetail() {
     cancelOrder: false,
   });
 
-  const currStatus = orderDetail?.states.at(-1);
+  const currStatus = orderDetails?.states.at(-1);
   const currStatusLevel = currStatus?.level || 0;
 
   const canChangeAddress = useMemo(() => {
@@ -95,9 +95,9 @@ export default function PurchaseDetail() {
   }, [canSubmitOrder, currStatus]);
 
   const canReturn = useMemo(() => {
-    if (!currStatus || !orderDetail) return false;
-    return canReturnOrder(orderDetail, currStatus.lookupId);
-  }, [canReturnOrder, orderDetail, currStatus]);
+    if (!currStatus || !orderDetails) return false;
+    return canReturnOrder(orderDetails, currStatus.lookupId);
+  }, [canReturnOrder, orderDetails, currStatus]);
 
   const canCancel = useMemo(() => {
     if (!currStatus) return false;
@@ -105,16 +105,16 @@ export default function PurchaseDetail() {
   }, [canCancelOrder, currStatus]);
 
   const canBuyAgain = useMemo(() => {
-    if (!currStatus || !orderDetail) return false;
-    return canBuyAgainOrder(orderDetail, currStatus.lookupId);
-  }, [currStatus, canBuyAgainOrder, orderDetail]);
+    if (!currStatus || !orderDetails) return false;
+    return canBuyAgainOrder(orderDetails, currStatus.lookupId);
+  }, [currStatus, canBuyAgainOrder, orderDetails]);
 
   const availableItems = useMemo(
-    () => orderDetail?.items.filter((item) => checkItemAvailable(item)) || [],
-    [checkItemAvailable, orderDetail?.items]
+    () => orderDetails?.items.filter((item) => checkItemAvailable(item)) || [],
+    [checkItemAvailable, orderDetails?.items]
   );
 
-  // Fetch initial when first loaded: orderDetail, orderId changes, orderStates
+  // Fetch initial when first loaded: orderDetails, orderId changes, orderStates
   useEffect(() => {
     const handleFetchInitialData = async (): Promise<void> => {
       setProcess((prev) => ({
@@ -127,12 +127,12 @@ export default function PurchaseDetail() {
       try {
         if (!orderId) throw new Error("Order ID is not provided");
 
-        const [fetchedOrderDetail] = await Promise.all([
-          fetchOrderDetail(orderId),
+        const [fetchedOrderDetails] = await Promise.all([
+          fetchOrderDetails(orderId),
           orderStates ? Promise.resolve() : fetchOrderStates(),
         ]);
 
-        setOrderDetail(fetchedOrderDetail);
+        setOrderDetails(fetchedOrderDetails);
       } catch (error) {
         setApiErr(formatError(error));
       } finally {
@@ -151,7 +151,7 @@ export default function PurchaseDetail() {
   const genProgressBar = useCallback(
     (
       states: OrderStateListResponse["states"],
-      orderDetailStates: OrderDetailsResponse["states"]
+      orderDetailsStates: OrderDetailsResponse["states"]
     ): JSX.Element => {
       return (
         <div className="row justify-content-center mb-4">
@@ -160,7 +160,7 @@ export default function PurchaseDetail() {
             const stepLevel = idx + 1;
             const isCompleted = currStatusLevel >= stepLevel;
             const isActive = currStatusLevel === stepLevel;
-            const createdAt = orderDetailStates.find(
+            const createdAt = orderDetailsStates.find(
               (s) => s.id === state.id
             )?.createdAt;
 
@@ -216,7 +216,7 @@ export default function PurchaseDetail() {
 
   const handleUpdateDeliveryAddress = useCallback(
     async (addressId: string): Promise<void> => {
-      if (!orderDetail) {
+      if (!orderDetails) {
         toast.error("Order detail is not available");
         return;
       }
@@ -231,12 +231,12 @@ export default function PurchaseDetail() {
         isUpdatingDeliveryAddress: true,
       }));
       try {
-        const updatedOrder = await updateSelfOrder(orderDetail.id, {
+        const updatedOrder = await updateSelfOrder(orderDetails.id, {
           deliveryAddressId: addressId,
         });
 
-        setOrderDetail({
-          ...orderDetail,
+        setOrderDetails({
+          ...orderDetails,
           deliveryAddress: updatedOrder.deliveryAddress,
           updatedAt: updatedOrder.updatedAt,
         });
@@ -250,11 +250,11 @@ export default function PurchaseDetail() {
         }));
       }
     },
-    [canChangeAddress, orderDetail, updateSelfOrder]
+    [canChangeAddress, orderDetails, updateSelfOrder]
   );
 
   const handleSubmitReceived = useCallback(async (): Promise<void> => {
-    if (!orderDetail) {
+    if (!orderDetails) {
       toast.error("Order detail is not available");
       return;
     }
@@ -274,13 +274,13 @@ export default function PurchaseDetail() {
       const completeState = getOrderStateByLookupId("6"); // "completed"
       if (!completeState) throw new Error("Order state 'completed' not found");
 
-      await updateSelfOrder(orderDetail.id, {
+      await updateSelfOrder(orderDetails.id, {
         stateId: completeState.id,
       });
 
       // Refresh order detail
-      const updatedOrderDetail = await fetchOrderDetail(orderDetail.id);
-      setOrderDetail(updatedOrderDetail);
+      const updatedOrderDetails = await fetchOrderDetails(orderDetails.id);
+      setOrderDetails(updatedOrderDetails);
       toast.success("Order marked as received.");
     } catch (error) {
       toast.error(formatError(error));
@@ -289,15 +289,15 @@ export default function PurchaseDetail() {
     }
   }, [
     canSubmit,
-    fetchOrderDetail,
+    fetchOrderDetails,
     getOrderStateByLookupId,
-    orderDetail,
+    orderDetails,
     process.isProcessing,
     updateSelfOrder,
   ]);
 
   const handleSubmitCancelOrder = useCallback(async (): Promise<void> => {
-    if (!orderDetail) {
+    if (!orderDetails) {
       toast.error("Order detail is not available");
       return;
     }
@@ -317,13 +317,13 @@ export default function PurchaseDetail() {
       const cancelState = getOrderStateByLookupId("7"); // "cancelled"
       if (!cancelState) throw new Error("Order state 'cancelled' not found");
 
-      await updateSelfOrder(orderDetail.id, {
+      await updateSelfOrder(orderDetails.id, {
         stateId: cancelState.id,
       });
 
       // Refresh order detail
-      const updatedOrderDetail = await fetchOrderDetail(orderDetail.id);
-      setOrderDetail(updatedOrderDetail);
+      const updatedOrderDetails = await fetchOrderDetails(orderDetails.id);
+      setOrderDetails(updatedOrderDetails);
       toast.success("Order has been cancelled.");
     } catch (error) {
       toast.error(formatError(error));
@@ -332,15 +332,15 @@ export default function PurchaseDetail() {
     }
   }, [
     canCancel,
-    fetchOrderDetail,
+    fetchOrderDetails,
     getOrderStateByLookupId,
-    orderDetail,
+    orderDetails,
     process.isProcessing,
     updateSelfOrder,
   ]);
 
   const handleBuyAgain = useCallback(async (): Promise<void> => {
-    if (!orderDetail) {
+    if (!orderDetails) {
       toast.error("Order detail is not available");
       return;
     }
@@ -379,20 +379,21 @@ export default function PurchaseDetail() {
     canBuyAgain,
     createManyCart,
     navigate,
-    orderDetail,
+    orderDetails,
     process.isProcessing,
   ]);
 
+  // TODO Display cancel reason if order is cancelled
   return (
     <>
       {process.isInitializing ? (
         <PurchaseDetailSkeleton />
       ) : apiErr ? (
-        <ApiError errMsg={apiErr} />
-      ) : orderStates === null ? (
-        <ApiError errMsg="Order state data is not available." />
-      ) : orderDetail === null ? (
-        <ApiError errMsg="Order detail data is not available." />
+        <ApiError errorMessage={apiErr} />
+      ) : !orderStates ? (
+        <ApiError errorMessage="Order state data is not available." />
+      ) : !orderDetails ? (
+        <ApiError errorMessage="Order detail data is not available." />
       ) : (
         <>
           {/* Header */}
@@ -407,7 +408,7 @@ export default function PurchaseDetail() {
               Back to Purchases
             </button>
             <div className="text-end d-flex align-items-center gap-2">
-              <p className="mb-0 text-muted">Order ID: {orderDetail.id}</p>
+              <p className="mb-0 text-muted">Order ID: {orderDetails.id}</p>
               <p className="mb-0">|</p>
               <p className="mb-0 text-primary text-uppercase">
                 order {currStatus?.name || "N/A"}
@@ -420,12 +421,12 @@ export default function PurchaseDetail() {
             <h2 className="fs-4 mb-4">Order Info</h2>
             {/* Progress bar */}
             {
-              // If the order is cancelled, display the states from orderDetail only, otherwise display all states
+              // If the order is cancelled, display the states from orderDetails only, otherwise display all states
               genProgressBar(
-                orderDetail.states.some((s) => s.lookupId === "7")
-                  ? orderDetail.states
+                orderDetails.states.some((s) => s.lookupId === "7")
+                  ? orderDetails.states
                   : orderStates.states,
-                orderDetail.states
+                orderDetails.states
               )
             }
             {/* Delivery address and states */}
@@ -457,13 +458,13 @@ export default function PurchaseDetail() {
                 </h3>
                 <div>
                   <p className="fw-bold mb-1">
-                    {orderDetail.deliveryAddress.name}
+                    {orderDetails.deliveryAddress.name}
                   </p>
                   <p className="text-muted mb-1">
-                    {orderDetail.deliveryAddress.phoneNumber}
+                    {orderDetails.deliveryAddress.phoneNumber}
                   </p>
                   <p className="text-muted mb-0">
-                    {orderDetail.deliveryAddress.fullAddress}
+                    {orderDetails.deliveryAddress.fullAddress}
                   </p>
                 </div>
               </div>
@@ -472,21 +473,21 @@ export default function PurchaseDetail() {
               <div className="bg-light p-3 rounded w-100 h-100">
                 <div className="mb-3">
                   <h3 className="fs-5 fw-semibold">Delivery History</h3>
-                  {orderDetail.estimateReceivedDate && (
+                  {orderDetails.estimateReceivedDate && (
                     <span className="text-success">
                       Estimated delivery date:{" "}
                       {new Date(
-                        orderDetail.estimateReceivedDate
+                        orderDetails.estimateReceivedDate
                       ).toLocaleDateString()}
                     </span>
                   )}
                 </div>
                 <ul className="list-unstyled order-history-timeline">
-                  {orderDetail.deliveryStates.map((state, idx) => (
+                  {orderDetails.deliveryStates.map((state, idx) => (
                     <li
                       key={state.id}
                       className={`mb-3 timeline-item ${
-                        idx === orderDetail.deliveryStates.length - 1
+                        idx === orderDetails.deliveryStates.length - 1
                           ? "text-success-emphasis"
                           : ""
                       }`}
@@ -531,7 +532,7 @@ export default function PurchaseDetail() {
                     type="button"
                     className="btn btn-outline-secondary"
                     onClick={() =>
-                      navigate(`/return-refund/create/${orderDetail.id}`)
+                      navigate(`/return-refund/create/${orderDetails.id}`)
                     }
                     disabled={process.isProcessing}
                   >
@@ -568,7 +569,7 @@ export default function PurchaseDetail() {
             <div className="row">
               {/* Items list */}
               <div className="col-lg-8">
-                {orderDetail.items.map((item, idx) => (
+                {orderDetails.items.map((item, idx) => (
                   <Link
                     key={item.variation.id}
                     to={`/products/${item.variation.productModel.product.id}`}
@@ -576,7 +577,7 @@ export default function PurchaseDetail() {
                   >
                     <div
                       className={`pb-3 ${
-                        idx < orderDetail.items.length - 1
+                        idx < orderDetails.items.length - 1
                           ? "mb-3 border-bottom"
                           : ""
                       }`}
@@ -594,20 +595,20 @@ export default function PurchaseDetail() {
                     <div className="d-flex justify-content-between mb-2">
                       <span>Subtotal:</span>
                       <span>
-                        {centsToUSD(orderDetail.paymentSummary.subtotalCents)}
+                        {centsToUSD(orderDetails.paymentSummary.subtotalCents)}
                       </span>
                     </div>
                     <div className="d-flex justify-content-between mb-2">
                       <span>Shipping Fee:</span>
                       <span>{centsToUSD(0)}</span>
                     </div>
-                    {orderDetail.paymentSummary.appliedBalanceCents > 0 && (
+                    {orderDetails.paymentSummary.appliedBalanceCents > 0 && (
                       <div className="d-flex justify-content-between mb-2 text-success">
                         <span>Applied Balance:</span>
                         <span>
                           -
                           {centsToUSD(
-                            orderDetail.paymentSummary.appliedBalanceCents
+                            orderDetails.paymentSummary.appliedBalanceCents
                           )}
                         </span>
                       </div>
@@ -617,14 +618,14 @@ export default function PurchaseDetail() {
                       <span>Total:</span>
                       <span>
                         {centsToUSD(
-                          orderDetail.paymentSummary.finalAmountCents
+                          orderDetails.paymentSummary.finalAmountCents
                         )}
                       </span>
                     </div>
                     <div className="d-flex justify-content-between text-muted">
                       <span>Payment method:</span>
                       <span className="text-capitalize">
-                        {orderDetail.paymentMethod.name}
+                        {orderDetails.paymentMethod.name}
                       </span>
                     </div>
                   </div>
