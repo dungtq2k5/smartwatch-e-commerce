@@ -212,7 +212,7 @@ const CreateAddressModal = memo(
           }
         }
       },
-      [],
+      [isSubmitting],
     );
 
     const handleSubmit = useCallback(
