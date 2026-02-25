@@ -11,7 +11,7 @@ type InputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, "value"> &
 const Input = memo(
   forwardRef<HTMLInputElement, InputProps>(
     (
-      { error, className, value, neverShowErrorMessage = false, ...props },
+      { error, className = "", value, neverShowErrorMessage = false, ...props },
       ref,
     ) => {
       // DOM Props Logic (prepares props for the actual <input>)
@@ -37,7 +37,7 @@ const Input = memo(
           <input
             ref={ref}
             {...domProps}
-            className={`${className || ""} ${
+            className={`${className} ${
               (props.required || error) && (!value || error) ? "is-invalid" : ""
             }`}
           />

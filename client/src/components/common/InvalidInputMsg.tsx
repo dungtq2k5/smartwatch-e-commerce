@@ -5,13 +5,13 @@ import { memo } from "react";
 const InvalidMsg = memo(
   ({
     msg,
-    className,
+    className = "",
   }: {
     msg?: string | string[] | null;
     className?: string;
   }) => {
     return (
-      <div className={`text-danger small mt-1 ${className || ""}`}>
+      <div className={`text-danger small mt-1 ${className}`}>
         <FontAwesomeIcon icon={faTriangleExclamation} className="me-2" />
         {Array.isArray(msg) ? msg.join(", ") : msg || "Invalid input"}
       </div>

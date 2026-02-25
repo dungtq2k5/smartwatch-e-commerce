@@ -8,7 +8,7 @@ const Title = memo(
     title,
     parentTitle,
     parentLink,
-    className
+    className = ""
   }: {
     title: React.ReactNode;
     parentTitle: string;
@@ -16,7 +16,7 @@ const Title = memo(
     className?: string;
   }) => {
     return (
-      <div className={`d-flex justify-content-between align-items-center ${className || ""}`}>
+      <div className={`d-flex justify-content-between align-items-center ${className}`}>
         <h1 className="fs-2 mb-0 d-flex align-items-center gap-2">
           <Link to={parentLink} className="text-decoration-none text-dark">
             {parentTitle}

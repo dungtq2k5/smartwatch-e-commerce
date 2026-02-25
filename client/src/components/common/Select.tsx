@@ -6,12 +6,12 @@ type SelectProps = CustomInputProps &
   React.SelectHTMLAttributes<HTMLSelectElement>;
 
 const Select = memo(
-  ({ error, neverShowErrorMessage, className, ...props }: SelectProps) => {
+  ({ error, neverShowErrorMessage, className = "", ...props }: SelectProps) => {
     return (
       <>
         <select
           {...props}
-          className={`${className || ""} ${
+          className={`${className} ${
             (props.required || error) && (!props.value || error)
               ? "is-invalid"
               : ""

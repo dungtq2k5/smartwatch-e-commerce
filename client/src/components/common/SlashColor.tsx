@@ -7,7 +7,7 @@ type SlashColorProps = {
 export default function SlashColor({
   hexColor,
   size = "medium",
-  className = undefined,
+  className = "",
 }: Readonly<SlashColorProps>) {
   const sizeMap = {
     small: "1rem",
@@ -17,7 +17,7 @@ export default function SlashColor({
 
   return (
     <span
-      className={"slash-color" + (className ? " " + className : "")}
+      className={`"slash-color" ${className}`}
       style={
         {
           "--hex-color": hexColor,
