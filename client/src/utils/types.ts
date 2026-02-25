@@ -1,6 +1,7 @@
 import type { JSX } from "react";
 import type {
   AdminModelVariationResponse,
+  AdminOrderResponse,
   AdminProductBrandResponse,
   AdminProductCategoryResponse,
   AdminProductModelResponse,
@@ -116,6 +117,14 @@ export type AdminProviderDisplayableField = keyof ProviderResponse | "actions";
 
 export type AdminRoleDisplayableField = keyof RoleResponse | "actions";
 
+export type AdminOrderDisplayableField =
+  | keyof Omit<
+      AdminOrderResponse,
+      "fulfilledBy" | "fulfilledAt" | "buyerCancelReasonId"
+    >
+  | "fulfilled" // fulfilledBy and fulfilledAt combined
+  | "actions";
+
 export type TableColDisplay<Item, SortOption> = {
   label: string; // For header display
   thClassName?: string; // Additional className for <th>
@@ -167,6 +176,8 @@ export type ProviderDisplayField = DisplayField<AdminProviderDisplayableField>;
 
 export type RoleDisplayField = DisplayField<AdminRoleDisplayableField>;
 
+export type OrderDisplayField = DisplayField<AdminOrderDisplayableField>;
+
 export type AdminConfig = {
   userManagementDisplayFields: UserDisplayField[];
   productManagementDisplayFields: ProductDisplayField[];
@@ -179,6 +190,7 @@ export type AdminConfig = {
   productOsManagementDisplayFields: ProductOsDisplayField[];
   providerManagementDisplayFields: ProviderDisplayField[];
   roleManagementDisplayFields: RoleDisplayField[];
+  orderManagementDisplayFields: OrderDisplayField[];
 };
 
 export type ProductCreationWizardStep =

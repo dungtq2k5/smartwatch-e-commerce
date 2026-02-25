@@ -80,6 +80,7 @@ import RoleManagement from "./components/admin/role/RoleManagement.tsx";
 import CreateRole from "./components/admin/role/CreateRole.tsx";
 import DetailRole from "./components/admin/role/DetailRole.tsx";
 import EditRole from "./components/admin/role/EditRole.tsx";
+import OrderManagement from "./components/admin/order/OrderManagement.tsx";
 
 export default function App() {
   // DEV for testing
@@ -124,7 +125,6 @@ export default function App() {
               - order management
               - return management
               - withdraw request management
-              - role management
             */}
             <Route element={<AdminNotAuthRoute />}>
               <Route path="login" element={<AdminLogin />} />
@@ -228,6 +228,10 @@ export default function App() {
                     <Route index element={<DetailRole />} />
                     <Route path="edit" element={<EditRole />} />
                   </Route>
+                </Route>
+
+                <Route path="orders">
+                  <Route index element={<OrderManagement />} />
                 </Route>
               </Route>
             </Route>

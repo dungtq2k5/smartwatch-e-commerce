@@ -25,6 +25,7 @@ import {
   FIREBASE_STORAGE_BUCKET_NAMES,
   PROVIDER_SEARCH_SORT_OPTIONS,
   ROLE_SEARCH_SORT_OPTIONS,
+  ORDER_SEARCH_SORT_OPTIONS,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -1041,33 +1042,44 @@ export type OrderCreate = {
   paymentMethodId: string;
   applyUserBalance?: boolean; // If true, use user's balance to discount the order
 };
+
 export type OrderFulfillItemUpdate = {
   items: {
     variationId: string;
     instanceIds: string[];
   }[];
 };
+
 export type OrderBaseUpdate = Partial<{
   deliveryStateId: string;
   deliveryAddressId: string;
   estimateReceivedDate: string;
   stateId: string;
 }>;
+
 export type OrderSelfUpdate = Pick<
   OrderBaseUpdate,
   "stateId" | "deliveryAddressId"
 > & {
   buyerCancelReasonId?: string | null; // Must be provided when stateId is "canceled by buyer"
 };
+
 export type OrderUpdate = Pick<
   OrderBaseUpdate,
   "deliveryStateId" | "estimateReceivedDate"
 > & {
-  notes: string | null; // For admin to note reason for update
+  notes?: string | null; // Notes for delivery state update
 };
+
+export type OrderUpdateBulk = {
+  orderIds: string[];
+  deliveryStateId?: string;
+  notes?: string | null; // Notes for delivery state update
+  estimateReceivedDate?: string;
+};
+
 export type OrderResponse = {
   id: string;
-  userId: string;
   items: {
     variation: Pick<
       ModelVariationResponse,
@@ -1121,24 +1133,73 @@ export type OrderResponse = {
   orderDate: string | null;
   estimateReceivedDate: string;
   receivedDate: string | null;
-  fulfilledBy: string | null;
-  fulfilledAt: string | null;
   buyerCancelReasonId: string | null;
   canReturn: boolean; // Based on receivedDate and return policy config
   createdAt: string;
   updatedAt: string;
+} & (
+  | {
+      fulfilledBy: string;
+      fulfilledAt: string;
+    }
+  | {
+      fulfilledBy: null;
+      fulfilledAt: null;
+    }
+);
+
+export type AdminOrderResponse = OrderResponse & {
+  orderedBy: CreatedBy["createdBy"];
 };
+
 export type OrderSearchQuery = SearchQuery &
   Partial<{
     deliveryStateIds: string[];
     paymentStateIds: string[];
     stateIds: string[]; // Order state IDs
-    userId: string; // For admin to search by user ID
   }>;
+
+export type AdminOrderSearchQuery = SearchQuery<
+  (typeof ORDER_SEARCH_SORT_OPTIONS)[number]
+> &
+  Partial<{
+    deliveryStateIds: string[];
+    paymentStateIds: string[];
+    paymentMethodIds: string[];
+    stateIds: string[]; // Order state IDs
+    orderedBy: string;
+    canReturn: "true" | "false";
+
+    orderDateFrom: string;
+    orderDateTo: string;
+
+    estimateReceivedDateFrom: string;
+    estimateReceivedDateTo: string;
+
+    receivedDateFrom: string;
+    receivedDateTo: string;
+
+    createdAtFrom: string;
+    createdAtTo: string;
+
+    updatedAtFrom: string;
+    updatedAtTo: string;
+  }>;
+
 export type OrderListResponse = PaginatedResponse<"orders", OrderResponse>;
+
+export type AdminOrderListResponse = PaginatedResponse<
+  "orders",
+  AdminOrderResponse
+>;
+
 export type OrderDetailsResponse = Omit<
   OrderResponse,
-  "paymentMethodId" | "paymentStates" | "deliveryStates" | "states"
+  | "paymentMethodId"
+  | "paymentStates"
+  | "deliveryStates"
+  | "states"
+  | "buyerCancelReasonId"
 > & {
   paymentMethod: Pick<PaymentMethodResponse, "id" | "name">;
   paymentStates: (StateResponse & { lookupId: string; name: string })[];
@@ -1148,6 +1209,15 @@ export type OrderDetailsResponse = Omit<
     level: number;
   })[];
   states: (StateResponse & { lookupId: string; name: string; level: number })[];
+  buyerCancelReason: {
+    id: string;
+    name: string;
+    description: string | null;
+  } | null;
+};
+
+export type AdminOrderDetailsResponse = OrderDetailsResponse & {
+  orderedBy: CreatedBy["createdBy"];
 };
 
 export type OrderStateResponse = {
@@ -1155,7 +1225,9 @@ export type OrderStateResponse = {
   lookupId: string;
   name: string;
   level: number;
+  description: string | null;
 };
+
 export type OrderStateListResponse = {
   total: number;
   states: OrderStateResponse[];
@@ -1233,6 +1305,7 @@ export type PaymentStateResponse = {
   id: string;
   lookupId: string;
   name: string;
+  description: string | null;
 };
 export type PaymentStateListResponse = {
   total: number;
@@ -1525,12 +1598,7 @@ export type GrnResponse = CreatedBy & {
   reversedAt: string | null;
 };
 
-export type GrnStateResponse = {
-  id: string;
-  lookupId: string;
-  name: string;
-  description: string | null;
-};
+export type GrnStateResponse = OrderStateResponse;
 
 export type GrnStateListResponse = {
   total: number;

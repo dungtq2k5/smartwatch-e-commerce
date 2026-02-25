@@ -740,7 +740,8 @@ export function formatAddress(address: UserAddressFormat): string {
     !cityProvince ||
     !isValidCountryCode(address.countryCode)
   ) {
-    throw new Error("Invalid address components");
+    // throw new Error("Invalid address components");
+    return "Invalid address";
   }
 
   return `${address.street}, ${address.apartmentNumber}, ${ward.name_with_type}, ${district.name_with_type}, ${cityProvince.name_with_type}, ${

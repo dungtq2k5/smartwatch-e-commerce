@@ -18,7 +18,7 @@ const PurchaseDetailSkeleton = memo(() => {
         {/* Progress bar */}
         <div className="row justify-content-center mb-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="col text-center progress-step">
+            <div key={i+1} className="col text-center progress-step">
               <Placeholder className="progress-step-icon" />
               <Placeholder as="p" className="mt-2 mb-0">
                 <Placeholder xs={8} />
@@ -53,7 +53,7 @@ const PurchaseDetailSkeleton = memo(() => {
             </div>
             <ul className="list-unstyled">
               {Array.from({ length: 2 }).map((_, i) => (
-                <li key={i} className="mb-2">
+                <li key={i+1} className="mb-2">
                   <Placeholder as="p" className="mb-0">
                     <Placeholder xs={10} />
                   </Placeholder>

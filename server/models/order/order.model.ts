@@ -1,9 +1,6 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import { VN_COUNTRY_CODE } from "../../../common/configs.common";
-import {
-  ORDER_VARIATION_INSTANCE_STATES,
-  RETURN_POLICY_DAYS,
-} from "../../configs/configs";
+import { ORDER_VARIATION_INSTANCE_STATES } from "../../configs/configs";
 import { IUserAddress } from "../user/userAddress.model";
 import { canReturnOrder } from "../../utils/utils";
 

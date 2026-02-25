@@ -96,9 +96,8 @@ function sanitizeDeleteBulkInput(
   const { userIds } = req.body;
 
   // Auto remove duplicates
-  if (userIds && Array.isArray(userIds)) {
-    const uniqueUserIds = Array.from(new Set(userIds));
-    req.body.userIds = uniqueUserIds;
+  if (Array.isArray(userIds)) {
+    req.body.userIds = Array.from(new Set(userIds));
   }
 
   next();

@@ -3,6 +3,7 @@ import type {
   AdminConfig,
   GrnDisplayField,
   ModelVariationDisplayField,
+  OrderDisplayField,
   ProductBrandDisplayField,
   ProductCategoryDisplayField,
   ProductDisplayField,
@@ -66,6 +67,9 @@ type ConfigState = {
 
   setRoleManagementDisplayFields: (displayFields: RoleDisplayField[]) => void;
   resetRoleManagementDisplayFields: () => void;
+
+  setOrderManagementDisplayFields: (displayFields: OrderDisplayField[]) => void;
+  resetOrderManagementDisplayFields: () => void;
 };
 
 const getInitialState = (): AdminConfig => {
@@ -324,6 +328,29 @@ const useConfigStore = create<ConfigState>((set, get) => ({
       ...get().config,
       roleManagementDisplayFields:
         DEFAULT_ADMIN_CONFIG.roleManagementDisplayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  setOrderManagementDisplayFields: (
+    displayFields: OrderDisplayField[],
+  ): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      orderManagementDisplayFields: displayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  resetOrderManagementDisplayFields: (): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      orderManagementDisplayFields:
+        DEFAULT_ADMIN_CONFIG.orderManagementDisplayFields,
     };
 
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));

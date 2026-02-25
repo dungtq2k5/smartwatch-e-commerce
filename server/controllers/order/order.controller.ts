@@ -9,6 +9,11 @@ import type {
   OrderFulfillItemUpdate,
   OrderSelfUpdate,
   SuccessResponse,
+  AdminOrderResponse,
+  AdminOrderDetailsResponse,
+  AdminOrderSearchQuery,
+  AdminOrderListResponse,
+  OrderUpdateBulk,
 } from "../../../common/types.common";
 import { HttpError } from "../../utils/errorHandler";
 import mongoose, { Types } from "mongoose";
@@ -17,6 +22,8 @@ import ModelVariation from "../../models/product/modelVariation.model";
 import VariationInstance from "../../models/product/variationInstance.model";
 import InventoryMovement from "../../models/inventory/inventoryMovement.model";
 import {
+  formatAdminOrderDetailsResponse,
+  formatAdminOrderResponse,
   formatOrderDetailsResponse,
   formatOrderResponse,
   getDeliveryStateId,
@@ -34,13 +41,20 @@ import {
   isPresent,
 } from "../../utils/utils";
 import Order, { IOrder } from "../../models/order/order.model";
-import { ESTIMATE_RECEIVED_TIME_GAP } from "../../../common/configs.common";
+import {
+  ESTIMATE_RECEIVED_TIME_GAP,
+  MAX_ORDERS_TO_UPDATE_BULK,
+} from "../../../common/configs.common";
 import Cart from "../../models/user/cart.model";
 import User from "../../models/user/user.model";
 import { createRefund } from "../stripe.controller";
 import CancelReason from "../../models/order/cancelReason.model";
 import { compareUserAddress } from "../../../common/utils.common";
-import { DEFAULT_SEARCH_LIMIT, OPTIMIZE_PIPELINE } from "../../configs/configs";
+import {
+  DEFAULT_SEARCH_LIMIT,
+  OPTIMIZE_PIPELINE,
+  RETURN_POLICY_DAYS,
+} from "../../configs/configs";
 
 // --- BOTH BUYER AND ADMIN FUNCTIONS ---
 export async function createSelf(
@@ -295,12 +309,12 @@ export async function createSelf(
   }
 }
 
-export async function get(
+export async function getSelf(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  console.log("▶️ ", "Getting order by ID...");
+  console.log("▶️ ", "Getting self order by ID...");
 
   const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
   if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
@@ -336,18 +350,18 @@ export async function get(
       message: "Order retrieved successfully.",
       data: formatOrderResponse(order),
     } as SuccessResponse<OrderResponse>);
-    console.log("✅ ", "Order retrieved successfully.");
+    console.log("✅ ", "Self order retrieved successfully.");
   } catch (error) {
     next(error);
   }
 }
 
-export async function getDetails(
+export async function getSelfDetails(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  console.log("▶️ ", "Getting order details by ID...");
+  console.log("▶️ ", "Getting self order details by ID...");
 
   const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
   if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
@@ -372,6 +386,7 @@ export async function getDetails(
       .populate("paymentStates.id", "lookupId name")
       .populate("deliveryStates.id", "lookupId name level")
       .populate("states.id", "lookupId name level")
+      .populate("buyerCancelReasonId", "_id name description")
       .lean();
 
     if (!order) {
@@ -391,216 +406,190 @@ export async function getDetails(
       message: "Order details retrieved successfully.",
       data: formatOrderDetailsResponse(order),
     } as SuccessResponse<OrderDetailsResponse>);
-    console.log("✅ ", "Order details retrieved successfully.");
+    console.log("✅ ", "Self order details retrieved successfully.");
   } catch (error) {
     next(error);
   }
 }
 
-// Handle both buyer and admin search
-export function search(
-  type: "admin search" | "self search",
-): (req: Request, res: Response, next: NextFunction) => Promise<void> {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
-    console.log("▶️ ", "Searching orders...");
+export async function searchSelf(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Searching self orders...");
 
-    const [userId, isBuyerOnly] = [
-      req["auth"]?.userId,
-      req["auth"]?.isBuyerOnly,
-    ];
-    if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
-      return next(
-        new HttpError(
-          500,
-          "User ID or role is missing, this should handled by middleware.",
-        ),
-      );
-    }
-    if (type === "admin search" && isBuyerOnly) {
-      return next(
-        new HttpError(
-          403,
-          "You do not have permission to perform this action.",
-        ),
-      );
-    }
+  const userId = req["auth"]?.userId;
+  if (!isPresent(userId)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID is missing, this should handled by middleware.",
+      ),
+    );
+  }
 
-    const reqQuery = req["sanitizedQuery"] as OrderSearchQuery;
+  const reqQuery = req["sanitizedQuery"] as OrderSearchQuery;
 
-    const limit = reqQuery.limit
-      ? Number.parseInt(reqQuery.limit, 10)
-      : DEFAULT_SEARCH_LIMIT;
-    const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
-    const baseMatch: any = {};
-    const exprConditions: any[] = [];
-
-    try {
-      if (type === "self search") {
-        baseMatch.userId = new Types.ObjectId(userId);
-      } else if (reqQuery.userId) {
-        if (!Types.ObjectId.isValid(reqQuery.userId)) {
-          throw new HttpError(400, "Invalid user ID.");
-        }
-        baseMatch.userId = new Types.ObjectId(reqQuery.userId);
-      }
-
-      if (reqQuery.deliveryStateIds?.length) {
-        const deliveryStateObjIds = reqQuery.deliveryStateIds.map((id) => {
-          if (!Types.ObjectId.isValid(id)) {
-            throw new HttpError(400, `Invalid delivery status ID: ${id}`);
-          }
-          return new Types.ObjectId(id);
-        });
-        exprConditions.push({
-          $in: [
-            { $arrayElemAt: ["$deliveryStates.id", -1] },
-            deliveryStateObjIds,
-          ],
-        });
-      }
-
-      if (reqQuery.paymentStateIds?.length) {
-        const paymentStateObjIds = reqQuery.paymentStateIds.map((id) => {
-          if (!Types.ObjectId.isValid(id)) {
-            throw new HttpError(400, `Invalid payment status ID: ${id}`);
-          }
-          return new Types.ObjectId(id);
-        });
-        exprConditions.push({
-          $in: [
-            { $arrayElemAt: ["$paymentStates.id", -1] },
-            paymentStateObjIds,
-          ],
-        });
-      }
-
-      if (reqQuery.stateIds?.length) {
-        const stateObjIds = reqQuery.stateIds.map((id) => {
-          if (!Types.ObjectId.isValid(id)) {
-            throw new HttpError(400, `Invalid order status ID: ${id}`);
-          }
-          return new Types.ObjectId(id);
-        });
-        exprConditions.push({
-          $in: [{ $arrayElemAt: ["$states.id", -1] }, stateObjIds],
-        });
-      }
-
-      if (exprConditions.length > 0) {
-        baseMatch.$expr = { $and: exprConditions };
-      }
-
-      let finalQuery: any = baseMatch;
-      let total: number;
-
-      if (reqQuery.searchTerm) {
-        // product/model/variation name, or order ID
-        const searchTerm = reqQuery.searchTerm;
-        const searchOrConditions: any[] = [
-          { "productDetails.name": { $regex: searchTerm, $options: "i" } },
-          { "modelDetails.name": { $regex: searchTerm, $options: "i" } },
-          { "variationDetails.name": { $regex: searchTerm, $options: "i" } },
-        ];
-
-        // If the searchTerm is a valid ObjectId, also search by order ID first
-        if (Types.ObjectId.isValid(searchTerm)) {
-          searchOrConditions.push({ _id: new Types.ObjectId(searchTerm) });
-        }
-
-        const matchingOrders = await Order.aggregate([
-          // 1. Initial filter for the user and other query params
-          { $match: baseMatch },
-          OPTIMIZE_PIPELINE,
-          // 2. Unwind the items array to process each item individually
-          { $unwind: "$items" },
-          // 3. Lookup variation details
-          {
-            $lookup: {
-              from: "modelvariations",
-              localField: "items.variationId",
-              foreignField: "_id",
-              as: "variationDetails",
-            },
-          },
-          { $unwind: "$variationDetails" },
-          // 4. Lookup model details
-          {
-            $lookup: {
-              from: "productmodels",
-              localField: "variationDetails.productModelId",
-              foreignField: "_id",
-              as: "modelDetails",
-            },
-          },
-          { $unwind: "$modelDetails" },
-          // 5. Lookup product details
-          {
-            $lookup: {
-              from: "products",
-              localField: "modelDetails.productId",
-              foreignField: "_id",
-              as: "productDetails",
-            },
-          },
-          { $unwind: "$productDetails" },
-          { $match: { $or: searchOrConditions } },
-          { $group: { _id: "$_id" } },
-        ]);
-
-        const orderIds = matchingOrders.map((order) => order._id);
-
-        // If no orders match -> return early
-        if (orderIds.length === 0) {
-          res.status(200).json({
-            success: true,
-            message: "No orders found.",
-            data: {
-              total: 0,
-              orders: { total: 0, orders: [] },
-              offset,
-              limit,
-            },
-          } as SuccessResponse<OrderListResponse>);
-          return;
-        }
-
-        finalQuery = { _id: { $in: orderIds } };
-        total = orderIds.length;
-      } else {
-        // If no search term, the total is a simple count
-        total = await Order.countDocuments(baseMatch);
-      }
-
-      // Fetch the orders using the final query and populate them
-      const orders = await Order.find(finalQuery)
-        .sort({ createdAt: -1 })
-        .skip(offset)
-        .limit(limit)
-        .populate(populationPath)
-        .lean();
-
-      res.status(200).json({
-        success: true,
-        message: "Orders retrieved successfully.",
-        data: {
-          total,
-          orders: {
-            total: orders.length,
-            orders: orders.map(formatOrderResponse),
-          },
-          offset,
-          limit,
-        },
-      } as SuccessResponse<OrderListResponse>);
-      console.log("✅ ", "Orders retrieved successfully.");
-    } catch (error) {
-      next(error);
-    }
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const baseMatch: any = {
+    userId: new Types.ObjectId(userId), // Search own orders only
   };
+  const exprConditions: any[] = [];
+
+  try {
+    if (reqQuery.deliveryStateIds?.length) {
+      const deliveryStateObjIds = reqQuery.deliveryStateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid delivery status ID: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+      exprConditions.push({
+        $in: [
+          { $arrayElemAt: ["$deliveryStates.id", -1] },
+          deliveryStateObjIds,
+        ],
+      });
+    }
+
+    if (reqQuery.paymentStateIds?.length) {
+      const paymentStateObjIds = reqQuery.paymentStateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid payment status ID: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+      exprConditions.push({
+        $in: [{ $arrayElemAt: ["$paymentStates.id", -1] }, paymentStateObjIds],
+      });
+    }
+
+    if (reqQuery.stateIds?.length) {
+      const stateObjIds = reqQuery.stateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid order status ID: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+      exprConditions.push({
+        $in: [{ $arrayElemAt: ["$states.id", -1] }, stateObjIds],
+      });
+    }
+
+    if (exprConditions.length > 0) {
+      baseMatch.$expr = { $and: exprConditions };
+    }
+
+    let finalQuery: any = baseMatch;
+    let total: number;
+
+    if (reqQuery.searchTerm) {
+      // product/model/variation name, or order ID
+      const searchTerm = reqQuery.searchTerm;
+      const searchOrConditions: any[] = [
+        { "productDetails.name": { $regex: searchTerm, $options: "i" } },
+        { "modelDetails.name": { $regex: searchTerm, $options: "i" } },
+        { "variationDetails.name": { $regex: searchTerm, $options: "i" } },
+      ];
+
+      // If the searchTerm is a valid ObjectId, also search by order ID first
+      if (Types.ObjectId.isValid(searchTerm)) {
+        searchOrConditions.push({ _id: new Types.ObjectId(searchTerm) });
+      }
+
+      const matchingOrders = await Order.aggregate([
+        // 1. Initial filter for the user and other query params
+        { $match: baseMatch },
+        OPTIMIZE_PIPELINE,
+        // 2. Unwind the items array to process each item individually
+        { $unwind: "$items" },
+        // 3. Lookup variation details
+        {
+          $lookup: {
+            from: "modelvariations",
+            localField: "items.variationId",
+            foreignField: "_id",
+            as: "variationDetails",
+          },
+        },
+        { $unwind: "$variationDetails" },
+        // 4. Lookup model details
+        {
+          $lookup: {
+            from: "productmodels",
+            localField: "variationDetails.productModelId",
+            foreignField: "_id",
+            as: "modelDetails",
+          },
+        },
+        { $unwind: "$modelDetails" },
+        // 5. Lookup product details
+        {
+          $lookup: {
+            from: "products",
+            localField: "modelDetails.productId",
+            foreignField: "_id",
+            as: "productDetails",
+          },
+        },
+        { $unwind: "$productDetails" },
+        { $match: { $or: searchOrConditions } },
+        { $group: { _id: "$_id" } },
+      ]);
+
+      const orderIds = matchingOrders.map((order) => order._id);
+
+      // If no orders match -> return early
+      if (orderIds.length === 0) {
+        res.status(200).json({
+          success: true,
+          message: "No orders found.",
+          data: {
+            total: 0,
+            orders: { total: 0, orders: [] },
+            offset,
+            limit,
+          },
+        } as SuccessResponse<OrderListResponse>);
+        return;
+      }
+
+      finalQuery = { _id: { $in: orderIds } };
+      total = orderIds.length;
+    } else {
+      // If no search term, the total is a simple count
+      total = await Order.countDocuments(baseMatch);
+    }
+
+    // Fetch the orders using the final query and populate them
+    const orders = await Order.find(finalQuery)
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit)
+      .populate(populationPath)
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      message: "Orders retrieved successfully.",
+      data: {
+        total,
+        orders: {
+          total: orders.length,
+          orders: orders.map(formatOrderResponse),
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<OrderListResponse>);
+    console.log("✅ ", "Self orders retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function updateSelf(
@@ -849,6 +838,451 @@ export async function updateSelf(
 }
 
 // --- ADMIN FUNCTIONS ---
+export async function get(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Getting order by ID...");
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly is missing, this should handled by middleware.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const { orderId } = req.params;
+
+  try {
+    // Check exists
+    if (!Types.ObjectId.isValid(orderId)) {
+      throw new HttpError(404, "Order not found.");
+    }
+    const order = await Order.findById(orderId)
+      .populate(populationPath)
+      .populate("userId", "_id fullName")
+      .lean();
+    if (!order) {
+      throw new HttpError(404, "Order not found.");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Order retrieved successfully.",
+      data: formatAdminOrderResponse(order),
+    } as SuccessResponse<AdminOrderResponse>);
+    console.log("✅ ", "Order retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getDetails(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Getting order details by ID...");
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly is missing, this should handled by middleware.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const { orderId } = req.params;
+
+  try {
+    // Check exists
+    if (!Types.ObjectId.isValid(orderId)) {
+      throw new HttpError(404, "Order not found.");
+    }
+
+    const order = await Order.findById(orderId)
+      .populate(populationPath)
+      .populate("userId", "_id fullName")
+      .populate("paymentMethodId", "name")
+      .populate("paymentStates.id", "lookupId name")
+      .populate("deliveryStates.id", "lookupId name level")
+      .populate("states.id", "lookupId name level")
+      .populate("buyerCancelReasonId", "_id name description")
+      .lean();
+
+    if (!order) {
+      throw new HttpError(404, "Order not found.");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Order details retrieved successfully.",
+      data: formatAdminOrderDetailsResponse(order),
+    } as SuccessResponse<AdminOrderDetailsResponse>);
+    console.log("✅ ", "Order details retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function search(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Searching orders...");
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly is missing, this should handled by middleware.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const reqQuery = req["sanitizedQuery"] as AdminOrderSearchQuery;
+
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const baseMatch: any = {};
+  const exprConditions: any[] = [];
+
+  // Parse sortBy parameter
+  const sort = (reqQuery.sortBy || "createdAt_desc").split("_");
+  const sortField = sort[0];
+  const sortOrder = sort[1] === "asc" ? 1 : -1;
+
+  // Map sortField to actual database field path
+  let sortStage: any;
+  if (sortField === "totalPriceCents") {
+    // Sort by paymentSummary.finalAmountCents
+    sortStage = { "paymentSummary.finalAmountCents": sortOrder, _id: 1 };
+  } else {
+    // Direct field mapping for fulfilledAt, createdAt, orderDate, estimateReceivedDate, receivedDate
+    sortStage = { [sortField]: sortOrder, _id: 1 };
+  }
+
+  try {
+    if (reqQuery.orderedBy) {
+      if (!Types.ObjectId.isValid(reqQuery.orderedBy)) {
+        throw new HttpError(400, "Invalid user ID.");
+      }
+      baseMatch.userId = new Types.ObjectId(reqQuery.orderedBy);
+    }
+
+    // Handle canReturn filter (virtual field based on receivedDate)
+    // canReturn = true when: receivedDate is not null AND receivedDate is within return policy window
+    if (reqQuery.canReturn) {
+      const canReturnFilter = reqQuery.canReturn === "true";
+      const now = new Date();
+      const minReturnDate = new Date(
+        now.getTime() - RETURN_POLICY_DAYS * 24 * 60 * 60 * 1000,
+      );
+
+      if (canReturnFilter) {
+        // canReturn = true: receivedDate must be within the return window
+        baseMatch.receivedDate = {
+          $ne: null,
+          $gte: minReturnDate,
+          $lte: now,
+        };
+      } else {
+        // canReturn = false: either receivedDate is null OR outside return window
+        baseMatch.$or = [
+          { receivedDate: null },
+          { receivedDate: { $lt: minReturnDate } },
+        ];
+      }
+    }
+
+    if (reqQuery.orderDateFrom || reqQuery.orderDateTo) {
+      baseMatch.orderDate = {};
+      if (reqQuery.orderDateFrom) {
+        baseMatch.orderDate.$gte = new Date(reqQuery.orderDateFrom);
+      }
+      if (reqQuery.orderDateTo) {
+        baseMatch.orderDate.$lte = new Date(reqQuery.orderDateTo);
+      }
+    }
+
+    if (reqQuery.estimateReceivedDateFrom || reqQuery.estimateReceivedDateTo) {
+      baseMatch.estimateReceivedDate = {};
+      if (reqQuery.estimateReceivedDateFrom) {
+        baseMatch.estimateReceivedDate.$gte = new Date(
+          reqQuery.estimateReceivedDateFrom,
+        );
+      }
+      if (reqQuery.estimateReceivedDateTo) {
+        baseMatch.estimateReceivedDate.$lte = new Date(
+          reqQuery.estimateReceivedDateTo,
+        );
+      }
+    }
+
+    if (reqQuery.receivedDateFrom || reqQuery.receivedDateTo) {
+      // If canReturn filter was already applied, we need to merge the conditions
+      if (!baseMatch.receivedDate) {
+        baseMatch.receivedDate = {};
+      } else if (baseMatch.$or) {
+        // canReturn=false set $or, handle conflict by wrapping in $and
+        const canReturnCondition = baseMatch.$or;
+        delete baseMatch.$or;
+
+        const receivedDateRange: any = {};
+        if (reqQuery.receivedDateFrom) {
+          receivedDateRange.$gte = new Date(reqQuery.receivedDateFrom);
+        }
+        if (reqQuery.receivedDateTo) {
+          receivedDateRange.$lte = new Date(reqQuery.receivedDateTo);
+        }
+
+        baseMatch.$and = [
+          { $or: canReturnCondition },
+          { receivedDate: receivedDateRange },
+        ];
+      }
+
+      // Regular merge if canReturn=true was set
+      if (!baseMatch.$and) {
+        if (reqQuery.receivedDateFrom) {
+          const newGte = new Date(reqQuery.receivedDateFrom);
+          if (baseMatch.receivedDate.$gte) {
+            baseMatch.receivedDate.$gte = new Date(
+              Math.max(baseMatch.receivedDate.$gte.getTime(), newGte.getTime()),
+            );
+          } else {
+            baseMatch.receivedDate.$gte = newGte;
+          }
+        }
+
+        if (reqQuery.receivedDateTo) {
+          const newLte = new Date(reqQuery.receivedDateTo);
+          if (baseMatch.receivedDate.$lte) {
+            baseMatch.receivedDate.$lte = new Date(
+              Math.min(baseMatch.receivedDate.$lte.getTime(), newLte.getTime()),
+            );
+          } else {
+            baseMatch.receivedDate.$lte = newLte;
+          }
+        }
+
+        // Remove $ne: null if we're explicitly filtering by date range
+        if (
+          baseMatch.receivedDate.$ne !== undefined &&
+          (reqQuery.receivedDateFrom || reqQuery.receivedDateTo)
+        ) {
+          delete baseMatch.receivedDate.$ne;
+        }
+      }
+    }
+
+    if (reqQuery.createdAtFrom || reqQuery.createdAtTo) {
+      baseMatch.createdAt = {};
+      if (reqQuery.createdAtFrom) {
+        baseMatch.createdAt.$gte = new Date(reqQuery.createdAtFrom);
+      }
+      if (reqQuery.createdAtTo) {
+        baseMatch.createdAt.$lte = new Date(reqQuery.createdAtTo);
+      }
+    }
+
+    if (reqQuery.updatedAtFrom || reqQuery.updatedAtTo) {
+      baseMatch.updatedAt = {};
+      if (reqQuery.updatedAtFrom) {
+        baseMatch.updatedAt.$gte = new Date(reqQuery.updatedAtFrom);
+      }
+      if (reqQuery.updatedAtTo) {
+        baseMatch.updatedAt.$lte = new Date(reqQuery.updatedAtTo);
+      }
+    }
+
+    if (reqQuery.deliveryStateIds?.length) {
+      const deliveryStateObjIds = reqQuery.deliveryStateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid delivery status ID: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+      exprConditions.push({
+        $in: [
+          { $arrayElemAt: ["$deliveryStates.id", -1] },
+          deliveryStateObjIds,
+        ],
+      });
+    }
+
+    if (reqQuery.paymentStateIds?.length) {
+      const paymentStateObjIds = reqQuery.paymentStateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid payment status ID: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+      exprConditions.push({
+        $in: [{ $arrayElemAt: ["$paymentStates.id", -1] }, paymentStateObjIds],
+      });
+    }
+
+    if (reqQuery.paymentMethodIds?.length) {
+      const paymentMethodObjIds = reqQuery.paymentMethodIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid payment method ID: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+      baseMatch.paymentMethodId = { $in: paymentMethodObjIds };
+    }
+
+    if (reqQuery.stateIds?.length) {
+      const stateObjIds = reqQuery.stateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid order status ID: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+      exprConditions.push({
+        $in: [{ $arrayElemAt: ["$states.id", -1] }, stateObjIds],
+      });
+    }
+
+    if (exprConditions.length > 0) {
+      baseMatch.$expr = { $and: exprConditions };
+    }
+
+    let finalQuery: any = baseMatch;
+    let total: number;
+
+    if (reqQuery.searchTerm) {
+      // product/model/variation name, or order ID
+      const searchTerm = reqQuery.searchTerm;
+      const searchOrConditions: any[] = [
+        { "productDetails.name": { $regex: searchTerm, $options: "i" } },
+        { "modelDetails.name": { $regex: searchTerm, $options: "i" } },
+        { "variationDetails.name": { $regex: searchTerm, $options: "i" } },
+      ];
+
+      // If the searchTerm is a valid ObjectId, also search by order ID first
+      if (Types.ObjectId.isValid(searchTerm)) {
+        searchOrConditions.push({ _id: new Types.ObjectId(searchTerm) });
+      }
+
+      const matchingOrders = await Order.aggregate([
+        // 1. Initial filter for the user and other query params
+        { $match: baseMatch },
+        OPTIMIZE_PIPELINE,
+        // 2. Unwind the items array to process each item individually
+        { $unwind: "$items" },
+        // 3. Lookup variation details
+        {
+          $lookup: {
+            from: "modelvariations",
+            localField: "items.variationId",
+            foreignField: "_id",
+            as: "variationDetails",
+          },
+        },
+        { $unwind: "$variationDetails" },
+        // 4. Lookup model details
+        {
+          $lookup: {
+            from: "productmodels",
+            localField: "variationDetails.productModelId",
+            foreignField: "_id",
+            as: "modelDetails",
+          },
+        },
+        { $unwind: "$modelDetails" },
+        // 5. Lookup product details
+        {
+          $lookup: {
+            from: "products",
+            localField: "modelDetails.productId",
+            foreignField: "_id",
+            as: "productDetails",
+          },
+        },
+        { $unwind: "$productDetails" },
+        { $match: { $or: searchOrConditions } },
+        { $group: { _id: "$_id" } },
+      ]);
+
+      const orderIds = matchingOrders.map((order) => order._id);
+
+      // If no orders match -> return early
+      if (orderIds.length === 0) {
+        res.status(200).json({
+          success: true,
+          message: "No orders found.",
+          data: {
+            total: 0,
+            orders: { total: 0, orders: [] },
+            offset,
+            limit,
+          },
+        } as SuccessResponse<OrderListResponse>);
+        return;
+      }
+
+      finalQuery = { _id: { $in: orderIds } };
+      total = orderIds.length;
+    } else {
+      // If no search term, the total is a simple count
+      total = await Order.countDocuments(baseMatch);
+    }
+
+    // Fetch the orders using the final query and populate them with sorting
+    const orders = await Order.find(finalQuery)
+      .sort(sortStage)
+      .skip(offset)
+      .limit(limit)
+      .populate("userId", "_id fullName")
+      .populate(populationPath)
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      message: "Orders retrieved successfully.",
+      data: {
+        total,
+        orders: {
+          total: orders.length,
+          orders: orders.map(formatAdminOrderResponse),
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<AdminOrderListResponse>);
+    console.log("✅ ", "Orders retrieved successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function fulfillItem(
   req: Request,
   res: Response,
@@ -1013,7 +1447,7 @@ export async function fulfillItem(
   }
 }
 
-export async function updateDeliveryState(
+export async function update(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -1050,251 +1484,87 @@ export async function updateDeliveryState(
       throw new HttpError(404, "Order not found.");
     }
 
-    /*
-      Business logic (deliveryStateId, estimateReceivedDate):
-        - Can update when order isn't in "completed" or "cancelled" states.
-        - estimatedReceivedDate must be greater than order.createdAt.
-        - deliveryState can only be updated forward, not backward.
-
-        - For COD orders:
-          - deliveryState changed to:
-            + "shipped", "in transit", "out for delivery":
-              -> orderStates: add "delivering" state.
-            + "delivered":
-              -> receivedDate will be set to now.
-              -> paymentStates: add "paid" state.
-              -> orderStates: add "delivered" state.
-              -> order.receivedDate = now.
-            + "delivery failed":
-              -> latest deliveryState must be at "out for delivery".
-            + "delivery rescheduled":
-              -> latest deliveryState must be at "delivery failed".
-            + "cancelled":
-              -> deliveryStates has a least one "delivery failed" state.
-              -> handleOrderDeletion(order, session, { deleteOrderItself: false });
-              -> orderStates: add "cancelled" state.
-              -> refund userBalanceCents if has.
-        - For non-COD orders:
-          - deliveryState changed to:
-            + "shipped", "in transit", "out for delivery":
-              -> orderStates: add "delivering" state.
-            + "delivered":
-              -> receivedDate will be set to now.
-              -> orderStates: add "delivered" state.
-              -> order.receivedDate = now.
-            + "delivery failed":
-              -> latest deliveryState must be at "out for delivery".
-            + "delivery rescheduled":
-              -> latest deliveryState must be at "delivery failed".
-            + "cancelled":
-              -> deliveryStates has a least one "delivery failed" state.
-              -> handleOrderDeletion(order, session, { deleteOrderItself: false });
-              -> orderStates: add "cancelled" state.
-              -> paymentStatuses: add "refunded via Stripe/refunded to balance" state.
-              -> refund: handleCancelRefund().
-    */
-
-    // Check if order is completed - level 6 -> can't be updated anymore
-    const latestOrderStateId = getLatestStateId(order.states);
-    const latestOrderStateLevel = getOrderStateLevel(latestOrderStateId);
-    if (latestOrderStateLevel === 6) {
-      // completed or cancelled
-      throw new HttpError(
-        400,
-        "Order cannot be updated after it has been completed or cancelled.",
-      );
-    }
-
-    const { deliveryStateId, estimateReceivedDate, notes } =
-      req.body as OrderUpdate;
-
-    // Update deliveryStateId
-    const latestDeliveryStateId = getLatestStateId(order.deliveryStates);
-    if (
-      deliveryStateId &&
-      deliveryStateId !== latestDeliveryStateId.toString()
-    ) {
-      // Check exists
-      if (!Types.ObjectId.isValid(deliveryStateId)) {
-        throw new HttpError(404, "Delivery state not found.");
-      }
-      const deliveryStateLevel = getDeliveryStateLevel(
-        new Types.ObjectId(deliveryStateId),
-      );
-
-      // Can't update deliveryStateId if non-COD order isn't paid yet
-      const latestPaymentStateId = getLatestStateId(order.paymentStates);
-      const isPaid = getPaymentStateLookupId(latestPaymentStateId) === "2";
-      const isCOD =
-        getPaymentMethodLookupId(new Types.ObjectId(order.paymentMethodId)) ===
-        "1";
-      if (!isCOD && !isPaid) {
-        throw new HttpError(
-          400,
-          "Cannot update delivery state for non-COD orders that haven't been paid yet.",
-        );
-      }
-
-      const deliveryStateLookupId = getDeliveryStateLookupId(
-        new Types.ObjectId(deliveryStateId),
-      );
-      const latestDeliveryStateLookupId = getDeliveryStateLookupId(
-        latestDeliveryStateId,
-      );
-
-      // Handle special case: update from "delivery failed" to "delivery rescheduled"
-      if (deliveryStateLookupId === "8") {
-        // delivery rescheduled
-        if (latestDeliveryStateLookupId !== "7") {
-          throw new HttpError(
-            400,
-            "Latest delivery state must be 'delivery failed' to update to 'delivery rescheduled'.",
-          );
-        }
-      } else {
-        // Can only be updated forward
-        if (
-          deliveryStateLevel <= getDeliveryStateLevel(latestDeliveryStateId)
-        ) {
-          throw new HttpError(
-            400,
-            "Delivery state can only be updated forward, not backward.",
-          );
-        }
-
-        // --- Trigger Consequential State Updates ---
-        const sysUserId = getSysUserId();
-        switch (deliveryStateLevel) {
-          case 3: // shipped
-          case 4: // in transit
-          // out for delivery
-          case 5: {
-            // Check if the latest order state is already 'delivering' before adding it again.
-            const latestOrderStateLookupId =
-              getOrderStateLookupId(latestOrderStateId);
-            if (latestOrderStateLookupId === "3") {
-              // placed
-              order.states.push({
-                id: getOrderStateId("4"),
-                notes:
-                  "Auto updated to 'delivering' due to delivery state change.",
-                createdBy: sysUserId,
-              }); // delivering
-            }
-            break;
-          }
-          // delivered
-          case 6: {
-            order.receivedDate = new Date();
-            order.states.push({
-              id: getOrderStateId("5"), // delivered
-              notes:
-                "Auto updated to 'delivered' due to delivery state change.",
-              createdBy: sysUserId,
-            });
-            if (isCOD) {
-              order.paymentStates.push({
-                id: getPaymentStateId("2"), // paid
-                notes: "Payment collected upon delivery (COD).",
-                createdBy: new Types.ObjectId(userId),
-              });
-            }
-            break;
-          }
-          // delivery failed
-          case 7: {
-            if (latestDeliveryStateLookupId !== "5") {
-              // out for delivery
-              throw new HttpError(
-                400,
-                "Latest delivery state must be 'out for delivery' to update to 'delivery failed'.",
-              );
-            }
-            break;
-          }
-          // cancelled
-          case 9: {
-            if (
-              !order.deliveryStates.some(
-                (ds) => getDeliveryStateLookupId(ds.id) === "7",
-              )
-            ) {
-              // delivery failed
-              throw new HttpError(
-                400,
-                "Order can only be cancelled if it has at least one 'delivery failed' state.",
-              );
-            }
-
-            await handleOrderDeletion(order, session, {
-              deleteOrderItself: false,
-            });
-            order.states.push({
-              id: getOrderStateId("7"), // cancelled
-              notes: "Order cancelled by admin after failed delivery attempt.",
-              createdBy: sysUserId,
-            });
-
-            // Handle refund logic
-            if (isCOD && order.paymentSummary.appliedBalanceCents > 0) {
-              // Refund to user balance
-              await User.findByIdAndUpdate(
-                order.userId,
-                {
-                  $inc: {
-                    userBalanceCents: order.paymentSummary.appliedBalanceCents,
-                  },
-                },
-                { session },
-              );
-              order.paymentStates.push({
-                id: getPaymentStateId("5"),
-                notes: "Refunded to user balance due to order cancellation.",
-                createdBy: sysUserId,
-              }); // refunded to balance
-            }
-            if (!isCOD) {
-              order.paymentStates.push({
-                id: getPaymentStateId("4"),
-                notes: "Refunded via Stripe due to order cancellation.",
-                createdBy: sysUserId,
-              });
-              await handleCancelRefund(order, session); // Auto handle refunded to balance if needed
-            }
-          }
-        }
-      }
-
-      // Push new delivery state
-      order.deliveryStates.push({
-        id: new Types.ObjectId(deliveryStateId),
-        notes,
-        createdBy: new Types.ObjectId(userId),
-      });
-    }
-
-    // Update estimateReceivedDate
-    if (estimateReceivedDate) {
-      const updatedEstimateReceivedDate = new Date(estimateReceivedDate);
-      if (updatedEstimateReceivedDate <= order.createdAt) {
-        throw new HttpError(
-          400,
-          "Estimated received date must be greater than order created date.",
-        );
-      }
-      order.estimateReceivedDate = updatedEstimateReceivedDate;
-    }
+    await handleOrderUpdate(userId, order, req.body as OrderUpdate, session);
 
     await order.save({ session });
     await order.populate(populationPath);
+    await order.populate("userId", "_id fullName");
 
     await session.commitTransaction();
 
     res.status(200).json({
       success: true,
       message: "Order updated successfully.",
-      data: formatOrderResponse(order),
-    } as SuccessResponse<OrderResponse>);
+      data: formatAdminOrderResponse(order),
+    } as SuccessResponse<AdminOrderResponse>);
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
+export async function updateBulk(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Bulk updating for orders...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or role is missing, this should handled by middleware.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const { orderIds, deliveryStateId, notes, estimateReceivedDate } =
+    req.body as OrderUpdateBulk;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (orderIds.length > MAX_ORDERS_TO_UPDATE_BULK) {
+      throw new HttpError(
+        400,
+        `Cannot update more than ${MAX_ORDERS_TO_UPDATE_BULK} orders at once.`,
+      );
+    }
+
+    const orders = await Order.find({ _id: { $in: orderIds } }).session(
+      session,
+    );
+    if (orders.length !== orderIds.length) {
+      throw new HttpError(404, "One or more orders not found.");
+    }
+
+    for (const order of orders) {
+      await handleOrderUpdate(
+        userId,
+        order,
+        { deliveryStateId, notes, estimateReceivedDate },
+        session,
+      );
+      await order.save({ session });
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "Orders updated successfully.",
+    } as SuccessResponse);
+    console.log("✅ ", "Orders updated successfully.");
   } catch (error) {
     await session.abortTransaction();
     next(error);
@@ -1437,6 +1707,258 @@ export async function executeCartDeletion(
     );
   } catch (error) {
     console.error("❌ ", "Error deleting cart:", error);
+    throw error;
+  }
+}
+
+async function handleOrderUpdate(
+  reqUserId: Types.ObjectId | string,
+  order: IOrder,
+  updateData: OrderUpdate,
+  session: mongoose.ClientSession,
+): Promise<void> {
+  try {
+    /*
+    Business logic (deliveryStateId, estimateReceivedDate):
+      - Can update when order isn't in "completed" or "cancelled" states.
+      - estimatedReceivedDate must be greater than order.createdAt.
+      - deliveryState can only be updated forward, not backward.
+
+      - For COD orders:
+        - deliveryState changed to:
+          + "shipped", "in transit", "out for delivery":
+            -> orderStates: add "delivering" state.
+          + "delivered":
+            -> receivedDate will be set to now.
+            -> paymentStates: add "paid" state.
+            -> orderStates: add "delivered" state.
+            -> order.receivedDate = now.
+          + "delivery failed":
+            -> latest deliveryState must be at "out for delivery".
+          + "delivery rescheduled":
+            -> latest deliveryState must be at "delivery failed".
+          + "cancelled":
+            -> deliveryStates has a least one "delivery failed" state.
+            -> handleOrderDeletion(order, session, { deleteOrderItself: false });
+            -> orderStates: add "cancelled" state.
+            -> refund userBalanceCents if has.
+      - For non-COD orders:
+        - deliveryState changed to:
+          + "shipped", "in transit", "out for delivery":
+            -> orderStates: add "delivering" state.
+          + "delivered":
+            -> receivedDate will be set to now.
+            -> orderStates: add "delivered" state.
+            -> order.receivedDate = now.
+          + "delivery failed":
+            -> latest deliveryState must be at "out for delivery".
+          + "delivery rescheduled":
+            -> latest deliveryState must be at "delivery failed".
+          + "cancelled":
+            -> deliveryStates has a least one "delivery failed" state.
+            -> handleOrderDeletion(order, session, { deleteOrderItself: false });
+            -> orderStates: add "cancelled" state.
+            -> paymentStatuses: add "refunded via Stripe/refunded to balance" state.
+            -> refund: handleCancelRefund().
+    */
+
+    // Check if order is completed - level 6 -> can't be updated anymore
+    const latestOrderStateId = getLatestStateId(order.states);
+    const latestOrderStateLevel = getOrderStateLevel(latestOrderStateId);
+    if (latestOrderStateLevel === 6) {
+      // completed or cancelled
+      throw new HttpError(
+        400,
+        "Order cannot be updated after it has been completed or cancelled.",
+      );
+    }
+
+    const { deliveryStateId, estimateReceivedDate, notes } = updateData;
+
+    // Update deliveryStateId
+    const latestDeliveryStateId = getLatestStateId(order.deliveryStates);
+    if (
+      deliveryStateId &&
+      deliveryStateId !== latestDeliveryStateId.toString()
+    ) {
+      // Check exists
+      if (!Types.ObjectId.isValid(deliveryStateId)) {
+        throw new HttpError(404, "Delivery state not found.");
+      }
+      const deliveryStateLevel = getDeliveryStateLevel(
+        new Types.ObjectId(deliveryStateId),
+      );
+
+      // Can't update deliveryStateId if non-COD order isn't paid yet
+      const latestPaymentStateId = getLatestStateId(order.paymentStates);
+      const isPaid = getPaymentStateLookupId(latestPaymentStateId) === "2";
+      const isCOD =
+        getPaymentMethodLookupId(new Types.ObjectId(order.paymentMethodId)) ===
+        "1";
+      if (!isCOD && !isPaid) {
+        throw new HttpError(
+          400,
+          "Cannot update delivery state for non-COD orders that haven't been paid yet.",
+        );
+      }
+
+      const deliveryStateLookupId = getDeliveryStateLookupId(
+        new Types.ObjectId(deliveryStateId),
+      );
+      const latestDeliveryStateLookupId = getDeliveryStateLookupId(
+        latestDeliveryStateId,
+      );
+
+      // Handle special case: update from "delivery failed" to "delivery rescheduled"
+      if (deliveryStateLookupId === "8") {
+        // delivery rescheduled
+        if (latestDeliveryStateLookupId !== "7") {
+          throw new HttpError(
+            400,
+            "Latest delivery state must be 'delivery failed' to update to 'delivery rescheduled'.",
+          );
+        }
+      } else {
+        // Can only be updated forward
+        if (
+          deliveryStateLevel <= getDeliveryStateLevel(latestDeliveryStateId)
+        ) {
+          throw new HttpError(
+            400,
+            "Delivery state can only be updated forward, not backward.",
+          );
+        }
+
+        // --- Trigger Consequential State Updates ---
+        const sysUserId = getSysUserId();
+        switch (deliveryStateLevel) {
+          case 3: // shipped
+          case 4: // in transit
+          // out for delivery
+          case 5: {
+            // Check if the latest order state is already 'delivering' before adding it again.
+            const latestOrderStateLookupId =
+              getOrderStateLookupId(latestOrderStateId);
+            if (latestOrderStateLookupId === "3") {
+              // placed
+              order.states.push({
+                id: getOrderStateId("4"),
+                notes:
+                  "Auto updated to 'delivering' due to delivery state change.",
+                createdBy: sysUserId,
+              }); // delivering
+            }
+            break;
+          }
+          // delivered
+          case 6: {
+            order.receivedDate = new Date();
+            order.states.push({
+              id: getOrderStateId("5"), // delivered
+              notes:
+                "Auto updated to 'delivered' due to delivery state change.",
+              createdBy: sysUserId,
+            });
+            if (isCOD) {
+              order.paymentStates.push({
+                id: getPaymentStateId("2"), // paid
+                notes: "Payment collected upon delivery (COD).",
+                createdBy: new Types.ObjectId(reqUserId),
+              });
+            }
+            break;
+          }
+          // delivery failed
+          case 7: {
+            if (latestDeliveryStateLookupId !== "5") {
+              // out for delivery
+              throw new HttpError(
+                400,
+                "Latest delivery state must be 'out for delivery' to update to 'delivery failed'.",
+              );
+            }
+            break;
+          }
+          // cancelled
+          case 9: {
+            if (
+              !order.deliveryStates.some(
+                (ds) => getDeliveryStateLookupId(ds.id) === "7",
+              )
+            ) {
+              // delivery failed
+              throw new HttpError(
+                400,
+                "Order can only be cancelled if it has at least one 'delivery failed' state.",
+              );
+            }
+
+            await handleOrderDeletion(order, session, {
+              deleteOrderItself: false,
+            });
+            order.states.push({
+              id: getOrderStateId("7"), // cancelled
+              notes: "Order cancelled by admin after failed delivery attempt.",
+              createdBy: sysUserId,
+            });
+
+            // Handle refund logic
+            if (isCOD && order.paymentSummary.appliedBalanceCents > 0) {
+              // Refund to user balance
+              await User.findByIdAndUpdate(
+                order.userId,
+                {
+                  $inc: {
+                    userBalanceCents: order.paymentSummary.appliedBalanceCents,
+                  },
+                },
+                { session },
+              );
+              order.paymentStates.push({
+                id: getPaymentStateId("5"),
+                notes: "Refunded to user balance due to order cancellation.",
+                createdBy: sysUserId,
+              }); // refunded to balance
+            }
+            if (!isCOD) {
+              order.paymentStates.push({
+                id: getPaymentStateId("4"),
+                notes: "Refunded via Stripe due to order cancellation.",
+                createdBy: sysUserId,
+              });
+              await handleCancelRefund(order, session); // Auto handle refunded to balance if needed
+            }
+          }
+        }
+      }
+
+      // Push new delivery state
+      order.deliveryStates.push({
+        id: new Types.ObjectId(deliveryStateId),
+        notes: notes || null,
+        createdBy: new Types.ObjectId(reqUserId),
+      });
+    }
+
+    // Update estimateReceivedDate
+    if (estimateReceivedDate) {
+      const updatedEstimateReceivedDate = new Date(estimateReceivedDate);
+      if (updatedEstimateReceivedDate <= order.createdAt) {
+        throw new HttpError(
+          400,
+          "Estimated received date must be greater than order created date.",
+        );
+      }
+      if (updatedEstimateReceivedDate < new Date()) {
+        throw new HttpError(
+          400,
+          "Estimated received date must be in the future.",
+        );
+      }
+      order.estimateReceivedDate = updatedEstimateReceivedDate;
+    }
+  } catch (error) {
+    console.error("❌ ", "Error updating order:", error);
     throw error;
   }
 }

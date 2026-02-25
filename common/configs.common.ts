@@ -479,3 +479,22 @@ export const ROLE_SEARCH_SORT_OPTIONS = [
 ] as const;
 
 export const MAX_ROLES_TO_DELETE_BULK = 5;
+
+export const ORDER_SEARCH_SORT_OPTIONS = [
+  "totalPriceCents_desc",
+  "totalPriceCents_asc",
+  "orderDate_desc",
+  "orderDate_asc",
+  "estimateReceivedDate_desc",
+  "estimateReceivedDate_asc",
+  "receivedDate_desc",
+  "receivedDate_asc",
+  "fulfilledAt_desc",
+  "fulfilledAt_asc",
+  "createdAt_desc",
+  "createdAt_asc",
+  "updatedAt_desc",
+  "updatedAt_asc",
+] as const;
+
+export const MAX_ORDERS_TO_UPDATE_BULK = 5;

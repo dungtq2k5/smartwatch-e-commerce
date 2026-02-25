@@ -380,6 +380,7 @@ export async function parseExcelToJson(
   console.log("▶️ ", "Parsing file to JSON...");
 
   try {
+    // Multer will put the file in req.file, if no file found -> throw error
     if (!req.file) {
       throw new HttpError(500, "File not found during parsing.");
     }

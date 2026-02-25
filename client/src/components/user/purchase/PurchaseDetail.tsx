@@ -65,7 +65,7 @@ export default function PurchaseDetail() {
   const { createManyCart } = useUserCartStore();
 
   const [orderDetails, setOrderDetails] = useState<OrderDetailsResponse | null>(
-    null
+    null,
   );
 
   const [process, setProcess] = useState<Process>({
@@ -111,7 +111,7 @@ export default function PurchaseDetail() {
 
   const availableItems = useMemo(
     () => orderDetails?.items.filter((item) => checkItemAvailable(item)) || [],
-    [checkItemAvailable, orderDetails?.items]
+    [checkItemAvailable, orderDetails?.items],
   );
 
   // Fetch initial when first loaded: orderDetails, orderId changes, orderStates
@@ -150,8 +150,8 @@ export default function PurchaseDetail() {
 
   const genProgressBar = useCallback(
     (
-      states: OrderStateListResponse["states"],
-      orderDetailsStates: OrderDetailsResponse["states"]
+      states: Omit<OrderStateListResponse["states"][number], "description">[],
+      orderDetailsStates: OrderDetailsResponse["states"],
     ): JSX.Element => {
       return (
         <div className="row justify-content-center mb-4">
@@ -161,7 +161,7 @@ export default function PurchaseDetail() {
             const isCompleted = currStatusLevel >= stepLevel;
             const isActive = currStatusLevel === stepLevel;
             const createdAt = orderDetailsStates.find(
-              (s) => s.id === state.id
+              (s) => s.id === state.id,
             )?.createdAt;
 
             return (
@@ -194,7 +194,7 @@ export default function PurchaseDetail() {
         </div>
       );
     },
-    [currStatusLevel]
+    [currStatusLevel],
   );
 
   /*
@@ -250,7 +250,7 @@ export default function PurchaseDetail() {
         }));
       }
     },
-    [canChangeAddress, orderDetails, updateSelfOrder]
+    [canChangeAddress, orderDetails, updateSelfOrder],
   );
 
   const handleSubmitReceived = useCallback(async (): Promise<void> => {
@@ -426,7 +426,7 @@ export default function PurchaseDetail() {
                 orderDetails.states.some((s) => s.lookupId === "7")
                   ? orderDetails.states
                   : orderStates.states,
-                orderDetails.states
+                orderDetails.states,
               )
             }
             {/* Delivery address and states */}
@@ -477,7 +477,7 @@ export default function PurchaseDetail() {
                     <span className="text-success">
                       Estimated delivery date:{" "}
                       {new Date(
-                        orderDetails.estimateReceivedDate
+                        orderDetails.estimateReceivedDate,
                       ).toLocaleDateString()}
                     </span>
                   )}
@@ -608,7 +608,7 @@ export default function PurchaseDetail() {
                         <span>
                           -
                           {centsToUSD(
-                            orderDetails.paymentSummary.appliedBalanceCents
+                            orderDetails.paymentSummary.appliedBalanceCents,
                           )}
                         </span>
                       </div>
@@ -618,7 +618,7 @@ export default function PurchaseDetail() {
                       <span>Total:</span>
                       <span>
                         {centsToUSD(
-                          orderDetails.paymentSummary.finalAmountCents
+                          orderDetails.paymentSummary.finalAmountCents,
                         )}
                       </span>
                     </div>

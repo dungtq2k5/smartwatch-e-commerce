@@ -789,8 +789,7 @@ export default function RoleManagement() {
     process.isProcessing,
     setSearchParams,
   ]);
-
-  // TODO can't modify base admin/buyer roles
+  
   return (
     <>
       {/* Heading */}

@@ -854,7 +854,6 @@ export function formatProviderAddressResponse(
 export function formatOrderResponse(order: any): commonType.OrderResponse {
   return {
     id: order._id,
-    userId: order.userId,
     items: order.items.map((item: any) => {
       const variation = item.variation; // Via virtual
       const model = variation.productModel; // Via virtual and populate
@@ -910,6 +909,19 @@ export function formatOrderResponse(order: any): commonType.OrderResponse {
   };
 }
 
+export function formatAdminOrderResponse(
+  order: any,
+): commonType.AdminOrderResponse {
+  return {
+    ...formatOrderResponse(order),
+    orderedBy: {
+      // Via populate
+      id: order.userId._id,
+      fullName: order.userId.fullName,
+    },
+  };
+}
+
 export function formatOrderDetailsResponse(
   order: any,
 ): commonType.OrderDetailsResponse {
@@ -954,6 +966,26 @@ export function formatOrderDetailsResponse(
       createdBy: s.createdBy,
       createdAt: s.createdAt,
     })),
+    buyerCancelReason: order.buyerCancelReasonId
+      ? {
+          id: order.buyerCancelReasonId._id,
+          name: order.buyerCancelReasonId.name,
+          description: order.buyerCancelReasonId.description,
+        }
+      : null,
+  };
+}
+
+export function formatAdminOrderDetailsResponse(
+  order: any,
+): commonType.AdminOrderDetailsResponse {
+  return {
+    ...formatOrderDetailsResponse(order),
+    orderedBy: {
+      // Via populate
+      id: order.userId._id,
+      fullName: order.userId.fullName,
+    },
   };
 }
 
@@ -990,6 +1022,7 @@ export function formatDeliveryStateResponse(
     lookupId: state.lookupId,
     name: state.name,
     level: state.level,
+    description: state.description,
   };
 }
 
@@ -1000,6 +1033,7 @@ export function formatPaymentStateResponse(
     id: state._id,
     lookupId: state.lookupId,
     name: state.name,
+    description: state.description,
   };
 }
 
@@ -1252,12 +1286,7 @@ export function formatGrnDetailsResponse(grn: any): commonType.GrnDetailsItem {
 export function formatGrnStateResponse(
   state: any,
 ): commonType.GrnStateResponse {
-  return {
-    id: state._id,
-    lookupId: state.lookupId,
-    name: state.name,
-    description: state.description,
-  };
+  return formatOrderStateResponse(state);
 }
 
 export function formatInventoryMovementTypeResponse(

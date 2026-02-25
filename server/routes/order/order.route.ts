@@ -37,15 +37,6 @@ router.get(
 
 // --- ROUTES FOR ORDER ---
 router.post(
-  "/me",
-  verifyPermission("c_order"),
-  verifyEmptyBody,
-  inputSanitizer("order"),
-  verifyOrderInput("create"),
-  order.createSelf,
-);
-
-router.post(
   "/:orderId/fulfill-item",
   verifyPermission("u_order"),
   verifyEmptyBody,
@@ -54,12 +45,21 @@ router.post(
   order.fulfillItem,
 );
 
+router.post(
+  "/me",
+  verifyPermission("c_order"),
+  verifyEmptyBody,
+  inputSanitizer("order"),
+  verifyOrderInput("create"),
+  order.createSelf,
+);
+
 router.get(
   "/",
   verifyPermission("r_order"),
-  inputSanitizer("order search"),
-  verifyOrderInput("search"),
-  order.search("admin search"),
+  inputSanitizer("order admin search"),
+  verifyOrderInput("admin search"),
+  order.search,
 );
 
 router.get(
@@ -67,8 +67,16 @@ router.get(
   verifyPermission("r_order"),
   inputSanitizer("order search"),
   verifyOrderInput("search"),
-  order.search("self search"),
+  order.searchSelf,
 );
+
+router.get(
+  "/me/:orderId/details",
+  verifyPermission("r_order"),
+  order.getSelfDetails,
+);
+
+router.get("/me/:orderId", verifyPermission("r_order"), order.getSelf);
 
 router.get("/:orderId/details", verifyPermission("r_order"), order.getDetails);
 
@@ -83,12 +91,21 @@ router.patch(
 );
 
 router.patch(
+  "/many",
+  verifyPermission("u_order"),
+  verifyEmptyBody,
+  inputSanitizer("order update bulk"),
+  verifyOrderInput("update bulk"),
+  order.updateBulk,
+);
+
+router.patch(
   "/:orderId",
   verifyPermission("u_order"),
   verifyEmptyBody,
   inputSanitizer("order"),
   verifyOrderInput("update"),
-  order.updateDeliveryState,
+  order.update,
 );
 
 // -- ROUTES FOR STRIPE CHECKOUT SESSION

@@ -18,6 +18,7 @@ import type {
   AdminConfig,
   AdminGrnDisplayableField,
   AdminModelVariationDisplayableField,
+  AdminOrderDisplayableField,
   AdminProductBrandDisplayableField,
   AdminProductCategoryDisplayableField,
   AdminProductDisplayableField,
@@ -29,6 +30,7 @@ import type {
   AdminVariationInstanceDisplayableField,
   GrnDisplayField,
   ModelVariationDisplayField,
+  OrderDisplayField,
   PermissionOperationKey,
   ProductBrandDisplayField,
   ProductCategoryDisplayField,
@@ -449,6 +451,29 @@ export const ROLE_FIELD_LABEL_LEGEND: Readonly<
   actions: "Actions",
 };
 
+export const ORDER_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminOrderDisplayableField, string>
+> = {
+  id: "ID",
+  orderedBy: "Ordered By",
+  items: "Items",
+  deliveryAddress: "Delivery Address",
+  transaction: "Transaction",
+  paymentSummary: "Total Amount", // paymentSummary.finalAmountCents
+  paymentMethodId: "Payment Method",
+  paymentStates: "Payment States",
+  deliveryStates: "Delivery States",
+  states: "Order States",
+  orderDate: "Order Date",
+  estimateReceivedDate: "Estimated Received Date",
+  receivedDate: "Received Date",
+  fulfilled: "Fulfilled",
+  canReturn: "Returnable",
+  createdAt: "Created At",
+  updatedAt: "Updated At",
+  actions: "Actions",
+};
+
 export const DEFAULT_ADMIN_USER_DISPLAY_FIELDS: UserDisplayField[] = [
   { name: "id", visible: false, exportable: true },
   { name: "fullName", visible: true, exportable: true },
@@ -587,6 +612,27 @@ export const DEFAULT_ADMIN_ROLE_DISPLAY_FIELDS: RoleDisplayField[] = [
   { name: "actions", visible: true, exportable: false },
 ];
 
+export const DEFAULT_ADMIN_ORDER_DISPLAY_FIELDS: OrderDisplayField[] = [
+  { name: "id", visible: true, exportable: true },
+  { name: "orderedBy", visible: true, exportable: true },
+  { name: "items", visible: false, exportable: true },
+  { name: "deliveryAddress", visible: true, exportable: true },
+  { name: "transaction", visible: false, exportable: true },
+  { name: "paymentSummary", visible: true, exportable: true },
+  { name: "paymentMethodId", visible: true, exportable: true },
+  { name: "paymentStates", visible: false, exportable: true },
+  { name: "deliveryStates", visible: true, exportable: true },
+  { name: "states", visible: true, exportable: true },
+  { name: "orderDate", visible: true, exportable: true },
+  { name: "estimateReceivedDate", visible: true, exportable: true },
+  { name: "receivedDate", visible: false, exportable: true },
+  { name: "fulfilled", visible: false, exportable: true },
+  { name: "canReturn", visible: false, exportable: true },
+  { name: "createdAt", visible: true, exportable: true },
+  { name: "updatedAt", visible: false, exportable: true },
+  { name: "actions", visible: true, exportable: false },
+];
+
 export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   visa: (
     <FontAwesomeIcon
@@ -630,6 +676,7 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   productOsManagementDisplayFields: DEFAULT_ADMIN_PRODUCT_OS_DISPLAY_FIELDS,
   providerManagementDisplayFields: DEFAULT_ADMIN_PROVIDER_DISPLAY_FIELDS,
   roleManagementDisplayFields: DEFAULT_ADMIN_ROLE_DISPLAY_FIELDS,
+  orderManagementDisplayFields: DEFAULT_ADMIN_ORDER_DISPLAY_FIELDS,
 };
 
 export const GRN_FILE_IMPORT_WORKSHEET_NAME = "grn-import-template"; // Must match with the worksheet name in the Excel template file

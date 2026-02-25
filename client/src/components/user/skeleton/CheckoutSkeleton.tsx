@@ -60,9 +60,9 @@ const CheckoutSkeleton = memo(() => {
             <Placeholder xs={12} style={{ height: "48px" }} />
           </div>
           <ul className="list-group list-group-flush">
-            {[...Array(2)].map((_, index) => (
+            {new Array(2).map((_, index) => (
               <li
-                key={index}
+                key={index + 1}
                 className="list-group-item d-flex align-items-center"
               >
                 <Placeholder

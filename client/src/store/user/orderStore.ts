@@ -26,7 +26,7 @@ type OrderState = {
     signal?: AbortSignal
   ) => Promise<OrderListResponse>;
   fetchOrder: (id: string) => Promise<OrderResponse>;
-  fetchOrderDetail: (id: string) => Promise<OrderDetailsResponse>;
+  fetchOrderDetails: (id: string) => Promise<OrderDetailsResponse>;
 
   checkItemIsReturned: (item: OrderResponse["items"][0]) => boolean;
   checkItemAvailable: (
@@ -129,7 +129,7 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
     if (orderCache?.id === id) return structuredClone(orderCache);
 
     try {
-      const res = await retrieve(`${ORDER_URL}/${id}`);
+      const res = await retrieve(`${SELF_ORDER_URL}/${id}`);
       if (!res.success) throw new Error(res.message);
 
       const order = res.data as OrderResponse;
@@ -140,12 +140,12 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
     }
   },
 
-  async fetchOrderDetail(id: string): Promise<OrderDetailsResponse> {
+  async fetchOrderDetails(id: string): Promise<OrderDetailsResponse> {
     const { orderDetailCache } = get();
     if (orderDetailCache?.id === id) return structuredClone(orderDetailCache);
 
     try {
-      const res = await retrieve(`${ORDER_URL}/${id}/details`);
+      const res = await retrieve(`${SELF_ORDER_URL}/${id}/details`);
       if (!res.success) throw new Error(res.message);
 
       const orderDetail = res.data as OrderDetailsResponse;

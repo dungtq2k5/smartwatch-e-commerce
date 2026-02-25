@@ -68,6 +68,7 @@
     - Create a dedicate postman collection for API testing and attach to README ❌.
     - Optimize get all brand/category/os endpoints with lighter version ❌.
     - Create alias mapping field name for importation endpoints ❌.
+    - Create user details endpoint also get history of their orders, total spending, .etc ❌.
 
   - Database init:
     - Init roles & permissions ✅.
