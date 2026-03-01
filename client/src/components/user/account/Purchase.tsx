@@ -510,6 +510,7 @@ export default function Purchase() {
     }
 
     try {
+      // FIXME Provide cancel reason
       const cancelledState = await fetchOrderStateByLookupId("7"); // cancelled
       if (!cancelledState) throw new Error("Order state not found.");
 

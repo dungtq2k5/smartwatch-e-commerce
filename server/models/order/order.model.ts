@@ -407,7 +407,7 @@ const orderSchema: Schema<IOrder> = new Schema(
     },
     buyerCancelReasonId: {
       type: Schema.Types.ObjectId,
-      ref: "OrderCancelReason",
+      ref: "CancelReason",
       required: false,
       default: null,
     },

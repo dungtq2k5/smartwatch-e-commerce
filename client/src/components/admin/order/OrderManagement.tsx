@@ -38,7 +38,6 @@ import DetailUserLink from "../DetailUserLink";
 import {
   capFirstLetter,
   centsToUSD,
-  formatAddress,
   formatError,
   getLocalDateString,
   isValidBooleanString,
@@ -191,11 +190,9 @@ export default function OrderManagement() {
         label:
           ORDER_FIELD_LABEL_LEGEND["deliveryAddress"] || "Delivery Address",
         tdContent: (order) => (
-          <address className="m-0">
-            {formatAddress(order.deliveryAddress)}
-          </address>
+          <address className="m-0">{order.deliveryAddress.fullAddress}</address>
         ),
-        getCsvVal: (order) => formatAddress(order.deliveryAddress),
+        getCsvVal: (order) => order.deliveryAddress.fullAddress,
       },
       transaction: {
         label: ORDER_FIELD_LABEL_LEGEND["transaction"] || "Transaction",
@@ -1164,6 +1161,7 @@ export default function OrderManagement() {
     }
   }, [refresh, selectionToastId]);
 
+  // CHECKPOINT fulfilled UI
   return (
     <>
       {/* Heading */}
@@ -1295,7 +1293,11 @@ export default function OrderManagement() {
                   >
                     <option value="">All</option>
                     {orderStates?.states.map((state) => (
-                      <option key={state.id} value={state.id} title={state.description || undefined}>
+                      <option
+                        key={state.id}
+                        value={state.id}
+                        title={state.description || undefined}
+                      >
                         {capFirstLetter(state.name)}
                       </option>
                     ))}

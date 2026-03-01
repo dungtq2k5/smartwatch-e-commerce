@@ -923,6 +923,7 @@ export async function getDetails(
       .populate("paymentStates.id", "lookupId name")
       .populate("deliveryStates.id", "lookupId name level")
       .populate("states.id", "lookupId name level")
+      .populate("fulfilledBy", "_id fullName")
       .populate("buyerCancelReasonId", "_id name description")
       .lean();
 

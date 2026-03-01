@@ -6,6 +6,7 @@ import type {
   AdminOrderSearchQuery,
   OrderUpdate,
   OrderUpdateBulk,
+  SortOption,
 } from "../../../../../common/types.common";
 import { patch, retrieve } from "../../../utils/utils";
 import { ORDER_URL } from "../../../configs";
@@ -20,7 +21,14 @@ type OrderState = {
     query?: AdminOrderSearchQuery,
   ) => Promise<AdminOrderListResponse>;
   fetchOrder: (orderId: string) => Promise<AdminOrderResponse>;
-  fetchOrderDetail: (orderId: string) => Promise<AdminOrderDetailsResponse>;
+  fetchOrderDetails: (
+    orderId: string,
+    sortOptions?: Partial<{
+      paymentStates: SortOption;
+      deliveryStates: SortOption;
+      orderStates: SortOption;
+    }>,
+  ) => Promise<AdminOrderDetailsResponse>;
 
   updateOrder: (
     orderId: string,
@@ -29,9 +37,12 @@ type OrderState = {
   updateOrderBulk: (data: OrderUpdateBulk) => Promise<void>;
 
   canEditOrder: (orderStateLookupId: string) => boolean;
+
+  isCancelled: (orderStateLookupId: string) => boolean;
+  isCompleted: (orderStateLookupId: string) => boolean;
 };
 
-export const useOrderStore = create<OrderState>(() => ({
+export const useOrderStore = create<OrderState>((set, get) => ({
   async fetchOrders(
     query?: AdminOrderSearchQuery,
   ): Promise<AdminOrderListResponse> {
@@ -83,12 +94,54 @@ export const useOrderStore = create<OrderState>(() => ({
     }
   },
 
-  async fetchOrderDetail(id: string): Promise<AdminOrderDetailsResponse> {
+  async fetchOrderDetails(
+    id: string,
+    sortOptions?: Partial<{
+      paymentStates: SortOption;
+      deliveryStates: SortOption;
+      orderStates: SortOption;
+    }>,
+  ): Promise<AdminOrderDetailsResponse> {
     try {
       const res = await retrieve(`${ORDER_URL}/${id}/details`);
       if (!res.success) throw new Error(res.message);
 
-      return res.data as AdminOrderDetailsResponse;
+      const orderDetails = res.data as AdminOrderDetailsResponse;
+
+      // Sort states by createdAt
+      if (sortOptions?.orderStates) {
+        orderDetails.states.sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return sortOptions.orderStates === "asc"
+            ? dateA - dateB
+            : dateB - dateA;
+        });
+      }
+
+      // Sort payment states by createdAt
+      if (sortOptions?.paymentStates) {
+        orderDetails.paymentStates.sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return sortOptions.paymentStates === "asc"
+            ? dateA - dateB
+            : dateB - dateA;
+        });
+      }
+
+      // Sort delivery states by createdAt
+      if (sortOptions?.deliveryStates) {
+        orderDetails.deliveryStates.sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return sortOptions.deliveryStates === "asc"
+            ? dateA - dateB
+            : dateB - dateA;
+        });
+      }
+
+      return orderDetails;
     } catch (error) {
       throw new Error(formatError(error));
     }
@@ -127,6 +180,17 @@ export const useOrderStore = create<OrderState>(() => ({
   },
 
   canEditOrder: (orderStateLookupId: string): boolean => {
-    return orderStateLookupId !== "6"; // Can edit order which is not 'completed' or 'cancelled'
+    return (
+      !get().isCancelled(orderStateLookupId) &&
+      !get().isCompleted(orderStateLookupId)
+    );
+  },
+
+  isCancelled: (orderStateLookupId: string): boolean => {
+    return orderStateLookupId === "7"; // 'cancelled' state lookup ID
+  },
+
+  isCompleted: (orderStateLookupId: string): boolean => {
+    return orderStateLookupId === "6"; // 'completed' state lookup ID
   },
 }));

@@ -929,6 +929,7 @@ export function formatOrderDetailsResponse(
     paymentMethodId,
     paymentStates,
     deliveryStates,
+    buyerCancelReasonId,
     states,
     ...restData
   } = formatOrderResponse(order);
@@ -986,6 +987,13 @@ export function formatAdminOrderDetailsResponse(
       id: order.userId._id,
       fullName: order.userId.fullName,
     },
+    fulfilledBy: order.fulfilledBy
+      ? {
+          id: order.fulfilledBy._id,
+          fullName: order.fulfilledBy.fullName,
+        }
+      : null,
+    fulfilledAt: order.fulfilledAt,
   };
 }
 
@@ -1298,6 +1306,12 @@ export function formatInventoryMovementTypeResponse(
     name: type.name,
     description: type.description,
   };
+}
+
+export function formatOrderCancelReasonResponse(
+  reason: any,
+): commonType.OrderCancelReasonResponse {
+  return formatReturnReason(reason);
 }
 
 // --- CACHING FUNCTIONS ---

@@ -1,11 +1,10 @@
 import { memo } from "react";
 import type { ProviderAddressResponse } from "../../../../../common/types.common";
-import LinkBtn from "../../common/LinkBtn";
-import { getGoogleMapsUrl } from "../../../../../common/utils.common";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMapLocation } from "@fortawesome/free-solid-svg-icons";
 import DetailUserLink from "../DetailUserLink";
 import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
+import MapLink from "../../common/MapLink";
 
 type ProviderAddressCardProps = Readonly<{
   address: ProviderAddressResponse;
@@ -40,15 +39,12 @@ const ProviderAddressCard = memo(
                 )}
               </h3>
               <div className="d-flex gap-3">
-                <LinkBtn
-                  to={getGoogleMapsUrl(longitude, latitude)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="View on Google Maps"
+                <MapLink
+                  latitude={latitude}
+                  longitude={longitude}
                 >
-                  <FontAwesomeIcon icon={faMapLocation} className="me-1" />
-                  Map
-                </LinkBtn>
+                  <FontAwesomeIcon icon={faMapLocation} size="lg" />
+                </MapLink>
                 {canEditProvider && (
                   <>
                     <button

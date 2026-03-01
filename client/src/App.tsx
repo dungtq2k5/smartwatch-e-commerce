@@ -81,6 +81,7 @@ import CreateRole from "./components/admin/role/CreateRole.tsx";
 import DetailRole from "./components/admin/role/DetailRole.tsx";
 import EditRole from "./components/admin/role/EditRole.tsx";
 import OrderManagement from "./components/admin/order/OrderManagement.tsx";
+import DetailOrder from "./components/admin/order/DetailOrder.tsx";
 
 export default function App() {
   // DEV for testing
@@ -232,6 +233,7 @@ export default function App() {
 
                 <Route path="orders">
                   <Route index element={<OrderManagement />} />
+                  <Route path=":id" element={<DetailOrder />} />
                 </Route>
               </Route>
             </Route>

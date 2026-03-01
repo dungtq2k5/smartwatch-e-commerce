@@ -35,6 +35,7 @@ import orderStateRoute from "./routes/order/orderState.route";
 import paymentStateRoute from "./routes/order/paymentState.route";
 import deliveryStateRoute from "./routes/order/deliveryState.route";
 import paymentMethodRoute from "./routes/order/paymentMethod.route";
+import cancelReasonRoute from "./routes/order/cancelReason.route";
 
 import orderReturnRoute from "./routes/returnRefund/orderReturn.route";
 import pickupStateRoute from "./routes/returnRefund/pickupState.route";
@@ -144,6 +145,7 @@ app.use(`${ROOT_URL}/order-states`, orderStateRoute);
 app.use(`${ROOT_URL}/payment-states`, paymentStateRoute);
 app.use(`${ROOT_URL}/delivery-states`, deliveryStateRoute);
 app.use(`${ROOT_URL}/payment-methods`, paymentMethodRoute);
+app.use(`${ROOT_URL}/cancel-reasons`, cancelReasonRoute);
 
 app.use(`${ROOT_URL}/returns`, orderReturnRoute);
 app.use(`${ROOT_URL}/pickup-states`, pickupStateRoute);

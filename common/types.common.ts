@@ -1078,6 +1078,8 @@ export type OrderUpdateBulk = {
   estimateReceivedDate?: string;
 };
 
+export type InstanceState = (typeof ORDER_VARIATION_INSTANCE_STATES)[number]["name"];
+
 export type OrderResponse = {
   id: string;
   items: {
@@ -1107,7 +1109,7 @@ export type OrderResponse = {
     instances: {
       id: string;
       sku: string;
-      state: (typeof ORDER_VARIATION_INSTANCE_STATES)[number]["name"];
+      state: InstanceState;
     }[];
   }[];
   deliveryAddress: Omit<
@@ -1216,9 +1218,21 @@ export type OrderDetailsResponse = Omit<
   } | null;
 };
 
-export type AdminOrderDetailsResponse = OrderDetailsResponse & {
+export type AdminOrderDetailsResponse = Omit<
+  OrderDetailsResponse,
+  "fulfilledBy" | "fulfilledAt"
+> & {
   orderedBy: CreatedBy["createdBy"];
-};
+} & (
+    | {
+        fulfilledBy: CreatedBy["createdBy"];
+        fulfilledAt: string;
+      }
+    | {
+        fulfilledBy: null;
+        fulfilledAt: null;
+      }
+  );
 
 export type OrderStateResponse = {
   id: string;
@@ -1665,6 +1679,19 @@ export type CountryListEntry = {
   name: string;
   dialCode: string;
 };
+
+export type OrderCancelReasonResponse = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
+export type OrderCancelReasonListResponse = {
+  total: number;
+  reasons: OrderCancelReasonResponse[];
+};
+
+export type SortOption = "asc" | "desc";
 
 // --- HELPER TYPES ---
 
