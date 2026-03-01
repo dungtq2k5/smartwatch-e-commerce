@@ -35,7 +35,7 @@ import useInstanceStore from "../../../store/admin/product/instanceStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useConfigStore from "../../../store/admin/configStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import useInstanceConditionStore from "../../../store/admin/product/instanceConditionStore";
 import EditBtnLink from "../EditBtnLink";
 import {
@@ -131,7 +131,14 @@ export default function InstanceManagement() {
         label: INSTANCE_FIELD_LABEL_LEGEND["sku"] || "SKU",
         isSortable: true,
         sortKey: { asc: "sku_asc", desc: "sku_desc" },
-        tdContent: (instance) => <>{instance.sku}</>,
+        tdContent: (instance) => (
+          <Link
+            to={`/admin/variation-instances/${instance.id}`}
+            title="View instance details"
+          >
+            {instance.sku}
+          </Link>
+        ),
         getCsvVal: (instance) => instance.sku,
       },
       modelVariationId: {

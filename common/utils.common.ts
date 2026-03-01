@@ -477,8 +477,8 @@ export function getCountryFromPhoneNumber(
 }
 
 export function getGoogleMapsUrl(
-  longitude: number,
-  latitude: number,
+  latitude: number | string,
+  longitude: number | string,
   zoomLevel: number = 17,
 ): string {
   return `https://www.google.com/maps/place/${latitude},${longitude}/@${latitude},${longitude},${zoomLevel}z`;
@@ -720,7 +720,10 @@ export function nonEmptyList<T>(...args: T[]): boolean {
 }
 
 export function isValidPostalCode(countryCode: any, postalCode: any): boolean {
-  if (typeof countryCode !== "string" || (typeof postalCode !== "string" && typeof postalCode !== "number")) {
+  if (
+    typeof countryCode !== "string" ||
+    (typeof postalCode !== "string" && typeof postalCode !== "number")
+  ) {
     return false;
   }
 
@@ -741,7 +744,8 @@ export function formatAddress(address: UserAddressFormat): string {
     !isValidCountryCode(address.countryCode)
   ) {
     // throw new Error("Invalid address components");
-    return "Invalid address";
+    console.error("Invalid address components", address);
+    return `${address.street}, ${address.apartmentNumber}, ${address.wardCode}, ${address.districtCode}, ${address.cityProvinceCode}, ${address.countryCode}`;
   }
 
   return `${address.street}, ${address.apartmentNumber}, ${ward.name_with_type}, ${district.name_with_type}, ${cityProvince.name_with_type}, ${

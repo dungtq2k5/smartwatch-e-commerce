@@ -8,7 +8,7 @@ export interface ICancelReason extends Document<Types.ObjectId> {
   updatedAt: Date;
 }
 
-const deliveryStateSchema: Schema<ICancelReason> = new Schema(
+const cancelReasonSchema: Schema<ICancelReason> = new Schema(
   {
     name: {
       type: String,
@@ -31,6 +31,6 @@ const deliveryStateSchema: Schema<ICancelReason> = new Schema(
 
 const CancelReason: Model<ICancelReason> = mongoose.model<ICancelReason>(
   "CancelReason",
-  deliveryStateSchema
+  cancelReasonSchema
 );
 export default CancelReason;

@@ -48,8 +48,8 @@ import OrderReturn, {
 } from "../models/returnRefund/orderReturn.model";
 import ReturnReason from "../models/returnRefund/returnReason.model";
 import {
-  getAdminRoleId,
-  getBuyerRoleId,
+  getSysAdminRoleId,
+  getSysBuyerRoleId,
   getDeliveryStateId,
   getInstanceConditionId,
   getMovementTypeId,
@@ -96,8 +96,8 @@ async function mockUsers(
 
     // Generate mock users
     const usersToCreate: any = [];
-    const adminRoleId = getAdminRoleId();
-    const buyerRoleId = getBuyerRoleId();
+    const adminRoleId = getSysAdminRoleId();
+    const buyerRoleId = getSysBuyerRoleId();
     const sysUserId = getSysUserId();
     for (let i = 0; i < count; i++) {
       const user = {
@@ -819,7 +819,7 @@ async function mockBuyerMe(
       password: bcrypt.hashSync(user.password, HASH_SALT),
       roles: [
         {
-          id: getBuyerRoleId(),
+          id: getSysBuyerRoleId(),
           assignedBy: getSysUserId(),
         },
       ],
@@ -1056,7 +1056,7 @@ async function mockCompleteOrder(
       estimateReceivedDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // +7 days
       receivedDate: new Date(now.getTime() + 6 * 60 * 1000), // +6 minutes
       fulfilledBy: sysUserId,
-      fulfillAt: now,
+      fulfilledAt: now,
     };
 
     // Execute all write operations in parallel
