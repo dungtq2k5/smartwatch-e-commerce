@@ -125,29 +125,29 @@ function sanitizeOrderFulfillItemInput(
   next: NextFunction,
 ): void {
   console.log("▶️ ", "Sanitizing order fulfill item input...");
-  const { items } = req.body; // { variationId: string, instanceIds: string[] }[]
+  const { items } = req.body; // { variationId: string, skus: string[] }[]
 
-  // Auto accumulate instanceIds if they are in the same variation
+  // Auto accumulate skus if they are in the same variation
   if (items && Array.isArray(items)) {
     const accumulatedItems = new Map<string, Set<string>>();
     for (const item of items) {
       // Ensure the item has the required properties before processing
-      if (item?.variationId && Array.isArray(item.instanceIds)) {
-        const existingInstanceIds =
+      if (item?.variationId && Array.isArray(item.skus)) {
+        const existingSkus =
           accumulatedItems.get(item.variationId) || new Set<string>();
-        for (const id of item.instanceIds) {
-          existingInstanceIds.add(id);
+        for (const id of item.skus) {
+          existingSkus.add(id);
         } // Because using Set -> no duplicate when adding
-        accumulatedItems.set(item.variationId, existingInstanceIds);
+        accumulatedItems.set(item.variationId, existingSkus);
       }
     }
 
     // Convert the map back to an array of items
     const sanitizedItems = Array.from(
       accumulatedItems,
-      ([variationId, idSet]) => ({
+      ([variationId, skuSet]) => ({
         variationId,
-        instanceIds: Array.from(idSet),
+        skus: Array.from(skuSet),
       }),
     );
     req.body.items = sanitizedItems;
@@ -564,7 +564,7 @@ export function verifyOrderInput(
         }
         case "update fulfill item": {
           console.log("Validating order fulfill item update input...");
-          const { items } = req.body; // { variationId: string, instanceIds: string[] }[]
+          const { items } = req.body; // { variationId: string, skus: string[] }[]
 
           if (!items) {
             errors.push("Items are required.");
@@ -582,18 +582,18 @@ export function verifyOrderInput(
                   `Item at index ${idx} variation ID must be a non-empty string.`,
                 );
               }
-              if (!item.instanceIds) {
-                errors.push(`Item at index ${idx} is missing instance IDs.`);
+              if (!item.skus) {
+                errors.push(`Item at index ${idx} is missing SKUs.`);
               } else if (
-                !Array.isArray(item.instanceIds) ||
-                item.instanceIds.length === 0
+                !Array.isArray(item.skus) ||
+                item.skus.length === 0
               ) {
                 errors.push(
-                  `Item at index ${idx} instance IDs must be a non-empty array.`,
+                  `Item at index ${idx} SKUs must be a non-empty array.`,
                 );
-              } else if (!isStringArray(item.instanceIds)) {
+              } else if (!isStringArray(item.skus)) {
                 errors.push(
-                  `Item at index ${idx} instance IDs must be an array of strings.`,
+                  `Item at index ${idx} SKUs must be an array of strings.`,
                 );
               }
             }

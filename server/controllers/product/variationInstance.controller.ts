@@ -7,13 +7,16 @@ import type {
   AdminVariationInstanceDetailsResponse,
   SuccessResponse,
   VariationInstanceCreate,
+  VariationInstanceLightListResponse,
   VariationInstanceListResponse,
   VariationInstanceResponse,
+  VariationInstanceSearchByVariationQuery,
   VariationInstanceSearchQuery,
   VariationInstanceUpdate,
 } from "../../../common/types.common";
 import {
   formatAdminVariationInstanceDetailsResponse,
+  formatVariationInstanceLightResponse,
   formatVariationInstanceResponse,
   genInstanceSku,
   getInstanceConditionId,
@@ -31,7 +34,7 @@ import {
 export async function create(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Creating variation instance...");
 
@@ -40,8 +43,8 @@ export async function create(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled in middlewares."
-      )
+        "User ID not found, this should be handled in middlewares.",
+      ),
     );
   }
 
@@ -148,7 +151,7 @@ export async function create(
 export async function get(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Fetching variation instance...");
   const { instanceId } = req.params;
@@ -177,7 +180,7 @@ export async function get(
 export async function adminGetDetails(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Admin fetching variation instance details...");
 
@@ -189,13 +192,13 @@ export async function adminGetDetails(
     return next(
       new HttpError(
         500,
-        "User ID or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "User ID or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -275,7 +278,7 @@ export async function adminGetDetails(
 export async function adminSearch(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Admin searching variation instances...");
 
@@ -287,13 +290,13 @@ export async function adminSearch(
     return next(
       new HttpError(
         500,
-        "User ID or isBuyerOnly not found, this should be handled in middlewares."
-      )
+        "User ID or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
     );
   }
   if (isBuyerOnly) {
     return next(
-      new HttpError(403, "You do not have permission to perform this action.")
+      new HttpError(403, "You do not have permission to perform this action."),
     );
   }
 
@@ -312,14 +315,24 @@ export async function adminSearch(
       {
         _id: isValidObjId ? new Types.ObjectId(reqQuery.searchTerm) : undefined,
       },
-      { sku: reqQuery.searchTerm },
+      { sku: { $regex: `^${reqQuery.searchTerm}`, $options: "i" } },
       {
         modelVariationId: isValidObjId
           ? new Types.ObjectId(reqQuery.searchTerm)
           : undefined,
       },
-      { supplierSerialNumber: reqQuery.searchTerm },
-      { supplierImeiNumber: reqQuery.searchTerm },
+      {
+        supplierSerialNumber: {
+          $regex: `^${reqQuery.searchTerm}`,
+          $options: "i",
+        },
+      },
+      {
+        supplierImeiNumber: {
+          $regex: `^${reqQuery.searchTerm}`,
+          $options: "i",
+        },
+      },
     ];
   }
 
@@ -375,10 +388,100 @@ export async function adminSearch(
   }
 }
 
+export async function searchByVariation(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Searching instances by variation...");
+
+  const [reqUserId, isBuyerOnly] = [
+    req["auth"]?.userId,
+    req["auth"]?.isBuyerOnly,
+  ];
+  if (!isPresent(reqUserId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const reqQuery = req[
+    "sanitizedQuery"
+  ] as VariationInstanceSearchByVariationQuery;
+
+  if (!Types.ObjectId.isValid(reqQuery.variationId)) {
+    return next(new HttpError(400, "variationId must be a valid ObjectId."));
+  }
+
+  const limit = reqQuery.limit ? Number.parseInt(reqQuery.limit, 10) : 20;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+
+  const query: Record<string, unknown> = {
+    modelVariationId: new Types.ObjectId(reqQuery.variationId),
+  };
+
+  if (reqQuery.searchTerm) {
+    query.$or = [
+      { sku: { $regex: `^${reqQuery.searchTerm}`, $options: "i" } },
+      {
+        supplierSerialNumber: {
+          $regex: `^${reqQuery.searchTerm.trim()}`,
+          $options: "i",
+        },
+      },
+      {
+        supplierImeiNumber: {
+          $regex: `^${reqQuery.searchTerm.trim()}`,
+          $options: "i",
+        },
+      },
+    ];
+  }
+
+  if (reqQuery.isActive) {
+    query.isActive = reqQuery.isActive === "true";
+  }
+
+  try {
+    const instances = await VariationInstance.find(query)
+      .select("_id sku")
+      .lean()
+      .skip(offset)
+      .limit(limit);
+
+    const total = await VariationInstance.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      message: "Instances fetched successfully.",
+      data: {
+        total,
+        instances: {
+          instances: instances.map(formatVariationInstanceLightResponse),
+          total: instances.length,
+        },
+        limit,
+        offset,
+      },
+    } as SuccessResponse<VariationInstanceLightListResponse>);
+    console.log("✅ Instances by variation fetched successfully.");
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function update(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Updating variation instance...");
   const { instanceId } = req.params;
@@ -402,8 +505,8 @@ export async function update(
       conditionId === null
         ? getInstanceConditionId("1") // new
         : conditionId
-        ? new Types.ObjectId(conditionId)
-        : instance.conditionId;
+          ? new Types.ObjectId(conditionId)
+          : instance.conditionId;
     if (!updatedConditionId.equals(instance.conditionId)) {
       if (!Types.ObjectId.isValid(updatedConditionId)) {
         throw new HttpError(404, "Condition not found.");

@@ -59,6 +59,7 @@ import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faBoxesPacking,
   faBoxOpen,
   faCalendar,
   faFileExport,
@@ -75,6 +76,7 @@ import EditBulkOrderEstReceivedDateModal from "./EditBulkOrderEstReceivedDateMod
 import ConfigDisplayModal from "../modal/ConfigDisplayModal";
 import Pagination from "../../common/Pagination";
 import LinkBtn from "../../common/LinkBtn";
+import FulfillOrderModal from "./FulfillOrderModal";
 
 type Process = {
   isProcessing: boolean;
@@ -97,6 +99,7 @@ type Modal = {
   orderIdsToUpdateDeliveryState: string[] | null;
   orderIdToUpdateEstimateReceivedDate: string | null;
   orderIdsToUpdateEstimateReceivedDate: string[] | null;
+  orderToFulfill: AdminOrderResponse | null;
 };
 
 type TableColDisplay = {
@@ -112,6 +115,7 @@ const DEFAULT_MODAL_STATE: Modal = {
   orderIdsToUpdateDeliveryState: null,
   orderIdToUpdateEstimateReceivedDate: null,
   orderIdsToUpdateEstimateReceivedDate: null,
+  orderToFulfill: null,
 };
 
 const DEFAULT_SEARCH_FORM: SearchForm = {
@@ -128,7 +132,11 @@ export default function OrderManagement() {
   renderCount.current += 1;
   console.log(`OrderManagement render count: ${renderCount.current}`);
 
-  const { fetchOrders, canEditOrder: editableOrder } = useOrderStore();
+  const {
+    fetchOrders,
+    canEditOrder: editableOrder,
+    canFulfillOrder,
+  } = useOrderStore();
   const { paymentMethods, fetchPaymentMethods, getPaymentMethod } =
     usePaymentMethodStore();
   const { paymentStates, fetchPaymentStates, getPaymentState } =
@@ -351,26 +359,56 @@ export default function OrderManagement() {
       actions: {
         label: ORDER_FIELD_LABEL_LEGEND["actions"] || "Actions",
         tdContent: (order) => {
-          const editable = editableOrder(order.deliveryStates.at(-1)?.id || "");
+          const canFulfill =
+            canEditOrder &&
+            canFulfillOrder(
+              getOrderState(order.states.at(-1)?.id || "")?.lookupId || "",
+            );
+          const canFulfillTitle = !canEditOrder
+            ? DISABLED_TITLE_FOR_PERFORMING
+            : canFulfill
+              ? "Fulfill this order"
+              : "Only orders in proper state can be fulfilled";
+
+          const canEdit =
+            canEditOrder &&
+            editableOrder(order.deliveryStates.at(-1)?.id || "");
           const editDeliveryStateTitle = !canEditOrder
             ? DISABLED_TITLE_FOR_PERFORMING
-            : editable
+            : canEdit
               ? "Edit delivery state for this order"
               : "This order is completed and cannot be edited";
           const editEstimateReceivedDateTitle = !canEditOrder
             ? DISABLED_TITLE_FOR_PERFORMING
-            : editable
+            : canEdit
               ? "Edit estimate received date for this order"
               : "This order is completed and cannot be edited";
-          const disabled = !canEditOrder || !editable;
 
           return (
             <div className="d-flex gap-2">
               <button
                 type="button"
-                className="btn bg-warning"
+                className="btn btn-primary"
+                title={canFulfillTitle}
+                disabled={!canFulfill}
+                onClick={() =>
+                  setModal((prev) => ({
+                    ...prev,
+                    orderToFulfill: order,
+                  }))
+                }
+              >
+                <FontAwesomeIcon
+                  icon={faBoxesPacking}
+                  size="sm"
+                  color="white"
+                />
+              </button>
+              <button
+                type="button"
+                className="btn btn-warning"
                 title={editDeliveryStateTitle}
-                disabled={disabled}
+                disabled={!canEdit}
                 onClick={() =>
                   setModal((prev) => ({
                     ...prev,
@@ -382,9 +420,9 @@ export default function OrderManagement() {
               </button>
               <button
                 type="button"
-                className="btn bg-info"
+                className="btn btn-info"
                 title={editEstimateReceivedDateTitle}
-                disabled={disabled}
+                disabled={!canEdit}
                 onClick={() =>
                   setModal((prev) => ({
                     ...prev,
@@ -402,6 +440,7 @@ export default function OrderManagement() {
     }),
     [
       canEditOrder,
+      canFulfillOrder,
       canReadUser,
       editableOrder,
       getDeliveryState,
@@ -1161,7 +1200,6 @@ export default function OrderManagement() {
     }
   }, [refresh, selectionToastId]);
 
-  // CHECKPOINT fulfilled UI
   return (
     <>
       {/* Heading */}
@@ -1641,26 +1679,32 @@ export default function OrderManagement() {
         onApply={handleApplyConfigDisplay}
       />
 
+      <FulfillOrderModal
+        order={modal.orderToFulfill}
+        onHide={closeModal}
+        onSuccess={onSuccessUpdate}
+      />
+
       <EditOrderDeliveryStateModal
-        orderId={modal.orderIdToUpdateDeliveryState || undefined}
+        orderId={modal.orderIdToUpdateDeliveryState}
         onHide={closeModal}
         onSuccess={onSuccessUpdate}
       />
 
       <EditBulkOrderDeliveryStateModal
-        orderIds={modal.orderIdsToUpdateDeliveryState || undefined}
+        orderIds={modal.orderIdsToUpdateDeliveryState}
         onHide={closeModal}
         onSuccess={onSuccessUpdate}
       />
 
       <EditOrderEstReceivedDateModal
-        orderId={modal.orderIdToUpdateEstimateReceivedDate || undefined}
+        orderId={modal.orderIdToUpdateEstimateReceivedDate}
         onHide={closeModal}
         onSuccess={onSuccessUpdate}
       />
 
       <EditBulkOrderEstReceivedDateModal
-        orderIds={modal.orderIdsToUpdateEstimateReceivedDate || undefined}
+        orderIds={modal.orderIdsToUpdateEstimateReceivedDate}
         onHide={closeModal}
         onSuccess={onSuccessUpdate}
       />

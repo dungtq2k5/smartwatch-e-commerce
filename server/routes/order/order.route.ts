@@ -37,15 +37,6 @@ router.get(
 
 // --- ROUTES FOR ORDER ---
 router.post(
-  "/:orderId/fulfill-item",
-  verifyPermission("u_order"),
-  verifyEmptyBody,
-  inputSanitizer("fulfill order item"),
-  verifyOrderInput("update fulfill item"),
-  order.fulfillItem,
-);
-
-router.post(
   "/me",
   verifyPermission("c_order"),
   verifyEmptyBody,
@@ -97,6 +88,15 @@ router.patch(
   inputSanitizer("order update bulk"),
   verifyOrderInput("update bulk"),
   order.updateBulk,
+);
+
+router.patch(
+  "/:orderId/fulfill-item",
+  verifyPermission("u_order"),
+  verifyEmptyBody,
+  inputSanitizer("fulfill order item"),
+  verifyOrderInput("update fulfill item"),
+  order.fulfillItem,
 );
 
 router.patch(

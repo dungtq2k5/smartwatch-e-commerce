@@ -14,6 +14,11 @@
   - Mailtrap/Nodemailer for email sending services.
   - Twilio for SMS sending services.
   - Auto generate JWT secret key: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+  - Faker for mocking data.
+  - multer, exceljs for handling multipart/form-data (file uploads).
+  - libphonenumber-js, i18n-iso-countries for handling telephone input.
+  - postal-codes-js for handling postal code validation.
+
   - FrontEnd:
     - popperjs for toasting.
     - font-awesome for icons.
@@ -24,10 +29,7 @@
     - jspdf, html2canvas for generating PDF file with content.
     - exceljs for handling Excel files.
     - react-phone-number-input for telephone input.
-  - Faker for mocking data.
-  - multer, exceljs for handling multipart/form-data (file uploads).
-  - libphonenumber-js, i18n-iso-countries for handling telephone input.
-  - postal-codes-js for handling postal code validation.
+    - html5-qrcode for scanning code.
 
 - 📝 Todos:
   - Frontend:

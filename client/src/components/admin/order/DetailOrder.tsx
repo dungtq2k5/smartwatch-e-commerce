@@ -3,7 +3,10 @@ import { useParams } from "react-router-dom";
 import { useOrderStore } from "../../../store/admin/order/orderStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
-import type { AdminOrderDetailsResponse } from "../../../../../common/types.common";
+import type {
+  AdminOrderDetailsResponse,
+  AdminOrderResponse,
+} from "../../../../../common/types.common";
 import { centsToUSD, formatError } from "../../../../../common/utils.common";
 import ApiError from "../../common/ApiError";
 import Title from "../Title";
@@ -32,10 +35,12 @@ import usePaymentMethodStore from "../../../store/common/order/paymentMethodStor
 import usePaymentStateStore from "../../../store/common/order/paymentStateStore";
 import useDeliveryStateStore from "../../../store/common/order/deliveryStateStore";
 import useOrderStateStore from "../../../store/common/order/orderStateStore";
+import FulfillOrderModal from "./FulfillOrderModal";
 
 type Modal = {
   editDeliveryState: boolean;
   editEstReceivedDate: boolean;
+  orderToFulfill: AdminOrderDetailsResponse | AdminOrderResponse | null;
 };
 
 export default function DetailOrder() {
@@ -46,7 +51,11 @@ export default function DetailOrder() {
 
   const { id } = useParams();
 
-  const { fetchOrderDetails, canEditOrder: editableOrder } = useOrderStore();
+  const {
+    fetchOrderDetails,
+    canEditOrder: editableOrder,
+    canFulfillOrder: fulfillalbleOrder,
+  } = useOrderStore();
   const { paymentMethods, fetchPaymentMethods, getPaymentMethod } =
     usePaymentMethodStore();
   const { paymentStates, fetchPaymentStates, getPaymentState } =
@@ -70,6 +79,7 @@ export default function DetailOrder() {
   const [modal, setModal] = useState<Modal>({
     editDeliveryState: false,
     editEstReceivedDate: false,
+    orderToFulfill: null,
   });
 
   // Fetch and set initial data
@@ -105,6 +115,7 @@ export default function DetailOrder() {
     setModal({
       editDeliveryState: false,
       editEstReceivedDate: false,
+      orderToFulfill: null,
     });
   }, []);
 
@@ -114,10 +125,13 @@ export default function DetailOrder() {
   }, [refresh, closeModal]);
 
   // Since this is a detail page which is only render 1 time so don't need to worry about re-render problems
+  const orderState = getOrderState(orderDetails?.states.at(-1)?.id || "");
   const canEditOrder =
-    useHasPermission("u_order") &&
-    editableOrder(orderDetails?.states.at(-1)?.lookupId || "");
-  const latestOrderState = getOrderState(orderDetails?.states.at(-1)?.id || "");
+    useHasPermission("u_order") && editableOrder(orderState?.lookupId || "");
+  const canFulfillOrder =
+    canEditOrder &&
+    fulfillalbleOrder(getOrderState(orderState?.id || "")?.lookupId || "");
+  const latestOrderState = getOrderState(orderState?.id || "");
   const latestDeliveryState = getDeliveryState(
     orderDetails?.deliveryStates.at(-1)?.id || "",
   );
@@ -300,9 +314,26 @@ export default function DetailOrder() {
                             </div>
                           </>
                         ) : (
-                          <span className="badge bg-warning text-dark">
-                            Not Fulfilled
-                          </span>
+                          <>
+                            <span className="badge bg-warning text-dark">
+                              Not Fulfilled
+                            </span>
+                            <span> - </span>
+                            <button
+                              type="button"
+                              className="btn btn-link p-0"
+                              title="Fulfill this order now"
+                              onClick={() =>
+                                setModal((prev) => ({
+                                  ...prev,
+                                  orderToFulfill: orderDetails,
+                                }))
+                              }
+                              disabled={!canFulfillOrder}
+                            >
+                              Fulfill Now
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -811,6 +842,12 @@ export default function DetailOrder() {
 
           <EditOrderEstReceivedDateModal
             orderId={modal.editEstReceivedDate ? orderDetails.id : undefined}
+            onHide={closeModal}
+            onSuccess={onSuccessUpdate}
+          />
+
+          <FulfillOrderModal
+            order={modal.orderToFulfill}
             onHide={closeModal}
             onSuccess={onSuccessUpdate}
           />

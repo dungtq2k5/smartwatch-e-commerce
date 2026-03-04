@@ -1348,7 +1348,7 @@ export async function fulfillItem(
     const systemUserId = getSysUserId();
     const saleOutMovementTypeId = getMovementTypeId("3");
 
-    for (const { variationId, instanceIds } of items) {
+    for (const { variationId, skus } of items) {
       // Check item exists in order
       const orderItem = order.items.find((oi) =>
         oi.variationId.equals(variationId),
@@ -1357,31 +1357,33 @@ export async function fulfillItem(
         throw new HttpError(404, "Order item not found.");
       }
 
-      if (instanceIds.length !== orderItem.quantity) {
+      if (skus.length !== orderItem.quantity) {
         throw new HttpError(
           400,
-          `The number of instances provided (${instanceIds.length}) does not match the order item quantity (${orderItem.quantity}).`,
+          `The number of SKUs provided (${skus.length}) does not match the order item quantity (${orderItem.quantity}).`,
         );
       }
 
-      // Check if all provided instances are valid and available for this variation
-      const validInstancesCount = await VariationInstance.countDocuments({
-        _id: { $in: instanceIds },
+      // Check if all provided skus are valid and available for this variation
+      const validSkusCount = await VariationInstance.countDocuments({
+        sku: { $in: skus },
         modelVariationId: variationId,
         isActive: true,
       }).session(session);
 
-      if (validInstancesCount !== instanceIds.length) {
+      if (validSkusCount !== skus.length) {
         throw new HttpError(
           404,
           "One or more provided product instances are invalid, already sold, or do not match the variation.",
         );
       }
 
-      // Fetch the instances to get their SKUs
+      // Fetch the instances to assign based on SKUs
       const instancesToAssign: { _id: Types.ObjectId; sku: string }[] =
         await VariationInstance.find({
-          _id: { $in: instanceIds },
+          sku: { $in: skus },
+          modelVariationId: variationId,
+          isActive: true,
         })
           .select("_id sku")
           .lean()
@@ -1396,7 +1398,7 @@ export async function fulfillItem(
 
       // Update isActive
       await VariationInstance.updateMany(
-        { _id: { $in: instanceIds } },
+        { _id: { $in: instancesToAssign.map((i) => i._id) } },
         { $set: { isActive: false, inactiveAt: new Date() } },
         { session },
       );
@@ -1404,7 +1406,7 @@ export async function fulfillItem(
       // Create inventory movements
       const inventoryMovementsInsert = instancesToAssign.map((instance) => ({
         variationInstanceId: instance._id,
-        sku: instance.sku,
+        variationInstanceSku: instance.sku,
         inventoryMovementTypeId: saleOutMovementTypeId,
         createdBy: systemUserId,
         quantity: -1,
@@ -1685,7 +1687,7 @@ export async function executeCartDeletion(
         );
         if (!cartItem) continue;
 
-        if (orderItem.quantity >= cartItem.quantity!) {
+        if (orderItem.quantity >= cartItem.quantity) {
           bulkOps.push({ deleteOne: { filter: { _id: cartItem._id } } });
         } else {
           bulkOps.push({

@@ -3,8 +3,10 @@ import type {
   AdminVariationInstanceDetailsResponse,
   SortOption,
   VariationInstanceCreate,
+  VariationInstanceLightListResponse,
   VariationInstanceListResponse,
   VariationInstanceResponse,
+  VariationInstanceSearchByVariationQuery,
   VariationInstanceSearchQuery,
   VariationInstanceUpdate,
 } from "../../../../../common/types.common";
@@ -33,6 +35,16 @@ type InstanceState = {
     id: string,
     instance: VariationInstanceUpdate,
   ) => Promise<VariationInstanceResponse>;
+
+  /**
+   * Lightweight SKU lookup scoped to a single variation.
+   * Calls GET /variation-instances/search-by-variation?variationId=...&searchTerm=...
+   * Returns minimal { id, sku }[] — only active instances, hard-capped at 20.
+   * Used by FulfillOrderModal for per-variation live search.
+   */
+  searchInstancesByVariation: (
+    query: VariationInstanceSearchByVariationQuery,
+  ) => Promise<VariationInstanceLightListResponse>;
 };
 
 const useInstanceStore = create<InstanceState>(() => ({
@@ -242,6 +254,32 @@ const useInstanceStore = create<InstanceState>(() => ({
       if (!res.success) throw new Error(res.message);
 
       return res.data as VariationInstanceResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
+  async searchInstancesByVariation(
+    query: VariationInstanceSearchByVariationQuery,
+  ): Promise<VariationInstanceLightListResponse> {
+    const queryString = new URLSearchParams();
+
+    queryString.set("variationId", query.variationId);
+    if (query.limit) queryString.set("limit", query.limit);
+    if (query.offset) queryString.set("offset", query.offset);
+    if (query.searchTerm && removeOddSpaces(query.searchTerm)) {
+      queryString.set("searchTerm", query.searchTerm);
+    }
+    if (query.isActive !== undefined)
+      queryString.set("isActive", query.isActive);
+
+    try {
+      const res = await retrieve(
+        `${VARIATION_INSTANCE_URL}/search-by-variation?${queryString.toString()}`,
+      );
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as VariationInstanceLightListResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }

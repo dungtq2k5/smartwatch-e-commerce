@@ -759,6 +759,15 @@ export function formatVariationInstanceResponse(
   };
 }
 
+export function formatVariationInstanceLightResponse(
+  instance: any,
+): commonType.VariationInstanceLightResponse {
+  return {
+    id: instance._id,
+    sku: instance.sku,
+  };
+}
+
 export function formatAdminVariationInstanceDetailsResponse(
   instance: any,
 ): commonType.AdminVariationInstanceDetailsResponse {

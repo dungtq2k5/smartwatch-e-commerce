@@ -7,6 +7,7 @@ import {
   adminSearch,
   create,
   get,
+  searchByVariation,
   update,
 } from "../../controllers/product/variationInstance.controller";
 
@@ -26,6 +27,19 @@ router.get(
   inputSanitizer("admin search"),
   verifyVariationInstanceInput("admin search"),
   adminSearch
+);
+
+/**
+ * Lightweight SKU lookup scoped to a single variation.
+ * Used by the order fulfillment UI for live SKU search per variation row.
+ * No heavy aggregation — just a lean find with index hit.
+ */
+router.get(
+  "/search-by-variation",
+  verifyPermission("r_variation_instance"),
+  inputSanitizer("search by variation"),
+  verifyVariationInstanceInput("search by variation"),
+  searchByVariation
 );
 
 router.get(

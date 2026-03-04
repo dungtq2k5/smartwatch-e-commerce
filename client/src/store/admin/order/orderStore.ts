@@ -4,6 +4,8 @@ import type {
   AdminOrderListResponse,
   AdminOrderResponse,
   AdminOrderSearchQuery,
+  OrderFulfillItemUpdate,
+  OrderResponse,
   OrderUpdate,
   OrderUpdateBulk,
   SortOption,
@@ -36,7 +38,11 @@ type OrderState = {
   ) => Promise<AdminOrderResponse>;
   updateOrderBulk: (data: OrderUpdateBulk) => Promise<void>;
 
+  fulfillOrder: (data: OrderFulfillItemUpdate) => Promise<OrderResponse>;
+
   canEditOrder: (orderStateLookupId: string) => boolean;
+
+  canFulfillOrder: (orderStateLookupId: string) => boolean;
 
   isCancelled: (orderStateLookupId: string) => boolean;
   isCompleted: (orderStateLookupId: string) => boolean;
@@ -179,11 +185,26 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
+  async fulfillOrder(data: OrderFulfillItemUpdate): Promise<OrderResponse> {
+    try {
+      const res = await patch(`${ORDER_URL}/fulfill-item`, null, data);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as OrderResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
   canEditOrder: (orderStateLookupId: string): boolean => {
     return (
       !get().isCancelled(orderStateLookupId) &&
       !get().isCompleted(orderStateLookupId)
     );
+  },
+
+  canFulfillOrder: (orderStateLookupId: string): boolean => {
+    return orderStateLookupId === "2"; // 'confirmed' state lookup ID
   },
 
   isCancelled: (orderStateLookupId: string): boolean => {

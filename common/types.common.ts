@@ -905,6 +905,7 @@ export type VariationInstanceCreate = {
   conditionId?: string | null;
   isActive?: boolean;
 };
+
 export type VariationInstanceResponse = {
   id: string;
   sku: string;
@@ -917,13 +918,16 @@ export type VariationInstanceResponse = {
   createdAt: string;
   updatedAt: string;
 };
+
 export type VariationInstanceListResponse = PaginatedResponse<
   "instances",
   VariationInstanceResponse
 >;
+
 export type VariationInstanceUpdate = Partial<
   Omit<VariationInstanceCreate, "modelVariationId">
 >;
+
 export type VariationInstanceSearchQuery = SearchQuery<
   (typeof VARIATION_INSTANCE_SEARCH_SORT_OPTIONS)[number]
 > &
@@ -931,6 +935,12 @@ export type VariationInstanceSearchQuery = SearchQuery<
     conditionId: string;
     isActive: "true" | "false";
   }>;
+
+export type VariationInstanceSearchByVariationQuery = SearchQuery & {
+  variationId: string;
+  isActive?: "true" | "false";
+};
+
 export type AdminVariationInstanceDetailsResponse =
   VariationInstanceResponse & {
     // modelVariation: Omit<AdminModelVariationResponse, "productId">;
@@ -943,12 +953,23 @@ export type AdminVariationInstanceDetailsResponse =
     };
   };
 
+export type VariationInstanceLightResponse = Pick<
+  VariationInstanceResponse,
+  "id" | "sku"
+>;
+
+export type VariationInstanceLightListResponse = PaginatedResponse<
+  "instances",
+  VariationInstanceLightResponse
+>;
+
 export type InstanceConditionResponse = {
   id: string;
   lookupId: string;
   name: string;
   description: string;
 };
+
 export type InstanceConditionListResponse = {
   total: number;
   conditions: InstanceConditionResponse[];
@@ -1046,7 +1067,7 @@ export type OrderCreate = {
 export type OrderFulfillItemUpdate = {
   items: {
     variationId: string;
-    instanceIds: string[];
+    skus: string[];
   }[];
 };
 

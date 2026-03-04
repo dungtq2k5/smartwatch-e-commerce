@@ -12,7 +12,7 @@ import { VARIATION_INSTANCE_SEARCH_SORT_OPTIONS } from "../../../../common/confi
 function sanitizeVariationSearchInput(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   console.log("▶️ ", "Sanitizing variation instance admin search input...");
 
@@ -31,14 +31,44 @@ function sanitizeVariationSearchInput(
   next();
 }
 
+function sanitizeVariationSearchByVariationInput(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  console.log(
+    "▶️ ",
+    "Sanitizing variation instance search-by-variation input...",
+  );
+
+  // Since req.query can't be modifiable so we create a new query obj for the request
+  const sanitizedQuery = { ...req.query };
+  const { searchTerm, isActive } = sanitizedQuery;
+
+  if (typeof searchTerm === "string") {
+    sanitizedQuery.searchTerm = removeOddSpaces(searchTerm);
+  }
+  if (typeof isActive === "string") {
+    sanitizedQuery.isActive = removeOddSpaces(isActive.toLowerCase());
+  }
+
+  req["sanitizedQuery"] = sanitizedQuery;
+  next();
+}
+
 export function inputSanitizer(
-  type: "admin search"
+  type: "admin search" | "search by variation",
 ): (req: Request, res: Response, next: NextFunction) => void {
-  return sanitizeVariationSearchInput;
+  switch (type) {
+    case "admin search":
+      return sanitizeVariationSearchInput;
+    case "search by variation":
+      return sanitizeVariationSearchByVariationInput;
+  }
 }
 
 export function verifyVariationInstanceInput(
-  type: "create" | "update" | "admin search"
+  type: "create" | "update" | "admin search" | "search by variation",
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating instance input...");
@@ -62,11 +92,11 @@ export function verifyVariationInstanceInput(
           }
           if (!supplierSerialNumber) {
             errors.push(
-              "Variation instance supplier serial number is required."
+              "Variation instance supplier serial number is required.",
             );
           } else if (typeof supplierSerialNumber !== "string") {
             errors.push(
-              "Variation instance supplier serial number must be a none-empty string."
+              "Variation instance supplier serial number must be a none-empty string.",
             );
           }
           if (
@@ -74,7 +104,7 @@ export function verifyVariationInstanceInput(
             (typeof supplierImeiNumber !== "string" || !supplierImeiNumber)
           ) {
             errors.push(
-              "Variation instance supplier IMEI number must be a none-empty string."
+              "Variation instance supplier IMEI number must be a none-empty string.",
             );
           }
           if (
@@ -82,7 +112,7 @@ export function verifyVariationInstanceInput(
             (typeof conditionId !== "string" || !conditionId)
           ) {
             errors.push(
-              "Variation instance condition ID must be a none-empty string."
+              "Variation instance condition ID must be a none-empty string.",
             );
           }
           if (isActive !== undefined && typeof isActive !== "boolean") {
@@ -103,7 +133,7 @@ export function verifyVariationInstanceInput(
             (typeof supplierSerialNumber !== "string" || !supplierSerialNumber)
           ) {
             errors.push(
-              "Variation instance supplier serial number must be a none-empty string."
+              "Variation instance supplier serial number must be a none-empty string.",
             );
           }
           if (
@@ -111,7 +141,7 @@ export function verifyVariationInstanceInput(
             (typeof supplierImeiNumber !== "string" || !supplierImeiNumber)
           ) {
             errors.push(
-              "Variation instance supplier IMEI number must be a none-empty string or null."
+              "Variation instance supplier IMEI number must be a none-empty string or null.",
             );
           }
           if (
@@ -119,7 +149,7 @@ export function verifyVariationInstanceInput(
             (typeof conditionId !== "string" || !conditionId)
           ) {
             errors.push(
-              "Variation instance condition ID must be a none-empty string."
+              "Variation instance condition ID must be a none-empty string.",
             );
           }
           if (isActive !== undefined && typeof isActive !== "boolean") {
@@ -166,9 +196,43 @@ export function verifyVariationInstanceInput(
           ) {
             errors.push(
               `sortBy must be one of the following: ${VARIATION_INSTANCE_SEARCH_SORT_OPTIONS.join(
-                ", "
-              )}.`
+                ", ",
+              )}.`,
             );
+          }
+          break;
+        }
+        case "search by variation": {
+          const { limit, offset, variationId, searchTerm, isActive } =
+            req["sanitizedQuery"] || req.query;
+
+          if (limit !== undefined) {
+            if (!isValidNumString(limit)) {
+              errors.push("limit must be a valid number string.");
+            } else if (Number(limit) <= 0) {
+              errors.push("limit must be greater than 0.");
+            }
+          }
+          if (offset !== undefined) {
+            if (!isValidNumString(offset)) {
+              errors.push("offset must be a valid number string.");
+            } else if (Number(offset) < 0) {
+              errors.push("offset must be greater than or equal to 0.");
+            }
+          }
+          if (!variationId) {
+            errors.push("variationId query parameter is required.");
+          } else if (typeof variationId !== "string") {
+            errors.push("variationId must be a string.");
+          }
+          if (
+            searchTerm !== undefined &&
+            (typeof searchTerm !== "string" || !searchTerm)
+          ) {
+            errors.push("searchTerm must be a non-empty string.");
+          }
+          if (isActive !== undefined && !isValidBooleanString(isActive)) {
+            errors.push("isActive must be a valid boolean string.");
           }
           break;
         }
