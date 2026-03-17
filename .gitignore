@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
+# Personal
 .env
 test.*
 .prettierrc.json
@@ -30,6 +31,6 @@ test.*
 serviceAccountKey.json
 scratch.*
 draft
-
 changelog.txt
 Prompt.md
+cspell.json
