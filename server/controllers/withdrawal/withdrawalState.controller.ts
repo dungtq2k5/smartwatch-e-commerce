@@ -1,22 +1,26 @@
 import { Request, Response, NextFunction } from "express";
-import WithdrawalState from "../../models/withdrawal/withdrawalState.model";
-import { formatWithdrawalStateResponse } from "../../utils/utils";
+import WithdrawalState, {
+  IWithdrawalState,
+} from "../../models/withdrawal/withdrawalState.model";
+import {
+  formatWithdrawalStateResponse,
+  getWithdrawalStates,
+} from "../../utils/utils";
 import {
   SuccessResponse,
   WithdrawalStateListResponse,
 } from "../../../common/types.common";
+import { States } from "../../utils/types";
 
 export async function getAll(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Fetching all withdrawal states...");
 
   try {
-    const withdrawalStates = await WithdrawalState.find()
-      .sort({ lookupId: 1 })
-      .lean();
+    const withdrawalStates = await fetchAllWithFallback();
 
     res.status(200).json({
       success: true,
@@ -29,5 +33,19 @@ export async function getAll(
     console.log("✅ ", "Withdrawal states fetched successfully.");
   } catch (error) {
     next(error);
+  }
+}
+
+// --- HELPER FUNCTIONS ---
+async function fetchAllWithFallback(): Promise<States<IWithdrawalState>> {
+  try {
+    return getWithdrawalStates();
+  } catch (error) {
+    console.warn(
+      "⚠️ ",
+      "Failed to retrieve withdrawal states from cache, get from db as fallback:",
+      error,
+    );
+    return await WithdrawalState.find().lean();
   }
 }

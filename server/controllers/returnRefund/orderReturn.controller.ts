@@ -20,7 +20,7 @@ import {
   getDeliveryStateLevel,
   getInstanceConditionId,
   getLatestStateId,
-  getMovementTypeId,
+  getInventoryMovementTypeId,
   getOrderStateLevel,
   getPaymentStateLookupId,
   getPickupStateId,
@@ -1321,7 +1321,7 @@ async function executeItemsReturned(
       .flatMap((item) => item.instances)
       .map((inst) => inst.id);
 
-    const returnFromCusMovementTypeId = getMovementTypeId("8");
+    const returnFromCusMovementTypeId = getInventoryMovementTypeId("8");
     const sysUserId = getSysUserId();
     const inventoriesToInsert: {
       variationInstanceId: Types.ObjectId | string;

@@ -1,22 +1,26 @@
 import { Request, Response, NextFunction } from "express";
-import DeliveryState from "../../models/order/deliveryState.model";
-import { formatDeliveryStateResponse } from "../../utils/utils";
+import DeliveryState, {
+  IDeliveryState,
+} from "../../models/order/deliveryState.model";
+import {
+  formatDeliveryStateResponse,
+  getDeliveryStates,
+} from "../../utils/utils";
 import {
   DeliveryStateListResponse,
   SuccessResponse,
 } from "../../../common/types.common";
+import { States } from "../../utils/types";
 
 export async function getAll(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Fetching all delivery states...");
 
   try {
-    const deliveryStates = await DeliveryState.find()
-      .sort({ lookupId: 1 })
-      .lean();
+    const deliveryStates = await fetchAllWithFallback();
 
     res.status(200).json({
       success: true,
@@ -29,5 +33,18 @@ export async function getAll(
     console.log("✅ ", "Delivery states fetched successfully.");
   } catch (error) {
     next(error);
+  }
+}
+
+// --- HELPER FUNCTIONS ---
+async function fetchAllWithFallback(): Promise<States<IDeliveryState>> {
+  try {
+    return getDeliveryStates();
+  } catch (error) {
+    console.error(
+      "⚠️  Failed to get delivery states from cache, fallback to database, error:",
+      error,
+    );
+    return await DeliveryState.find().lean();
   }
 }

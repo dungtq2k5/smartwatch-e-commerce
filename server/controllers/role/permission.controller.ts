@@ -4,16 +4,18 @@ import {
   SuccessResponse,
 } from "../../../common/types.common";
 import { formatPermissionResponse, getPermissions } from "../../utils/utils";
+import Permission, { IPermission } from "../../models/role/permission.model";
+import { States } from "../../utils/types";
 
-export function getAll(
+export async function getAll(
   req: Request,
   res: Response,
   next: NextFunction,
-): void {
+): Promise<void> {
   console.log("▶️ ", "Fetching all permission...");
 
   try {
-    const permissions = getPermissions();
+    const permissions = await fetchAllWithFallback();
 
     res.status(200).json({
       success: true,
@@ -26,5 +28,19 @@ export function getAll(
     console.log("✅ ", "Permissions fetched successfully.");
   } catch (error) {
     next(error);
+  }
+}
+
+// --- HELPER FUNCTIONS ---
+async function fetchAllWithFallback(): Promise<States<IPermission>> {
+  try {
+    return getPermissions();
+  } catch (error) {
+    console.warn(
+      "⚠️ ",
+      "Failed to retrieve permissions from cache, get from db as fallback:",
+      error,
+    );
+    return await Permission.find().lean();
   }
 }

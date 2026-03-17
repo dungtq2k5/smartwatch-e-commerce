@@ -30,7 +30,7 @@ import {
   getDeliveryStateLevel,
   getDeliveryStateLookupId,
   getLatestStateId,
-  getMovementTypeId,
+  getInventoryMovementTypeId,
   getOrderStateId,
   getOrderStateLevel,
   getOrderStateLookupId,
@@ -1346,7 +1346,7 @@ export async function fulfillItem(
     const { items } = req.body as OrderFulfillItemUpdate;
 
     const systemUserId = getSysUserId();
-    const saleOutMovementTypeId = getMovementTypeId("3");
+    const saleOutMovementTypeId = getInventoryMovementTypeId("3");
 
     for (const { variationId, skus } of items) {
       // Check item exists in order
@@ -1619,7 +1619,7 @@ export async function handleOrderDeletion(
     }
 
     // 2. Get the movement type ID for "sales out"
-    const saleOutMovementTypeId = getMovementTypeId("3");
+    const saleOutMovementTypeId = getInventoryMovementTypeId("3");
 
     // 3. Execute all updates and deletions in parallel within the transaction
     await Promise.all([

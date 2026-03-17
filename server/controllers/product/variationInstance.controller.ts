@@ -20,7 +20,8 @@ import {
   formatVariationInstanceResponse,
   genInstanceSku,
   getInstanceConditionId,
-  getMovementTypeId,
+  getInstanceConditionLookupId,
+  getInventoryMovementTypeId,
   isPresent,
 } from "../../utils/utils";
 import { appCache } from "../../configs/cache";
@@ -96,8 +97,8 @@ export async function create(
         throw new HttpError(404, "Condition not found.");
       }
 
-      const conditionIdList = Object.values(appCache.instanceConditions || {});
-      if (!conditionIdList.includes(new Types.ObjectId(conditionId))) {
+      const conditionLookupId = getInstanceConditionLookupId(conditionId, false);
+      if (!conditionLookupId) {
         throw new HttpError(404, "Condition not found.");
       }
     }
@@ -119,7 +120,7 @@ export async function create(
     // Create inventory movement
     const inventoryMovement = new InventoryMovement({
       sku,
-      movementTypeId: getMovementTypeId("stock adjustment"),
+      movementTypeId: getInventoryMovementTypeId("stock adjustment"),
       createBy: reqUserId,
       quantity: 1,
       notes: "Manual creation instance",
@@ -512,8 +513,8 @@ export async function update(
         throw new HttpError(404, "Condition not found.");
       }
 
-      const conditionIdList = Object.values(appCache.instanceConditions || {});
-      if (!conditionIdList.includes(updatedConditionId)) {
+      const conditionLookupId = getInstanceConditionLookupId(updatedConditionId, false);
+      if (!conditionLookupId) {
         throw new HttpError(404, "Condition not found.");
       }
     }

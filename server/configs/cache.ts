@@ -1,20 +1,41 @@
-import { FlattenMaps, Types } from "mongoose";
+import { Types } from "mongoose";
 import Role from "../models/role/role.model";
 import User from "../models/user/user.model";
 import { SYS_ADMIN_ROLE, SYS_BUYER_ROLE, SYSTEM_USER } from "./configs";
-import InstanceCondition from "../models/product/instanceCondition.model";
-import InventoryMovementType from "../models/inventory/inventoryMovementType.model";
-import DeliveryState from "../models/order/deliveryState.model";
-import paymentState from "../models/order/paymentState.model";
-import paymentMethod from "../models/order/paymentMethod.model";
-import RefundState from "../models/returnRefund/refundState.model";
-import ReturnState from "../models/returnRefund/returnState.model";
-import type { LookupIdObjectId } from "../utils/types";
-import PickupState from "../models/returnRefund/pickupState.model";
-import OrderState from "../models/order/orderState.model";
-import WithdrawalState from "../models/withdrawal/withdrawalState.model";
-import GrnState from "../models/inventory/grnState.model";
+import InstanceCondition, {
+  IInstanceCondition,
+} from "../models/product/instanceCondition.model";
+import InventoryMovementType, {
+  IInventoryMovementType,
+} from "../models/inventory/inventoryMovementType.model";
+import DeliveryState, {
+  IDeliveryState,
+} from "../models/order/deliveryState.model";
+import PaymentState, {
+  IPaymentState,
+} from "../models/order/paymentState.model";
+import paymentMethod, {
+  IPaymentMethod,
+} from "../models/order/paymentMethod.model";
+import RefundState, {
+  IRefundState,
+} from "../models/returnRefund/refundState.model";
+import ReturnState, {
+  IReturnState,
+} from "../models/returnRefund/returnState.model";
+import type { LookupIdObjectId, States } from "../utils/types";
+import PickupState, {
+  IPickupState,
+} from "../models/returnRefund/pickupState.model";
+import OrderState, { IOrderState } from "../models/order/orderState.model";
+import WithdrawalState, {
+  IWithdrawalState,
+} from "../models/withdrawal/withdrawalState.model";
+import GrnState, { IGrnState } from "../models/inventory/grnState.model";
 import Permission, { IPermission } from "../models/role/permission.model";
+import ReturnReason, {
+  IReturnReason,
+} from "../models/returnRefund/returnReason.model";
 
 type LookupIdObjectIdWithLevel = {
   [lookupId: string]: {
@@ -26,28 +47,42 @@ type LookupIdObjectIdWithLevel = {
 type AppCache = {
   systemUserId?: Types.ObjectId;
 
-  instanceConditions?: LookupIdObjectId;
-  inventoryMovementTypes?: LookupIdObjectId;
+  instanceConditionLookupIds?: LookupIdObjectId;
+  instanceConditions?: States<IInstanceCondition>;
 
-  deliveryStates?: LookupIdObjectIdWithLevel;
-  paymentStates?: LookupIdObjectId;
-  orderStates?: LookupIdObjectIdWithLevel;
-  pickupStates?: LookupIdObjectIdWithLevel;
-  paymentMethods?: LookupIdObjectId;
+  inventoryMovementTypeLookupIds?: LookupIdObjectId;
+  inventoryMovementTypes?: States<IInventoryMovementType>;
 
-  refundStates?: LookupIdObjectId;
-  returnStates?: LookupIdObjectIdWithLevel;
+  deliveryStateLookupIds?: LookupIdObjectIdWithLevel;
+  deliveryStates?: States<IDeliveryState>;
 
-  withdrawalStates?: LookupIdObjectIdWithLevel;
+  paymentStateLookupIds?: LookupIdObjectId;
+  paymentStates?: States<IPaymentState>;
 
-  grnStates?: LookupIdObjectId;
+  orderStateLookupIds?: LookupIdObjectIdWithLevel;
+  orderStates?: States<IOrderState>;
 
-  permissions?: (FlattenMaps<IPermission> &
-    Required<{
-      _id: Types.ObjectId;
-    }> & {
-      __v: number;
-    })[];
+  paymentMethodLookupIds?: LookupIdObjectId;
+  paymentMethods?: States<IPaymentMethod>;
+
+  refundStateLookupIds?: LookupIdObjectId;
+  refundStates?: States<IRefundState>;
+
+  pickupStateLookupIds?: LookupIdObjectIdWithLevel;
+  pickupStates?: States<IPickupState>;
+
+  returnStateLookupIds?: LookupIdObjectIdWithLevel;
+  returnStates?: States<IReturnState>;
+
+  returnReasons?: States<IReturnReason>;
+
+  withdrawalStateLookupIds?: LookupIdObjectIdWithLevel;
+  withdrawalStates?: States<IWithdrawalState>;
+
+  grnStateLookupIds?: LookupIdObjectId;
+  grnStates?: States<IGrnState>;
+
+  permissions?: States<IPermission>;
 
   sysBuyerRoleId?: Types.ObjectId;
   sysAdminRoleId?: Types.ObjectId;
@@ -57,6 +92,7 @@ export const appCache: AppCache = {};
 
 async function sysUserIdCache(): Promise<void> {
   console.log("🗂️ ", "Initializing system user ID cache...");
+
   try {
     const systemUser = await User.findOne({ email: SYSTEM_USER.email })
       .select("_id")
@@ -64,6 +100,7 @@ async function sysUserIdCache(): Promise<void> {
     if (!systemUser) {
       throw new Error(`'system' user not found in the database.`);
     }
+
     appCache.systemUserId = systemUser._id;
     console.log("✅ ", "System user ID cache initialized successfully.");
   } catch (error) {
@@ -71,43 +108,52 @@ async function sysUserIdCache(): Promise<void> {
   }
 }
 
+// Also cache instanceConditionLookupIds
 async function instanceConditionsCache(): Promise<void> {
   console.log("🗂️ ", "Initializing instance conditions cache...");
 
   try {
     const conditions = await InstanceCondition.find()
-      .select("_id lookupId")
+      .sort({ lookupId: 1 })
       .lean();
-    if (!conditions || conditions.length === 0) {
+    if (conditions.length === 0) {
       throw new Error("No instance conditions found in the database.");
     }
 
-    appCache.instanceConditions = conditions.reduce((acc, condition) => {
-      acc[condition.lookupId] = condition._id;
-      return acc;
-    }, {} as LookupIdObjectId);
-
+    appCache.instanceConditions = conditions;
+    appCache.instanceConditionLookupIds = conditions.reduce(
+      (acc, condition) => {
+        acc[condition.lookupId] = condition._id;
+        return acc;
+      },
+      {} as LookupIdObjectId,
+    );
     console.log("✅ ", "Instance conditions cache initialized successfully.");
   } catch (error) {
     throw new Error(`Error initializing instance conditions cache: ${error}`);
   }
 }
 
+// Also cache inventoryMovementTypeLookupIds
 async function inventoryMovementTypesCache(): Promise<void> {
   console.log("🗂️ ", "Initializing inventory movement types cache...");
 
   try {
     const movementTypes = await InventoryMovementType.find()
-      .select("_id lookupId")
+      .sort({ lookupId: 1 })
       .lean();
-    if (!movementTypes || movementTypes.length === 0) {
+    if (movementTypes.length === 0) {
       throw new Error("No inventory movement types found in the database.");
     }
-    appCache.inventoryMovementTypes = movementTypes.reduce((acc, type) => {
-      acc[type.lookupId] = type._id;
-      return acc;
-    }, {} as LookupIdObjectId);
 
+    appCache.inventoryMovementTypes = movementTypes;
+    appCache.inventoryMovementTypeLookupIds = movementTypes.reduce(
+      (acc, type) => {
+        acc[type.lookupId] = type._id;
+        return acc;
+      },
+      {} as LookupIdObjectId,
+    );
     console.log(
       "✅ ",
       "Inventory movement types cache initialized successfully.",
@@ -119,55 +165,63 @@ async function inventoryMovementTypesCache(): Promise<void> {
   }
 }
 
+// Also cache deliveryStateLookupIds
 async function deliveryStatesCache(): Promise<void> {
   console.log("🗂️ ", "Initializing delivery states cache...");
+
   try {
-    const deliveryStates = await DeliveryState.find()
-      .select("_id lookupId level")
-      .lean();
-    if (!deliveryStates || deliveryStates.length === 0) {
+    const states = await DeliveryState.find().sort({ lookupId: 1 }).lean();
+    if (states.length === 0) {
       throw new Error("No delivery states found in the database.");
     }
-    appCache.deliveryStates = deliveryStates.reduce((acc, state) => {
+
+    appCache.deliveryStates = states;
+    appCache.deliveryStateLookupIds = states.reduce((acc, state) => {
       acc[state.lookupId] = {
         id: state._id,
         level: state.level,
       };
       return acc;
     }, {} as LookupIdObjectIdWithLevel);
-
     console.log("✅ ", "Delivery states cache initialized successfully.");
   } catch (error) {
     throw new Error(`Error initializing delivery states cache: ${error}`);
   }
 }
 
+// Also cache paymentStateLookupIds
 async function paymentStatesCache(): Promise<void> {
   console.log("🗂️ ", "Initializing payment state cache...");
+
   try {
-    const states = await paymentState.find().select("_id lookupId").lean();
-    if (!states || states.length === 0) {
+    const states = await PaymentState.find().sort({ lookupId: 1 }).lean();
+    if (states.length === 0) {
       throw new Error("No payment states found in the database.");
     }
-    appCache.paymentStates = states.reduce((acc, state) => {
+
+    appCache.paymentStates = states;
+    appCache.paymentStateLookupIds = states.reduce((acc, state) => {
       acc[state.lookupId] = state._id;
       return acc;
     }, {} as LookupIdObjectId);
-
     console.log("✅ ", "Payment state cache initialized successfully.");
   } catch (error) {
     throw new Error(`Error initializing payment state cache: ${error}`);
   }
 }
 
+// Also cache orderStateLookupIds
 async function orderStatesCache(): Promise<void> {
   console.log("🗂️ ", "Initializing order state cache...");
+
   try {
-    const states = await OrderState.find().select("_id lookupId level").lean();
-    if (!states || states.length === 0) {
+    const states = await OrderState.find().sort({ lookupId: 1 }).lean();
+    if (states.length === 0) {
       throw new Error("No order states found in the database.");
     }
-    appCache.orderStates = states.reduce((acc, state) => {
+
+    appCache.orderStates = states;
+    appCache.orderStateLookupIds = states.reduce((acc, state) => {
       acc[state.lookupId] = {
         id: state._id,
         level: state.level,
@@ -180,72 +234,60 @@ async function orderStatesCache(): Promise<void> {
   }
 }
 
+// Also cache paymentMethodLookupIds
 async function paymentMethodsCache(): Promise<void> {
   console.log("🗂️ ", "Initializing payment method cache...");
+
   try {
-    const methods = await paymentMethod.find().select("_id lookupId").lean();
-    if (!methods || methods.length === 0) {
+    const methods = await paymentMethod.find().sort({ lookupId: 1 }).lean();
+    if (methods.length === 0) {
       throw new Error("No payment methods found in the database.");
     }
-    appCache.paymentMethods = methods.reduce((acc, method) => {
+
+    appCache.paymentMethods = methods;
+    appCache.paymentMethodLookupIds = methods.reduce((acc, method) => {
       acc[method.lookupId] = method._id;
       return acc;
     }, {} as LookupIdObjectId);
-
     console.log("✅ ", "Payment method cache initialized successfully.");
   } catch (error) {
     throw new Error(`Error initializing payment method cache: ${error}`);
   }
 }
 
+// Also cache returnStateLookupIds
 async function refundStatesCache(): Promise<void> {
-  console.log("🗂️ ", "Initializing refund state cache...");
+  console.log("🗂️ ", "Initializing refund states cache...");
+
   try {
-    const states = await RefundState.find().select("_id lookupId").lean();
-    if (!states || states.length === 0) {
+    const states = await RefundState.find().sort({ lookupId: 1 }).lean();
+    if (states.length === 0) {
       throw new Error("No refund states found in the database.");
     }
 
-    appCache.refundStates = states.reduce((acc, state) => {
+    appCache.refundStates = states;
+    appCache.refundStateLookupIds = states.reduce((acc, state) => {
       acc[state.lookupId] = state._id;
       return acc;
     }, {} as LookupIdObjectId);
-    console.log("✅ ", "Refund state cache initialized successfully.");
+    console.log("✅ ", "Refund states cache initialized successfully.");
   } catch (error) {
-    throw new Error(`Error initializing refund state cache: ${error}`);
+    throw new Error(`Error initializing refund states cache: ${error}`);
   }
 }
 
-async function returnStatesCache(): Promise<void> {
-  console.log("🗂️ ", "Initializing return state cache...");
-  try {
-    const states = await ReturnState.find().select("_id lookupId level").lean();
-    if (!states || states.length === 0) {
-      throw new Error("No return states found in the database.");
-    }
-
-    appCache.returnStates = states.reduce((acc, state) => {
-      acc[state.lookupId] = {
-        id: state._id,
-        level: state.level,
-      };
-      return acc;
-    }, {} as LookupIdObjectIdWithLevel);
-    console.log("✅ ", "Return state cache initialized successfully.");
-  } catch (error) {
-    throw new Error(`Error initializing return state cache: ${error}`);
-  }
-}
-
+// Also cache returnStateLookupIds
 async function pickupStatesCache(): Promise<void> {
   console.log("🗂️ ", "Initializing pickup state cache...");
+
   try {
-    const states = await PickupState.find().select("_id lookupId level").lean();
-    if (!states || states.length === 0) {
+    const states = await PickupState.find().sort({ lookupId: 1 }).lean();
+    if (states.length === 0) {
       throw new Error("No pickup states found in the database.");
     }
 
-    appCache.pickupStates = states.reduce((acc, state) => {
+    appCache.pickupStates = states;
+    appCache.pickupStateLookupIds = states.reduce((acc, state) => {
       acc[state.lookupId] = {
         id: state._id,
         level: state.level,
@@ -258,17 +300,57 @@ async function pickupStatesCache(): Promise<void> {
   }
 }
 
-async function withdrawalStateCache(): Promise<void> {
-  console.log("🗂️ ", "Initializing withdrawal state cache...");
+// Also cache returnStateLookupIds
+async function returnStatesCache(): Promise<void> {
+  console.log("🗂️ ", "Initializing return state cache...");
+
   try {
-    const states = await WithdrawalState.find()
-      .select("_id lookupId level")
-      .lean();
-    if (!states || states.length === 0) {
+    const states = await ReturnState.find().sort({ lookupId: 1 }).lean();
+    if (states.length === 0) {
+      throw new Error("No return states found in the database.");
+    }
+
+    appCache.returnStates = states;
+    appCache.returnStateLookupIds = states.reduce((acc, state) => {
+      acc[state.lookupId] = {
+        id: state._id,
+        level: state.level,
+      };
+      return acc;
+    }, {} as LookupIdObjectIdWithLevel);
+    console.log("✅ ", "Return state cache initialized successfully.");
+  } catch (error) {
+    throw new Error(`Error initializing return state cache: ${error}`);
+  }
+}
+
+async function returnReasonsCache(): Promise<void> {
+  console.log("🗂️ ", "Initializing return reason cache...");
+  try {
+    const reasons = await ReturnReason.find().lean();
+    if (reasons.length === 0) {
+      throw new Error("No return reasons found in the database.");
+    }
+
+    appCache.returnReasons = reasons;
+    console.log("✅ ", "Return reason cache initialized successfully.");
+  } catch (error) {
+    throw new Error(`Error initializing return reason cache: ${error}`);
+  }
+}
+
+// Also cache withdrawalStateLookupIds
+async function withdrawalStatesCache(): Promise<void> {
+  console.log("🗂️ ", "Initializing withdrawal state cache...");
+
+  try {
+    const states = await WithdrawalState.find().sort({ lookupId: 1 }).lean();
+    if (states.length === 0) {
       throw new Error("No pickup states found in the database.");
     }
 
-    appCache.withdrawalStates = states.reduce((acc, state) => {
+    appCache.withdrawalStates = states;
+    appCache.withdrawalStateLookupIds = states.reduce((acc, state) => {
       acc[state.lookupId] = {
         id: state._id,
         level: state.level,
@@ -281,19 +363,21 @@ async function withdrawalStateCache(): Promise<void> {
   }
 }
 
+// Also cache grnStateLookupIds
 async function grnStatesCache(): Promise<void> {
   console.log("🗂️ ", "Initializing GRN states cache...");
 
   try {
-    const states = await GrnState.find().select("_id lookupId").lean();
-    if (!states || states.length === 0) {
+    const states = await GrnState.find().sort({ lookupId: 1 }).lean();
+    if (states.length === 0) {
       throw new Error("No GRN states found in the database.");
     }
-    appCache.grnStates = states.reduce((acc, state) => {
+
+    appCache.grnStates = states;
+    appCache.grnStateLookupIds = states.reduce((acc, state) => {
       acc[state.lookupId] = state._id;
       return acc;
     }, {} as LookupIdObjectId);
-
     console.log("✅ ", "GRN states cache initialized successfully.");
   } catch (error) {
     throw new Error(`Error initializing GRN states cache: ${error}`);
@@ -305,7 +389,7 @@ async function permissionsCache(): Promise<void> {
 
   try {
     const permissions = await Permission.find().lean();
-    if (!permissions || permissions.length === 0) {
+    if (permissions.length === 0) {
       throw new Error("No permissions found in the database.");
     }
 
@@ -318,7 +402,7 @@ async function permissionsCache(): Promise<void> {
 }
 
 async function sysRoleIdsCache(): Promise<void> {
-  console.log("🗂️ ", "Initializing system roles ID cache...")
+  console.log("🗂️ ", "Initializing system roles ID cache...");
 
   try {
     const baseRoles = await Role.find({
@@ -327,7 +411,7 @@ async function sysRoleIdsCache(): Promise<void> {
       .select("_id name")
       .lean();
 
-    if (!baseRoles || baseRoles.length === 0) {
+    if (baseRoles.length === 0) {
       throw new Error("System roles not found in the database.");
     }
 
@@ -366,14 +450,15 @@ export async function initAppCache(): Promise<void> {
       deliveryStatesCache(),
       paymentStatesCache(),
       orderStatesCache(),
-      pickupStatesCache(),
 
       paymentMethodsCache(),
 
       refundStatesCache(),
+      pickupStatesCache(),
       returnStatesCache(),
+      returnReasonsCache(),
 
-      withdrawalStateCache(),
+      withdrawalStatesCache(),
 
       grnStatesCache(),
 

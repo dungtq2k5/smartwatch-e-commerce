@@ -31,11 +31,11 @@ const refundStateSchema: Schema<IRefundState> = new Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const RefundState: Model<IRefundState> = mongoose.model<IRefundState>(
   "RefundState",
-  refundStateSchema
+  refundStateSchema,
 );
 export default RefundState;

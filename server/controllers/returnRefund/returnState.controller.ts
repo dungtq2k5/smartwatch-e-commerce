@@ -1,22 +1,30 @@
 import { Request, Response, NextFunction } from "express";
-import { formatReturnStateResponse } from "../../utils/utils";
+import {
+  formatReturnStateResponse,
+  getReturnState,
+  getReturnStates,
+} from "../../utils/utils";
 import {
   ReturnStateListResponse,
   ReturnStateResponse,
   SuccessResponse,
 } from "../../../common/types.common";
-import ReturnState from "../../models/returnRefund/returnState.model";
+import ReturnState, {
+  IReturnState,
+} from "../../models/returnRefund/returnState.model";
 import { HttpError } from "../../utils/errorHandler";
+import { States } from "../../utils/types";
+import { Types } from "mongoose";
 
 export async function getAll(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Fetching all return states...");
 
   try {
-    const returnStates = await ReturnState.find().sort({ lookupId: 1 }).lean();
+    const returnStates = await fetchAllWithFallback();
 
     res.status(200).json({
       success: true,
@@ -35,16 +43,13 @@ export async function getAll(
 export async function get(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Fetching return state...");
   const { stateId } = req.params;
 
   try {
-    const returnState = await ReturnState.findById(stateId).lean();
-    if (!returnState) {
-      throw new HttpError(404, "Return state not found.");
-    }
+    const returnState = await fetchWithFallback(stateId);
 
     res.status(200).json({
       success: true,
@@ -54,5 +59,38 @@ export async function get(
     console.log("✅ ", "Return state fetched successfully.");
   } catch (error) {
     next(error);
+  }
+}
+
+// --- HELPER FUNCTIONS ---
+async function fetchAllWithFallback(): Promise<States<IReturnState>> {
+  try {
+    return getReturnStates();
+  } catch (error) {
+    console.warn(
+      "⚠️ ",
+      "Return states not found in cache, fetching from database as fallback:",
+      error,
+    );
+    return await ReturnState.find().lean();
+  }
+}
+
+async function fetchWithFallback(
+  stateId: Types.ObjectId | string,
+): Promise<IReturnState> {
+  try {
+    return getReturnState(stateId);
+  } catch (error) {
+    console.warn(
+      "⚠️ ",
+      `Return state with ID ${stateId} not found in cache, fetching from database as fallback:`,
+      error,
+    );
+    const returnState = await ReturnState.findById(stateId).lean();
+    if (!returnState) {
+      throw new HttpError(404, "Return state not found.");
+    }
+    return returnState;
   }
 }

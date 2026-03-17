@@ -1,20 +1,23 @@
 import { Request, Response, NextFunction } from "express";
-import { formatReturnReason } from "../../utils/utils";
+import { formatReturnReason, getReturnReasons } from "../../utils/utils";
 import {
   ReturnReasonListResponse,
   SuccessResponse,
 } from "../../../common/types.common";
-import ReturnReason from "../../models/returnRefund/returnReason.model";
+import ReturnReason, {
+  IReturnReason,
+} from "../../models/returnRefund/returnReason.model";
+import { States } from "../../utils/types";
 
 export async function getAll(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Fetching all return reasons...");
 
   try {
-    const returnReasons = await ReturnReason.find().lean();
+    const returnReasons = await fetchAllWithFallback();
 
     res.status(200).json({
       success: true,
@@ -27,5 +30,18 @@ export async function getAll(
     console.log("✅ ", "Return reasons fetched successfully.");
   } catch (error) {
     next(error);
+  }
+}
+
+async function fetchAllWithFallback(): Promise<States<IReturnReason>> {
+  try {
+    return getReturnReasons();
+  } catch (error) {
+    console.warn(
+      "⚠️ ",
+      "Failed to fetch return reasons from cache, fetching from database as fallback:",
+      error,
+    );
+    return await ReturnReason.find().lean();
   }
 }

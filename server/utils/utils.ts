@@ -7,7 +7,7 @@ import {
   VERIFICATION_CODE_LENGTH,
 } from "../../common/configs.common";
 import jwt from "jsonwebtoken";
-import { JwtPayload } from "./types";
+import { JwtPayload, States } from "./types";
 import {
   JWT_NAME,
   JWT_TTL,
@@ -22,6 +22,18 @@ import { appCache } from "../configs/cache";
 import { HttpError } from "./errorHandler";
 import { removeAllSpaces } from "../../common/utils.common";
 import { IPermission } from "../models/role/permission.model";
+import { IRefundState } from "../models/returnRefund/refundState.model";
+import { IReturnState } from "../models/returnRefund/returnState.model";
+import { IPickupState } from "../models/returnRefund/pickupState.model";
+import { IReturnReason } from "../models/returnRefund/returnReason.model";
+import { IInstanceCondition } from "../models/product/instanceCondition.model";
+import { IInventoryMovementType } from "../models/inventory/inventoryMovementType.model";
+import { IDeliveryState } from "../models/order/deliveryState.model";
+import { IPaymentState } from "../models/order/paymentState.model";
+import { IOrderState } from "../models/order/orderState.model";
+import { IPaymentMethod } from "../models/order/paymentMethod.model";
+import { IWithdrawalState } from "../models/withdrawal/withdrawalState.model";
+import { IGrnState } from "../models/inventory/grnState.model";
 
 export function isValidUrl(url: any): boolean {
   if (typeof url !== "string") return false;
@@ -1324,45 +1336,125 @@ export function formatOrderCancelReasonResponse(
 }
 
 // --- CACHING FUNCTIONS ---
-export function getInstanceConditionId(lookupId: string): Types.ObjectId {
-  const { instanceConditions } = appCache;
-  if (!instanceConditions) {
+// Overload 1: If true (or default), return is guaranteed to be Types.ObjectId
+export function getInstanceConditionId(
+  lookupId: string,
+  throwErrorIfNotFound?: true,
+): Types.ObjectId;
+// Overload 2: If false, return can be Types.ObjectId or undefined
+export function getInstanceConditionId(
+  lookupId: string,
+  throwErrorIfNotFound: false,
+): Types.ObjectId | undefined;
+export function getInstanceConditionId(
+  lookupId: string,
+  throwErrorIfNotFound: boolean = true,
+): Types.ObjectId | undefined {
+  const { instanceConditionLookupIds } = appCache;
+  if (!instanceConditionLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const conditionId = instanceConditions[lookupId];
+  const conditionId = instanceConditionLookupIds[lookupId];
   if (!conditionId) {
-    throw new Error(
-      `Condition with lookupId '${lookupId}' not found in cache.`,
-    );
+    if (throwErrorIfNotFound) {
+      throw new Error(
+        `Condition with lookupId '${lookupId}' not found in cache.`,
+      );
+    }
+    return undefined;
   }
 
   return conditionId;
 }
 
-export function getMovementTypeId(lookupId: string): Types.ObjectId {
-  const { inventoryMovementTypes } = appCache;
-  if (!inventoryMovementTypes) {
+// Overload 1: If true (or default), return is guaranteed to be string
+export function getInstanceConditionLookupId(
+  conditionId: Types.ObjectId | string,
+  throwErrorIfNotFound?: true,
+): string;
+// Overload 2: If false, return can be string or undefined
+export function getInstanceConditionLookupId(
+  conditionId: Types.ObjectId | string,
+  throwErrorIfNotFound: false,
+): string | undefined;
+export function getInstanceConditionLookupId(
+  conditionId: Types.ObjectId | string,
+  throwErrorIfNotFound: boolean = true,
+): string | undefined {
+  const { instanceConditionLookupIds } = appCache;
+  if (!instanceConditionLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const movementTypeId = inventoryMovementTypes[lookupId];
+  for (const lookupId in instanceConditionLookupIds) {
+    if (instanceConditionLookupIds[lookupId].equals(conditionId)) {
+      return lookupId;
+    }
+  }
+
+  if (throwErrorIfNotFound) {
+    throw new Error(`Condition with ID '${conditionId}' not found in cache.`);
+  }
+
+  return undefined;
+}
+
+export function getInstanceConditions(): States<IInstanceCondition> {
+  const { instanceConditions } = appCache;
+  if (!instanceConditions) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  return instanceConditions;
+}
+
+export function getInventoryMovementTypeId(
+  lookupId: string,
+  throwErrorIfNotFound?: true,
+): Types.ObjectId;
+export function getInventoryMovementTypeId(
+  lookupId: string,
+  throwErrorIfNotFound: false,
+): Types.ObjectId | undefined;
+export function getInventoryMovementTypeId(
+  lookupId: string,
+  throwErrorIfNotFound: boolean = true,
+): Types.ObjectId | undefined {
+  const { inventoryMovementTypeLookupIds } = appCache;
+  if (!inventoryMovementTypeLookupIds) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const movementTypeId = inventoryMovementTypeLookupIds[lookupId];
   if (!movementTypeId) {
-    throw new Error(
-      `Movement type with lookupId '${lookupId}' not found in cache.`,
-    );
+    if (throwErrorIfNotFound) {
+      throw new Error(
+        `Movement type with lookupId '${lookupId}' not found in cache.`,
+      );
+    }
+    return undefined;
   }
 
   return movementTypeId;
 }
 
-export function getDeliveryStateId(lookupId: string): Types.ObjectId {
-  const { deliveryStates } = appCache;
-  if (!deliveryStates) {
+export function getInventoryMovementTypes(): States<IInventoryMovementType> {
+  const { inventoryMovementTypes } = appCache;
+  if (!inventoryMovementTypes) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const state = deliveryStates[lookupId];
+  return inventoryMovementTypes;
+}
+
+export function getDeliveryStateId(lookupId: string): Types.ObjectId {
+  const { deliveryStateLookupIds } = appCache;
+  if (!deliveryStateLookupIds) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const state = deliveryStateLookupIds[lookupId];
   if (!state) {
     throw new Error(
       `Delivery state with lookupId '${lookupId}' not found in cache.`,
@@ -1372,17 +1464,26 @@ export function getDeliveryStateId(lookupId: string): Types.ObjectId {
   return state.id;
 }
 
-export function getDeliveryStateLevel(
-  stateId: Types.ObjectId | string,
-): number {
+export function getDeliveryStates(): States<IDeliveryState> {
   const { deliveryStates } = appCache;
   if (!deliveryStates) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const stateName in deliveryStates) {
-    if (deliveryStates[stateName].id.equals(stateId)) {
-      return deliveryStates[stateName].level;
+  return deliveryStates;
+}
+
+export function getDeliveryStateLevel(
+  stateId: Types.ObjectId | string,
+): number {
+  const { deliveryStateLookupIds } = appCache;
+  if (!deliveryStateLookupIds) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  for (const lookupId in deliveryStateLookupIds) {
+    if (deliveryStateLookupIds[lookupId].id.equals(stateId)) {
+      return deliveryStateLookupIds[lookupId].level;
     }
   }
 
@@ -1392,13 +1493,13 @@ export function getDeliveryStateLevel(
 export function getDeliveryStateLookupId(
   stateId: Types.ObjectId | string,
 ): string {
-  const { deliveryStates } = appCache;
-  if (!deliveryStates) {
+  const { deliveryStateLookupIds } = appCache;
+  if (!deliveryStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const lookupId in deliveryStates) {
-    if (deliveryStates[lookupId].id.equals(stateId)) {
+  for (const lookupId in deliveryStateLookupIds) {
+    if (deliveryStateLookupIds[lookupId].id.equals(stateId)) {
       return lookupId;
     }
   }
@@ -1406,12 +1507,12 @@ export function getDeliveryStateLookupId(
 }
 
 export function getPaymentStateId(lookupId: string): Types.ObjectId {
-  const { paymentStates } = appCache;
-  if (!paymentStates) {
+  const { paymentStateLookupIds } = appCache;
+  if (!paymentStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const stateId = paymentStates[lookupId];
+  const stateId = paymentStateLookupIds[lookupId];
   if (!stateId) {
     throw new Error(
       `Payment state with lookupId '${lookupId}' not found in cache.`,
@@ -1424,13 +1525,13 @@ export function getPaymentStateId(lookupId: string): Types.ObjectId {
 export function getPaymentStateLookupId(
   stateId: Types.ObjectId | string,
 ): string {
-  const { paymentStates } = appCache;
-  if (!paymentStates) {
+  const { paymentStateLookupIds } = appCache;
+  if (!paymentStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const lookupId in paymentStates) {
-    if (paymentStates[lookupId].equals(stateId)) {
+  for (const lookupId in paymentStateLookupIds) {
+    if (paymentStateLookupIds[lookupId].equals(stateId)) {
       return lookupId;
     }
   }
@@ -1438,13 +1539,22 @@ export function getPaymentStateLookupId(
   throw new Error(`Payment state with ID '${stateId}' not found in cache.`);
 }
 
-export function getOrderStateId(lookupId: string): Types.ObjectId {
-  const { orderStates } = appCache;
-  if (!orderStates) {
+export function getPaymentStates(): States<IPaymentState> {
+  const { paymentStates } = appCache;
+  if (!paymentStates) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const state = orderStates[lookupId];
+  return paymentStates; // Don't use structuredClone because it'll break all the ObjectId instances
+}
+
+export function getOrderStateId(lookupId: string): Types.ObjectId {
+  const { orderStateLookupIds } = appCache;
+  if (!orderStateLookupIds) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const state = orderStateLookupIds[lookupId];
   if (!state) {
     throw new Error(
       `Order state with lookupId '${lookupId}' not found in cache.`,
@@ -1457,13 +1567,13 @@ export function getOrderStateId(lookupId: string): Types.ObjectId {
 export function getOrderStateLookupId(
   stateId: Types.ObjectId | string,
 ): string {
-  const { orderStates } = appCache;
-  if (!orderStates) {
+  const { orderStateLookupIds } = appCache;
+  if (!orderStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const lookupId in orderStates) {
-    if (orderStates[lookupId].id.equals(stateId)) {
+  for (const lookupId in orderStateLookupIds) {
+    if (orderStateLookupIds[lookupId].id.equals(stateId)) {
       return lookupId;
     }
   }
@@ -1472,27 +1582,36 @@ export function getOrderStateLookupId(
 }
 
 export function getOrderStateLevel(stateId: Types.ObjectId | string): number {
-  const { orderStates } = appCache;
-  if (!orderStates) {
+  const { orderStateLookupIds } = appCache;
+  if (!orderStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const stateName in orderStates) {
-    if (orderStates[stateName].id.equals(stateId)) {
-      return orderStates[stateName].level;
+  for (const stateName in orderStateLookupIds) {
+    if (orderStateLookupIds[stateName].id.equals(stateId)) {
+      return orderStateLookupIds[stateName].level;
     }
   }
 
   throw new Error(`Order state with ID '${stateId}' not found in cache.`);
 }
 
-export function getPaymentMethodId(lookupId: string): Types.ObjectId {
-  const { paymentMethods } = appCache;
-  if (!paymentMethods) {
+export function getOrderStates(): States<IOrderState> {
+  const { orderStates } = appCache;
+  if (!orderStates) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const methodId = paymentMethods[lookupId];
+  return orderStates; // Don't use structuredClone because it'll break all the ObjectId instances
+}
+
+export function getPaymentMethodId(lookupId: string): Types.ObjectId {
+  const { paymentMethodLookupIds } = appCache;
+  if (!paymentMethodLookupIds) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const methodId = paymentMethodLookupIds[lookupId];
   if (!methodId) {
     throw new Error(
       `Payment method with lookupId '${lookupId}' not found in cache.`,
@@ -1505,18 +1624,27 @@ export function getPaymentMethodId(lookupId: string): Types.ObjectId {
 export function getPaymentMethodLookupId(
   methodId: Types.ObjectId | string,
 ): string {
-  const { paymentMethods } = appCache;
-  if (!paymentMethods) {
+  const { paymentMethodLookupIds } = appCache;
+  if (!paymentMethodLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const lookupId in paymentMethods) {
-    if (paymentMethods[lookupId].equals(methodId)) {
+  for (const lookupId in paymentMethodLookupIds) {
+    if (paymentMethodLookupIds[lookupId].equals(methodId)) {
       return lookupId;
     }
   }
 
   throw new Error(`Payment method with ID '${methodId}' not found in cache.`);
+}
+
+export function getPaymentMethods(): States<IPaymentMethod> {
+  const { paymentMethods } = appCache;
+  if (!paymentMethods) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  return paymentMethods; // Don't use structuredClone because it'll break all the ObjectId instances
 }
 
 export function getSysUserId(): Types.ObjectId {
@@ -1529,12 +1657,12 @@ export function getSysUserId(): Types.ObjectId {
 }
 
 export function getRefundStateId(lookupId: string): Types.ObjectId {
-  const { refundStates } = appCache;
-  if (!refundStates) {
+  const { refundStateLookupIds } = appCache;
+  if (!refundStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const stateId = refundStates[lookupId];
+  const stateId = refundStateLookupIds[lookupId];
   if (!stateId) {
     throw new Error(
       `Refund state with lookupId '${lookupId}' not found in cache.`,
@@ -1547,13 +1675,13 @@ export function getRefundStateId(lookupId: string): Types.ObjectId {
 export function getRefundStateLookupId(
   stateId: Types.ObjectId | string,
 ): string {
-  const { refundStates } = appCache;
-  if (!refundStates) {
+  const { refundStateLookupIds } = appCache;
+  if (!refundStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const lookupId in refundStates) {
-    if (refundStates[lookupId].equals(stateId)) {
+  for (const lookupId in refundStateLookupIds) {
+    if (refundStateLookupIds[lookupId].equals(stateId)) {
       return lookupId;
     }
   }
@@ -1561,13 +1689,22 @@ export function getRefundStateLookupId(
   throw new Error(`Refund state with ID '${stateId}' not found in cache.`);
 }
 
+export function getRefundStates(): States<IRefundState> {
+  const { refundStates } = appCache;
+  if (!refundStates) {
+    throw new Error("Refund states not found in application cache.");
+  }
+
+  return refundStates; // Don't use structuredClone because it'll break all the ObjectId instances
+}
+
 export function getReturnStateId(lookupId: string): Types.ObjectId {
-  const { returnStates } = appCache;
-  if (!returnStates) {
+  const { returnStateLookupIds } = appCache;
+  if (!returnStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const state = returnStates[lookupId];
+  const state = returnStateLookupIds[lookupId];
   if (!state) {
     throw new Error(
       `Return state with lookupId '${lookupId}' not found in cache.`,
@@ -1578,14 +1715,14 @@ export function getReturnStateId(lookupId: string): Types.ObjectId {
 }
 
 export function getReturnStateLevel(stateId: Types.ObjectId | string): number {
-  const { returnStates } = appCache;
-  if (!returnStates) {
+  const { returnStateLookupIds } = appCache;
+  if (!returnStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const stateName in returnStates) {
-    if (returnStates[stateName].id.equals(stateId)) {
-      return returnStates[stateName].level;
+  for (const stateName in returnStateLookupIds) {
+    if (returnStateLookupIds[stateName].id.equals(stateId)) {
+      return returnStateLookupIds[stateName].level;
     }
   }
   throw new Error(`Return state with ID '${stateId}' not found in cache.`);
@@ -1594,26 +1731,49 @@ export function getReturnStateLevel(stateId: Types.ObjectId | string): number {
 export function getReturnStateLookupId(
   stateId: Types.ObjectId | string,
 ): string {
-  const { returnStates } = appCache;
-  if (!returnStates) {
+  const { returnStateLookupIds } = appCache;
+  if (!returnStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const lookupId in returnStates) {
-    if (returnStates[lookupId].id.equals(stateId)) {
+  for (const lookupId in returnStateLookupIds) {
+    if (returnStateLookupIds[lookupId].id.equals(stateId)) {
       return lookupId;
     }
   }
   throw new Error(`Return state with ID '${stateId}' not found in cache.`);
 }
 
-export function getPickupStateId(lookupId: string): Types.ObjectId {
-  const { pickupStates } = appCache;
-  if (!pickupStates) {
+export function getReturnStates(): States<IReturnState> {
+  const { returnStates } = appCache;
+  if (!returnStates) {
+    throw new Error("Return states not found in application cache.");
+  }
+
+  return returnStates; // Don't use structuredClone because it'll break all the ObjectId instances
+}
+
+export function getReturnState(stateId: Types.ObjectId | string): IReturnState {
+  const { returnStates } = appCache;
+  if (!returnStates) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const state = pickupStates[lookupId];
+  const foundState = returnStates.find((state) => state._id.equals(stateId));
+  if (!foundState) {
+    throw new Error(`Return state with ID '${stateId}' not found in cache.`);
+  }
+
+  return foundState;
+}
+
+export function getPickupStateId(lookupId: string): Types.ObjectId {
+  const { pickupStateLookupIds } = appCache;
+  if (!pickupStateLookupIds) {
+    throw new Error("Application cache not initialized properly.");
+  }
+
+  const state = pickupStateLookupIds[lookupId];
   if (!state) {
     throw new Error(
       `Pickup state with lookupId '${lookupId}' not found in cache.`,
@@ -1624,14 +1784,14 @@ export function getPickupStateId(lookupId: string): Types.ObjectId {
 }
 
 export function getPickupStateLevel(stateId: Types.ObjectId | string): number {
-  const { pickupStates } = appCache;
-  if (!pickupStates) {
+  const { pickupStateLookupIds } = appCache;
+  if (!pickupStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const stateName in pickupStates) {
-    if (pickupStates[stateName].id.equals(stateId)) {
-      return pickupStates[stateName].level;
+  for (const stateName in pickupStateLookupIds) {
+    if (pickupStateLookupIds[stateName].id.equals(stateId)) {
+      return pickupStateLookupIds[stateName].level;
     }
   }
   throw new Error(`Pickup state with ID '${stateId}' not found in cache.`);
@@ -1640,17 +1800,35 @@ export function getPickupStateLevel(stateId: Types.ObjectId | string): number {
 export function getPickupStateLookupId(
   stateId: Types.ObjectId | string,
 ): string {
-  const { pickupStates } = appCache;
-  if (!pickupStates) {
+  const { pickupStateLookupIds } = appCache;
+  if (!pickupStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const lookupId in pickupStates) {
-    if (pickupStates[lookupId].id.equals(stateId)) {
+  for (const lookupId in pickupStateLookupIds) {
+    if (pickupStateLookupIds[lookupId].id.equals(stateId)) {
       return lookupId;
     }
   }
   throw new Error(`Pickup state with ID '${stateId}' not found in cache.`);
+}
+
+export function getPickupStates(): States<IPickupState> {
+  const { pickupStates } = appCache;
+  if (!pickupStates) {
+    throw new Error("Pickup states not found in application cache.");
+  }
+
+  return pickupStates; // Don't use structuredClone because it'll break all the ObjectId instances
+}
+
+export function getReturnReasons(): States<IReturnReason> {
+  const { returnReasons } = appCache;
+  if (!returnReasons) {
+    throw new Error("Return reasons not found in application cache.");
+  }
+
+  return returnReasons; // Don't use structuredClone because it'll break all the ObjectId instances
 }
 
 export function getSysAdminRoleId(): Types.ObjectId {
@@ -1672,12 +1850,12 @@ export function getSysBuyerRoleId(): Types.ObjectId {
 }
 
 export function getWithdrawalStateId(lookupId: string): Types.ObjectId {
-  const { withdrawalStates } = appCache;
-  if (!withdrawalStates) {
+  const { withdrawalStateLookupIds } = appCache;
+  if (!withdrawalStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const state = withdrawalStates[lookupId];
+  const state = withdrawalStateLookupIds[lookupId];
   if (!state) {
     throw new Error(
       `Withdrawal state with lookupId '${lookupId}' not found in cache.`,
@@ -1690,14 +1868,14 @@ export function getWithdrawalStateId(lookupId: string): Types.ObjectId {
 export function getWithdrawalStateLevel(
   stateId: Types.ObjectId | string,
 ): number {
-  const { withdrawalStates } = appCache;
-  if (!withdrawalStates) {
+  const { withdrawalStateLookupIds } = appCache;
+  if (!withdrawalStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const stateName in withdrawalStates) {
-    if (withdrawalStates[stateName].id.equals(stateId)) {
-      return withdrawalStates[stateName].level;
+  for (const stateName in withdrawalStateLookupIds) {
+    if (withdrawalStateLookupIds[stateName].id.equals(stateId)) {
+      return withdrawalStateLookupIds[stateName].level;
     }
   }
 
@@ -1707,13 +1885,13 @@ export function getWithdrawalStateLevel(
 export function getWithdrawalStateLookupId(
   stateId: Types.ObjectId | string,
 ): string {
-  const { withdrawalStates } = appCache;
-  if (!withdrawalStates) {
+  const { withdrawalStateLookupIds } = appCache;
+  if (!withdrawalStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const lookupId in withdrawalStates) {
-    if (withdrawalStates[lookupId].id.equals(stateId)) {
+  for (const lookupId in withdrawalStateLookupIds) {
+    if (withdrawalStateLookupIds[lookupId].id.equals(stateId)) {
       return lookupId;
     }
   }
@@ -1721,13 +1899,22 @@ export function getWithdrawalStateLookupId(
   throw new Error(`Withdrawal state with ID '${stateId}' not found in cache.`);
 }
 
+export function getWithdrawalStates(): States<IWithdrawalState> {
+  const { withdrawalStates } = appCache;
+  if (!withdrawalStates) {
+    throw new Error("Withdrawal states not found in application cache.");
+  }
+
+  return withdrawalStates; // Don't use structuredClone because it'll break all the ObjectId instances
+}
+
 export function getGrnStateId(lookupId: string): Types.ObjectId {
-  const { grnStates } = appCache;
-  if (!grnStates) {
+  const { grnStateLookupIds } = appCache;
+  if (!grnStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  const stateId = grnStates[lookupId];
+  const stateId = grnStateLookupIds[lookupId];
   if (!stateId) {
     throw new Error(
       `GRN state with lookupId '${lookupId}' not found in cache.`,
@@ -1738,18 +1925,27 @@ export function getGrnStateId(lookupId: string): Types.ObjectId {
 }
 
 export function getGrnStateLookupId(stateId: Types.ObjectId | string): string {
-  const { grnStates } = appCache;
-  if (!grnStates) {
+  const { grnStateLookupIds } = appCache;
+  if (!grnStateLookupIds) {
     throw new Error("Application cache not initialized properly.");
   }
 
-  for (const lookupId in grnStates) {
-    if (grnStates[lookupId].equals(stateId)) {
+  for (const lookupId in grnStateLookupIds) {
+    if (grnStateLookupIds[lookupId].equals(stateId)) {
       return lookupId;
     }
   }
 
   throw new Error(`GRN state with ID '${stateId}' not found in cache.`);
+}
+
+export function getGrnStates(): States<IGrnState> {
+  const { grnStates } = appCache;
+  if (!grnStates) {
+    throw new Error("GRN states not found in application cache.");
+  }
+
+  return grnStates; // Don't use structuredClone because it'll break all the ObjectId instances
 }
 
 export function getPermission(
@@ -1771,12 +1967,7 @@ export function getPermission(
   throw new Error(`Permission with ID '${id}' not found in cache.`);
 }
 
-export function getPermissions(): (FlattenMaps<IPermission> &
-  Required<{
-    _id: Types.ObjectId;
-  }> & {
-    __v: number;
-  })[] {
+export function getPermissions(): States<IPermission> {
   const { permissions } = appCache;
   if (!permissions) {
     throw new Error("Application cache not initialized properly.");

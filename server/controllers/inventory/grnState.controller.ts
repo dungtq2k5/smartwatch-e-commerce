@@ -1,22 +1,21 @@
 import { Request, Response, NextFunction } from "express";
-import GrnState from "../../models/inventory/grnState.model";
-import { formatGrnStateResponse } from "../../utils/utils";
+import GrnState, { IGrnState } from "../../models/inventory/grnState.model";
+import { formatGrnStateResponse, getGrnStates } from "../../utils/utils";
 import {
   GrnStateListResponse,
   SuccessResponse,
 } from "../../../common/types.common";
+import { States } from "../../utils/types";
 
 export async function getAll(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Get all GRN states...");
 
   try {
-    const states = await GrnState.find()
-      .select("_id lookupId name description")
-      .lean();
+    const states = await fetchAllWithFallback();
 
     res.status(200).json({
       success: true,
@@ -28,5 +27,19 @@ export async function getAll(
     } as SuccessResponse<GrnStateListResponse>);
   } catch (error) {
     next(error);
+  }
+}
+
+// --- HELPER FUNCTIONS ---
+async function fetchAllWithFallback(): Promise<States<IGrnState>> {
+  try {
+    return getGrnStates();
+  } catch (error) {
+    console.warn(
+      "⚠️ ",
+      "Failed to retrieve GRN states from cache, get from db as fallback:",
+      error,
+    );
+    return await GrnState.find().lean();
   }
 }

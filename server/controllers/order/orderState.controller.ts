@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import OrderState from "../../models/order/orderState.model";
-import { formatOrderStateResponse } from "../../utils/utils";
+import OrderState, { IOrderState } from "../../models/order/orderState.model";
+import { formatOrderStateResponse, getOrderStates } from "../../utils/utils";
 import { OrderStateListResponse, SuccessResponse } from "../../../common/types.common";
+import { States } from "../../utils/types";
 
 export async function getAll(
   req: Request,
@@ -11,7 +12,7 @@ export async function getAll(
   console.log("▶️ ", "Fetching all order states...");
 
   try {
-    const orderStates = await OrderState.find().sort({ lookupId: 1 }).lean();
+    const orderStates = await fetchAllWithFallback();
 
     res.status(200).json({
       success: true,
@@ -24,5 +25,19 @@ export async function getAll(
     console.log("✅ ", "Order states fetched successfully.");
   } catch (error) {
     next(error);
+  }
+}
+
+// --- HELPER FUNCTIONS ---
+async function fetchAllWithFallback(): Promise<States<IOrderState>> {
+  try {
+    return getOrderStates();
+  } catch (error) {
+    console.warn(
+      "⚠️ ",
+      "Failed to retrieve order states from cache, get from db as fallback:",
+      error,
+    );
+    return await OrderState.find().lean();
   }
 }

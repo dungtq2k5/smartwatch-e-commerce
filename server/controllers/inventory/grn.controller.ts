@@ -17,7 +17,7 @@ import {
   getGrnStateId,
   getGrnStateLookupId,
   getInstanceConditionId,
-  getMovementTypeId,
+  getInventoryMovementTypeId,
   getPropsForInstanceSkuGen,
   isPresent,
 } from "../../utils/utils";
@@ -123,7 +123,7 @@ export async function create(
 
     // Create inventory movements for each instance
     const inventoryMovementsToCreate: any[] = [];
-    const stockAdjustInventoryMovementTypeId = getMovementTypeId("1"); // good receipts
+    const stockAdjustInventoryMovementTypeId = getInventoryMovementTypeId("1"); // good receipts
     for (const instance of createdInstances) {
       inventoryMovementsToCreate.push({
         variationInstanceId: instance._id,
@@ -504,9 +504,11 @@ export async function update(
     }
 
     // Check inventoryMovement.typeId exists
-    try {
-      getMovementTypeId(inventoryMovement.typeId); // Throw error if not found
-    } catch {
+    const movementType = getInventoryMovementTypeId(
+      inventoryMovement.typeId,
+      false,
+    );
+    if (!movementType) {
       throw new HttpError(404, "Inventory movement type not found.");
     }
 
