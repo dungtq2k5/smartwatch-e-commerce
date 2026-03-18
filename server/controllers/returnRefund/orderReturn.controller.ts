@@ -1286,6 +1286,13 @@ async function handleRefund(
       }
     }
 
+    // Update returnState to "refunded" state
+    orderReturn.states.push({
+      id: getReturnStateId("6"),
+      notes: "Refund process completed.",
+      createdBy: sysUserId,
+    }); // refunded
+
     await user.save({ session });
     console.log(
       "✅ ",

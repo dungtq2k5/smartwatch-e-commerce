@@ -321,6 +321,7 @@ export default function BrandManagement() {
           <button
             type="button"
             className="text-danger border-0 bg-transparent p-0"
+            disabled={!canDeleteBrand || process.isProcessing}
             onClick={() => {
               setModal((prev) => ({
                 ...prev,

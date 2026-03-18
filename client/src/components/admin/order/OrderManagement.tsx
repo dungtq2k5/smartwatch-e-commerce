@@ -52,7 +52,7 @@ import PaymentMethodBadge from "../PaymentMethodBadge";
 import PaymentStateBadge from "../PaymentStateBadge";
 import DeliveryStateBadge from "../DeliveryStateBadge";
 import OrderStateBadge from "../OrderStateBadge";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import TableHeadSortBtn from "../TableHeadSortBtn";
 import Loading from "../../common/Loading";
@@ -75,7 +75,6 @@ import EditBulkOrderDeliveryStateModal from "./EditBulkOrderDeliveryStateModal";
 import EditBulkOrderEstReceivedDateModal from "./EditBulkOrderEstReceivedDateModal";
 import ConfigDisplayModal from "../modal/ConfigDisplayModal";
 import Pagination from "../../common/Pagination";
-import LinkBtn from "../../common/LinkBtn";
 import FulfillOrderModal from "./FulfillOrderModal";
 
 type Process = {
@@ -157,14 +156,12 @@ export default function OrderManagement() {
       id: {
         label: ORDER_FIELD_LABEL_LEGEND["id"] || "ID",
         tdContent: (order) => (
-          <LinkBtn
+          <Link
             to={`/admin/orders/${order.id}`}
             title="View details this order"
-            disabled={!canReadUser}
-            disabledtitle={DISABLED_TITLE_FOR_VIEWING}
           >
             {order.id}
-          </LinkBtn>
+          </Link>
         ),
         getCsvVal: (order) => order.id,
       },
@@ -223,7 +220,7 @@ export default function OrderManagement() {
           />
         ),
         getCsvVal: (order) =>
-          getPaymentMethod(order.paymentMethodId)?.name || "N/A",
+          getPaymentMethod(order.paymentMethodId)?.name || "Unknown",
       },
       paymentStates: {
         label: ORDER_FIELD_LABEL_LEGEND["paymentStates"] || "Payment State",
@@ -238,7 +235,7 @@ export default function OrderManagement() {
         },
         getCsvVal: (order) => {
           const currStateId = order.paymentStates.at(-1)?.id;
-          return getPaymentState(currStateId || "")?.name || "N/A";
+          return getPaymentState(currStateId || "")?.name || "Unknown";
         },
       },
       deliveryStates: {
@@ -254,7 +251,7 @@ export default function OrderManagement() {
         },
         getCsvVal: (order) => {
           const currStateId = order.deliveryStates.at(-1)?.id;
-          return getDeliveryState(currStateId || "")?.name || "N/A";
+          return getDeliveryState(currStateId || "")?.name || "Unknown";
         },
       },
       states: {
@@ -270,7 +267,7 @@ export default function OrderManagement() {
         },
         getCsvVal: (order) => {
           const currStateId = order.states.at(-1)?.id;
-          return getOrderState(currStateId || "")?.name || "N/A";
+          return getOrderState(currStateId || "")?.name || "Unknown";
         },
       },
       orderDate: {
@@ -435,12 +432,7 @@ export default function OrderManagement() {
       },
     }),
     [
-      canEditOrder,
-      canFulfillOrder,
       canReadUser,
-      editableOrder,
-      getDeliveryState,
-      getOrderState,
       getPaymentMethod,
       getPaymentState,
       getDeliveryState,
@@ -659,6 +651,7 @@ export default function OrderManagement() {
               type="button"
               className="btn btn-link text-primary"
               title="Update delivery state for selected orders"
+              disabled={!canEditOrder || process.isProcessing}
               onClick={() => {
                 setModal((prev) => ({
                   ...prev,
@@ -677,6 +670,7 @@ export default function OrderManagement() {
               type="button"
               className="btn btn-link text-primary"
               title="Update estimated received date for selected orders"
+              disabled={!canEditOrder || process.isProcessing}
               onClick={() => {
                 setModal((prev) => ({
                   ...prev,

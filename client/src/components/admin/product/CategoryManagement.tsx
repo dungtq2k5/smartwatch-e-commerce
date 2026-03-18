@@ -318,6 +318,7 @@ export default function CategoryManagement() {
           <button
             type="button"
             className="text-danger border-0 bg-transparent p-0"
+            disabled={!canDeleteCategory || process.isProcessing}
             onClick={() => {
               setModal((prev) => ({
                 ...prev,

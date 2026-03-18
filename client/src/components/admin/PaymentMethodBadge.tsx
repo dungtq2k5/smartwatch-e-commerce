@@ -23,7 +23,7 @@ const PaymentMethodBadge = memo(
     showName = true,
   }: PaymentMethodBadgeProps) => {
     if (!method) {
-      return <span className={`badge bg-secondary ${className}`}>N/A</span>;
+      return <span className={`badge bg-secondary ${className}`}>Unknown</span>;
     }
 
     const getMethodConfig = (): {

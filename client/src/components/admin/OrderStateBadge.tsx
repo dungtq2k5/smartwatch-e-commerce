@@ -10,7 +10,7 @@ type OrderStateBadgeProps = Readonly<{
 const OrderStateBadge = memo(
   ({ state, className = "" }: OrderStateBadgeProps) => {
     if (!state) {
-      return <span className={`badge bg-secondary ${className}`}>N/A</span>;
+      return <span className={`badge bg-secondary ${className}`}>Unknown</span>;
     }
 
     // Color scheme based on order lifecycle
