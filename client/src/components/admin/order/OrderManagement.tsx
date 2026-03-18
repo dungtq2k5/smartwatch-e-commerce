@@ -132,11 +132,7 @@ export default function OrderManagement() {
   renderCount.current += 1;
   console.log(`OrderManagement render count: ${renderCount.current}`);
 
-  const {
-    fetchOrders,
-    canEditOrder: editableOrder,
-    canFulfillOrder,
-  } = useOrderStore();
+  const { fetchOrders, canUpdateOrder, canFulfillOrder } = useOrderStore();
   const { paymentMethods, fetchPaymentMethods, getPaymentMethod } =
     usePaymentMethodStore();
   const { paymentStates, fetchPaymentStates, getPaymentState } =
@@ -372,7 +368,7 @@ export default function OrderManagement() {
 
           const canEdit =
             canEditOrder &&
-            editableOrder(order.deliveryStates.at(-1)?.id || "");
+            canUpdateOrder(order.deliveryStates.at(-1)?.id || "");
           const editDeliveryStateTitle = !canEditOrder
             ? DISABLED_TITLE_FOR_PERFORMING
             : canEdit
@@ -447,6 +443,11 @@ export default function OrderManagement() {
       getOrderState,
       getPaymentMethod,
       getPaymentState,
+      getDeliveryState,
+      getOrderState,
+      canEditOrder,
+      canFulfillOrder,
+      canUpdateOrder,
     ],
   );
 

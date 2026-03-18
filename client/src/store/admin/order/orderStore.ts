@@ -40,7 +40,7 @@ type OrderState = {
 
   fulfillOrder: (data: OrderFulfillItemUpdate) => Promise<OrderResponse>;
 
-  canEditOrder: (orderStateLookupId: string) => boolean;
+  canUpdateOrder: (orderStateLookupId: string) => boolean;
 
   canFulfillOrder: (orderStateLookupId: string) => boolean;
 
@@ -196,7 +196,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  canEditOrder: (orderStateLookupId: string): boolean => {
+  canUpdateOrder: (orderStateLookupId: string): boolean => {
     return (
       !get().isCancelled(orderStateLookupId) &&
       !get().isCompleted(orderStateLookupId)

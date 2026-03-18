@@ -53,7 +53,7 @@ export default function DetailOrder() {
 
   const {
     fetchOrderDetails,
-    canEditOrder: editableOrder,
+    canUpdateOrder,
     canFulfillOrder: fulfillalbleOrder,
   } = useOrderStore();
   const { paymentMethods, fetchPaymentMethods, getPaymentMethod } =
@@ -127,7 +127,7 @@ export default function DetailOrder() {
   // Since this is a detail page which is only render 1 time so don't need to worry about re-render problems
   const orderState = getOrderState(orderDetails?.states.at(-1)?.id || "");
   const canEditOrder =
-    useHasPermission("u_order") && editableOrder(orderState?.lookupId || "");
+    useHasPermission("u_order") && canUpdateOrder(orderState?.lookupId || "");
   const canFulfillOrder =
     canEditOrder &&
     fulfillalbleOrder(getOrderState(orderState?.id || "")?.lookupId || "");
