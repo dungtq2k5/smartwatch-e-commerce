@@ -461,9 +461,9 @@ export const ORDER_FIELD_LABEL_LEGEND: Readonly<
   transaction: "Transaction",
   paymentSummary: "Total Amount", // paymentSummary.finalAmountCents
   paymentMethodId: "Payment Method",
-  paymentStates: "Payment States",
-  deliveryStates: "Delivery States",
-  states: "Order States",
+  paymentStates: "Payment State", // Only display latest state
+  deliveryStates: "Delivery State",
+  states: "Order State",
   orderDate: "Order Date",
   estimateReceivedDate: "Estimated Received Date",
   receivedDate: "Received Date",

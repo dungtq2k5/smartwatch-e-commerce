@@ -230,7 +230,7 @@ export default function OrderManagement() {
           getPaymentMethod(order.paymentMethodId)?.name || "N/A",
       },
       paymentStates: {
-        label: ORDER_FIELD_LABEL_LEGEND["paymentStates"] || "Payment States",
+        label: ORDER_FIELD_LABEL_LEGEND["paymentStates"] || "Payment State",
         tdClassName: "text-center",
         tdContent: (order) => {
           const currStateId = order.paymentStates.at(-1)?.id;
@@ -246,7 +246,7 @@ export default function OrderManagement() {
         },
       },
       deliveryStates: {
-        label: ORDER_FIELD_LABEL_LEGEND["deliveryStates"] || "Delivery States",
+        label: ORDER_FIELD_LABEL_LEGEND["deliveryStates"] || "Delivery State",
         tdClassName: "text-center",
         tdContent: (order) => {
           const currStateId = order.deliveryStates.at(-1)?.id;
@@ -262,7 +262,7 @@ export default function OrderManagement() {
         },
       },
       states: {
-        label: ORDER_FIELD_LABEL_LEGEND["states"] || "Order States",
+        label: ORDER_FIELD_LABEL_LEGEND["states"] || "Order State",
         tdClassName: "text-center",
         tdContent: (order) => {
           const currStateId = order.states.at(-1)?.id;
