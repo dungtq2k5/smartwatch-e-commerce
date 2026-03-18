@@ -769,7 +769,7 @@ export async function updateSelf(
               notes: "Refunded via Stripe due to order cancellation.",
               createdBy: getSysUserId(),
             }); // refunded via Stripe
-            await handleCancelRefund(order, session); // Auto handle refunded to balance if needed
+            await handleCancelRefund(order, session, false); // Auto handle refunded to balance if needed
           }
           break;
         }
@@ -1489,7 +1489,6 @@ export async function update(
 
     await handleOrderUpdate(userId, order, req.body as OrderUpdate, session);
 
-    await order.save({ session });
     await order.populate(populationPath);
     await order.populate("userId", "_id fullName");
 
@@ -1558,7 +1557,6 @@ export async function updateBulk(
         { deliveryStateId, notes, estimateReceivedDate },
         session,
       );
-      await order.save({ session });
     }
 
     await session.commitTransaction();
@@ -1719,6 +1717,7 @@ async function handleOrderUpdate(
   order: IOrder,
   updateData: OrderUpdate,
   session: mongoose.ClientSession,
+  saveOrder: boolean = true,
 ): Promise<void> {
   try {
     /*
@@ -1929,7 +1928,7 @@ async function handleOrderUpdate(
                 notes: "Refunded via Stripe due to order cancellation.",
                 createdBy: sysUserId,
               });
-              await handleCancelRefund(order, session); // Auto handle refunded to balance if needed
+              await handleCancelRefund(order, session, false); // Auto handle refunded to balance if needed
             }
           }
         }
@@ -1960,6 +1959,8 @@ async function handleOrderUpdate(
       }
       order.estimateReceivedDate = updatedEstimateReceivedDate;
     }
+
+    if (saveOrder) await order.save({ session });
   } catch (error) {
     console.error("❌ ", "Error updating order:", error);
     throw error;
@@ -1970,6 +1971,7 @@ async function handleOrderUpdate(
 async function handleCancelRefund(
   order: IOrder,
   session: mongoose.ClientSession,
+  saveOrder: boolean = true,
 ): Promise<void> {
   console.log("▶️ ", `Executing refund for order ${order._id}...`);
 
@@ -2052,6 +2054,8 @@ async function handleCancelRefund(
     }
 
     await user.save({ session });
+    if (saveOrder) await order.save({ session });
+
     console.log(`✅ `, `Refund process completed for order ${order._id}.`);
   } catch (error) {
     console.error(
