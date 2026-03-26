@@ -162,7 +162,9 @@ const EditBulkOrderEstReceivedDateModal = memo(
     return (
       <Modal show={!!orderIds} onHide={onHide} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Bulk Update Est Received Date</Modal.Title>
+          <Modal.Title>
+            Bulk Update Est Received Date for {orderIds?.length || 0} Order(s)
+          </Modal.Title>
         </Modal.Header>
 
         <form onSubmit={handleSubmit}>

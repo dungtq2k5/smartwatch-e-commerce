@@ -236,7 +236,7 @@ const EditOrderDeliveryStateModal = memo(
 
         {process.isInitializing ? (
           <Modal.Body>
-            <Loading loadingMsg="Loading order details" />
+            <Loading loadingMsg="Loading order data" />
           </Modal.Body>
         ) : apiErr ? (
           <Modal.Body>
@@ -293,7 +293,7 @@ const EditOrderDeliveryStateModal = memo(
                     name="notes"
                     className="form-control"
                     rows={3}
-                    placeholder={`${order.deliveryStates.at(-1)?.notes || "Add notes for this state change (optional)..."}`}
+                    placeholder="Add notes for this delivery state change (optional)..."
                     value={formData.notes.val}
                     onChange={handleChange}
                     error={formData.notes.err}

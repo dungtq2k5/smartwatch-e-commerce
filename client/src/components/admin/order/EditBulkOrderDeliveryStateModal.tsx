@@ -188,7 +188,9 @@ const EditBulkOrderDeliveryStateModal = memo(
     return (
       <Modal show={!!orderIds} onHide={onHide} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Bulk Update Delivery State</Modal.Title>
+          <Modal.Title>
+            Bulk Update Delivery State for {orderIds?.length || 0} Order(s)
+          </Modal.Title>
         </Modal.Header>
 
         {process.isInitializing ? (

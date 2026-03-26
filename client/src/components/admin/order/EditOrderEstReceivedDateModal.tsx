@@ -224,7 +224,7 @@ const EditOrderEstReceivedDateModal = memo(
 
         {process.isInitializing ? (
           <Modal.Body>
-            <Loading loadingMsg="Loading order details" />
+            <Loading loadingMsg="Loading order data" />
           </Modal.Body>
         ) : apiErr ? (
           <Modal.Body>
