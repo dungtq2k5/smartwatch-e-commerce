@@ -1,7 +1,7 @@
 import { Button, Modal } from "react-bootstrap";
 import type {
   ModelVariationResponse,
-  ProductDetailResponse,
+  ProductDetailsResponse,
   ProductModelResponse,
 } from "../../../../../common/types.common";
 import { useRef } from "react";
@@ -32,7 +32,7 @@ export default function ProductDetailSpecsModal({
   show,
   onHide,
 }: Readonly<{
-  productDetail: ProductDetailResponse;
+  productDetail: ProductDetailsResponse;
   modelPicked: ItemPicked<ProductModelResponse>;
   variationPicked: ItemPicked<ModelVariationResponse>;
   show: boolean;
