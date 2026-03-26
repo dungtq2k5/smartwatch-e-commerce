@@ -13,6 +13,7 @@ import {
   UserBalanceHistoryResponse,
   UserBalanceHistorySearchQuery,
 } from "../../../common/types.common";
+import { LOOKUP_ID } from "../../../common/configs.common";
 import OrderReturn from "../../models/returnRefund/orderReturn.model";
 import Order from "../../models/order/order.model";
 import WithdrawRequest from "../../models/withdrawal/withdrawalRequest.model";
@@ -83,9 +84,9 @@ export async function searchSelfBalanceHistory(
           getLatestStateId(r.states)
         );
         const state =
-          returnStateLookupId === "6" // refunded
+          returnStateLookupId === LOOKUP_ID.RETURN_STATE.REFUNDED // refunded
             ? "completed"
-            : ["7", "8"].includes(returnStateLookupId) // cancelled, declined
+            : ([LOOKUP_ID.RETURN_STATE.CANCELLED, LOOKUP_ID.RETURN_STATE.DECLINED] as string[]).includes(returnStateLookupId) // cancelled, declined
             ? "failed"
             : "pending";
 
@@ -116,9 +117,9 @@ export async function searchSelfBalanceHistory(
         const orderStateLookupId = getOrderStateLookupId(
           getLatestStateId(o.states)
         );
-        const state = ["5", "6"].includes(orderStateLookupId) // delivered, completed
+        const state = ([LOOKUP_ID.ORDER_STATE.DELIVERED, LOOKUP_ID.ORDER_STATE.COMPLETED] as string[]).includes(orderStateLookupId) // delivered, completed
           ? "completed"
-          : orderStateLookupId === "7" // cancelled
+          : orderStateLookupId === LOOKUP_ID.ORDER_STATE.CANCELLED // cancelled
           ? "failed"
           : "pending";
 
@@ -144,9 +145,9 @@ export async function searchSelfBalanceHistory(
           const withdrawStateLookupId = getWithdrawalStateLookupId(
             getLatestStateId(w.states)
           );
-          const state = ["1", "2", "3"].includes(withdrawStateLookupId) // pending, approved, processing
+          const state = ([LOOKUP_ID.WITHDRAWAL_STATE.PENDING, LOOKUP_ID.WITHDRAWAL_STATE.APPROVED, LOOKUP_ID.WITHDRAWAL_STATE.PROCESSING] as string[]).includes(withdrawStateLookupId) // pending, approved, processing
             ? "pending"
-            : withdrawStateLookupId === "4" // completed
+            : withdrawStateLookupId === LOOKUP_ID.WITHDRAWAL_STATE.COMPLETED // completed
             ? "completed"
             : "failed"; // rejected, cancelled
 

@@ -32,6 +32,7 @@ import {
   OPTIMIZE_CREATED_BY_PIPELINE,
   OPTIMIZE_PIPELINE,
 } from "../../configs/configs";
+import { LOOKUP_ID } from "../../../common/configs.common";
 
 export async function create(
   req: Request,
@@ -101,7 +102,7 @@ export async function create(
 
     // Create variation instances
     const instancesToCreate: any[] = [];
-    const newInstanceConditionId = getInstanceConditionId("1"); // new
+    const newInstanceConditionId = getInstanceConditionId(LOOKUP_ID.INSTANCE_CONDITION.NEW); // new
     const variationId = new Types.ObjectId(modelVariationId);
     const instanceSkuProps = await getPropsForInstanceSkuGen(
       variationId,

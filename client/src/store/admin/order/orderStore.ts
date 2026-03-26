@@ -16,7 +16,7 @@ import {
   formatError,
   removeOddSpaces,
 } from "../../../../../common/utils.common";
-import { MAX_ORDERS_TO_UPDATE_BULK } from "../../../../../common/configs.common";
+import { LOOKUP_ID, MAX_ORDERS_TO_UPDATE_BULK } from "../../../../../common/configs.common";
 
 type OrderState = {
   fetchOrders: (
@@ -48,7 +48,7 @@ type OrderState = {
   isCompleted: (orderStateLookupId: string) => boolean;
 };
 
-export const useOrderStore = create<OrderState>((set, get) => ({
+export const useOrderStore = create<OrderState>((_, get) => ({
   async fetchOrders(
     query?: AdminOrderSearchQuery,
   ): Promise<AdminOrderListResponse> {
@@ -204,14 +204,14 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   },
 
   canFulfillOrder: (orderStateLookupId: string): boolean => {
-    return orderStateLookupId === "2"; // 'confirmed' state lookup ID
+    return orderStateLookupId === LOOKUP_ID.ORDER_STATE.CONFIRMED; // 'confirmed' state lookup ID
   },
 
   isCancelled: (orderStateLookupId: string): boolean => {
-    return orderStateLookupId === "7"; // 'cancelled' state lookup ID
+    return orderStateLookupId === LOOKUP_ID.ORDER_STATE.CANCELLED; // 'cancelled' state lookup ID
   },
 
   isCompleted: (orderStateLookupId: string): boolean => {
-    return orderStateLookupId === "6"; // 'completed' state lookup ID
+    return orderStateLookupId === LOOKUP_ID.ORDER_STATE.COMPLETED; // 'completed' state lookup ID
   },
 }));

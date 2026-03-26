@@ -13,6 +13,7 @@ import {
 } from "../../../../../common/utils.common";
 import toast from "react-hot-toast";
 import { WAITING_EMOJI, MODAL_CLOSE_DELAY_MS } from "../../../configs";
+import { LOOKUP_ID } from "../../../../../common/configs.common";
 import { Button, Modal } from "react-bootstrap";
 import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";
@@ -106,10 +107,10 @@ const EditOrderReturnStateModal = memo(
 
             const submitState =
               type === "approve"
-                ? getReturnStateByLookupId("2") // approved
+                ? getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.APPROVED) // approved
                 : type === "decline"
-                  ? getReturnStateByLookupId("8") // declined
-                  : getReturnStateByLookupId("5"); // refunding
+                  ? getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.DECLINED) // declined
+                  : getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.REFUNDING); // refunding
             if (!submitState) {
               throw new Error("Return submit state not found.");
             }

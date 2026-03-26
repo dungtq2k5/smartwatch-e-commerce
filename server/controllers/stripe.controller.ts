@@ -27,6 +27,7 @@ import User from "../models/user/user.model";
 import UserPaymentMethod from "../models/user/userPaymentMethod.model";
 import { formatError, isNoneArrObj } from "../../common/utils.common";
 import { USER_PAYMENT_METHOD_TYPES } from "../configs/configs";
+import { LOOKUP_ID } from "../../common/configs.common";
 import UserBankAccount from "../models/user/userBankAccount.model";
 import WithdrawalRequest from "../models/withdrawal/withdrawalRequest.model";
 
@@ -80,13 +81,13 @@ export async function createCheckoutSession(
     const latestPaymentStateId = getLatestStateId(order.paymentStates);
     const latestPaymentStateLookupId =
       getPaymentStateLookupId(latestPaymentStateId);
-    if (latestPaymentStateLookupId !== "1") {
+    if (latestPaymentStateLookupId !== LOOKUP_ID.PAYMENT_STATE.PENDING) {
       throw new HttpError(400, "Order is not in a valid state for payment.");
     }
     // Check order is COD
     if (
       getPaymentMethodLookupId(new Types.ObjectId(order.paymentMethodId)) ===
-      "1"
+      LOOKUP_ID.PAYMENT_METHOD.CASH
     ) {
       throw new HttpError(
         400,

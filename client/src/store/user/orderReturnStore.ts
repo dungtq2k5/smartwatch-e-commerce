@@ -10,6 +10,7 @@ import type {
 } from "../../../../common/types.common";
 import { patch, post, retrieve } from "../../utils/utils";
 import { ORDER_URL, ORDER_RETURN_URL, SELF_ORDER_RETURN_URL } from "../../configs";
+import { LOOKUP_ID } from "../../../../common/configs.common";
 import {
   compareUserAddress,
   formatError,
@@ -154,7 +155,7 @@ const useReturnStoreInternal = create<ReturnState>((set, get) => ({
   },
 
   canUpdateReturn(returnStateLookupId: string): boolean {
-    return returnStateLookupId === "1"; // pending approval
+    return returnStateLookupId === LOOKUP_ID.RETURN_STATE.PENDING_APPROVAL; // pending approval
   },
 
   getUserAddressIdFromReturn(

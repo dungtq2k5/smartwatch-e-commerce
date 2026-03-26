@@ -1295,8 +1295,6 @@ export default function OrderReturnManagement() {
     }
   }, [refresh, selectionToastId]);
 
-  // TODO Constantize all lookup values.
-
   return (
     <>
       {/* Heading */}

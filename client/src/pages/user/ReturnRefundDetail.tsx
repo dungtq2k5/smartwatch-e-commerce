@@ -7,6 +7,7 @@ import type {
   OrderReturnDetailsResponse,
   OrderStateResponse,
 } from "../../../../common/types.common";
+import { LOOKUP_ID } from "../../../../common/configs.common";
 import ApiError from "../../components/common/ApiError";
 import useReturnStore from "../../store/user/orderReturnStore";
 import useReturnStateStore from "../../store/common/returnRefund/returnStateStore";
@@ -78,8 +79,8 @@ export default function ReturnRefundDetail() {
 
   const currStatus = returnDetail?.states.at(-1);
   const currStatusLevel = currStatus?.level || 0;
-  const isCancelled = currStatus?.lookupId === "7"; // cancelled
-  const canUpdate = currStatus?.lookupId === "1"; // pending approval
+  const isCancelled = currStatus?.lookupId === LOOKUP_ID.RETURN_STATE.CANCELLED; // cancelled
+  const canUpdate = currStatus?.lookupId === LOOKUP_ID.RETURN_STATE.PENDING_APPROVAL; // pending approval
 
   // Fetch initial when first loaded: return detail, return states
   useEffect(() => {
@@ -123,7 +124,7 @@ export default function ReturnRefundDetail() {
       return (
         <div className="row justify-content-center mb-4">
           {states.map((state, idx) => {
-            if (["7", "8"].includes(state.lookupId)) return null; // Exclude cancelled/declined from progress bar
+            if (([LOOKUP_ID.RETURN_STATE.CANCELLED, LOOKUP_ID.RETURN_STATE.DECLINED] as string[]).includes(state.lookupId)) return null; // Exclude cancelled/declined from progress bar
             const stepLevel = idx + 1;
             const isCompleted = currStatusLevel >= stepLevel;
             const isActive = currStatusLevel === stepLevel;
@@ -228,7 +229,7 @@ export default function ReturnRefundDetail() {
 
     setProcess((prev) => ({ ...prev, isProcessing: true, isCanceling: true }));
     try {
-      const cancelState = getReturnStateByLookupId("7"); // cancelled
+      const cancelState = getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.CANCELLED); // cancelled
       if (!cancelState) throw new Error("Return state not found.");
 
       const { id: returnId } = returnDetail;
@@ -302,7 +303,7 @@ export default function ReturnRefundDetail() {
             {
               // If return is cancelled/declined, display states from returnDetail only, else display all states
               genProgressBar(
-                returnDetail.states.some((s) => ["7", "8"].includes(s.lookupId))
+                returnDetail.states.some((s) => ([LOOKUP_ID.RETURN_STATE.CANCELLED, LOOKUP_ID.RETURN_STATE.DECLINED] as string[]).includes(s.lookupId))
                   ? returnDetail.states
                   : returnStates.states,
                 returnDetail.states,

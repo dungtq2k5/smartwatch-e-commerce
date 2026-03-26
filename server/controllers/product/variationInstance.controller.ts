@@ -25,6 +25,7 @@ import {
   isPresent,
 } from "../../utils/utils";
 import { appCache } from "../../configs/cache";
+import { LOOKUP_ID } from "../../../common/configs.common";
 import InventoryMovement from "../../models/inventory/inventoryMovement.model";
 import {
   DEFAULT_SEARCH_LIMIT,
@@ -110,7 +111,7 @@ export async function create(
       modelVariationId: variationId,
       supplierSerialNumber,
       supplierImeiNumber,
-      conditionId: conditionId || getInstanceConditionId("1"), // new
+      conditionId: conditionId || getInstanceConditionId(LOOKUP_ID.INSTANCE_CONDITION.NEW), // new
       isActive,
       inactiveAt: isActive ? undefined : new Date(),
     });
@@ -504,7 +505,7 @@ export async function update(
     // Check conditionId exists
     const updatedConditionId =
       conditionId === null
-        ? getInstanceConditionId("1") // new
+        ? getInstanceConditionId(LOOKUP_ID.INSTANCE_CONDITION.NEW) // new
         : conditionId
           ? new Types.ObjectId(conditionId)
           : instance.conditionId;

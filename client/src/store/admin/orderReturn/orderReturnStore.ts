@@ -16,7 +16,7 @@ import {
 } from "../../../../../common/utils.common";
 import { ORDER_RETURN_URL } from "../../../configs";
 import { patch, retrieve } from "../../../utils/utils";
-import { MAX_ORDER_RETURNS_TO_UPDATE_BULK } from "../../../../../common/configs.common";
+import { MAX_ORDER_RETURNS_TO_UPDATE_BULK, LOOKUP_ID } from "../../../../../common/configs.common";
 
 type ReturnState = {
   fetchReturns: (
@@ -215,26 +215,26 @@ export const useReturnStore = create<ReturnState>(() => ({
 
   canUpdateReturnState(returnStateLookupId: string): boolean {
     // Can update when return state is not in "refunded", "canceled", and "declined" states.
-    return !["6", "7", "8"].includes(returnStateLookupId);
+    return !([LOOKUP_ID.RETURN_STATE.REFUNDED, LOOKUP_ID.RETURN_STATE.CANCELLED, LOOKUP_ID.RETURN_STATE.DECLINED] as string[]).includes(returnStateLookupId);
   },
 
   canUpdateReturnPickupState(returnStateLookupId: string): boolean {
     // Can update when return state is "approved", "items returning", and "items returned" states.
-    return ["2", "3", "4"].includes(returnStateLookupId);
+    return ([LOOKUP_ID.RETURN_STATE.APPROVED, LOOKUP_ID.RETURN_STATE.ITEMS_RETURNING, LOOKUP_ID.RETURN_STATE.ITEMS_RETURNED] as string[]).includes(returnStateLookupId);
   },
 
   canApproveReturn(returnStateLookupId: string): boolean {
     // Can approve when return state is in "pending approval" state.
-    return returnStateLookupId === "1";
+    return returnStateLookupId === LOOKUP_ID.RETURN_STATE.PENDING_APPROVAL;
   },
 
   canDeclineReturn(returnStateLookupId: string): boolean {
     // Can decline when return state is in "pending approval" state.
-    return returnStateLookupId === "1";
+    return returnStateLookupId === LOOKUP_ID.RETURN_STATE.PENDING_APPROVAL;
   },
 
   canRefundReturn(returnStateLookupId: string): boolean {
     // Can refund when return state is in "items returned" state.
-    return returnStateLookupId === "4";
+    return returnStateLookupId === LOOKUP_ID.RETURN_STATE.ITEMS_RETURNED;
   },
 }));

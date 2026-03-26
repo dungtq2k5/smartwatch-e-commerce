@@ -55,6 +55,7 @@ import {
   ESTIMATE_PICKUP_TIME_GAP,
   MAX_ORDER_RETURN_IMG_UPLOAD,
   MAX_ORDER_RETURNS_TO_UPDATE_BULK,
+  LOOKUP_ID,
 } from "../../../common/configs.common";
 import UserAddress from "../../models/user/userAddress.model";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
@@ -148,7 +149,7 @@ export async function create(
     const latestPaymentStateId = getLatestStateId(order.paymentStates);
     const latestPaymentStateLookupId =
       getPaymentStateLookupId(latestPaymentStateId);
-    if (latestPaymentStateLookupId !== "2") {
+    if (latestPaymentStateLookupId !== LOOKUP_ID.PAYMENT_STATE.PAID) {
       // paid
       throw new HttpError(
         400,
@@ -335,14 +336,16 @@ export async function create(
     const orderReturn = new OrderReturn({
       orderId,
       refundSummary,
-      refundStates: [{ id: getRefundStateId("1") }], // pending approval
-      states: [{ id: getReturnStateId("1") }], // pending
+      refundStates: [{ id: getRefundStateId(LOOKUP_ID.REFUND_STATE.PENDING) }], // pending approval
+      states: [
+        { id: getReturnStateId(LOOKUP_ID.RETURN_STATE.PENDING_APPROVAL) },
+      ], // pending
       reasonId,
       imageUrls,
       buyerReason,
       estimatePickupDate:
         estimatePickupDate || new Date(Date.now() + ESTIMATE_PICKUP_TIME_GAP),
-      pickupStates: [{ id: getPickupStateId("1") }], // pending
+      pickupStates: [{ id: getPickupStateId(LOOKUP_ID.PICKUP_STATE.PENDING) }], // pending
       pickupAddress,
       items: returnItems,
     });
@@ -765,7 +768,7 @@ export async function updateSelf(
       const returnStateLookupId = getReturnStateLookupId(
         new Types.ObjectId(stateId),
       );
-      if (returnStateLookupId !== "7") {
+      if (returnStateLookupId !== LOOKUP_ID.RETURN_STATE.CANCELLED) {
         // cancelled
         throw new HttpError(
           400,
@@ -1005,8 +1008,7 @@ export async function updatePickupState(
 }
 
 // Normal version of search for understanding but not efficient for large data
-/*
-export async function search(
+export async function normalSearch(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -1248,7 +1250,6 @@ export async function search(
     next(error);
   }
 }
-*/
 
 // Optimized version of search - based on working commented version with performance improvements
 export async function search(
@@ -1723,7 +1724,7 @@ async function handleRefund(
     if (finalRefundAmountCents === 0) {
       console.log("✅ ", "No refund needed as final refund amount is 0.");
       orderReturn.states.push({
-        id: getReturnStateId("6"),
+        id: getReturnStateId(LOOKUP_ID.RETURN_STATE.REFUNDED),
         notes: "No refund needed as final refund amount is 0.",
         createdBy: sysUserId,
       }); // refunded
@@ -1733,7 +1734,7 @@ async function handleRefund(
     const latestRefundStateId = getLatestStateId(orderReturn.refundStates);
     const latestRefundStateLookupId =
       getRefundStateLookupId(latestRefundStateId);
-    if (latestRefundStateLookupId !== "1") {
+    if (latestRefundStateLookupId !== LOOKUP_ID.REFUND_STATE.PENDING) {
       // pending
       throw new HttpError(
         400,
@@ -1758,7 +1759,7 @@ async function handleRefund(
       user.userBalanceCents += toBalanceCents;
       if (toCardCents === 0) {
         orderReturn.refundStates.push({
-          id: getRefundStateId("3"),
+          id: getRefundStateId(LOOKUP_ID.REFUND_STATE.REFUNDED_TO_BALANCE),
           notes: "Full amount refunded to balance",
           createdBy: sysUserId,
         }); // refunded to balance
@@ -1783,7 +1784,7 @@ async function handleRefund(
           };
 
           orderReturn.refundStates.push({
-            id: getRefundStateId("2"),
+            id: getRefundStateId(LOOKUP_ID.REFUND_STATE.REFUNDED_VIA_STRIPE),
             notes: "Amount refunded to card",
             createdBy: sysUserId,
           }); // refunded via Stripe
@@ -1800,14 +1801,16 @@ async function handleRefund(
           );
 
           orderReturn.refundStates.push({
-            id: getRefundStateId("4"),
+            id: getRefundStateId(
+              LOOKUP_ID.REFUND_STATE.REFUND_VIA_STRIPE_FAILED,
+            ),
             notes:
               "Refund via Stripe failed, refunded to balance as a fallback.",
             createdBy: sysUserId,
           }); // refund via Stripe failed
           user.userBalanceCents += toCardCents;
           orderReturn.refundStates.push({
-            id: getRefundStateId("3"),
+            id: getRefundStateId(LOOKUP_ID.REFUND_STATE.REFUNDED_TO_BALANCE),
             notes:
               "Refunded to balance as a fallback after Stripe refund failure.",
             createdBy: sysUserId,
@@ -1820,7 +1823,7 @@ async function handleRefund(
         );
         user.userBalanceCents += toCardCents;
         orderReturn.refundStates.push({
-          id: getRefundStateId("3"),
+          id: getRefundStateId(LOOKUP_ID.REFUND_STATE.REFUNDED_TO_BALANCE),
           notes:
             "Refunded to balance as no Stripe transaction or customer ID found.",
           createdBy: sysUserId,
@@ -1830,7 +1833,7 @@ async function handleRefund(
 
     // Update returnState to "refunded" state
     orderReturn.states.push({
-      id: getReturnStateId("6"),
+      id: getReturnStateId(LOOKUP_ID.RETURN_STATE.REFUNDED),
       notes: "Refund process completed.",
       createdBy: sysUserId,
     }); // refunded
@@ -1918,7 +1921,13 @@ async function executeItemsReturned(
       // Update instances conditionId
       VariationInstance.updateMany(
         { _id: { $in: allInstanceIdsToUpdate } },
-        { $set: { conditionId: getInstanceConditionId("2") } }, // used
+        {
+          $set: {
+            conditionId: getInstanceConditionId(
+              LOOKUP_ID.INSTANCE_CONDITION.USED,
+            ),
+          },
+        }, // used
         { session },
       ),
 
@@ -2000,7 +2009,7 @@ async function handleReturnStateUpdate(
       case "8": {
         const latestReturnStateLookupId =
           getReturnStateLookupId(latestReturnStateId);
-        if (latestReturnStateLookupId === "2") {
+        if (latestReturnStateLookupId === LOOKUP_ID.RETURN_STATE.APPROVED) {
           // approved
           throw new HttpError(
             400,
@@ -2035,7 +2044,9 @@ async function handleReturnStateUpdate(
       case "5": {
         const latestReturnStateLookupId =
           getReturnStateLookupId(latestReturnStateId);
-        if (latestReturnStateLookupId !== "4") {
+        if (
+          latestReturnStateLookupId !== LOOKUP_ID.RETURN_STATE.ITEMS_RETURNED
+        ) {
           // items returned
           throw new HttpError(
             400,
@@ -2085,7 +2096,15 @@ async function handlePickupStateUpdate(
     const latestReturnStateId = getLatestStateId(orderReturn.states);
     const latestReturnStateLookupId =
       getReturnStateLookupId(latestReturnStateId);
-    if (!["2", "3", "4"].includes(latestReturnStateLookupId)) {
+    if (
+      !(
+        [
+          LOOKUP_ID.RETURN_STATE.APPROVED,
+          LOOKUP_ID.RETURN_STATE.ITEMS_RETURNING,
+          LOOKUP_ID.RETURN_STATE.ITEMS_RETURNED,
+        ] as string[]
+      ).includes(latestReturnStateLookupId)
+    ) {
       // not in approved, items returning, items returned
       throw new HttpError(
         400,
@@ -2107,11 +2126,13 @@ async function handlePickupStateUpdate(
       const pickupStateLookupId = getPickupStateLookupId(
         new Types.ObjectId(pickupStateId),
       );
-      if (pickupStateLookupId === "7") {
+      if (pickupStateLookupId === LOOKUP_ID.PICKUP_STATE.PICKUP_RESCHEDULED) {
         // pickup rescheduled
         const latestPickupStateLookupId =
           getPickupStateLookupId(latestPickupStateId);
-        if (latestPickupStateLookupId !== "6") {
+        if (
+          latestPickupStateLookupId !== LOOKUP_ID.PICKUP_STATE.PICKUP_FAILED
+        ) {
           // pickup failed
           throw new HttpError(
             400,
@@ -2137,10 +2158,10 @@ async function handlePickupStateUpdate(
           case "4": {
             const latestReturnStateLookupId =
               getReturnStateLookupId(latestReturnStateId);
-            if (latestReturnStateLookupId === "2") {
+            if (latestReturnStateLookupId === LOOKUP_ID.RETURN_STATE.APPROVED) {
               // approved
               orderReturn.states.push({
-                id: getReturnStateId("3"),
+                id: getReturnStateId(LOOKUP_ID.RETURN_STATE.ITEMS_RETURNING),
                 notes: "Auto updated to 'items returning' state.",
                 createdBy: sysUserId,
               });
@@ -2151,7 +2172,7 @@ async function handlePickupStateUpdate(
           case "5": {
             await executeItemsReturned(orderReturn, session);
             orderReturn.states.push({
-              id: getReturnStateId("4"),
+              id: getReturnStateId(LOOKUP_ID.RETURN_STATE.ITEMS_RETURNED),
               notes: "Auto updated to 'items returned' state.",
               createdBy: sysUserId,
             }); // items returned

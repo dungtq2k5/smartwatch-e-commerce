@@ -44,6 +44,7 @@ import Order, { IOrder } from "../../models/order/order.model";
 import {
   ESTIMATE_RECEIVED_TIME_GAP,
   MAX_ORDERS_TO_UPDATE_BULK,
+  LOOKUP_ID,
 } from "../../../common/configs.common";
 import Cart from "../../models/user/cart.model";
 import User from "../../models/user/user.model";
@@ -116,8 +117,8 @@ export async function createSelf(
     */
 
     // Check if there is an existing non-COD order with the same userId and paymentStatusId is "pending"
-    const orderPendingStateId = getOrderStateId("1");
-    const isCOD = paymentMethodLookupId === "1";
+    const orderPendingStateId = getOrderStateId(LOOKUP_ID.ORDER_STATE.PENDING);
+    const isCOD = paymentMethodLookupId === LOOKUP_ID.PAYMENT_METHOD.CASH;
     if (!isCOD) {
       const existingPendingOrder = await Order.findOne({
         userId,
@@ -679,10 +680,10 @@ export async function updateSelf(
 
       // Can't update order state if non-COD paymentState isn't paid yet
       const latestPaymentStateId = getLatestStateId(order.paymentStates);
-      const isPaid = getPaymentStateLookupId(latestPaymentStateId) === "2";
+      const isPaid = getPaymentStateLookupId(latestPaymentStateId) === LOOKUP_ID.PAYMENT_STATE.PAID;
       const isCOD =
         getPaymentMethodLookupId(new Types.ObjectId(order.paymentMethodId)) ===
-        "1";
+        LOOKUP_ID.PAYMENT_METHOD.CASH;
 
       if (!isCOD && !isPaid) {
         throw new HttpError(
@@ -1331,7 +1332,7 @@ export async function fulfillItem(
     // Check if order is valid
     const latestOrderStateId = getLatestStateId(order.states);
     const latestOrderStateLookupId = getOrderStateLookupId(latestOrderStateId);
-    if (latestOrderStateLookupId !== "2") {
+    if (latestOrderStateLookupId !== LOOKUP_ID.ORDER_STATE.CONFIRMED) {
       // confirmed
       throw new HttpError(
         400,
@@ -1789,10 +1790,10 @@ async function handleOrderUpdate(
 
       // Can't update deliveryStateId if non-COD order isn't paid yet
       const latestPaymentStateId = getLatestStateId(order.paymentStates);
-      const isPaid = getPaymentStateLookupId(latestPaymentStateId) === "2";
+      const isPaid = getPaymentStateLookupId(latestPaymentStateId) === LOOKUP_ID.PAYMENT_STATE.PAID;
       const isCOD =
         getPaymentMethodLookupId(new Types.ObjectId(order.paymentMethodId)) ===
-        "1";
+        LOOKUP_ID.PAYMENT_METHOD.CASH;
       if (!isCOD && !isPaid) {
         throw new HttpError(
           400,
@@ -1808,9 +1809,9 @@ async function handleOrderUpdate(
       );
 
       // Handle special case: update from "delivery failed" to "delivery rescheduled"
-      if (deliveryStateLookupId === "8") {
+      if (deliveryStateLookupId === LOOKUP_ID.DELIVERY_STATE.DELIVERY_RESCHEDULED) {
         // delivery rescheduled
-        if (latestDeliveryStateLookupId !== "7") {
+        if (latestDeliveryStateLookupId !== LOOKUP_ID.DELIVERY_STATE.DELIVERY_FAILED) {
           throw new HttpError(
             400,
             "Latest delivery state must be 'delivery failed' to update to 'delivery rescheduled'.",

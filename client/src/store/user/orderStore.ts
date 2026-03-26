@@ -11,6 +11,7 @@ import type {
 } from "../../../../common/types.common";
 import { patch, post, retrieve } from "../../utils/utils";
 import { SELF_ORDER_URL, ORDER_URL } from "../../configs";
+import { LOOKUP_ID } from "../../../../common/configs.common";
 import { formatError, removeOddSpaces } from "../../../../common/utils.common";
 
 type OrderState = {
@@ -23,33 +24,33 @@ type OrderState = {
 
   fetchOrders: (
     query?: OrderSearchQuery,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ) => Promise<OrderListResponse>;
   fetchOrder: (id: string) => Promise<OrderResponse>;
   fetchOrderDetails: (id: string) => Promise<OrderDetailsResponse>;
 
   checkItemIsReturned: (item: OrderResponse["items"][0]) => boolean;
   checkItemAvailable: (
-    item: OrderResponse["items"][0] | OrderReturnResponse["items"][0]
+    item: OrderResponse["items"][0] | OrderReturnResponse["items"][0],
   ) => boolean;
   updateSelfOrder: (
     id: string,
-    data: OrderSelfUpdate
+    data: OrderSelfUpdate,
   ) => Promise<OrderResponse>;
 
   canSubmitOrder: (orderStateLookupId: string) => boolean;
   canReturnOrder: (
     order: OrderResponse | OrderDetailsResponse,
-    orderStateLookupId: string
+    orderStateLookupId: string,
   ) => boolean;
   canCancelOrder: (orderStateLookupId: string) => boolean;
   canBuyAgainOrder: (
     order: OrderResponse | OrderDetailsResponse,
-    orderStateLookupId: string
+    orderStateLookupId: string,
   ) => boolean;
   canPay: (
     orderStateLookupId: string,
-    paymentMethodLookupId: string
+    paymentMethodLookupId: string,
   ) => boolean;
   canChangeDeliveryAddress: (orderStateLookupId: string) => boolean;
 };
@@ -59,7 +60,7 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
   orderDetailCache: null,
 
   async createCheckoutSession(
-    orderId: string
+    orderId: string,
   ): Promise<CheckoutSessionResponse> {
     try {
       const res = await post(`${ORDER_URL}/${orderId}/create-checkout-session`);
@@ -84,7 +85,7 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
 
   async fetchOrders(
     query?: OrderSearchQuery,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<OrderListResponse> {
     const queryString = new URLSearchParams();
 
@@ -114,7 +115,7 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
     try {
       const res = await retrieve(
         `${SELF_ORDER_URL}?${queryString.toString()}`,
-        signal
+        signal,
       );
       if (!res.success) throw new Error(res.message);
 
@@ -158,12 +159,12 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
 
   checkItemIsReturned(item: OrderResponse["items"][0]): boolean {
     return item.instances.some((i) =>
-      ["return pending", "returned"].includes(i.state)
+      ["return pending", "returned"].includes(i.state),
     );
   },
 
   checkItemAvailable(
-    item: OrderResponse["items"][0] | OrderReturnResponse["items"][0]
+    item: OrderResponse["items"][0] | OrderReturnResponse["items"][0],
   ): boolean {
     const variation = item.variation;
     const model = variation.productModel;
@@ -182,7 +183,7 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
 
   async updateSelfOrder(
     id: string,
-    data: OrderSelfUpdate
+    data: OrderSelfUpdate,
   ): Promise<OrderResponse> {
     try {
       const res = await patch(SELF_ORDER_URL, id, data);
@@ -197,46 +198,61 @@ const useOrderStoreInternal = create<OrderState>((set, get) => ({
   },
 
   canSubmitOrder(orderStateLookupId: string): boolean {
-    return orderStateLookupId === "5"; // delivered
+    return orderStateLookupId === LOOKUP_ID.ORDER_STATE.DELIVERED; // delivered
   },
 
   canReturnOrder(
     order: OrderResponse | OrderDetailsResponse,
-    orderStateLookupId: string
+    orderStateLookupId: string,
   ): boolean {
     return (
       order.canReturn &&
-      ["5", "6"].includes(orderStateLookupId || "") && // delivered, completed
+      (
+        [
+          LOOKUP_ID.ORDER_STATE.DELIVERED,
+          LOOKUP_ID.ORDER_STATE.COMPLETED,
+        ] as string[]
+      ).includes(orderStateLookupId || "") && // delivered, completed
       order.items.some((item) =>
-        item.instances.some((inst) => inst.state === "ordered")
+        item.instances.some((inst) => inst.state === "ordered"),
       ) // At least one item is in "ordered" state -> can return
     );
   },
 
   canCancelOrder(orderStateLookupId: string): boolean {
-    return ["1", "2"].includes(orderStateLookupId); // pending, confirmed
+    return (
+      [
+        LOOKUP_ID.ORDER_STATE.PENDING,
+        LOOKUP_ID.ORDER_STATE.CONFIRMED,
+      ] as string[]
+    ).includes(orderStateLookupId); // pending, confirmed
   },
 
   canBuyAgainOrder(
     order: OrderResponse | OrderDetailsResponse,
-    orderStateLookupId: string
+    orderStateLookupId: string,
   ): boolean {
     const availableItems = order.items.filter(get().checkItemAvailable);
     return (
-      orderStateLookupId === "6" && // completed
+      orderStateLookupId === LOOKUP_ID.ORDER_STATE.COMPLETED && // completed
       availableItems.length > 0 // At least one item is available
     );
   },
 
   canPay(orderStateLookupId: string, paymentMethodLookupId: string): boolean {
     return (
-      orderStateLookupId === "1" && // pending
-      paymentMethodLookupId === "2" // stripe
+      orderStateLookupId === LOOKUP_ID.ORDER_STATE.PENDING && // pending
+      paymentMethodLookupId === LOOKUP_ID.PAYMENT_METHOD.STRIPE // stripe
     );
   },
 
   canChangeDeliveryAddress(orderStateLookupId: string): boolean {
-    return ["1", "2"].includes(orderStateLookupId); // pending, confirmed
+    return (
+      [
+        LOOKUP_ID.ORDER_STATE.PENDING,
+        LOOKUP_ID.ORDER_STATE.CONFIRMED,
+      ] as string[]
+    ).includes(orderStateLookupId); // pending, confirmed
   },
 }));
 

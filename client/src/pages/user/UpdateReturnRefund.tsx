@@ -30,6 +30,7 @@ import {
   MAX_ORDER_RETURN_IMG_UPLOAD,
   ORDER_RETURN_IMG_ALLOWED_TYPES,
   ORDER_RETURN_IMG_HINT_MESSAGE,
+  LOOKUP_ID,
 } from "../../../../common/configs.common";
 import { createFileList, getImgFilesErrs, uploadFile } from "../../utils/utils";
 import toast from "react-hot-toast";
@@ -541,7 +542,7 @@ export default function ReturnRefundUpdate() {
 
     setProcess((prev) => ({ ...prev, isProcessing: true }));
     try {
-      const cancelState = await fetchReturnStateByLookupId("7");
+      const cancelState = await fetchReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.CANCELLED);
 
       const { orderId, id: returnId } = orderReturn;
       await updateReturn(returnId, {

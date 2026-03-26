@@ -26,6 +26,7 @@ import OrderState from "../models/order/orderState.model";
 import PickupState from "../models/returnRefund/pickupState.model";
 import CancelReason from "../models/order/cancelReason.model";
 import WithdrawalState from "../models/withdrawal/withdrawalState.model";
+import { LOOKUP_ID } from "../../common/configs.common";
 
 export async function createSystemUser(
   session: mongoose.mongo.ClientSession,
@@ -71,17 +72,17 @@ export async function seedGrnStates(
 
     let grnStates = [
       {
-        lookupId: "1",
+        lookupId: LOOKUP_ID.GRN_STATE.COMPLETED,
         name: "completed",
         description: "All items in the GRN have been received and processed.",
       },
       {
-        lookupId: "2",
+        lookupId: LOOKUP_ID.GRN_STATE.REVERSAL,
         name: "reversal",
         description: "The GRN has been reversed due to an error or issue.",
       },
       {
-        lookupId: "3",
+        lookupId: LOOKUP_ID.GRN_STATE.DRAFT,
         name: "draft",
         description: "The GRN is in draft state and not yet finalized.",
       },
@@ -112,52 +113,52 @@ export async function seedInventoryMovementTypes(
 
     let movementTypes = [
       {
-        lookupId: "1",
+        lookupId: LOOKUP_ID.IVT_MOVEMENT_TYPE.GOODS_RECEIPT,
         name: "goods receipt",
         description: "Incoming stock from supplier.",
       },
       {
-        lookupId: "2",
+        lookupId: LOOKUP_ID.IVT_MOVEMENT_TYPE.GRN_CANCELLATION,
         name: "grn cancellation",
         description: "Reversal of a good receipt notes.",
       },
       {
-        lookupId: "3",
+        lookupId: LOOKUP_ID.IVT_MOVEMENT_TYPE.SALES_OUT,
         name: "sales out",
         description: "Outgoing stock due to a sale.",
       },
       {
-        lookupId: "4",
+        lookupId: LOOKUP_ID.IVT_MOVEMENT_TYPE.STOCK_ADJUSTMENT,
         name: "stock adjustment",
         description: "Manually increase/decrease in stock.",
       },
       {
-        lookupId: "5",
+        lookupId: LOOKUP_ID.IVT_MOVEMENT_TYPE.STOCK_TRANSFER,
         name: "stock transfer",
         description: "Transfer of stock between locations.",
       },
       {
-        lookupId: "6",
+        lookupId: LOOKUP_ID.IVT_MOVEMENT_TYPE.DAMAGED_STOCK,
         name: "damaged stock",
         description: "Stock that is damaged and needs to be written off.",
       },
       {
-        lookupId: "7",
+        lookupId: LOOKUP_ID.IVT_MOVEMENT_TYPE.RETURN_TO_SUPPLIER,
         name: "return to supplier",
         description: "Returning stock to the supplier.",
       },
       {
-        lookupId: "8",
+        lookupId: LOOKUP_ID.IVT_MOVEMENT_TYPE.RETURN_FROM_CUSTOMER,
         name: "return from customer",
         description: "Stock returned from a customer.",
       },
       {
-        lookupId: "9",
+        lookupId: LOOKUP_ID.IVT_MOVEMENT_TYPE.STOCK_AUDIT,
         name: "stock audit",
         description: "Stock audit adjustments.",
       },
       {
-        lookupId: "10",
+        lookupId: LOOKUP_ID.IVT_MOVEMENT_TYPE.OTHER,
         name: "other",
         description: "Any other type of inventory movement.",
       },
@@ -187,60 +188,60 @@ export async function seedDeliveryStates(
     }
     let deliveryStates = [
       {
-        lookupId: "1",
+        lookupId: LOOKUP_ID.DELIVERY_STATE.PENDING,
         name: "pending",
         level: 1,
         description:
           "A new order that needs to verified, not yet processed for shipping.",
       },
       {
-        lookupId: "2",
+        lookupId: LOOKUP_ID.DELIVERY_STATE.PROCESSING,
         name: "processing",
         level: 2,
         description: "Order is being prepared for shipment.",
       },
       {
-        lookupId: "3",
+        lookupId: LOOKUP_ID.DELIVERY_STATE.SHIPPED,
         name: "shipped",
         level: 3,
         description:
           "Order has been shipped and is on its way to the delivery address.",
       },
       {
-        lookupId: "4",
+        lookupId: LOOKUP_ID.DELIVERY_STATE.IN_TRANSIT,
         name: "in transit",
         level: 4,
         description: "Order is currently in transit with the shipping carrier.",
       },
       {
-        lookupId: "5",
+        lookupId: LOOKUP_ID.DELIVERY_STATE.OUT_FOR_DELIVERY,
         name: "out for delivery",
         level: 5,
         description: "Order is out for delivery to the specified address.",
       },
       {
-        lookupId: "6",
+        lookupId: LOOKUP_ID.DELIVERY_STATE.DELIVERED,
         name: "delivered",
         level: 6, // Final state
         description:
           "Courier has confirmed that the order has been delivered to the recipient.",
       },
       {
-        lookupId: "7",
+        lookupId: LOOKUP_ID.DELIVERY_STATE.DELIVERY_FAILED,
         name: "delivery failed",
         level: 6,
         description:
           "Courier attempted delivery but was unsuccessful (e.g., address not found, recipient unavailable).",
       },
       {
-        lookupId: "8",
+        lookupId: LOOKUP_ID.DELIVERY_STATE.DELIVERY_RESCHEDULED,
         name: "delivery rescheduled",
         level: 1,
         description:
           "A new delivery has been scheduled after a failed attempt.",
       },
       {
-        lookupId: "9",
+        lookupId: LOOKUP_ID.DELIVERY_STATE.CANCELLED,
         name: "cancelled",
         level: 6,
         description: "Order was cancelled because of so many failed attempts.",
@@ -269,9 +270,9 @@ export async function seedPaymentMethods(
       return;
     }
     const paymentMethods = [
-      { lookupId: "1", name: "cash", description: "Cash on Delivery (COD)" },
+      { lookupId: LOOKUP_ID.PAYMENT_METHOD.CASH, name: "cash", description: "Cash on Delivery (COD)" },
       {
-        lookupId: "2",
+        lookupId: LOOKUP_ID.PAYMENT_METHOD.STRIPE,
         name: "stripe",
         description: "Online payment via Stripe",
       },
@@ -297,27 +298,27 @@ export async function seedPaymentStates(
 
     let paymentStates = [
       {
-        lookupId: "1",
+        lookupId: LOOKUP_ID.PAYMENT_STATE.PENDING,
         name: "pending",
         description: "Payment is pending and has not been processed yet.",
       },
       {
-        lookupId: "2",
+        lookupId: LOOKUP_ID.PAYMENT_STATE.PAID,
         name: "paid",
         description: "Payment has been paid successfully.",
       },
       {
-        lookupId: "3",
+        lookupId: LOOKUP_ID.PAYMENT_STATE.FAILED,
         name: "failed",
         description: "Payment attempt failed.",
       },
       {
-        lookupId: "4",
+        lookupId: LOOKUP_ID.PAYMENT_STATE.REFUNDED_VIA_STRIPE,
         name: "refunded via Stripe",
         description: "Payment has been refunded to the buyer via Stripe.",
       },
       {
-        lookupId: "5",
+        lookupId: LOOKUP_ID.PAYMENT_STATE.REFUNDED_TO_BALANCE,
         name: "refunded to balance",
         description:
           "Payment has been refunded to the user balance since user hasn't had stripe customer ID or user had paid all by balance when checkout or refunded via Stripe was failed.",
@@ -349,43 +350,43 @@ export async function seedOrderStates(
 
     let orderStates = [
       {
-        lookupId: "1",
+        lookupId: LOOKUP_ID.ORDER_STATE.PENDING,
         name: "pending",
         level: 1,
         description: "A new order that needs to verified.",
       },
       {
-        lookupId: "2",
+        lookupId: LOOKUP_ID.ORDER_STATE.CONFIRMED,
         name: "confirmed",
         level: 2,
         description: "Order is verified, ready for fulfillment.",
       },
       {
-        lookupId: "3",
+        lookupId: LOOKUP_ID.ORDER_STATE.PLACED,
         name: "placed",
         level: 3,
         description: "Order has been placed and is being processed.",
       },
       {
-        lookupId: "4",
+        lookupId: LOOKUP_ID.ORDER_STATE.DELIVERING,
         name: "delivering",
         level: 4,
         description: "Order is out for delivery to the specified address.",
       },
       {
-        lookupId: "5",
+        lookupId: LOOKUP_ID.ORDER_STATE.DELIVERED,
         name: "delivered",
         level: 5,
         description: "Order has been delivered to the recipient.",
       },
       {
-        lookupId: "6",
+        lookupId: LOOKUP_ID.ORDER_STATE.COMPLETED,
         name: "completed",
         level: 6, // Final state
         description: "Order has been received and confirmed by the buyer.",
       },
       {
-        lookupId: "7",
+        lookupId: LOOKUP_ID.ORDER_STATE.CANCELLED,
         name: "cancelled",
         level: 6,
         description:
@@ -450,22 +451,22 @@ export async function seedInstanceConditions(
 
     let instanceConditions = [
       {
-        lookupId: "1",
+        lookupId: LOOKUP_ID.INSTANCE_CONDITION.NEW,
         name: "new",
         description: "Brand new, unused, unopened, undamaged item",
       },
       {
-        lookupId: "2",
+        lookupId: LOOKUP_ID.INSTANCE_CONDITION.USED,
         name: "used",
         description: "Item has been used previously",
       },
       {
-        lookupId: "3",
+        lookupId: LOOKUP_ID.INSTANCE_CONDITION.REFURBISHED,
         name: "refurbished",
         description: "Item has been restored to like-new condition",
       },
       {
-        lookupId: "4",
+        lookupId: LOOKUP_ID.INSTANCE_CONDITION.DEFECTIVE,
         name: "defective",
         description: "Item is not in working condition",
       },
@@ -496,23 +497,23 @@ export async function seedRefundStates(
 
     let refundStates = [
       {
-        lookupId: "1",
+        lookupId: LOOKUP_ID.REFUND_STATE.PENDING,
         name: "pending",
         description: "Refund request has been initiated and is pending review.",
       },
       {
-        lookupId: "2",
+        lookupId: LOOKUP_ID.REFUND_STATE.REFUNDED_VIA_STRIPE,
         name: "refunded via Stripe",
         description: "Refund has been processed via Stripe.",
       },
       {
-        lookupId: "3",
+        lookupId: LOOKUP_ID.REFUND_STATE.REFUNDED_TO_BALANCE,
         name: "refunded to balance",
         description:
           "Refund has been processed to user balance since user hasn't had stripe customer ID or user had paid all by balance when checkout or refunded via Stripe was failed.",
       },
       {
-        lookupId: "4",
+        lookupId: LOOKUP_ID.REFUND_STATE.REFUND_VIA_STRIPE_FAILED,
         name: "refund via Stripe failed",
         description:
           "The refund attempt via Stripe failed. A fallback to user balance was attempted.",
@@ -544,52 +545,52 @@ export async function seedReturnStates(
 
     let returnStates = [
       {
-        lookupId: "1",
+        lookupId: LOOKUP_ID.RETURN_STATE.PENDING_APPROVAL,
         name: "pending approval",
         level: 1,
         description:
           "Return request has been initiated and is pending admin review.",
       },
       {
-        lookupId: "2",
+        lookupId: LOOKUP_ID.RETURN_STATE.APPROVED,
         name: "approved",
         level: 2,
         description: "Return request has been approved by admin.",
       },
       {
-        lookupId: "3",
+        lookupId: LOOKUP_ID.RETURN_STATE.ITEMS_RETURNING,
         name: "items returning",
         level: 3,
         description:
           "Approved items are in the process of being returned by the shipper.",
       },
       {
-        lookupId: "4",
+        lookupId: LOOKUP_ID.RETURN_STATE.ITEMS_RETURNED,
         name: "items returned",
         level: 4,
         description:
           "Returned items have been received at the warehouse and are pending inspection.",
       },
       {
-        lookupId: "5",
+        lookupId: LOOKUP_ID.RETURN_STATE.REFUNDING,
         name: "refunding",
         level: 5,
         description: "Return is being processed for refund.",
       },
       {
-        lookupId: "6",
+        lookupId: LOOKUP_ID.RETURN_STATE.REFUNDED,
         name: "refunded",
         level: 6, // Final state
         description: "Return process is complete and refund has been issued.",
       },
       {
-        lookupId: "7",
+        lookupId: LOOKUP_ID.RETURN_STATE.CANCELLED,
         name: "cancelled",
         level: 6,
         description: "Return request was cancelled by the user.",
       },
       {
-        lookupId: "8",
+        lookupId: LOOKUP_ID.RETURN_STATE.DECLINED,
         name: "declined",
         level: 6,
         description: "Return request has been declined by admin.",
@@ -658,43 +659,43 @@ export async function seedPickupStates(
 
     let pickupStates = [
       {
-        lookupId: "1",
+        lookupId: LOOKUP_ID.PICKUP_STATE.PENDING,
         name: "pending",
         level: 1,
         description: "Pickup request has been initiated and is pending review.",
       },
       {
-        lookupId: "2",
+        lookupId: LOOKUP_ID.PICKUP_STATE.OUT_FOR_PICKUP,
         name: "out for pickup",
         level: 2,
         description: "Courier is out for pickup.",
       },
       {
-        lookupId: "3",
+        lookupId: LOOKUP_ID.PICKUP_STATE.PICKED_UP,
         name: "picked up",
         level: 3,
         description: "Item(s) has been picked up by the courier.",
       },
       {
-        lookupId: "4",
+        lookupId: LOOKUP_ID.PICKUP_STATE.IN_TRANSIT_TO_WAREHOUSE,
         name: "in transit to warehouse",
         level: 4,
         description: "Item(s) is in transit to the warehouse.",
       },
       {
-        lookupId: "5",
+        lookupId: LOOKUP_ID.PICKUP_STATE.RETURNED_TO_WAREHOUSE,
         name: "returned to warehouse",
         level: 5, // Final state
         description: "Item(s) has been returned to the warehouse.",
       },
       {
-        lookupId: "6",
+        lookupId: LOOKUP_ID.PICKUP_STATE.PICKUP_FAILED,
         name: "pickup failed",
         level: 3, // Same level as "picked up" to indicate an attempt was made
         description: "Courier attempted pickup but was unsuccessful.",
       },
       {
-        lookupId: "7",
+        lookupId: LOOKUP_ID.PICKUP_STATE.PICKUP_RESCHEDULED,
         name: "pickup rescheduled",
         level: 1, // Back to a pending level
         description: "A new pickup has been scheduled after a failed attempt.",
@@ -865,43 +866,43 @@ export async function seedWithdrawalStates(
 
     let withdrawalStates = [
       {
-        lookupId: "1",
+        lookupId: LOOKUP_ID.WITHDRAWAL_STATE.PENDING,
         name: "pending",
         level: 1,
         description: "A new withdrawal request that needs to be reviewed.",
       },
       {
-        lookupId: "2",
+        lookupId: LOOKUP_ID.WITHDRAWAL_STATE.APPROVED,
         name: "approved",
         level: 2,
         description: "Withdrawal request has been approved by admin.",
       },
       {
-        lookupId: "3",
+        lookupId: LOOKUP_ID.WITHDRAWAL_STATE.PROCESSING,
         name: "processing",
         level: 3,
         description: "Withdrawal request is being processed.",
       },
       {
-        lookupId: "4",
+        lookupId: LOOKUP_ID.WITHDRAWAL_STATE.COMPLETED,
         name: "completed",
         level: 4, // Final state
         description: "Withdrawal request has been completed successfully.",
       },
       {
-        lookupId: "5",
+        lookupId: LOOKUP_ID.WITHDRAWAL_STATE.FAILED,
         name: "failed",
         level: 4,
         description: "Withdrawal request has failed during processing.",
       },
       {
-        lookupId: "6",
+        lookupId: LOOKUP_ID.WITHDRAWAL_STATE.CANCELLED,
         name: "cancelled",
         level: 4,
         description: "Withdrawal request has been cancelled by the user.",
       },
       {
-        lookupId: "7",
+        lookupId: LOOKUP_ID.WITHDRAWAL_STATE.REJECTED,
         name: "rejected",
         level: 4,
         description: "Withdrawal request has been rejected during review.",

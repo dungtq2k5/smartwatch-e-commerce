@@ -6,6 +6,7 @@ import type {
   WithdrawalRequestCreate,
 } from "../../../../common/types.common";
 import { formatError } from "../../../../common/utils.common";
+import { LOOKUP_ID } from "../../../../common/configs.common";
 import { SELF_WITHDRAWAL_REQUESTS_URL } from "../../configs";
 import { patch, post, retrieve } from "../../utils/utils";
 
@@ -13,18 +14,18 @@ type UserWithdrawalRequestState = {
   withdrawalRequestCache: SelfWithdrawalRequestResponse | null;
 
   fetchWithdrawalRequests: (
-    query?: SelfWithdrawalRequestSearchQuery
+    query?: SelfWithdrawalRequestSearchQuery,
   ) => Promise<SelfWithdrawalRequestListResponse>;
   fetchWithdrawalRequest: (
-    requestId: string
+    requestId: string,
   ) => Promise<SelfWithdrawalRequestResponse>;
 
   createWithdrawalRequest: (
-    request: WithdrawalRequestCreate
+    request: WithdrawalRequestCreate,
   ) => Promise<SelfWithdrawalRequestResponse>;
 
   cancelWithdrawalRequest: (
-    requestId: string
+    requestId: string,
   ) => Promise<SelfWithdrawalRequestResponse>;
 
   canCancelRequest: (requestStateLookupId: string) => boolean;
@@ -35,7 +36,7 @@ const useUserWithdrawalRequestStoreInternal =
     withdrawalRequestCache: null,
 
     async fetchWithdrawalRequests(
-      query?: SelfWithdrawalRequestSearchQuery
+      query?: SelfWithdrawalRequestSearchQuery,
     ): Promise<SelfWithdrawalRequestListResponse> {
       const queryString = new URLSearchParams();
 
@@ -46,7 +47,7 @@ const useUserWithdrawalRequestStoreInternal =
 
       try {
         const res = await retrieve(
-          `${SELF_WITHDRAWAL_REQUESTS_URL}?${queryString.toString()}`
+          `${SELF_WITHDRAWAL_REQUESTS_URL}?${queryString.toString()}`,
         );
         if (!res.success) throw new Error(res.message);
 
@@ -57,7 +58,7 @@ const useUserWithdrawalRequestStoreInternal =
     },
 
     async fetchWithdrawalRequest(
-      requestId: string
+      requestId: string,
     ): Promise<SelfWithdrawalRequestResponse> {
       const { withdrawalRequestCache } = get();
       if (withdrawalRequestCache?.id === requestId) {
@@ -66,7 +67,7 @@ const useUserWithdrawalRequestStoreInternal =
 
       try {
         const res = await retrieve(
-          `${SELF_WITHDRAWAL_REQUESTS_URL}/${requestId}`
+          `${SELF_WITHDRAWAL_REQUESTS_URL}/${requestId}`,
         );
         if (!res.success) throw new Error(res.message);
 
@@ -79,7 +80,7 @@ const useUserWithdrawalRequestStoreInternal =
     },
 
     async createWithdrawalRequest(
-      request: WithdrawalRequestCreate
+      request: WithdrawalRequestCreate,
     ): Promise<SelfWithdrawalRequestResponse> {
       try {
         const res = await post(SELF_WITHDRAWAL_REQUESTS_URL, request);
@@ -94,11 +95,11 @@ const useUserWithdrawalRequestStoreInternal =
     },
 
     async cancelWithdrawalRequest(
-      requestId: string
+      requestId: string,
     ): Promise<SelfWithdrawalRequestResponse> {
       try {
         const res = await patch(
-          `${SELF_WITHDRAWAL_REQUESTS_URL}/${requestId}/cancel`
+          `${SELF_WITHDRAWAL_REQUESTS_URL}/${requestId}/cancel`,
         );
         if (!res.success) throw new Error(res.message);
 
@@ -111,8 +112,8 @@ const useUserWithdrawalRequestStoreInternal =
     },
 
     canCancelRequest(requestStateLookupId: string): boolean {
-      // Can only cancel if the latest state is "Pending" (lookupId: "1")
-      return requestStateLookupId === "1";
+      // Can only cancel if the latest state is "Pending" (lookupId: LOOKUP_ID.WITHDRAWAL_STATE.PENDING)
+      return requestStateLookupId === LOOKUP_ID.WITHDRAWAL_STATE.PENDING;
     },
   }));
 
