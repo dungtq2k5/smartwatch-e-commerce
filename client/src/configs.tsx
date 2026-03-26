@@ -844,3 +844,5 @@ export const PERMISSION_OPERATIONS: PermissionOperationKey[] = [
   "update",
   "delete",
 ] as const;
+
+export const MODAL_CLOSE_DELAY_MS = 200; // Delay in milliseconds to allow modal close animation to complete before unmounting the component

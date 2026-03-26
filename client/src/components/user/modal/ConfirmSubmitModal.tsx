@@ -1,7 +1,7 @@
 import { Modal, Button } from "react-bootstrap";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { WAITING_EMOJI } from "../../../configs";
+import { MODAL_CLOSE_DELAY_MS, WAITING_EMOJI } from "../../../configs";
 import Btn from "../../common/Btn";
 
 const ConfirmSubmitModal = memo(
@@ -39,7 +39,7 @@ const ConfirmSubmitModal = memo(
       if (!show) {
         setTimeout(() => {
           setIsSubmitting(false);
-        }, 200); // Delay to allow modal to close before resetting
+        }, MODAL_CLOSE_DELAY_MS); // Delay to allow modal to close before resetting
       }
     }, [show]);
 

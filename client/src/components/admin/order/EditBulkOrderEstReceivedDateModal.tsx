@@ -8,7 +8,7 @@ import { useOrderStore } from "../../../store/admin/order/orderStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
 import Input from "../../common/Input";
 import toast from "react-hot-toast";
-import { WAITING_EMOJI } from "../../../configs";
+import { WAITING_EMOJI, MODAL_CLOSE_DELAY_MS } from "../../../configs";
 import Label from "../../common/Label";
 import Btn from "../../common/Btn";
 import { Button, Modal } from "react-bootstrap";
@@ -53,7 +53,7 @@ const EditBulkOrderEstReceivedDateModal = memo(
     useEffect(() => {
       setTimeout(() => {
         setFormData(DEFAULT_FORM_DATA);
-      }, 200); // Small delay to allow modal close animation before clearing data
+      }, MODAL_CLOSE_DELAY_MS); // Small delay to allow modal close animation before clearing data
     }, [orderIds]);
 
     const handleChange = useCallback(

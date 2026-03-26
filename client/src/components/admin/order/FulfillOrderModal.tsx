@@ -33,7 +33,7 @@ import { useOrderStore } from "../../../store/admin/order/orderStore";
 import useInstanceStore from "../../../store/admin/product/instanceStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
 import Btn from "../../common/Btn";
-import { WAITING_EMOJI } from "../../../configs";
+import { WAITING_EMOJI, MODAL_CLOSE_DELAY_MS } from "../../../configs";
 
 /**
  * FulfillDraft: { [variationId]: sku[] }
@@ -398,7 +398,7 @@ const FulfillOrderModal = memo(
      */
     const handleCloseScanner = useCallback((): void => {
       setShowScannerModal(false);
-      setTimeout(() => setShowFulfillModal(true), 200);
+      setTimeout(() => setShowFulfillModal(true), MODAL_CLOSE_DELAY_MS);
     }, []);
 
     // Cleanup timers on unmount

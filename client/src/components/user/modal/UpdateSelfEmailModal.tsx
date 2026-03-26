@@ -8,7 +8,7 @@ import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import type { UserContactInfoUpdate } from "../../../../../common/types.common";
 import toast from "react-hot-toast";
 import VerifyForm from "../../user/VerifyForm";
-import { WAITING_EMOJI } from "../../../configs";
+import { MODAL_CLOSE_DELAY_MS, WAITING_EMOJI } from "../../../configs";
 import Btn from "../../common/Btn";
 
 const UpdateSelfEmailModal = memo(
@@ -35,7 +35,7 @@ const UpdateSelfEmailModal = memo(
         setTimeout(() => {
           setEmail({ val: "" });
           setIsUpdated(false);
-        }, 200);
+        }, MODAL_CLOSE_DELAY_MS);
       }
     }, [show]);
 

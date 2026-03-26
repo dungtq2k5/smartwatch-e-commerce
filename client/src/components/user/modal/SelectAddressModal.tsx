@@ -8,6 +8,7 @@ import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import CreateAddressModal from "./CreateAddressModal";
 import UpdateAddressModal from "./UpdateAddressModal";
 import { formatError } from "../../../../../common/utils.common";
+import { MODAL_CLOSE_DELAY_MS } from "../../../configs";
 
 type Modal = {
   selectAddress: boolean;
@@ -74,7 +75,7 @@ const SelectAddressModal = memo(
       if (!show) {
         setTimeout(() => {
           setSelectedAddressId(currentAddressId);
-        }, 200); // Delay to ensure modal closes before resetting
+        }, MODAL_CLOSE_DELAY_MS); // Delay to ensure modal closes before resetting
       }
     }, [currentAddressId, show]);
 

@@ -11,7 +11,7 @@ import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBank, faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
-import { WITHDRAWAL_STATE_LOOKUPID_MSG_LEGEND } from "../../../configs";
+import { MODAL_CLOSE_DELAY_MS, WITHDRAWAL_STATE_LOOKUPID_MSG_LEGEND } from "../../../configs";
 import ConfirmSubmitModal from "./ConfirmSubmitModal";
 import toast from "react-hot-toast";
 
@@ -89,7 +89,7 @@ const WithdrawalDetailModal = memo(
         setWithdrawalRequest(null);
         setRequestState(null);
         setApiErr(null);
-      }, 200); // small delay to avoid flickering
+      }, MODAL_CLOSE_DELAY_MS); // small delay to avoid flickering
 
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [requestId]);

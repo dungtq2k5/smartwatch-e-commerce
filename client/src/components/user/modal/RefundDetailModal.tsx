@@ -11,6 +11,7 @@ import type {
 } from "../../../../../common/types.common";
 import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";
+import { MODAL_CLOSE_DELAY_MS } from "../../../configs";
 
 const RefundDetailModal = memo(
   ({
@@ -69,7 +70,7 @@ const RefundDetailModal = memo(
         setOrderReturn(null);
         setReturnState(null);
         setApiErr(null);
-      }, 200); // small delay to avoid flickering
+      }, MODAL_CLOSE_DELAY_MS); // small delay to avoid flickering
 
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [orderReturnId]);

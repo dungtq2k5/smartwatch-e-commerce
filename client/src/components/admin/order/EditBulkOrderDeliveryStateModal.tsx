@@ -11,7 +11,7 @@ import { useOrderStore } from "../../../store/admin/order/orderStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
 import Textarea from "../../common/Textarea";
 import toast from "react-hot-toast";
-import { WAITING_EMOJI } from "../../../configs";
+import { MODAL_CLOSE_DELAY_MS, WAITING_EMOJI } from "../../../configs";
 import Loading from "../../common/Loading";
 import Label from "../../common/Label";
 import Btn from "../../common/Btn";
@@ -89,7 +89,7 @@ const EditBulkOrderDeliveryStateModal = memo(
       setTimeout(() => {
         setFormData(DEFAULT_FORM_DATA);
         setApiErr(null);
-      }, 200); // Small delay to allow modal close animation before clearing data
+      }, MODAL_CLOSE_DELAY_MS); // Small delay to allow modal close animation before clearing data
 
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [orderIds]);

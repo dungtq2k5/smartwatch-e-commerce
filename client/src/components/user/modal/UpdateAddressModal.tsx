@@ -28,6 +28,7 @@ import ApiError from "../../common/ApiError";
 import AddressMapInput from "../../common/AddressMapInput";
 import {
   DEFAULT_USER_ADDRESS_FORM_DATA,
+  MODAL_CLOSE_DELAY_MS,
   WAITING_EMOJI,
 } from "../../../configs";
 import Btn from "../../common/Btn";
@@ -127,7 +128,7 @@ const UpdateAddressModal = memo(
           ...DEFAULT_USER_ADDRESS_FORM_DATA,
           isDefault: isOnlyOneAddress,
         });
-      }, 200); // Delay to allow modal to close before resetting
+      }, MODAL_CLOSE_DELAY_MS); // Delay to allow modal to close before resetting
 
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [addressId, isOnlyOneAddress]);

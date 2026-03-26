@@ -10,7 +10,7 @@ import { PASSWORD_HINT_MESSAGE } from "../../../../../common/configs.common";
 import type { FormInput } from "../../../utils/types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
-import { WAITING_EMOJI } from "../../../configs";
+import { MODAL_CLOSE_DELAY_MS, WAITING_EMOJI } from "../../../configs";
 import Btn from "../../common/Btn";
 
 type FormData = {
@@ -47,7 +47,7 @@ const SetSelfPasswordModal = memo(
             password: { val: "" },
             confirmPassword: { val: "" },
           });
-        }, 200);
+        }, MODAL_CLOSE_DELAY_MS);
       }
     }, [show]);
 

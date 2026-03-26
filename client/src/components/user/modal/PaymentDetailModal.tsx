@@ -11,6 +11,7 @@ import ApiError from "../../common/ApiError";
 import Loading from "../../common/Loading";
 import { PROJECT_NAME } from "../../../../../common/configs.common";
 import { Link } from "react-router-dom";
+import { MODAL_CLOSE_DELAY_MS } from "../../../configs";
 
 const PaymentDetailModal = memo(
   ({
@@ -67,7 +68,7 @@ const PaymentDetailModal = memo(
         setOrder(null);
         setOrderState(null);
         setApiErr(null);
-      }, 200);
+      }, MODAL_CLOSE_DELAY_MS);
 
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [orderId]);

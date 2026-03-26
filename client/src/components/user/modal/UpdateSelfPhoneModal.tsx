@@ -11,7 +11,7 @@ import type { UserContactInfoUpdate } from "../../../../../common/types.common";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import VerifyForm from "../../user/VerifyForm";
-import { WAITING_EMOJI } from "../../../configs";
+import { MODAL_CLOSE_DELAY_MS, WAITING_EMOJI } from "../../../configs";
 import Btn from "../../common/Btn";
 
 const UpdateSelfPhoneModal = memo(
@@ -38,7 +38,7 @@ const UpdateSelfPhoneModal = memo(
         setTimeout(() => {
           setPhoneNumber({ val: "" });
           setIsUpdated(false);
-        }, 200);
+        }, MODAL_CLOSE_DELAY_MS);
       }
     }, [show]);
 
