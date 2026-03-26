@@ -19,11 +19,11 @@ import { Button, Modal } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 
-type EditBulkOrderDeliveryStateModalProps = {
+type EditBulkOrderDeliveryStateModalProps = Readonly<{
   orderIds?: string[] | null; // Only show when orderIds is provided
   onHide: () => void;
   onSuccess?: () => void;
-};
+}>;
 
 type Process = {
   isProcessing: boolean;
@@ -71,7 +71,7 @@ const EditBulkOrderDeliveryStateModal = memo(
           setApiErr(null);
 
           try {
-            await fetchDeliveryStates();
+            if(!deliveryStates) await fetchDeliveryStates();
           } catch (error) {
             setApiErr(formatError(error));
           } finally {

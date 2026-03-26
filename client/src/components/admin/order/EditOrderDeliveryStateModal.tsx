@@ -21,11 +21,11 @@ import Label from "../../common/Label";
 import Btn from "../../common/Btn";
 import { Button, Modal } from "react-bootstrap";
 
-type EditOrderDeliveryStateModalProps = {
+type EditOrderDeliveryStateModalProps = Readonly<{
   orderId?: string | null; // Only show when orderId is provided
   onHide: () => void;
   onSuccess?: () => void;
-};
+}>;
 
 type Process = {
   isProcessing: boolean;

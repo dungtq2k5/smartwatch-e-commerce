@@ -15,11 +15,11 @@ import { Button, Modal } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 
-type EditBulkOrderEstReceivedDateModalProps = {
+type EditBulkOrderEstReceivedDateModalProps = Readonly<{
   orderIds?: string[] | null; // Only show when orderIds is provided
   onHide: () => void;
   onSuccess?: () => void;
-};
+}>;
 
 type Process = {
   isProcessing: boolean;
