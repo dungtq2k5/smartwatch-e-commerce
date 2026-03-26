@@ -49,6 +49,7 @@
     - Assign default err to undefined instead of empty string ❌.
     - Update err type to undefined for select input ✅.
     - For telephone input use inputMode="numeric" ✅.
+    - Optimize repetitive code in management page (eg: user, product, order, return, .etc) with a generic component and pass props to customize it for each case ❌.
 
   - Backend - API: (remember isDeleted field)
     - Because __v field is only activated with doc.save() so stick with find-modify-save method when modifying data 📝.
@@ -71,6 +72,11 @@
     - Optimize get all brand/category/os endpoints with lighter version ❌.
     - Create alias mapping field name for importation endpoints ❌.
     - Create user details endpoint also get history of their orders, total spending, .etc ❌.
+    - Follow security best practices for your backend: https://www.freecodecamp.org/news/how-to-harden-your-nodejs-apis-security-best-practices/
+    - If data states like 'refundStates, returnStates,...' rarely change, you can add a **Cache-Control header** to the response. This tells the admin's browser to keep the data for, say, 1 hour, so they don't even hit your server when they navigate back and forth.
+      ```typescript
+      res.set('Cache-Control', 'public, max-age=3600'); // 1 hour
+      ```
 
   - Database init:
     - Init roles & permissions ✅.
@@ -80,6 +86,10 @@
     - Dynamic default avatar for user profile ❌.
     - Resend verification code feature ❌.
     - Storing end-user search keywords for more features about it (eg: trending searches, related searches) ❌.
+
+  - DevOps:
+    - Add License file for the project ❌.
+    - Add CHANGELOG file for the project ❌.
 
 - 📜 Rules:
   - FrontEnd:

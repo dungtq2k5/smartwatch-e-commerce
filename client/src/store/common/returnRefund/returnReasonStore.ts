@@ -1,11 +1,16 @@
 import { create } from "zustand";
-import type { ReturnReasonListResponse } from "../../../../../common/types.common";
+import type {
+  ReturnReasonListResponse,
+  ReturnReasonResponse,
+} from "../../../../../common/types.common";
 import { retrieve } from "../../../utils/utils";
-import { ROOT_URL } from "../../../../../server/configs/configs";
 import { formatError } from "../../../../../common/utils.common";
+import { RETURN_REASONS_URL } from "../../../configs";
 
 type ReturnReasonState = {
   returnReasons: ReturnReasonListResponse | null;
+
+  getReturnReason: (reasonId: string) => ReturnReasonResponse | undefined;
 
   fetchReturnReasons: () => Promise<ReturnReasonListResponse>;
 };
@@ -13,12 +18,18 @@ type ReturnReasonState = {
 const useReturnReasonStore = create<ReturnReasonState>((set, get) => ({
   returnReasons: null,
 
+  getReturnReason: (reasonId: string) => {
+    return structuredClone(
+      get().returnReasons?.reasons.find((reason) => reason.id === reasonId),
+    );
+  },
+
   async fetchReturnReasons(): Promise<ReturnReasonListResponse> {
     const { returnReasons } = get();
     if (returnReasons) return structuredClone(returnReasons);
 
     try {
-      const res = await retrieve(`${ROOT_URL}/return-reasons`);
+      const res = await retrieve(RETURN_REASONS_URL);
       if (!res.success) throw new Error(res.message);
 
       const returnReasons = res.data as ReturnReasonListResponse;

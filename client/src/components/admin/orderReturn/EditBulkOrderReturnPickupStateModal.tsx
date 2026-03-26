@@ -1,28 +1,26 @@
-import { memo, useCallback, useEffect, useState } from "react";
-import useDeliveryStateStore from "../../../store/common/order/deliveryStateStore";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import type { FormInput } from "../../../utils/types";
+import usePickupStateStore from "../../../store/common/returnRefund/pickupStateStore";
+import { useReturnStore } from "../../../store/admin/orderReturn/orderReturnStore";
+import useHasPermission from "../../../hooks/admin/useHasPermission";
 import {
   capFirstLetter,
   formatError,
   removeOddSpaces,
 } from "../../../../../common/utils.common";
-import ApiError from "../../common/ApiError";
-import type { FormInput } from "../../../utils/types";
-import type {
-  AdminOrderResponse,
-  OrderUpdate,
-} from "../../../../../common/types.common";
-import { useOrderStore } from "../../../store/admin/order/orderStore";
-import useHasPermission from "../../../hooks/admin/useHasPermission";
-import Textarea from "../../common/Textarea";
 import toast from "react-hot-toast";
 import { WAITING_EMOJI } from "../../../configs";
-import Loading from "../../common/Loading";
-import Label from "../../common/Label";
-import Btn from "../../common/Btn";
 import { Button, Modal } from "react-bootstrap";
+import Loading from "../../common/Loading";
+import ApiError from "../../common/ApiError";
+import Label from "../../common/Label";
+import Textarea from "../../common/Textarea";
+import Btn from "../../common/Btn";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 
-type EditOrderDeliveryStateModalProps = Readonly<{
-  orderId?: string | null; // Only show when orderId is provided
+type EditBulkOrderReturnPickupStateModalProps = Readonly<{
+  returnIds?: string[] | null; // Only show when returnIds is provided
   onHide: () => void;
   onSuccess?: () => void;
 }>;
@@ -34,24 +32,33 @@ type Process = {
 };
 
 type FormData = {
-  deliveryStateId: FormInput<string, undefined>;
+  pickupStateId: FormInput<string, undefined>;
   notes: FormInput;
 };
 
 const DEFAULT_FORM_DATA: FormData = {
-  deliveryStateId: { val: "" },
+  pickupStateId: { val: "" },
   notes: { val: "" },
 };
 
-const EditOrderDeliveryStateModal = memo(
-  ({ orderId, onHide, onSuccess }: EditOrderDeliveryStateModalProps) => {
-    const { deliveryStates, fetchDeliveryStates, getDeliveryState } =
-      useDeliveryStateStore();
-    const { fetchOrder, updateOrder, canUpdateOrder } = useOrderStore();
+const EditBulkOrderReturnPickupStateModal = memo(
+  ({
+    returnIds,
+    onHide,
+    onSuccess,
+  }: EditBulkOrderReturnPickupStateModalProps) => {
+    // DEV temp for testing
+    const renderCount = useRef(0);
+    renderCount.current += 1;
+    console.log(
+      "EditBulkOrderReturnPickupStateModal rendered count: ",
+      renderCount.current,
+    );
 
-    const canEditOrder = useHasPermission("u_order");
+    const { pickupStates, fetchPickupStates } = usePickupStateStore();
+    const { updateReturnPickupStateBulk } = useReturnStore();
 
-    const [order, setOrder] = useState<AdminOrderResponse | null>(null);
+    const canEditReturn = useHasPermission("u_order_return");
 
     const [process, setProcess] = useState<Process>({
       isProcessing: false,
@@ -64,7 +71,7 @@ const EditOrderDeliveryStateModal = memo(
 
     // Fetch set initial data when first loading the modal
     useEffect(() => {
-      if (orderId) {
+      if (returnIds) {
         const handleFetchSetInitialData = async (): Promise<void> => {
           setProcess((prev) => ({
             ...prev,
@@ -74,23 +81,7 @@ const EditOrderDeliveryStateModal = memo(
           setApiErr(null);
 
           try {
-            const [fetchedOrder] = await Promise.all([
-              fetchOrder(orderId),
-              deliveryStates ? Promise.resolve() : fetchDeliveryStates(),
-            ]);
-
-            setOrder(fetchedOrder);
-
-            const copiedOrder = structuredClone(fetchedOrder);
-            const currDeliveryState = copiedOrder.deliveryStates.at(-1);
-            setFormData({
-              deliveryStateId: {
-                val: currDeliveryState?.id || "",
-              },
-              notes: {
-                val: currDeliveryState?.notes || "",
-              },
-            });
+            if (!pickupStates) await fetchPickupStates();
           } catch (error) {
             setApiErr(formatError(error));
           } finally {
@@ -106,18 +97,17 @@ const EditOrderDeliveryStateModal = memo(
       }
 
       setTimeout(() => {
-        setOrder(null);
         setFormData(DEFAULT_FORM_DATA);
         setApiErr(null);
       }, 200); // Small delay to allow modal close animation before clearing data
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [orderId]);
+    }, [returnIds]);
 
     const handleChange = useCallback(
       async (
         e: React.ChangeEvent<HTMLSelectElement | HTMLTextAreaElement>,
       ): Promise<void> => {
-        if (process.isProcessing || !order) return;
+        if (process.isProcessing) return;
 
         const { name, value: val } = e.target;
 
@@ -132,7 +122,7 @@ const EditOrderDeliveryStateModal = memo(
           [name]: { val, err },
         }));
       },
-      [process.isProcessing, order],
+      [process.isProcessing],
     );
 
     const handleSubmit = useCallback(
@@ -144,29 +134,16 @@ const EditOrderDeliveryStateModal = memo(
           });
           return;
         }
-        if (!order) {
-          toast.error("Order data not found. Please try again.");
+        if (!returnIds || returnIds.length === 0) {
+          toast.error("No return selected for update.");
           return;
         }
-        if (!canEditOrder) {
+        if (!canEditReturn) {
           toast.error("You don't have permission to perform this action.");
-          return;
-        }
-        const currDeliveryStateId = order.deliveryStates.at(-1)?.id;
-        const currDeliveryState = currDeliveryStateId
-          ? getDeliveryState(currDeliveryStateId)
-          : undefined;
-        if (!currDeliveryState || !canUpdateOrder(currDeliveryState.lookupId)) {
-          toast.error("This order is completed and cannot be edited.");
           return;
         }
 
         const validateForm = (): boolean => {
-          if (currDeliveryStateId === formData.deliveryStateId.val) {
-            // If state is not changed, no need to validate notes as it won't be updated
-            return true;
-          }
-
           let isValid = true;
           const newFormData = { ...formData };
 
@@ -180,18 +157,6 @@ const EditOrderDeliveryStateModal = memo(
         };
 
         if (validateForm()) {
-          const getChangedData = (): OrderUpdate => {
-            const changedData: OrderUpdate = {};
-
-            if (formData.deliveryStateId.val !== currDeliveryStateId) {
-              changedData.deliveryStateId = formData.deliveryStateId.val;
-
-              if (formData.notes.val) changedData.notes = formData.notes.val;
-            }
-
-            return changedData;
-          };
-
           setProcess((prev) => ({
             ...prev,
             isProcessing: true,
@@ -199,13 +164,11 @@ const EditOrderDeliveryStateModal = memo(
           }));
 
           try {
-            const changedData = getChangedData();
-            if (Object.keys(changedData).length === 0) {
-              toast.success("No changes detected. No update needed.");
-              return;
-            }
-
-            await updateOrder(order.id, changedData);
+            await updateReturnPickupStateBulk({
+              returnIds,
+              pickupStateId: formData.pickupStateId.val,
+              notes: formData.notes.val || undefined,
+            });
             onSuccess?.();
             onHide();
             toast.success("Order updated successfully.");
@@ -221,63 +184,65 @@ const EditOrderDeliveryStateModal = memo(
         }
       },
       [
-        canEditOrder,
-        canUpdateOrder,
-        formData,
-        getDeliveryState,
-        onHide,
-        onSuccess,
-        order,
         process.isProcessing,
-        updateOrder,
+        returnIds,
+        canEditReturn,
+        formData,
+        updateReturnPickupStateBulk,
+        onSuccess,
+        onHide,
       ],
     );
 
     return (
-      <Modal show={!!orderId} onHide={onHide} centered>
+      <Modal show={!!returnIds} onHide={onHide} centered>
         <Modal.Header closeButton>
           <Modal.Title>
-            Update Delivery State for Order #ID {order?.id || orderId}
+            Bulk Update Pickup State for {returnIds?.length || 0} Return(s)
           </Modal.Title>
         </Modal.Header>
 
         {process.isInitializing ? (
           <Modal.Body>
-            <Loading loadingMsg="Loading order data" />
+            <Loading loadingMsg="Loading return data" />
           </Modal.Body>
         ) : apiErr ? (
           <Modal.Body>
             <ApiError errorMessage={apiErr} />
           </Modal.Body>
-        ) : !deliveryStates ? (
+        ) : !pickupStates ? (
           <Modal.Body>
-            <ApiError errorMessage="Delivery states data not found." />
-          </Modal.Body>
-        ) : !order ? (
-          <Modal.Body>
-            <ApiError errorMessage="Order data not found." />
+            <ApiError errorMessage="Pickup states data not found." />
           </Modal.Body>
         ) : (
           <form onSubmit={handleSubmit}>
             <Modal.Body>
+              <div className="alert alert-warning d-flex align-items-center mb-3">
+                <FontAwesomeIcon
+                  icon={faTriangleExclamation}
+                  className="me-2"
+                />
+                <div>
+                  <strong>Warning:</strong> This will update{" "}
+                  <strong>{returnIds?.length || 0}</strong> return(s) at once.
+                  Please make sure you have selected the correct return state.
+                </div>
+              </div>
+
               <div className="mb-3">
-                <Label
-                  htmlFor="deliveryStateId"
-                  className="form-label"
-                  required
-                >
-                  Delivery State
+                <Label htmlFor="pickupStateId" className="form-label" required>
+                  Pickup State
                 </Label>
                 <select
-                  id="deliveryStateId"
-                  name="deliveryStateId"
+                  id="pickupStateId"
+                  name="pickupStateId"
                   className="form-select"
-                  value={formData.deliveryStateId.val}
+                  value={formData.pickupStateId.val}
                   onChange={handleChange}
                   disabled={process.isProcessing}
                   required
                 >
-                  {deliveryStates.states.map((state) => (
+                  {pickupStates.states.map((state) => (
                     <option
                       key={state.id}
                       value={state.id}
@@ -289,25 +254,22 @@ const EditOrderDeliveryStateModal = memo(
                 </select>
               </div>
 
-              {order.deliveryStates.at(-1)?.id !==
-                formData.deliveryStateId.val && (
-                <div className="mb-3">
-                  <Label htmlFor="notes" className="form-label">
-                    Notes
-                  </Label>
-                  <Textarea
-                    id="notes"
-                    name="notes"
-                    className="form-control"
-                    rows={3}
-                    placeholder="Add notes for this delivery state change (optional)..."
-                    value={formData.notes.val}
-                    onChange={handleChange}
-                    error={formData.notes.err}
-                    disabled={process.isProcessing}
-                  />
-                </div>
-              )}
+              <div className="mb-3">
+                <Label htmlFor="notes" className="form-label">
+                  Notes
+                </Label>
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  className="form-control"
+                  rows={3}
+                  placeholder="Add notes for this state change (optional)..."
+                  value={formData.notes.val}
+                  onChange={handleChange}
+                  error={formData.notes.err}
+                  disabled={process.isProcessing}
+                />
+              </div>
             </Modal.Body>
 
             <Modal.Footer>
@@ -325,7 +287,7 @@ const EditOrderDeliveryStateModal = memo(
                 disabled={process.isProcessing}
                 loading={process.isUpdating}
               >
-                Update
+                Update {returnIds?.length || 0} Return(s)
               </Btn>
             </Modal.Footer>
           </form>
@@ -335,4 +297,4 @@ const EditOrderDeliveryStateModal = memo(
   },
 );
 
-export default EditOrderDeliveryStateModal;
+export default EditBulkOrderReturnPickupStateModal;

@@ -6,6 +6,7 @@ import {
   faBox,
   faUserShield,
   faBoxesStacked,
+  faHandHoldingDollar,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { memo, useCallback, useRef, useState } from "react";
@@ -38,6 +39,7 @@ const HeaderAndSidebar = memo(() => {
     canReadProvider,
     canReadRole,
     canReadOrder,
+    canReadOrderReturn,
   ] = [
     useHasPermission("r_usr"),
     useHasPermission("r_product"),
@@ -51,6 +53,7 @@ const HeaderAndSidebar = memo(() => {
     useHasPermission("r_provider_inventory"),
     useHasPermission("r_usr_role"),
     useHasPermission("r_order"),
+    useHasPermission("r_order_return"),
   ];
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
@@ -226,6 +229,15 @@ const HeaderAndSidebar = memo(() => {
               >
                 <FontAwesomeIcon icon={faBoxesStacked} className="me-2" />
                 Order
+              </NavLink>
+            )}
+            {canReadOrderReturn && (
+              <NavLink
+                to="/admin/order-returns"
+                className="list-group-item list-group-item-action"
+              >
+                <FontAwesomeIcon icon={faHandHoldingDollar} className="me-2" />
+                Return
               </NavLink>
             )}
           </div>

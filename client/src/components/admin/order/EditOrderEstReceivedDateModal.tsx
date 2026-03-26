@@ -15,6 +15,7 @@ import Loading from "../../common/Loading";
 import Label from "../../common/Label";
 import Btn from "../../common/Btn";
 import { Button, Modal } from "react-bootstrap";
+import useDeliveryStateStore from "../../../store/common/order/deliveryStateStore";
 
 type EditOrderEstReceivedDateModalProps = Readonly<{
   orderId?: string | null; // Only show when orderId is provided
@@ -38,7 +39,9 @@ const DEFAULT_FORM_DATA: FormData = {
 
 const EditOrderEstReceivedDateModal = memo(
   ({ orderId, onHide, onSuccess }: EditOrderEstReceivedDateModalProps) => {
-    const { fetchOrder, updateOrder } = useOrderStore();
+    const { deliveryStates, fetchDeliveryStates, getDeliveryState } =
+      useDeliveryStateStore();
+    const { fetchOrder, updateOrder, canUpdateOrder } = useOrderStore();
 
     const canEditOrder = useHasPermission("u_order");
 
@@ -65,7 +68,10 @@ const EditOrderEstReceivedDateModal = memo(
           setApiErr(null);
 
           try {
-            const fetchedOrder = await fetchOrder(orderId);
+            const [fetchedOrder] = await Promise.all([
+              fetchOrder(orderId),
+              deliveryStates ? Promise.resolve() : fetchDeliveryStates(),
+            ]);
             setOrder(fetchedOrder);
 
             const copiedOrder = structuredClone(fetchedOrder);
@@ -141,6 +147,14 @@ const EditOrderEstReceivedDateModal = memo(
           toast.error("You don't have permission to perform this action.");
           return;
         }
+        const currDeliveryStateId = order.deliveryStates.at(-1)?.id;
+        const currDeliveryState = currDeliveryStateId
+          ? getDeliveryState(currDeliveryStateId)
+          : undefined;
+        if (!currDeliveryState || !canUpdateOrder(currDeliveryState.lookupId)) {
+          toast.error("This order is completed and cannot be edited.");
+          return;
+        }
 
         const validateForm = (): boolean => {
           let isValid = true;
@@ -205,7 +219,9 @@ const EditOrderEstReceivedDateModal = memo(
       },
       [
         canEditOrder,
+        canUpdateOrder,
         formData,
+        getDeliveryState,
         onHide,
         onSuccess,
         order,

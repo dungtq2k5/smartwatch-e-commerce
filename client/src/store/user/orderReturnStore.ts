@@ -4,12 +4,12 @@ import type {
   OrderReturnDetailsResponse,
   OrderReturnListResponse,
   OrderReturnResponse,
+  OrderReturnSearchQuery,
   OrderReturnSelfUpdate,
   UserAddressListResponse,
 } from "../../../../common/types.common";
-import type { OrderReturnSearchQueryCli } from "../../utils/types";
 import { patch, post, retrieve } from "../../utils/utils";
-import { ORDER_URL, RETURN_URL, SELF_RETURN_URL } from "../../configs";
+import { ORDER_URL, ORDER_RETURN_URL, SELF_ORDER_RETURN_URL } from "../../configs";
 import {
   compareUserAddress,
   formatError,
@@ -20,28 +20,30 @@ type ReturnState = {
   returnDetailCache: OrderReturnDetailsResponse | null;
 
   fetchReturns: (
-    query?: OrderReturnSearchQueryCli,
-    signal?: AbortSignal
+    query?: OrderReturnSearchQuery,
+    signal?: AbortSignal,
   ) => Promise<OrderReturnListResponse>;
   fetchReturn: (returnId: string) => Promise<OrderReturnResponse>;
   fetchReturnDetail: (returnId: string) => Promise<OrderReturnDetailsResponse>;
 
   createReturn: (
     orderId: string,
-    data: OrderReturnCreate
+    data: OrderReturnCreate,
   ) => Promise<OrderReturnResponse>;
 
   updateReturn: (
     returnId: string,
-    data: OrderReturnSelfUpdate
+    data: OrderReturnSelfUpdate,
   ) => Promise<OrderReturnResponse>;
 
   canUpdateReturn: (returnStateLookupId: string) => boolean;
 
   getUserAddressIdFromReturn: (
     returnPickupAddress: OrderReturnResponse["pickupAddress"],
-    userAddresses: UserAddressListResponse["addresses"]
+    userAddresses: UserAddressListResponse["addresses"],
   ) => string | undefined;
+
+  
 };
 
 const useReturnStoreInternal = create<ReturnState>((set, get) => ({
@@ -49,25 +51,22 @@ const useReturnStoreInternal = create<ReturnState>((set, get) => ({
   returnDetailCache: null,
 
   async fetchReturns(
-    query?: OrderReturnSearchQueryCli,
-    signal?: AbortSignal
+    query?: OrderReturnSearchQuery,
+    signal?: AbortSignal,
   ): Promise<OrderReturnListResponse> {
     const queryString = new URLSearchParams();
 
-    let url: string = `${RETURN_URL}`;
     if (query) {
       if (query.limit) queryString.set("limit", query.limit);
       if (query.offset) queryString.set("offset", query.offset);
-      if (query.userId) {
-        queryString.set("userId", query.userId);
-      } else if (query.orderId) {
-        queryString.set("orderId", query.orderId);
-        url = `${ORDER_URL}/${query.orderId}/returns?${queryString.toString()}`;
-      }
+      if (query.orderId) queryString.set("orderId", query.orderId);
     }
 
     try {
-      const res = await retrieve(url, signal);
+      const res = await retrieve(
+        `${SELF_ORDER_RETURN_URL}?${queryString.toString()}`,
+        signal,
+      );
       if (!res.success) throw new Error(res.message);
 
       return res.data as OrderReturnListResponse;
@@ -81,7 +80,7 @@ const useReturnStoreInternal = create<ReturnState>((set, get) => ({
     if (returnCache?.id === returnId) return structuredClone(returnCache);
 
     try {
-      const res = await retrieve(`${RETURN_URL}/${returnId}`);
+      const res = await retrieve(`${ORDER_RETURN_URL}/${returnId}`);
       if (!res.success) throw new Error(res.message);
 
       const returnData = res.data as OrderReturnResponse;
@@ -93,7 +92,7 @@ const useReturnStoreInternal = create<ReturnState>((set, get) => ({
   },
 
   async fetchReturnDetail(
-    returnId: string
+    returnId: string,
   ): Promise<OrderReturnDetailsResponse> {
     const { returnDetailCache } = get();
     if (returnDetailCache?.id === returnId) {
@@ -101,7 +100,7 @@ const useReturnStoreInternal = create<ReturnState>((set, get) => ({
     }
 
     try {
-      const res = await retrieve(`${RETURN_URL}/${returnId}/details`);
+      const res = await retrieve(`${ORDER_RETURN_URL}/${returnId}/details`);
       if (!res.success) throw new Error(res.message);
 
       const returnDetail = res.data as OrderReturnDetailsResponse;
@@ -114,7 +113,7 @@ const useReturnStoreInternal = create<ReturnState>((set, get) => ({
 
   async createReturn(
     orderId: string,
-    data: OrderReturnCreate
+    data: OrderReturnCreate,
   ): Promise<OrderReturnResponse> {
     try {
       const res = await post(`${ORDER_URL}/${orderId}/returns`, data);
@@ -130,13 +129,13 @@ const useReturnStoreInternal = create<ReturnState>((set, get) => ({
 
   async updateReturn(
     returnId: string,
-    data: OrderReturnSelfUpdate
+    data: OrderReturnSelfUpdate,
   ): Promise<OrderReturnResponse> {
     try {
       const res = await patch(
-        `${SELF_RETURN_URL}/${returnId}`,
+        `${SELF_ORDER_RETURN_URL}/${returnId}`,
         undefined,
-        data
+        data,
       );
       if (!res.success) throw new Error(res.message);
 
@@ -160,12 +159,12 @@ const useReturnStoreInternal = create<ReturnState>((set, get) => ({
 
   getUserAddressIdFromReturn(
     returnPickupAddress: OrderReturnResponse["pickupAddress"],
-    userAddresses: UserAddressListResponse["addresses"]
+    userAddresses: UserAddressListResponse["addresses"],
   ): string | undefined {
     return structuredClone(
       userAddresses.find((addr) =>
-        compareUserAddress(addr, returnPickupAddress)
-      )?.id
+        compareUserAddress(addr, returnPickupAddress),
+      )?.id,
     );
   },
 }));

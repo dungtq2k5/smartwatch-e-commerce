@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { FlattenMaps, Types } from "mongoose";
 import { IUser } from "../models/user/user.model";
 
 declare global {
@@ -37,3 +37,10 @@ export type ReturnItem = {
   totalCents: number;
   instances: { id: Types.ObjectId; sku: string }[];
 };
+
+export type States<I> = (FlattenMaps<I> &
+  Required<{
+    _id: Types.ObjectId;
+  }> & {
+    __v: number;
+  })[];

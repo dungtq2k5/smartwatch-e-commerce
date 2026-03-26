@@ -7,7 +7,7 @@ import {
 } from "../../utils/middlewares/order.middleware";
 import {
   inputSanitizer as returnInputSanitizer,
-  verifyOrderReturnInput,
+  verifyReturnInput,
 } from "../../utils/middlewares/orderReturn.middleware";
 import * as order from "../../controllers/order/order.controller";
 import * as returnController from "../../controllers/returnRefund/orderReturn.controller";
@@ -21,18 +21,17 @@ router.post(
   "/:orderId/returns",
   verifyPermission("u_order_return"),
   verifyEmptyBody,
-  returnInputSanitizer("order return"),
-  verifyOrderReturnInput("create"),
+  returnInputSanitizer("return"),
+  verifyReturnInput("create"),
   returnController.create,
 );
 
 // search within orderId
 router.get(
-  "/:orderId/returns",
+  "/me/:orderId/returns",
   verifyPermission("r_order_return"),
-  returnInputSanitizer("order return search"),
-  verifyOrderReturnInput("search"),
-  returnController.searchWithOrderId,
+  verifyReturnInput("search"),
+  returnController.searchSelfWithOrderId,
 );
 
 // --- ROUTES FOR ORDER ---

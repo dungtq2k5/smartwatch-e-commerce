@@ -4,6 +4,7 @@ import type {
   GrnDisplayField,
   ModelVariationDisplayField,
   OrderDisplayField,
+  OrderReturnDisplayField,
   ProductBrandDisplayField,
   ProductCategoryDisplayField,
   ProductDisplayField,
@@ -70,6 +71,11 @@ type ConfigState = {
 
   setOrderManagementDisplayFields: (displayFields: OrderDisplayField[]) => void;
   resetOrderManagementDisplayFields: () => void;
+
+  setOrderReturnManagementDisplayFields: (
+    displayFields: OrderReturnDisplayField[],
+  ) => void;
+  resetOrderReturnManagementDisplayFields: () => void;
 };
 
 const getInitialState = (): AdminConfig => {
@@ -351,6 +357,29 @@ const useConfigStore = create<ConfigState>((set, get) => ({
       ...get().config,
       orderManagementDisplayFields:
         DEFAULT_ADMIN_CONFIG.orderManagementDisplayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  setOrderReturnManagementDisplayFields: (
+    displayFields: OrderReturnDisplayField[],
+  ): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      orderReturnManagementDisplayFields: displayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  resetOrderReturnManagementDisplayFields: (): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      orderReturnManagementDisplayFields:
+        DEFAULT_ADMIN_CONFIG.orderReturnManagementDisplayFields,
     };
 
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));

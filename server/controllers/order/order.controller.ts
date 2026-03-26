@@ -979,14 +979,10 @@ export async function search(
   const sortOrder = sort[1] === "asc" ? 1 : -1;
 
   // Map sortField to actual database field path
-  let sortStage: any;
-  if (sortField === "totalPriceCents") {
-    // Sort by paymentSummary.finalAmountCents
-    sortStage = { "paymentSummary.finalAmountCents": sortOrder, _id: 1 };
-  } else {
-    // Direct field mapping for fulfilledAt, createdAt, orderDate, estimateReceivedDate, receivedDate
-    sortStage = { [sortField]: sortOrder, _id: 1 };
-  }
+  let sortStage: any =
+    sortField === "totalPriceCents"
+      ? { "paymentSummary.finalAmountCents": sortOrder, _id: 1 }
+      : { [sortField]: sortOrder, _id: 1 };
 
   try {
     if (reqQuery.orderedBy) {

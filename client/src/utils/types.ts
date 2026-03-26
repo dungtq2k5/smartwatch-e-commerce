@@ -2,6 +2,7 @@ import type { JSX } from "react";
 import type {
   AdminModelVariationResponse,
   AdminOrderResponse,
+  AdminOrderReturnResponse,
   AdminProductBrandResponse,
   AdminProductCategoryResponse,
   AdminProductModelResponse,
@@ -10,7 +11,6 @@ import type {
   AdminUserResponse,
   GrnDetailsItem,
   Nullable,
-  OrderReturnSearchQuery,
   PermissionResponse,
   ProviderResponse,
   RoleDetailsResponse,
@@ -63,9 +63,6 @@ export type PurchaseTab =
   | "completed"
   | "cancelled"
   | "return-refund";
-
-export type OrderReturnSearchQueryCli = Omit<OrderReturnSearchQuery, "userId"> &
-  ({ userId?: string; orderId?: never } | { userId?: never; orderId?: string });
 
 export type AdminUserDisplayableField =
   | keyof Omit<
@@ -125,6 +122,10 @@ export type AdminOrderDisplayableField =
   | "fulfilled" // fulfilledBy and fulfilledAt combined
   | "actions";
 
+export type AdminOrderReturnDisplayableField =
+  | keyof AdminOrderReturnResponse
+  | "actions";
+
 export type TableColDisplay<Item, SortOption> = {
   label: string; // For header display
   thClassName?: string; // Additional className for <th>
@@ -178,6 +179,9 @@ export type RoleDisplayField = DisplayField<AdminRoleDisplayableField>;
 
 export type OrderDisplayField = DisplayField<AdminOrderDisplayableField>;
 
+export type OrderReturnDisplayField =
+  DisplayField<AdminOrderReturnDisplayableField>;
+
 export type AdminConfig = {
   userManagementDisplayFields: UserDisplayField[];
   productManagementDisplayFields: ProductDisplayField[];
@@ -191,6 +195,7 @@ export type AdminConfig = {
   providerManagementDisplayFields: ProviderDisplayField[];
   roleManagementDisplayFields: RoleDisplayField[];
   orderManagementDisplayFields: OrderDisplayField[];
+  orderReturnManagementDisplayFields: OrderReturnDisplayField[];
 };
 
 export type ProductCreationWizardStep =

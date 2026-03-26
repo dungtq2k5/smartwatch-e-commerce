@@ -4,7 +4,7 @@ import type {
   ReturnStateResponse,
 } from "../../../../../common/types.common";
 import { retrieve } from "../../../utils/utils";
-import { RETURN_STATES_URL } from "../../../configs";
+import { ORDER_RETURN_STATES_URL } from "../../../configs";
 import { formatError } from "../../../../../common/utils.common";
 
 type ReturnStateState = {
@@ -44,7 +44,7 @@ const useReturnStateStore = create<ReturnStateState>((set, get) => ({
     if (returnStates) return structuredClone(returnStates);
 
     try {
-      const res = await retrieve(RETURN_STATES_URL);
+      const res = await retrieve(ORDER_RETURN_STATES_URL);
       if (!res.success) throw new Error(res.message);
 
       const returnState = res.data as ReturnStateListResponse;

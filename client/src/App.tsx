@@ -82,6 +82,7 @@ import DetailRole from "./components/admin/role/DetailRole.tsx";
 import EditRole from "./components/admin/role/EditRole.tsx";
 import OrderManagement from "./components/admin/order/OrderManagement.tsx";
 import DetailOrder from "./components/admin/order/DetailOrder.tsx";
+import OrderReturnManagement from "./components/admin/orderReturn/OrderReturnManagement.tsx";
 
 export default function App() {
   // DEV for testing
@@ -122,10 +123,9 @@ export default function App() {
         <Routes>
           <Route path="/admin">
             {/* TODO Admin features
-              - dashboard
-              - order management
-              - return management
-              - withdraw request management
+              - Dashboard
+              - Return management: returns table, update return status(est_received_date, pickup_state), view return details.
+              - Withdraw request management
             */}
             <Route element={<AdminNotAuthRoute />}>
               <Route path="login" element={<AdminLogin />} />
@@ -234,6 +234,10 @@ export default function App() {
                 <Route path="orders">
                   <Route index element={<OrderManagement />} />
                   <Route path=":id" element={<DetailOrder />} />
+                </Route>
+
+                <Route path="order-returns">
+                  <Route index element={<OrderReturnManagement />} />
                 </Route>
               </Route>
             </Route>

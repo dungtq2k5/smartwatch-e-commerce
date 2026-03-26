@@ -1,39 +1,39 @@
 import { memo } from "react";
-import type { DeliveryStateResponse } from "../../../../common/types.common";
+import type { PickupStateResponse } from "../../../../common/types.common";
 import { capFirstLetter } from "../../../../common/utils.common";
 
-type DeliveryStateBadgeProps = Readonly<{
-  state?: DeliveryStateResponse;
+type OrderReturnPickupStateBadgeProps = Readonly<{
+  state?: PickupStateResponse | null;
   className?: string;
 }>;
 
-const DeliveryStateBadge = memo(
-  ({ state, className = "" }: DeliveryStateBadgeProps) => {
+const OrderReturnPickupStateBadge = memo(
+  ({ state, className = "" }: OrderReturnPickupStateBadgeProps) => {
     if (!state) {
-      return <span className={`badge bg-secondary ${className}`}>Unknown</span>;
+      return (
+        <span className={`badge bg-secondary ${className}`}>
+          {state === null ? "None" : "Unknown"}
+        </span>
+      );
     }
 
-    // Color scheme based on delivery flow progression
+    // Color scheme based on pickup state lifecycle
     const getBadgeVariant = (): string => {
       switch (state.lookupId) {
         case "1": // Pending
           return "bg-warning text-dark";
-        case "2": // Processing
+        case "2": // Out For Pickup
           return "bg-info text-dark";
-        case "3": // Shipped
+        case "3": // Picked Up
           return "bg-primary";
         case "4": // In Transit
           return "bg-primary";
-        case "5": // Out for Delivery
+        case "5": // Returned To Warehouse (Final)
           return "bg-success";
-        case "6": // Delivered (Final - Success)
-          return "bg-success";
-        case "7": // Delivery Failed
+        case "6": // Pickup Failed
           return "bg-danger";
-        case "8": // Delivery Rescheduled (Back to pending)
+        case "7": // Pickup Rescheduled
           return "bg-warning text-dark";
-        case "9": // Cancelled
-          return "bg-dark";
         default:
           return "bg-secondary";
       }
@@ -50,4 +50,4 @@ const DeliveryStateBadge = memo(
   },
 );
 
-export default DeliveryStateBadge;
+export default OrderReturnPickupStateBadge;

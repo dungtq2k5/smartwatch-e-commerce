@@ -9,12 +9,20 @@ import {
   OrderReturnSearchQuery,
   OrderReturnListResponse,
   OrderReturnDetailsResponse,
+  AdminOrderReturnSearchQuery,
+  AdminOrderReturnListResponse,
+  AdminOrderReturnDetailsResponse,
+  OrderReturnStateUpdateBulk,
+  OrderReturnPickupStateUpdateBulk,
+  AdminOrderReturnResponse,
 } from "../../../common/types.common";
 import mongoose, { Types } from "mongoose";
 import { HttpError } from "../../utils/errorHandler";
 import { ReturnItem } from "../../utils/types";
 import Order from "../../models/order/order.model";
 import {
+  formatAdminOrderReturnDetailsResponse,
+  formatAdminOrderReturnResponse,
   formatOrderReturnDetailsResponse,
   formatOrderReturnResponse,
   getDeliveryStateLevel,
@@ -46,6 +54,7 @@ import {
   MAX_ESTIMATE_PICKUP_TIME_GAP,
   ESTIMATE_PICKUP_TIME_GAP,
   MAX_ORDER_RETURN_IMG_UPLOAD,
+  MAX_ORDER_RETURNS_TO_UPDATE_BULK,
 } from "../../../common/configs.common";
 import UserAddress from "../../models/user/userAddress.model";
 import { deleteManyFileFromFirebaseStorage } from "../../utils/firebase";
@@ -57,6 +66,7 @@ import VariationInstance from "../../models/product/variationInstance.model";
 import { DEFAULT_SEARCH_LIMIT } from "../../configs/configs";
 
 // --- BOTH BUYER AND ADMIN FUNCTIONS ---
+
 export async function create(
   req: Request,
   res: Response,
@@ -452,7 +462,7 @@ export async function getDetails(
     }
 
     // Check permission
-    if (!order.userId.equals(userId) && isBuyerOnly) {
+    if (isBuyerOnly && !order.userId.equals(userId)) {
       throw new HttpError(403, "You don't own this resource.");
     }
 
@@ -468,12 +478,12 @@ export async function getDetails(
 }
 
 // search within orderId
-export async function searchWithOrderId(
+export async function searchSelfWithOrderId(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  console.log("▶️ ", "Searching return orders...");
+  console.log("▶️ ", "Searching self return orders...");
 
   const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
   if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
@@ -494,10 +504,9 @@ export async function searchWithOrderId(
 
   try {
     // Check order exists
-    if (!Types.ObjectId.isValid(orderId)) {
-      throw new HttpError(404, "Order not found.");
-    }
-    const order = await Order.findById(orderId).select("userId").lean();
+    const order =
+      Types.ObjectId.isValid(orderId) &&
+      (await Order.findById(orderId).select("userId").lean());
     if (!order) {
       throw new HttpError(404, "Order not found.");
     }
@@ -529,19 +538,19 @@ export async function searchWithOrderId(
         limit,
       },
     } as SuccessResponse<OrderReturnListResponse>);
-    console.log("✅ ", "Return orders retrieved.");
+    console.log("✅ ", "Self return orders retrieved.");
   } catch (error) {
     next(error);
   }
 }
 
 // search without orderId
-export async function search(
+export async function searchSelf(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  console.log("▶️ ", "Searching all return orders...");
+  console.log("▶️ ", "Searching self return orders...");
 
   const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
   if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
@@ -561,17 +570,22 @@ export async function search(
   const query: any = {};
 
   try {
-    if (isBuyerOnly) {
-      const orders = await Order.find({ userId }).select("_id").lean();
-      const orderIds = orders.map((o) => o._id);
-      query.orderId = { $in: orderIds };
-    } else if (query.userId) {
-      if (!Types.ObjectId.isValid(query.userId)) {
-        throw new HttpError(404, "User not found.");
+    if (reqQuery.orderId) {
+      // Check order exists
+      const order =
+        Types.ObjectId.isValid(reqQuery.orderId) &&
+        (await Order.findById(reqQuery.orderId).select("userId").lean());
+      if (!order) {
+        throw new HttpError(404, "Order not found.");
       }
-      const orders = await Order.find({ userId: query.userId })
-        .select("_id")
-        .lean();
+      if (isBuyerOnly && !order.userId.equals(userId)) {
+        throw new HttpError(403, "You don't own this resource.");
+      }
+
+      query.orderId = new Types.ObjectId(reqQuery.orderId);
+    } else {
+      // Get all orderIds of the user
+      const orders = await Order.find({ userId }).select("_id").lean();
       const orderIds = orders.map((o) => o._id);
       query.orderId = { $in: orderIds };
     }
@@ -597,7 +611,7 @@ export async function search(
         limit,
       },
     } as SuccessResponse<OrderReturnListResponse>);
-    console.log("✅ ", "Return orders retrieved.");
+    console.log("✅ ", "Self return orders retrieved.");
   } catch (error) {
     next(error);
   }
@@ -808,6 +822,66 @@ export async function updateSelf(
 }
 
 // --- ADMIN FUNCTIONS ---
+
+// Similar to get function but with returnedBy field
+export async function adminGet(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Admin getting return order...");
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const { returnId } = req.params;
+
+  try {
+    // Check return order exists
+    if (!Types.ObjectId.isValid(returnId)) {
+      throw new HttpError(404, "Return order not found.");
+    }
+    const orderReturn: any = await OrderReturn.findById(returnId)
+      .populate(variationPopulationPath)
+      .populate(returnedByPopulationPath)
+      .lean();
+    if (!orderReturn) {
+      throw new HttpError(404, "Return order not found.");
+    }
+
+    // Because of returnedByPopulationPath, we have to restructure the orderReturn data
+    const restructuredReturn = {
+      ...orderReturn,
+      orderId: orderReturn.orderId._id,
+      returnedBy: {
+        _id: orderReturn.orderId.userId._id,
+        fullName: orderReturn.orderId.userId.fullName,
+      },
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "Return order retrieved.",
+      data: formatAdminOrderReturnResponse(restructuredReturn),
+    } as SuccessResponse<AdminOrderReturnResponse>);
+    console.log("✅ ", "Return order retrieved.");
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function updateState(
   req: Request,
   res: Response,
@@ -824,6 +898,12 @@ export async function updateState(
       ),
     );
   }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
   const { returnId } = req.params;
 
   const session = await mongoose.startSession();
@@ -839,119 +919,12 @@ export async function updateState(
       throw new HttpError(404, "Return order not found.");
     }
 
-    // Check permission
-    if (isBuyerOnly) {
-      throw new HttpError(
-        403,
-        "You do not have permission to perform this action.",
-      );
-    }
-
-    /*
-      Business logic (returnState):
-        - Can update when returnState is not in "completed", "cancelled", "declined" state.
-        - Only update forward.
-        - returnState add:
-          + "approved" state.
-          + "declined" state -> update order.items to "return declined" state base on return.items.
-          + "refunding" state -> handleRefund().
-    */
-
-    // Check return order state valid for update
-    const latestReturnStateId = getLatestStateId(orderReturn.states);
-    const latestReturnStateLevel = getReturnStateLevel(latestReturnStateId);
-    if (latestReturnStateLevel === 6) {
-      // refunded, cancelled, declined
-      throw new HttpError(
-        400,
-        "Return order state can't be updated. Return state is in 'refunded', 'cancelled' or 'declined' state.",
-      );
-    }
-
-    const { returnStateId: returnStateIdRaw, notes } =
-      req.body as OrderReturnStateUpdate;
-    const returnStateId = new Types.ObjectId(returnStateIdRaw);
-
-    // Check returnStateId exists
-    if (!Types.ObjectId.isValid(returnStateId)) {
-      throw new HttpError(404, "Return state not found.");
-    }
-    const returnStateLookupId = getReturnStateLookupId(returnStateId);
-
-    // Can only be updated forward
-    const returnStateLevel = getReturnStateLevel(returnStateId);
-    if (returnStateLevel <= latestReturnStateLevel) {
-      throw new HttpError(400, "Return state can only be updated forward.");
-    }
-
-    switch (returnStateLookupId) {
-      case "2": // approved
-        orderReturn.states.push({
-          id: returnStateId,
-          notes: notes || "Return request approved by admin.",
-          createdBy: new Types.ObjectId(userId),
-        });
-        break;
-      // declined
-      case "8": {
-        const latestReturnStateLookupId =
-          getReturnStateLookupId(latestReturnStateId);
-        if (latestReturnStateLookupId === "2") {
-          // approved
-          throw new HttpError(
-            400,
-            "You had approved this return order. You can't decline it.",
-          );
-        }
-        orderReturn.states.push({
-          id: returnStateId,
-          notes: notes || "Return request declined by admin.",
-          createdBy: new Types.ObjectId(userId),
-        });
-
-        // Update items to "return declined" state
-        const allInstanceIdsToUpdate: (Types.ObjectId | string)[] = [];
-        for (const item of orderReturn.items) {
-          for (const inst of item.instances) {
-            allInstanceIdsToUpdate.push(inst.id);
-          }
-        }
-
-        await Order.updateOne(
-          { _id: orderReturn.orderId },
-          { $set: { "items.$[].instances.$[inst].state": "return declined" } },
-          {
-            arrayFilters: [{ "inst.id": { $in: allInstanceIdsToUpdate } }],
-            session,
-          },
-        );
-        break;
-      }
-      // refunding
-      case "5": {
-        const latestReturnStateLookupId =
-          getReturnStateLookupId(latestReturnStateId);
-        if (latestReturnStateLookupId !== "4") {
-          // items returned
-          throw new HttpError(
-            400,
-            "Return state can only be updated to 'refunding' state if the latest return state is 'items returned' state.",
-          );
-        }
-
-        orderReturn.states.push({
-          id: returnStateId,
-          notes: notes || "Refund process initiated by admin.",
-          createdBy: new Types.ObjectId(userId),
-        });
-        await handleRefund(orderReturn, session);
-        break;
-      }
-      default:
-        throw new HttpError(400, "Invalid return state.");
-    }
-
-    await orderReturn.save({ session });
+    await handleReturnStateUpdate(
+      userId,
+      orderReturn,
+      req.body as OrderReturnStateUpdate,
+      session,
+    );
     await orderReturn.populate(variationPopulationPath);
 
     await session.commitTransaction();
@@ -986,6 +959,12 @@ export async function updatePickupState(
       ),
     );
   }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
   const { returnId } = req.params;
 
   const session = await mongoose.startSession();
@@ -1001,143 +980,12 @@ export async function updatePickupState(
       throw new HttpError(404, "Return order not found.");
     }
 
-    // Check permission
-    if (isBuyerOnly) {
-      throw new HttpError(
-        403,
-        "You do not have permission to perform this action.",
-      );
-    }
-
-    /*
-      Business logic (pickupState):
-        - Can update when returnState is from "approved".
-        - Can be updated forward except "pickup failed" to "pickup rescheduled" state.
-        - pickupState add:
-          + "out for pickup", "picked up", "in transit to warehouser" state -> add returnState "items returning" state.
-          + "returned to warehouse" state -> add returnState "items returned" state, executeItemsReturned().
-          + "pickup failed" state: if pickupState is in "out for pickup" state.
-          + "pickup rescheduled" state: if pickupState is in "pickup failed" state.
-    */
-
-    // Check returnState valid for update pickupState
-    const latestReturnStateId = getLatestStateId(orderReturn.states);
-    const latestReturnStateLookupId =
-      getReturnStateLookupId(latestReturnStateId);
-    if (!["2", "3", "4"].includes(latestReturnStateLookupId)) {
-      // not in approved, items returning, items returned
-      throw new HttpError(
-        400,
-        "Return order pickup state can't be updated. Return must be approved and not finalized.",
-      );
-    }
-
-    const { pickupStateId, estimatePickupDate, notes } =
-      req.body as OrderReturnPickupStateUpdate;
-
-    // Update pickupState
-    const latestPickupStateId = getLatestStateId(orderReturn.pickupStates);
-    if (pickupStateId && pickupStateId !== latestPickupStateId.toString()) {
-      // Check pickupStateId exists
-      if (!Types.ObjectId.isValid(pickupStateId)) {
-        throw new HttpError(404, "Pickup state not found.");
-      }
-
-      // Handle special case: pickup failed -> pickup rescheduled
-      const pickupStateLookupId = getPickupStateLookupId(
-        new Types.ObjectId(pickupStateId),
-      );
-      if (pickupStateLookupId === "7") {
-        // pickup rescheduled
-        const latestPickupStateLookupId =
-          getPickupStateLookupId(latestPickupStateId);
-        if (latestPickupStateLookupId !== "6") {
-          // pickup failed
-          throw new HttpError(
-            400,
-            "You can only update pickup state to 'pickup rescheduled' state if the latest pickup state is 'pickup failed' state.",
-          );
-        }
-      } else {
-        // Can only be updated forward
-        const pickupStateLevel = getPickupStateLevel(
-          new Types.ObjectId(pickupStateId),
-        );
-        const latestPickupStateLevel = getPickupStateLevel(latestPickupStateId);
-        if (pickupStateLevel <= latestPickupStateLevel) {
-          throw new HttpError(400, "Pickup state can only be updated forward.");
-        }
-
-        // --- Trigger Consequential State Updates ---
-        const sysUserId = getSysUserId();
-        switch (pickupStateLookupId) {
-          case "2": // out for pickup
-          case "3": // picked up
-          // in transit to warehouse
-          case "4": {
-            const latestReturnStateLookupId =
-              getReturnStateLookupId(latestReturnStateId);
-            if (latestReturnStateLookupId === "2") {
-              // approved
-              orderReturn.states.push({
-                id: getReturnStateId("3"),
-                notes: "Auto updated to 'items returning' state.",
-                createdBy: sysUserId,
-              });
-            }
-            break;
-          }
-          case "5": // returned to warehouse
-            await executeItemsReturned(orderReturn, session);
-            orderReturn.states.push({
-              id: getReturnStateId("4"),
-              notes: "Auto updated to 'items returned' state.",
-              createdBy: sysUserId,
-            }); // items returned
-
-            break;
-          case "6": // pickup failed
-            break;
-          // pickup rescheduled will be handle above since check level only forward
-          default:
-            throw new HttpError(400, "Invalid pickup state.");
-        }
-      }
-
-      orderReturn.pickupStates.push({
-        id: new Types.ObjectId(pickupStateId),
-        notes,
-        createdBy: new Types.ObjectId(userId),
-      });
-    }
-
-    // Update estimatePickupDate
-    if (estimatePickupDate) {
-      const now = new Date();
-      const formattedEstimatePickupDate = new Date(estimatePickupDate);
-
-      if (formattedEstimatePickupDate <= now) {
-        throw new HttpError(
-          400,
-          "Estimated pickup date must be in the future.",
-        );
-      }
-      if (
-        formattedEstimatePickupDate.getTime() - now.getTime() >
-        MAX_ESTIMATE_PICKUP_TIME_GAP
-      ) {
-        throw new HttpError(
-          400,
-          `Estimated pickup date must be within ${
-            MAX_ESTIMATE_PICKUP_TIME_GAP / (24 * 60 * 60 * 1000)
-          } days from now.`,
-        );
-      }
-
-      orderReturn.estimatePickupDate = formattedEstimatePickupDate;
-    }
-
-    await orderReturn.save({ session });
+    await handlePickupStateUpdate(
+      userId,
+      orderReturn,
+      req.body as OrderReturnPickupStateUpdate,
+      session,
+    );
     await orderReturn.populate(variationPopulationPath);
 
     await session.commitTransaction();
@@ -1156,7 +1004,701 @@ export async function updatePickupState(
   }
 }
 
+// Normal version of search for understanding but not efficient for large data
+/*
+export async function search(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Searching return orders...");
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const reqQuery = req["sanitizedQuery"] as AdminOrderReturnSearchQuery;
+
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const query: any = {};
+
+  // Parse sortBy parameter
+  const sort = (reqQuery.sortBy || "createdAt_desc").split("_");
+  const sortField = sort[0];
+  const sortOrder = sort[1] === "asc" ? 1 : -1;
+
+  // Map sortField to actual database field path
+  let sortStage: any;
+  if (sortField === "finalRefundAmountCents") {
+    // Sort by refundSummary.finalRefundAmountCents
+    sortStage = { "refundSummary.finalRefundAmountCents": sortOrder, _id: 1 };
+  } else {
+    // Direct field mapping
+    sortStage = { [sortField]: sortOrder, _id: 1 };
+  }
+
+  try {
+    if (reqQuery.searchTerm) {
+      // Search by orderId/userId/orderReturnId/user.fullName/user.email/user.phoneNumber
+      const searchTerm = reqQuery.searchTerm;
+
+      if (Types.ObjectId.isValid(searchTerm)) {
+        query.$or = [
+          { orderId: new Types.ObjectId(searchTerm) },
+          { _id: new Types.ObjectId(searchTerm) },
+        ];
+
+        // Search by userId
+        const ordersByUserId = await Order.find({
+          userId: new Types.ObjectId(searchTerm),
+        })
+          .select("_id")
+          .lean();
+        const orderIdsByUserId = ordersByUserId.map((o) => o._id);
+        query.$or.push({ orderId: { $in: orderIdsByUserId } });
+      } else {
+        // Search by user.fullName/user.email/user.phoneNumber
+        const users = await User.find({
+          $or: [
+            { fullName: { $regex: searchTerm, $options: "i" } },
+            { email: { $regex: searchTerm, $options: "i" } },
+            { phoneNumber: { $regex: searchTerm, $options: "i" } },
+          ],
+        })
+          .select("_id")
+          .lean();
+        const userIds = users.map((u) => u._id);
+        const ordersByUserIds = await Order.find({ userId: { $in: userIds } })
+          .select("_id")
+          .lean();
+        const orderIdsByUserIds = ordersByUserIds.map((o) => o._id);
+        query.$or = [{ orderId: { $in: orderIdsByUserIds } }];
+      }
+    }
+
+    if (
+      reqQuery.finalRefundAmountCentsMin ||
+      reqQuery.finalRefundAmountCentsMax
+    ) {
+      query["refundSummary.finalRefundAmountCents"] = {};
+
+      if (reqQuery.finalRefundAmountCentsMin) {
+        query["refundSummary.finalRefundAmountCents"].$gte = Number.parseInt(
+          reqQuery.finalRefundAmountCentsMin,
+          10,
+        );
+      }
+      if (reqQuery.finalRefundAmountCentsMax) {
+        query["refundSummary.finalRefundAmountCents"].$lte = Number.parseInt(
+          reqQuery.finalRefundAmountCentsMax,
+          10,
+        );
+      }
+    }
+
+    if (reqQuery.refundStateIds?.length) {
+      const refundStateObjectIds = reqQuery.refundStateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid refundStateId: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+
+      query["refundStates.id"] = { $in: refundStateObjectIds };
+    }
+
+    if (reqQuery.pickupStateIds?.length) {
+      const pickupStateObjectIds = reqQuery.pickupStateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid pickupStateId: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+
+      query["pickupStates.id"] = { $in: pickupStateObjectIds };
+    }
+
+    if (reqQuery.stateIds?.length) {
+      const stateObjectIds = reqQuery.stateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid stateId: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+
+      query["states.id"] = { $in: stateObjectIds };
+    }
+
+    if (reqQuery.reasonIds?.length) {
+      const reasonObjectIds = reqQuery.reasonIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid reasonId: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+
+      query.reasonId = { $in: reasonObjectIds };
+    }
+
+    if (reqQuery.pickupDateFrom || reqQuery.pickupDateTo) {
+      query.pickupDate = {};
+
+      if (reqQuery.pickupDateFrom) {
+        query.pickupDate.$gte = new Date(reqQuery.pickupDateFrom);
+      }
+      if (reqQuery.pickupDateTo) {
+        query.pickupDate.$lte = new Date(reqQuery.pickupDateTo);
+      }
+    }
+
+    if (reqQuery.estimatePickupDateFrom || reqQuery.estimatePickupDateTo) {
+      query.estimatePickupDate = {};
+
+      if (reqQuery.estimatePickupDateFrom) {
+        query.estimatePickupDate.$gte = new Date(
+          reqQuery.estimatePickupDateFrom,
+        );
+      }
+      if (reqQuery.estimatePickupDateTo) {
+        query.estimatePickupDate.$lte = new Date(reqQuery.estimatePickupDateTo);
+      }
+    }
+
+    if (reqQuery.createdAtFrom || reqQuery.createdAtTo) {
+      query.createdAt = {};
+
+      if (reqQuery.createdAtFrom) {
+        query.createdAt.$gte = new Date(reqQuery.createdAtFrom);
+      }
+      if (reqQuery.createdAtTo) {
+        query.createdAt.$lte = new Date(reqQuery.createdAtTo);
+      }
+    }
+
+    if (reqQuery.updatedAtFrom || reqQuery.updatedAtTo) {
+      query.updatedAt = {};
+
+      if (reqQuery.updatedAtFrom) {
+        query.updatedAt.$gte = new Date(reqQuery.updatedAtFrom);
+      }
+      if (reqQuery.updatedAtTo) {
+        query.updatedAt.$lte = new Date(reqQuery.updatedAtTo);
+      }
+    }
+
+    const total = await OrderReturn.countDocuments(query);
+    const orderReturns = await OrderReturn.find(query)
+      .sort(sortStage)
+      .skip(offset)
+      .limit(limit)
+      .populate(variationPopulationPath)
+      .populate({
+        path: "orderId",
+        select: "userId",
+        populate: {
+          path: "userId",
+          select: "_id fullName",
+        },
+      })
+      .lean();
+
+    // Map to format with returnedBy field included and restructure orderId to ID string
+    const formattedReturns: AdminOrderReturnResponse[] = orderReturns.map((orderReturn: any) => {
+      return {
+        ...formatOrderReturnResponse({
+          ...orderReturn,
+          orderId: orderReturn.orderId._id,
+        }),
+        returnedBy: {
+          id: orderReturn.orderId.userId._id,
+          fullName: orderReturn.orderId.userId.fullName,
+        },
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Return orders retrieved.",
+      data: {
+        total,
+        returns: {
+          total: orderReturns.length,
+          returns: formattedReturns,
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<AdminOrderReturnListResponse>);
+    console.log("✅ ", "Return orders retrieved.");
+  } catch (error) {
+    next(error);
+  }
+}
+*/
+
+// Optimized version of search - based on working commented version with performance improvements
+export async function search(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Searching return orders...");
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const reqQuery = req["sanitizedQuery"] as AdminOrderReturnSearchQuery;
+
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const query: any = {};
+
+  // Parse sortBy parameter
+  const sort = (reqQuery.sortBy || "createdAt_desc").split("_");
+  const sortField = sort[0];
+  const sortOrder = sort[1] === "asc" ? 1 : -1;
+
+  // Map sortField to actual database field path
+  let sortStage: any;
+  if (sortField === "finalRefundAmountCents") {
+    // Sort by refundSummary.finalRefundAmountCents
+    sortStage = { "refundSummary.finalRefundAmountCents": sortOrder, _id: 1 };
+  } else {
+    // Direct field mapping
+    sortStage = { [sortField]: sortOrder, _id: 1 };
+  }
+
+  try {
+    if (reqQuery.searchTerm) {
+      // Search by orderId/userId/orderReturnId/user.fullName/user.email/user.phoneNumber
+      const searchTerm = reqQuery.searchTerm;
+
+      if (Types.ObjectId.isValid(searchTerm)) {
+        query.$or = [
+          { orderId: new Types.ObjectId(searchTerm) },
+          { _id: new Types.ObjectId(searchTerm) },
+        ];
+
+        // Search by userId
+        const ordersByUserId = await Order.find({
+          userId: new Types.ObjectId(searchTerm),
+        })
+          .select("_id")
+          .lean();
+        const orderIdsByUserId = ordersByUserId.map((o) => o._id);
+        query.$or.push({ orderId: { $in: orderIdsByUserId } });
+      } else {
+        // Search by user.fullName/user.email/user.phoneNumber
+        const users = await User.find({
+          $or: [
+            { fullName: { $regex: searchTerm, $options: "i" } },
+            { email: { $regex: searchTerm, $options: "i" } },
+            { phoneNumber: { $regex: searchTerm, $options: "i" } },
+          ],
+        })
+          .select("_id")
+          .lean();
+        const userIds = users.map((u) => u._id);
+        const ordersByUserIds = await Order.find({ userId: { $in: userIds } })
+          .select("_id")
+          .lean();
+        const orderIdsByUserIds = ordersByUserIds.map((o) => o._id);
+        query.$or = [{ orderId: { $in: orderIdsByUserIds } }];
+      }
+    }
+
+    if (
+      reqQuery.finalRefundAmountCentsMin ||
+      reqQuery.finalRefundAmountCentsMax
+    ) {
+      query["refundSummary.finalRefundAmountCents"] = {};
+
+      if (reqQuery.finalRefundAmountCentsMin) {
+        query["refundSummary.finalRefundAmountCents"].$gte = Number.parseInt(
+          reqQuery.finalRefundAmountCentsMin,
+          10,
+        );
+      }
+      if (reqQuery.finalRefundAmountCentsMax) {
+        query["refundSummary.finalRefundAmountCents"].$lte = Number.parseInt(
+          reqQuery.finalRefundAmountCentsMax,
+          10,
+        );
+      }
+    }
+
+    if (reqQuery.refundStateIds?.length) {
+      const refundStateObjectIds = reqQuery.refundStateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid refundStateId: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+
+      query["refundStates.id"] = { $in: refundStateObjectIds };
+    }
+
+    if (reqQuery.pickupStateIds?.length) {
+      const pickupStateObjectIds = reqQuery.pickupStateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid pickupStateId: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+
+      query["pickupStates.id"] = { $in: pickupStateObjectIds };
+    }
+
+    if (reqQuery.stateIds?.length) {
+      const stateObjectIds = reqQuery.stateIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid stateId: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+
+      query["states.id"] = { $in: stateObjectIds };
+    }
+
+    if (reqQuery.reasonIds?.length) {
+      const reasonObjectIds = reqQuery.reasonIds.map((id) => {
+        if (!Types.ObjectId.isValid(id)) {
+          throw new HttpError(400, `Invalid reasonId: ${id}`);
+        }
+        return new Types.ObjectId(id);
+      });
+
+      query.reasonId = { $in: reasonObjectIds };
+    }
+
+    if (reqQuery.pickupDateFrom || reqQuery.pickupDateTo) {
+      query.pickupDate = {};
+
+      if (reqQuery.pickupDateFrom) {
+        query.pickupDate.$gte = new Date(reqQuery.pickupDateFrom);
+      }
+      if (reqQuery.pickupDateTo) {
+        query.pickupDate.$lte = new Date(reqQuery.pickupDateTo);
+      }
+    }
+
+    if (reqQuery.estimatePickupDateFrom || reqQuery.estimatePickupDateTo) {
+      query.estimatePickupDate = {};
+
+      if (reqQuery.estimatePickupDateFrom) {
+        query.estimatePickupDate.$gte = new Date(
+          reqQuery.estimatePickupDateFrom,
+        );
+      }
+      if (reqQuery.estimatePickupDateTo) {
+        query.estimatePickupDate.$lte = new Date(reqQuery.estimatePickupDateTo);
+      }
+    }
+
+    if (reqQuery.createdAtFrom || reqQuery.createdAtTo) {
+      query.createdAt = {};
+
+      if (reqQuery.createdAtFrom) {
+        query.createdAt.$gte = new Date(reqQuery.createdAtFrom);
+      }
+      if (reqQuery.createdAtTo) {
+        query.createdAt.$lte = new Date(reqQuery.createdAtTo);
+      }
+    }
+
+    if (reqQuery.updatedAtFrom || reqQuery.updatedAtTo) {
+      query.updatedAt = {};
+
+      if (reqQuery.updatedAtFrom) {
+        query.updatedAt.$gte = new Date(reqQuery.updatedAtFrom);
+      }
+      if (reqQuery.updatedAtTo) {
+        query.updatedAt.$lte = new Date(reqQuery.updatedAtTo);
+      }
+    }
+
+    // Use Promise.all for parallel execution: count and fetch
+    const [total, orderReturns] = await Promise.all([
+      OrderReturn.countDocuments(query),
+      OrderReturn.find(query)
+        .sort(sortStage)
+        .skip(offset)
+        .limit(limit)
+        .populate(variationPopulationPath)
+        .populate({
+          path: "orderId",
+          select: "userId",
+          populate: {
+            path: "userId",
+            select: "_id fullName",
+          },
+        })
+        .lean(),
+    ]);
+
+    // Map to format with returnedBy field included and restructure orderId to ID string
+    const formattedReturns: AdminOrderReturnResponse[] = orderReturns.map(
+      (orderReturn: any) => {
+        return {
+          ...formatOrderReturnResponse({
+            ...orderReturn,
+            orderId: orderReturn.orderId._id,
+          }),
+          returnedBy: {
+            id: orderReturn.orderId.userId._id,
+            fullName: orderReturn.orderId.userId.fullName,
+          },
+        };
+      },
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Return orders retrieved.",
+      data: {
+        total,
+        returns: {
+          total: orderReturns.length,
+          returns: formattedReturns,
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<AdminOrderReturnListResponse>);
+    console.log("✅ ", "Return orders retrieved.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Like getDetails but for admin with more details
+export async function adminGetDetails(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Getting return order details...");
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly not found, this should be handled in middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const { returnId } = req.params;
+
+  try {
+    if (!Types.ObjectId.isValid(returnId)) {
+      throw new HttpError(404, "Return order not found.");
+    }
+
+    const orderReturn: any = await OrderReturn.findById(returnId)
+      .populate(populationPath)
+      .populate("refundStates.id", "lookupId name")
+      .populate("pickupStates.id", "lookupId name level")
+      .populate("states.id", "lookupId name level")
+      .populate("reasonId", "name description")
+      .populate(returnedByPopulationPath)
+      .lean();
+
+    if (!orderReturn) {
+      throw new HttpError(404, "Return order not found.");
+    }
+
+    // Because of returnedByPopulationPath, we have to restructure the orderReturn data
+    const restructuredReturn = {
+      ...orderReturn,
+      orderId: orderReturn.orderId._id,
+      returnedBy: {
+        _id: orderReturn.orderId.userId._id,
+        fullName: orderReturn.orderId.userId.fullName,
+      },
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "Return order details retrieved.",
+      data: formatAdminOrderReturnDetailsResponse(restructuredReturn),
+    } as SuccessResponse<AdminOrderReturnDetailsResponse>);
+    console.log("✅ ", "Return order details retrieved.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateStateBulk(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Bulk updating return order states...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const { returnIds, returnStateId, notes } =
+    req.body as OrderReturnStateUpdateBulk;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (returnIds.length > MAX_ORDER_RETURNS_TO_UPDATE_BULK) {
+      throw new HttpError(
+        400,
+        `You can only update up to ${MAX_ORDER_RETURNS_TO_UPDATE_BULK} return orders at once.`,
+      );
+    }
+
+    const returns = await OrderReturn.find({ _id: { $in: returnIds } }).session(
+      session,
+    );
+    if (returns.length !== returnIds.length) {
+      throw new HttpError(404, "One or more return orders not found.");
+    }
+
+    for (const orderReturn of returns) {
+      await handleReturnStateUpdate(
+        userId,
+        orderReturn,
+        { returnStateId, notes },
+        session,
+      );
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "Return order states updated.",
+    } as SuccessResponse);
+    console.log("✅ ", "Return order states updated.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
+export async function updatePickupStateBulk(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Bulk updating return order pickup states...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "userId or isBuyerOnly not found, this should be handled in middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You do not have permission to perform this action."),
+    );
+  }
+
+  const { returnIds, pickupStateId, estimatePickupDate, notes } =
+    req.body as OrderReturnPickupStateUpdateBulk;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (returnIds.length > MAX_ORDER_RETURNS_TO_UPDATE_BULK) {
+      throw new HttpError(
+        400,
+        `You can only update up to ${MAX_ORDER_RETURNS_TO_UPDATE_BULK} return orders at once.`,
+      );
+    }
+
+    const returns = await OrderReturn.find({ _id: { $in: returnIds } }).session(
+      session,
+    );
+    if (returns.length !== returnIds.length) {
+      throw new HttpError(404, "One or more return orders not found.");
+    }
+
+    for (const orderReturn of returns) {
+      await handlePickupStateUpdate(
+        userId,
+        orderReturn,
+        { pickupStateId, estimatePickupDate, notes },
+        session,
+      );
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: "Return order pickup states updated.",
+    } as SuccessResponse);
+    console.log("✅ ", "Return order pickup states updated.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
 // ---HELPER FUNCTIONS ---
+
 // Handle refund logic, add returnState and refundState for orderReturn, update user balance if needed.
 async function handleRefund(
   orderReturn: IOrderReturn,
@@ -1399,3 +1941,276 @@ async function executeItemsReturned(
     throw error;
   }
 }
+
+async function handleReturnStateUpdate(
+  reqUserId: Types.ObjectId | string,
+  orderReturn: IOrderReturn,
+  updateData: OrderReturnStateUpdate,
+  session: mongoose.ClientSession,
+  saveReturn: boolean = true,
+): Promise<void> {
+  try {
+    /*
+      Business logic (returnState):
+        - Can update when returnState is not in "refunded", "cancelled", "declined" states.
+        - Only update forward.
+        - returnState add:
+          + "approved" state.
+          + "declined" state -> update order.items to "return declined" state base on return.items.
+          + "refunding" state -> handleRefund().
+    */
+
+    // Check return order state valid for update
+    const latestReturnStateId = getLatestStateId(orderReturn.states);
+    const latestReturnStateLevel = getReturnStateLevel(latestReturnStateId);
+    if (latestReturnStateLevel === 6) {
+      // refunded, cancelled, declined
+      throw new HttpError(
+        400,
+        "Return order state can't be updated. Return state is in 'refunded', 'cancelled' or 'declined' state.",
+      );
+    }
+
+    const { returnStateId: returnStateIdRaw, notes } = updateData;
+    const returnStateId = new Types.ObjectId(returnStateIdRaw);
+
+    // Check returnStateId exists
+    if (!Types.ObjectId.isValid(returnStateId)) {
+      throw new HttpError(404, "Return state not found.");
+    }
+    const returnStateLookupId = getReturnStateLookupId(returnStateId);
+
+    // Can only be updated forward
+    const returnStateLevel = getReturnStateLevel(returnStateId);
+    if (returnStateLevel <= latestReturnStateLevel) {
+      throw new HttpError(400, "Return state can only be updated forward.");
+    }
+
+    switch (returnStateLookupId) {
+      // approved
+      case "2": {
+        orderReturn.states.push({
+          id: returnStateId,
+          notes: notes || "Return request approved by admin.",
+          createdBy: new Types.ObjectId(reqUserId),
+        });
+        break;
+      }
+      // declined
+      case "8": {
+        const latestReturnStateLookupId =
+          getReturnStateLookupId(latestReturnStateId);
+        if (latestReturnStateLookupId === "2") {
+          // approved
+          throw new HttpError(
+            400,
+            "You had approved this return order. You can't decline it.",
+          );
+        }
+        orderReturn.states.push({
+          id: returnStateId,
+          notes: notes || "Return request declined by admin.",
+          createdBy: new Types.ObjectId(reqUserId),
+        });
+
+        // Update items to "return declined" state
+        const allInstanceIdsToUpdate: (Types.ObjectId | string)[] = [];
+        for (const item of orderReturn.items) {
+          for (const inst of item.instances) {
+            allInstanceIdsToUpdate.push(inst.id);
+          }
+        }
+
+        await Order.updateOne(
+          { _id: orderReturn.orderId },
+          { $set: { "items.$[].instances.$[inst].state": "return declined" } },
+          {
+            arrayFilters: [{ "inst.id": { $in: allInstanceIdsToUpdate } }],
+            session,
+          },
+        );
+        break;
+      }
+      // refunding
+      case "5": {
+        const latestReturnStateLookupId =
+          getReturnStateLookupId(latestReturnStateId);
+        if (latestReturnStateLookupId !== "4") {
+          // items returned
+          throw new HttpError(
+            400,
+            "Return state can only be updated to 'refunding' state if the latest return state is 'items returned' state.",
+          );
+        }
+
+        orderReturn.states.push({
+          id: returnStateId,
+          notes: notes || "Refund process initiated by admin.",
+          createdBy: new Types.ObjectId(reqUserId),
+        });
+        await handleRefund(orderReturn, session);
+        break;
+      }
+      default:
+        throw new HttpError(400, "Invalid return state.");
+    }
+
+    if (saveReturn) await orderReturn.save({ session });
+  } catch (error) {
+    console.error("❌ ", "Error updating return state:", error);
+    throw error;
+  }
+}
+
+async function handlePickupStateUpdate(
+  reqUserId: Types.ObjectId | string,
+  orderReturn: IOrderReturn,
+  updateData: OrderReturnPickupStateUpdate,
+  session: mongoose.ClientSession,
+  saveReturn: boolean = true,
+): Promise<void> {
+  try {
+    /*
+      Business logic (pickupState):
+        - Can update when returnState is from "approved".
+        - Can be updated forward except "pickup failed" to "pickup rescheduled" state.
+        - pickupState add:
+          + "out for pickup", "picked up", "in transit to warehouser" state -> add returnState "items returning" state.
+          + "returned to warehouse" state -> add returnState "items returned" state, executeItemsReturned().
+          + "pickup failed" state: if pickupState is in "out for pickup" state.
+          + "pickup rescheduled" state: if pickupState is in "pickup failed" state.
+    */
+
+    // Check returnState valid for update pickupState
+    const latestReturnStateId = getLatestStateId(orderReturn.states);
+    const latestReturnStateLookupId =
+      getReturnStateLookupId(latestReturnStateId);
+    if (!["2", "3", "4"].includes(latestReturnStateLookupId)) {
+      // not in approved, items returning, items returned
+      throw new HttpError(
+        400,
+        "Return order pickup state can't be updated. Return must be approved and not finalized.",
+      );
+    }
+
+    const { pickupStateId, estimatePickupDate, notes } = updateData;
+
+    // Update pickupState
+    const latestPickupStateId = getLatestStateId(orderReturn.pickupStates);
+    if (pickupStateId && pickupStateId !== latestPickupStateId.toString()) {
+      // Check pickupStateId exists
+      if (!Types.ObjectId.isValid(pickupStateId)) {
+        throw new HttpError(404, "Pickup state not found.");
+      }
+
+      // Handle special case: pickup failed -> pickup rescheduled
+      const pickupStateLookupId = getPickupStateLookupId(
+        new Types.ObjectId(pickupStateId),
+      );
+      if (pickupStateLookupId === "7") {
+        // pickup rescheduled
+        const latestPickupStateLookupId =
+          getPickupStateLookupId(latestPickupStateId);
+        if (latestPickupStateLookupId !== "6") {
+          // pickup failed
+          throw new HttpError(
+            400,
+            "You can only update pickup state to 'pickup rescheduled' state if the latest pickup state is 'pickup failed' state.",
+          );
+        }
+      } else {
+        // Can only be updated forward
+        const pickupStateLevel = getPickupStateLevel(
+          new Types.ObjectId(pickupStateId),
+        );
+        const latestPickupStateLevel = getPickupStateLevel(latestPickupStateId);
+        if (pickupStateLevel <= latestPickupStateLevel) {
+          throw new HttpError(400, "Pickup state can only be updated forward.");
+        }
+
+        // --- Trigger Consequential State Updates ---
+        const sysUserId = getSysUserId();
+        switch (pickupStateLookupId) {
+          case "2": // out for pickup
+          case "3": // picked up
+          // in transit to warehouse
+          case "4": {
+            const latestReturnStateLookupId =
+              getReturnStateLookupId(latestReturnStateId);
+            if (latestReturnStateLookupId === "2") {
+              // approved
+              orderReturn.states.push({
+                id: getReturnStateId("3"),
+                notes: "Auto updated to 'items returning' state.",
+                createdBy: sysUserId,
+              });
+            }
+            break;
+          }
+          // returned to warehouse
+          case "5": {
+            await executeItemsReturned(orderReturn, session);
+            orderReturn.states.push({
+              id: getReturnStateId("4"),
+              notes: "Auto updated to 'items returned' state.",
+              createdBy: sysUserId,
+            }); // items returned
+
+            break;
+          }
+          case "6": // pickup failed
+            break;
+          // pickup rescheduled will be handle above since check level only forward
+          default:
+            throw new HttpError(400, "Invalid pickup state.");
+        }
+      }
+
+      orderReturn.pickupStates.push({
+        id: new Types.ObjectId(pickupStateId),
+        notes: notes || null,
+        createdBy: new Types.ObjectId(reqUserId),
+      });
+    }
+
+    // Update estimatePickupDate
+    if (estimatePickupDate) {
+      const now = new Date();
+      const formattedEstimatePickupDate = new Date(estimatePickupDate);
+
+      if (formattedEstimatePickupDate <= now) {
+        throw new HttpError(
+          400,
+          "Estimated pickup date must be in the future.",
+        );
+      }
+      if (
+        formattedEstimatePickupDate.getTime() - now.getTime() >
+        MAX_ESTIMATE_PICKUP_TIME_GAP
+      ) {
+        throw new HttpError(
+          400,
+          `Estimated pickup date must be within ${
+            MAX_ESTIMATE_PICKUP_TIME_GAP / (24 * 60 * 60 * 1000)
+          } days from now.`,
+        );
+      }
+
+      orderReturn.estimatePickupDate = formattedEstimatePickupDate;
+    }
+
+    if (saveReturn) await orderReturn.save({ session });
+  } catch (error) {
+    console.error("❌ ", "Error updating pickup state:", error);
+    throw error;
+  }
+}
+
+const returnedByPopulationPath = {
+  path: "orderId",
+  select: "_id userId",
+  populate: {
+    path: "userId",
+    select: "_id fullName",
+  },
+};

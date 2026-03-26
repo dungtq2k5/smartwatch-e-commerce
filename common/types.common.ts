@@ -26,6 +26,7 @@ import {
   PROVIDER_SEARCH_SORT_OPTIONS,
   ROLE_SEARCH_SORT_OPTIONS,
   ORDER_SEARCH_SORT_OPTIONS,
+  ORDER_RETURN_SEARCH_SORT_OPTIONS,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -1099,7 +1100,8 @@ export type OrderUpdateBulk = {
   estimateReceivedDate?: string;
 };
 
-export type InstanceState = (typeof ORDER_VARIATION_INSTANCE_STATES)[number]["name"];
+export type InstanceState =
+  (typeof ORDER_VARIATION_INSTANCE_STATES)[number]["name"];
 
 export type OrderResponse = {
   id: string;
@@ -1360,6 +1362,7 @@ export type OrderReturnCreate = {
       }[]
     | "all"; // "all" means return whole order
 };
+
 export type OrderReturnBaseUpdate = Partial<{
   reasonId: string;
   imageUrls: string[] | null;
@@ -1369,6 +1372,7 @@ export type OrderReturnBaseUpdate = Partial<{
   pickupStateId: string;
   stateId: string;
 }>;
+
 export type OrderReturnSelfUpdate = Pick<
   OrderReturnBaseUpdate,
   | "reasonId"
@@ -1378,16 +1382,29 @@ export type OrderReturnSelfUpdate = Pick<
   | "estimatePickupDate"
   | "stateId"
 >;
+
 export type OrderReturnStateUpdate = {
   returnStateId: string;
-  notes: string | null;
+  notes?: string | null;
 };
-export type OrderReturnPickupStateUpdate = Partial<{
-  pickupStateId: string;
-  estimatePickupDate: string; // Only for "pickup rescheduled" state
-}> & {
-  notes: string | null;
-};
+
+export type OrderReturnStateUpdateBulk = {
+  returnIds: string[];
+} & OrderReturnStateUpdate;
+
+export type OrderReturnPickupStateUpdate = Partial<
+  {
+    pickupStateId: string;
+    estimatePickupDate: string; // For "pickup rescheduled" state
+  } & {
+    notes: string | null; // For "pickupStateId" update
+  }
+>;
+
+export type OrderReturnPickupStateUpdateBulk = {
+  returnIds: string[];
+} & OrderReturnPickupStateUpdate;
+
 export type OrderReturnResponse = {
   id: string;
   orderId: string;
@@ -1422,6 +1439,11 @@ export type OrderReturnResponse = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type AdminOrderReturnResponse = OrderReturnResponse & {
+  returnedBy: CreatedBy["createdBy"];
+};
+
 export type OrderReturnDetailsResponse = Omit<
   OrderReturnResponse,
   "refundStates" | "pickupStates" | "states" | "reasonId"
@@ -1435,15 +1457,51 @@ export type OrderReturnDetailsResponse = Omit<
   states: (StateResponse & { lookupId: string; name: string; level: number })[];
   reason: ReturnReasonResponse;
 };
+
+export type AdminOrderReturnDetailsResponse = OrderReturnDetailsResponse & {
+  returnedBy: CreatedBy["createdBy"];
+};
+
 export type OrderReturnListResponse = PaginatedResponse<
   "returns",
   OrderReturnResponse
 >;
+
+export type AdminOrderReturnListResponse = PaginatedResponse<
+  "returns",
+  AdminOrderReturnResponse
+>;
+
 export type OrderReturnSearchQuery = Partial<{
   limit: string;
   offset: string;
-  userId: string; // For admin to search by user ID
+  orderId: string;
 }>;
+
+export type AdminOrderReturnSearchQuery = SearchQuery<
+  (typeof ORDER_RETURN_SEARCH_SORT_OPTIONS)[number]
+> &
+  Partial<{
+    finalRefundAmountCentsMin: string;
+    finalRefundAmountCentsMax: string;
+
+    refundStateIds: string[];
+    pickupStateIds: string[];
+    stateIds: string[]; // Return state IDs
+    reasonIds: string[];
+
+    pickupDateFrom: string;
+    pickupDateTo: string;
+
+    estimatePickupDateFrom: string;
+    estimatePickupDateTo: string;
+
+    createdAtFrom: string;
+    createdAtTo: string;
+
+    updatedAtFrom: string;
+    updatedAtTo: string;
+  }>;
 
 export type RefundStateResponse = PaymentStateResponse;
 export type RefundStateListResponse = PaymentStateListResponse;

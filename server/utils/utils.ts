@@ -1122,6 +1122,18 @@ export function formatOrderReturnResponse(
   };
 }
 
+export function formatAdminOrderReturnResponse(
+  orderReturn: any,
+): commonType.AdminOrderReturnResponse {
+  return {
+    ...formatOrderReturnResponse(orderReturn),
+    returnedBy: {
+      id: orderReturn.userId?._id || orderReturn.returnedBy._id, // Handle both cases when returnedBy is populated or just userId
+      fullName: orderReturn.userId?.fullName || orderReturn.returnedBy.fullName,
+    },
+  };
+}
+
 export function formatOrderReturnDetailsResponse(
   orderReturn: any,
 ): commonType.OrderReturnDetailsResponse {
@@ -1157,6 +1169,18 @@ export function formatOrderReturnDetailsResponse(
       createdBy: s.createdBy,
       createdAt: s.createdAt,
     })),
+  };
+}
+
+export function formatAdminOrderReturnDetailsResponse(
+  orderReturn: any,
+): commonType.AdminOrderReturnDetailsResponse {
+  return {
+    ...formatOrderReturnDetailsResponse(orderReturn),
+    returnedBy: {
+      id: orderReturn.returnedBy._id,
+      fullName: orderReturn.returnedBy.fullName,
+    },
   };
 }
 

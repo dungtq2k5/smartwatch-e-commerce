@@ -498,3 +498,18 @@ export const ORDER_SEARCH_SORT_OPTIONS = [
 ] as const;
 
 export const MAX_ORDERS_TO_UPDATE_BULK = 5;
+
+export const ORDER_RETURN_SEARCH_SORT_OPTIONS = [
+  "finalRefundAmountCents_desc",
+  "finalRefundAmountCents_asc",
+  "pickupDate_desc",
+  "pickupDate_asc",
+  "estimatePickupDate_desc",
+  "estimatePickupDate_asc",
+  "createdAt_desc",
+  "createdAt_asc",
+  "updatedAt_desc",
+  "updatedAt_asc",
+] as const;
+
+export const MAX_ORDER_RETURNS_TO_UPDATE_BULK = 10;

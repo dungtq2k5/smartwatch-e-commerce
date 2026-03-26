@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { centsToUSD, formatError } from "../../../../common/utils.common";
 import type {
   OrderReturnDetailsResponse,
-  ReturnStateListResponse,
+  OrderStateResponse,
 } from "../../../../common/types.common";
 import ApiError from "../../components/common/ApiError";
 import useReturnStore from "../../store/user/orderReturnStore";
@@ -117,8 +117,8 @@ export default function ReturnRefundDetail() {
 
   const genProgressBar = useCallback(
     (
-      states: ReturnStateListResponse["states"],
-      returnDetailStates: OrderReturnDetailsResponse["states"]
+      states: Omit<OrderStateResponse, "description">[],
+      returnDetailStates: OrderReturnDetailsResponse["states"],
     ) => {
       return (
         <div className="row justify-content-center mb-4">
@@ -128,7 +128,7 @@ export default function ReturnRefundDetail() {
             const isCompleted = currStatusLevel >= stepLevel;
             const isActive = currStatusLevel === stepLevel;
             const createdAt = returnDetailStates.find(
-              (s) => s.id === state.id
+              (s) => s.id === state.id,
             )?.createdAt;
 
             return (
@@ -159,7 +159,7 @@ export default function ReturnRefundDetail() {
         </div>
       );
     },
-    [currStatusLevel]
+    [currStatusLevel],
   );
 
   const handleDownloadLabel = useCallback(async (): Promise<void> => {
@@ -305,7 +305,7 @@ export default function ReturnRefundDetail() {
                 returnDetail.states.some((s) => ["7", "8"].includes(s.lookupId))
                   ? returnDetail.states
                   : returnStates.states,
-                returnDetail.states
+                returnDetail.states,
               )
             }
 
@@ -339,7 +339,7 @@ export default function ReturnRefundDetail() {
                       <p className="text-success mb-0">
                         Estimated pickup date:{" "}
                         {new Date(
-                          returnDetail.estimatePickupDate
+                          returnDetail.estimatePickupDate,
                         ).toLocaleDateString()}
                       </p>
                     </div>
@@ -516,7 +516,7 @@ export default function ReturnRefundDetail() {
                         <span>Refund to Balance:</span>
                         <span>
                           {centsToUSD(
-                            returnDetail.refundSummary.toBalanceCents
+                            returnDetail.refundSummary.toBalanceCents,
                           )}
                         </span>
                       </div>
@@ -526,7 +526,7 @@ export default function ReturnRefundDetail() {
                       <span>Total Refund:</span>
                       <span>
                         {centsToUSD(
-                          returnDetail.refundSummary.finalRefundAmountCents
+                          returnDetail.refundSummary.finalRefundAmountCents,
                         )}
                       </span>
                     </div>

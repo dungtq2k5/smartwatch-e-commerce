@@ -19,6 +19,7 @@ import type {
   AdminGrnDisplayableField,
   AdminModelVariationDisplayableField,
   AdminOrderDisplayableField,
+  AdminOrderReturnDisplayableField,
   AdminProductBrandDisplayableField,
   AdminProductCategoryDisplayableField,
   AdminProductDisplayableField,
@@ -31,6 +32,7 @@ import type {
   GrnDisplayField,
   ModelVariationDisplayField,
   OrderDisplayField,
+  OrderReturnDisplayField,
   PermissionOperationKey,
   ProductBrandDisplayField,
   ProductCategoryDisplayField,
@@ -111,9 +113,15 @@ export const PAYMENT_STATES_URL = `${ROOT_URL}/payment-states`;
 
 export const DELIVERY_STATES_URL = `${ROOT_URL}/delivery-states`;
 
-export const RETURN_URL = `${ROOT_URL}/returns`;
-export const SELF_RETURN_URL = `${RETURN_URL}/me`;
-export const RETURN_STATES_URL = `${ROOT_URL}/return-states`;
+export const ORDER_RETURN_URL = `${ROOT_URL}/returns`;
+export const SELF_ORDER_RETURN_URL = `${ORDER_RETURN_URL}/me`;
+export const ORDER_RETURN_STATES_URL = `${ROOT_URL}/return-states`;
+
+export const REFUND_STATES_URL = `${ROOT_URL}/refund-states`;
+
+export const PICKUP_STATES_URL = `${ROOT_URL}/pickup-states`;
+
+export const RETURN_REASONS_URL = `${ROOT_URL}/return-reasons`;
 
 export const SELF_BANK_ACCOUNTS_URL = `${ROOT_URL}/user-bank-accounts/me`;
 
@@ -474,6 +482,29 @@ export const ORDER_FIELD_LABEL_LEGEND: Readonly<
   actions: "Actions",
 };
 
+export const ORDER_RETURN_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminOrderReturnDisplayableField, string>
+> = {
+  id: "ID",
+  orderId: "Order ID",
+  returnedBy: "Returned By",
+  items: "Items",
+  pickupAddress: "Pickup Address",
+  refundTransaction: "Refund Transaction",
+  refundSummary: "Refund Amount", // refundSummary.finalRefundAmountCents
+  refundStates: "Refund State",
+  pickupStates: "Pickup State",
+  states: "Return State",
+  pickupDate: "Pickup Date",
+  estimatePickupDate: "Est Pickup Date",
+  reasonId: "Return Reason",
+  imageUrls: "Images",
+  buyerReason: "Buyer Reason",
+  createdAt: "Created At",
+  updatedAt: "Updated At",
+  actions: "Actions",
+};
+
 export const DEFAULT_ADMIN_USER_DISPLAY_FIELDS: UserDisplayField[] = [
   { name: "id", visible: false, exportable: true },
   { name: "fullName", visible: true, exportable: true },
@@ -633,6 +664,28 @@ export const DEFAULT_ADMIN_ORDER_DISPLAY_FIELDS: OrderDisplayField[] = [
   { name: "actions", visible: true, exportable: false },
 ];
 
+export const DEFAULT_ADMIN_ORDER_RETURN_DISPLAY_FIELDS: OrderReturnDisplayField[] =
+  [
+    { name: "id", visible: true, exportable: true },
+    { name: "orderId", visible: true, exportable: true },
+    { name: "items", visible: false, exportable: true },
+    { name: "pickupAddress", visible: true, exportable: true },
+    { name: "refundTransaction", visible: false, exportable: true },
+    { name: "refundSummary", visible: true, exportable: true },
+    { name: "refundStates", visible: true, exportable: true },
+    { name: "pickupStates", visible: true, exportable: true },
+    { name: "states", visible: true, exportable: true },
+    { name: "pickupDate", visible: true, exportable: true },
+    { name: "estimatePickupDate", visible: true, exportable: true },
+    { name: "reasonId", visible: true, exportable: true },
+    { name: "imageUrls", visible: false, exportable: true },
+    { name: "buyerReason", visible: true, exportable: true },
+    { name: "createdAt", visible: true, exportable: true },
+    { name: "updatedAt", visible: false, exportable: true },
+    { name: "returnedBy", visible: true, exportable: true },
+    { name: "actions", visible: true, exportable: false },
+  ];
+
 export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   visa: (
     <FontAwesomeIcon
@@ -677,6 +730,7 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   providerManagementDisplayFields: DEFAULT_ADMIN_PROVIDER_DISPLAY_FIELDS,
   roleManagementDisplayFields: DEFAULT_ADMIN_ROLE_DISPLAY_FIELDS,
   orderManagementDisplayFields: DEFAULT_ADMIN_ORDER_DISPLAY_FIELDS,
+  orderReturnManagementDisplayFields: DEFAULT_ADMIN_ORDER_RETURN_DISPLAY_FIELDS,
 };
 
 export const GRN_FILE_IMPORT_WORKSHEET_NAME = "grn-import-template"; // Must match with the worksheet name in the Excel template file
