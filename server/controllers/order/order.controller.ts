@@ -244,8 +244,12 @@ export async function createSelf(
       paymentMethodId,
     });
 
-    const deliveryPendingStateId = getDeliveryStateId("1");
-    const paymentPendingStateId = getPaymentStateId("1");
+    const deliveryPendingStateId = getDeliveryStateId(
+      LOOKUP_ID.DELIVERY_STATE.PENDING,
+    );
+    const paymentPendingStateId = getPaymentStateId(
+      LOOKUP_ID.PAYMENT_STATE.PENDING,
+    );
     const notes = "User order, system auto generated.";
     const sysUserId = getSysUserId();
     if (isCOD) {
@@ -266,7 +270,7 @@ export async function createSelf(
           createdBy: sysUserId,
         },
         {
-          id: getOrderStateId("2"), // confirmed
+          id: getOrderStateId(LOOKUP_ID.ORDER_STATE.CONFIRMED),
           notes,
           createdBy: sysUserId,
         },
@@ -680,7 +684,9 @@ export async function updateSelf(
 
       // Can't update order state if non-COD paymentState isn't paid yet
       const latestPaymentStateId = getLatestStateId(order.paymentStates);
-      const isPaid = getPaymentStateLookupId(latestPaymentStateId) === LOOKUP_ID.PAYMENT_STATE.PAID;
+      const isPaid =
+        getPaymentStateLookupId(latestPaymentStateId) ===
+        LOOKUP_ID.PAYMENT_STATE.PAID;
       const isCOD =
         getPaymentMethodLookupId(new Types.ObjectId(order.paymentMethodId)) ===
         LOOKUP_ID.PAYMENT_METHOD.CASH;
@@ -694,8 +700,7 @@ export async function updateSelf(
 
       // --- Trigger Consequential State Updates ---
       switch (orderStateLookupId) {
-        // completed
-        case "6": {
+        case LOOKUP_ID.ORDER_STATE.COMPLETED: {
           const latestDeliveryStateId = getLatestStateId(order.deliveryStates);
           const latestDeliveryStateLevel = getDeliveryStateLevel(
             latestDeliveryStateId,
@@ -710,8 +715,7 @@ export async function updateSelf(
 
           break;
         }
-        // cancelled
-        case "7": {
+        case LOOKUP_ID.ORDER_STATE.CANCELLED: {
           if (latestOrderStateLevel >= 3) {
             // "placed"
             throw new HttpError(
@@ -759,14 +763,18 @@ export async function updateSelf(
               { session },
             );
             order.paymentStates.push({
-              id: getPaymentStateId("5"),
+              id: getPaymentStateId(
+                LOOKUP_ID.PAYMENT_STATE.REFUNDED_TO_BALANCE,
+              ),
               notes: "Refunded to user balance due to order cancellation.",
               createdBy: getSysUserId(),
             }); // refunded to balance
           }
           if (!isCOD) {
             order.paymentStates.push({
-              id: getPaymentStateId("4"),
+              id: getPaymentStateId(
+                LOOKUP_ID.PAYMENT_STATE.REFUNDED_VIA_STRIPE,
+              ),
               notes: "Refunded via Stripe due to order cancellation.",
               createdBy: getSysUserId(),
             }); // refunded via Stripe
@@ -1343,7 +1351,9 @@ export async function fulfillItem(
     const { items } = req.body as OrderFulfillItemUpdate;
 
     const systemUserId = getSysUserId();
-    const saleOutMovementTypeId = getInventoryMovementTypeId("3");
+    const saleOutMovementTypeId = getInventoryMovementTypeId(
+      LOOKUP_ID.IVT_MOVEMENT_TYPE.SALES_OUT,
+    );
 
     for (const { variationId, skus } of items) {
       // Check item exists in order
@@ -1416,12 +1426,12 @@ export async function fulfillItem(
     const notes = "Order item(s) fulfilled by admin.";
     const createdBy = new Types.ObjectId(userId);
     order.states.push({
-      id: getOrderStateId("3"),
+      id: getOrderStateId(LOOKUP_ID.ORDER_STATE.PLACED),
       notes,
       createdBy,
     }); // placed
     order.deliveryStates.push({
-      id: getDeliveryStateId("2"),
+      id: getDeliveryStateId(LOOKUP_ID.DELIVERY_STATE.PROCESSING),
       notes,
       createdBy,
     }); // processing
@@ -1614,7 +1624,9 @@ export async function handleOrderDeletion(
     }
 
     // 2. Get the movement type ID for "sales out"
-    const saleOutMovementTypeId = getInventoryMovementTypeId("3");
+    const saleOutMovementTypeId = getInventoryMovementTypeId(
+      LOOKUP_ID.IVT_MOVEMENT_TYPE.SALES_OUT,
+    );
 
     // 3. Execute all updates and deletions in parallel within the transaction
     await Promise.all([
@@ -1790,7 +1802,9 @@ async function handleOrderUpdate(
 
       // Can't update deliveryStateId if non-COD order isn't paid yet
       const latestPaymentStateId = getLatestStateId(order.paymentStates);
-      const isPaid = getPaymentStateLookupId(latestPaymentStateId) === LOOKUP_ID.PAYMENT_STATE.PAID;
+      const isPaid =
+        getPaymentStateLookupId(latestPaymentStateId) ===
+        LOOKUP_ID.PAYMENT_STATE.PAID;
       const isCOD =
         getPaymentMethodLookupId(new Types.ObjectId(order.paymentMethodId)) ===
         LOOKUP_ID.PAYMENT_METHOD.CASH;
@@ -1809,9 +1823,14 @@ async function handleOrderUpdate(
       );
 
       // Handle special case: update from "delivery failed" to "delivery rescheduled"
-      if (deliveryStateLookupId === LOOKUP_ID.DELIVERY_STATE.DELIVERY_RESCHEDULED) {
+      if (
+        deliveryStateLookupId === LOOKUP_ID.DELIVERY_STATE.DELIVERY_RESCHEDULED
+      ) {
         // delivery rescheduled
-        if (latestDeliveryStateLookupId !== LOOKUP_ID.DELIVERY_STATE.DELIVERY_FAILED) {
+        if (
+          latestDeliveryStateLookupId !==
+          LOOKUP_ID.DELIVERY_STATE.DELIVERY_FAILED
+        ) {
           throw new HttpError(
             400,
             "Latest delivery state must be 'delivery failed' to update to 'delivery rescheduled'.",
@@ -1838,10 +1857,9 @@ async function handleOrderUpdate(
             // Check if the latest order state is already 'delivering' before adding it again.
             const latestOrderStateLookupId =
               getOrderStateLookupId(latestOrderStateId);
-            if (latestOrderStateLookupId === "3") {
-              // placed
+            if (latestOrderStateLookupId === LOOKUP_ID.ORDER_STATE.PLACED) {
               order.states.push({
-                id: getOrderStateId("4"),
+                id: getOrderStateId(LOOKUP_ID.ORDER_STATE.DELIVERING),
                 notes:
                   "Auto updated to 'delivering' due to delivery state change.",
                 createdBy: sysUserId,
@@ -1853,14 +1871,14 @@ async function handleOrderUpdate(
           case 6: {
             order.receivedDate = new Date();
             order.states.push({
-              id: getOrderStateId("5"), // delivered
+              id: getOrderStateId(LOOKUP_ID.ORDER_STATE.DELIVERED),
               notes:
                 "Auto updated to 'delivered' due to delivery state change.",
               createdBy: sysUserId,
             });
             if (isCOD) {
               order.paymentStates.push({
-                id: getPaymentStateId("2"), // paid
+                id: getPaymentStateId(LOOKUP_ID.PAYMENT_STATE.PAID),
                 notes: "Payment collected upon delivery (COD).",
                 createdBy: new Types.ObjectId(reqUserId),
               });
@@ -1869,7 +1887,10 @@ async function handleOrderUpdate(
           }
           // delivery failed
           case 7: {
-            if (latestDeliveryStateLookupId !== "5") {
+            if (
+              latestDeliveryStateLookupId !==
+              LOOKUP_ID.DELIVERY_STATE.OUT_FOR_DELIVERY
+            ) {
               // out for delivery
               throw new HttpError(
                 400,
@@ -1882,7 +1903,9 @@ async function handleOrderUpdate(
           case 9: {
             if (
               !order.deliveryStates.some(
-                (ds) => getDeliveryStateLookupId(ds.id) === "7",
+                (ds) =>
+                  getDeliveryStateLookupId(ds.id) ===
+                  LOOKUP_ID.DELIVERY_STATE.DELIVERY_FAILED,
               )
             ) {
               // delivery failed
@@ -1896,7 +1919,7 @@ async function handleOrderUpdate(
               deleteOrderItself: false,
             });
             order.states.push({
-              id: getOrderStateId("7"), // cancelled
+              id: getOrderStateId(LOOKUP_ID.ORDER_STATE.CANCELLED),
               notes: "Order cancelled by admin after failed delivery attempt.",
               createdBy: sysUserId,
             });
@@ -1914,14 +1937,18 @@ async function handleOrderUpdate(
                 { session },
               );
               order.paymentStates.push({
-                id: getPaymentStateId("5"),
+                id: getPaymentStateId(
+                  LOOKUP_ID.PAYMENT_STATE.REFUNDED_TO_BALANCE,
+                ),
                 notes: "Refunded to user balance due to order cancellation.",
                 createdBy: sysUserId,
               }); // refunded to balance
             }
             if (!isCOD) {
               order.paymentStates.push({
-                id: getPaymentStateId("4"),
+                id: getPaymentStateId(
+                  LOOKUP_ID.PAYMENT_STATE.REFUNDED_VIA_STRIPE,
+                ),
                 notes: "Refunded via Stripe due to order cancellation.",
                 createdBy: sysUserId,
               });
@@ -2016,13 +2043,15 @@ async function handleCancelRefund(
         const sysUserId = getSysUserId();
 
         order.paymentStates.push({
-          id: getPaymentStateId("6"),
+          id: getPaymentStateId(
+            LOOKUP_ID.PAYMENT_STATE.REFUND_VIA_STRIPE_FAILED,
+          ),
           notes: "Refund via Stripe failed, refunded to user balance instead.",
           createdBy: sysUserId,
         }); // refund via Stripe failed
         user.userBalanceCents += amountToRefund;
         order.paymentStates.push({
-          id: getPaymentStateId("5"),
+          id: getPaymentStateId(LOOKUP_ID.PAYMENT_STATE.REFUNDED_TO_BALANCE),
           notes: "Refunded to user balance due to Stripe refund failure.",
           createdBy: sysUserId,
         }); // refunded to balance
@@ -2034,7 +2063,7 @@ async function handleCancelRefund(
       );
       user.userBalanceCents += amountToRefund;
       order.paymentStates.push({
-        id: getPaymentStateId("5"),
+        id: getPaymentStateId(LOOKUP_ID.PAYMENT_STATE.REFUNDED_TO_BALANCE),
         notes:
           "Refunded to user balance due to missing Stripe transaction or customer ID.",
         createdBy: getSysUserId(),

@@ -1219,18 +1219,20 @@ export async function normalSearch(
       .lean();
 
     // Map to format with returnedBy field included and restructure orderId to ID string
-    const formattedReturns: AdminOrderReturnResponse[] = orderReturns.map((orderReturn: any) => {
-      return {
-        ...formatOrderReturnResponse({
-          ...orderReturn,
-          orderId: orderReturn.orderId._id,
-        }),
-        returnedBy: {
-          id: orderReturn.orderId.userId._id,
-          fullName: orderReturn.orderId.userId.fullName,
-        },
-      };
-    });
+    const formattedReturns: AdminOrderReturnResponse[] = orderReturns.map(
+      (orderReturn: any) => {
+        return {
+          ...formatOrderReturnResponse({
+            ...orderReturn,
+            orderId: orderReturn.orderId._id,
+          }),
+          returnedBy: {
+            id: orderReturn.orderId.userId._id,
+            fullName: orderReturn.orderId.userId.fullName,
+          },
+        };
+      },
+    );
 
     res.status(200).json({
       success: true,
@@ -1873,7 +1875,9 @@ async function executeItemsReturned(
       .flatMap((item) => item.instances)
       .map((inst) => inst.id);
 
-    const returnFromCusMovementTypeId = getInventoryMovementTypeId("8");
+    const returnFromCusMovementTypeId = getInventoryMovementTypeId(
+      LOOKUP_ID.IVT_MOVEMENT_TYPE.RETURN_FROM_CUSTOMER,
+    );
     const sysUserId = getSysUserId();
     const inventoriesToInsert: {
       variationInstanceId: Types.ObjectId | string;
@@ -1996,8 +2000,7 @@ async function handleReturnStateUpdate(
     }
 
     switch (returnStateLookupId) {
-      // approved
-      case "2": {
+      case LOOKUP_ID.RETURN_STATE.APPROVED: {
         orderReturn.states.push({
           id: returnStateId,
           notes: notes || "Return request approved by admin.",
@@ -2005,8 +2008,7 @@ async function handleReturnStateUpdate(
         });
         break;
       }
-      // declined
-      case "8": {
+      case LOOKUP_ID.RETURN_STATE.DECLINED: {
         const latestReturnStateLookupId =
           getReturnStateLookupId(latestReturnStateId);
         if (latestReturnStateLookupId === LOOKUP_ID.RETURN_STATE.APPROVED) {
@@ -2040,8 +2042,7 @@ async function handleReturnStateUpdate(
         );
         break;
       }
-      // refunding
-      case "5": {
+      case LOOKUP_ID.RETURN_STATE.REFUNDING: {
         const latestReturnStateLookupId =
           getReturnStateLookupId(latestReturnStateId);
         if (
@@ -2152,10 +2153,9 @@ async function handlePickupStateUpdate(
         // --- Trigger Consequential State Updates ---
         const sysUserId = getSysUserId();
         switch (pickupStateLookupId) {
-          case "2": // out for pickup
-          case "3": // picked up
-          // in transit to warehouse
-          case "4": {
+          case LOOKUP_ID.PICKUP_STATE.OUT_FOR_PICKUP:
+          case LOOKUP_ID.PICKUP_STATE.PICKED_UP:
+          case LOOKUP_ID.PICKUP_STATE.IN_TRANSIT_TO_WAREHOUSE: {
             const latestReturnStateLookupId =
               getReturnStateLookupId(latestReturnStateId);
             if (latestReturnStateLookupId === LOOKUP_ID.RETURN_STATE.APPROVED) {
@@ -2168,8 +2168,7 @@ async function handlePickupStateUpdate(
             }
             break;
           }
-          // returned to warehouse
-          case "5": {
+          case LOOKUP_ID.PICKUP_STATE.RETURNED_TO_WAREHOUSE: {
             await executeItemsReturned(orderReturn, session);
             orderReturn.states.push({
               id: getReturnStateId(LOOKUP_ID.RETURN_STATE.ITEMS_RETURNED),
@@ -2179,7 +2178,7 @@ async function handlePickupStateUpdate(
 
             break;
           }
-          case "6": // pickup failed
+          case LOOKUP_ID.PICKUP_STATE.PICKUP_FAILED:
             break;
           // pickup rescheduled will be handle above since check level only forward
           default:

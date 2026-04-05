@@ -34,7 +34,7 @@ import WithdrawalRequest from "../models/withdrawal/withdrawalRequest.model";
 export async function createCheckoutSession(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Creating checkout session...");
 
@@ -43,8 +43,8 @@ export async function createCheckoutSession(
     return next(
       new HttpError(
         500,
-        "User ID not found, this should be handled in middlewares."
-      )
+        "User ID not found, this should be handled in middlewares.",
+      ),
     );
   }
   const { orderId } = req.params;
@@ -73,7 +73,7 @@ export async function createCheckoutSession(
     if (order.userId.toString() !== userId) {
       throw new HttpError(
         403,
-        "You do not have permission to access this order."
+        "You do not have permission to access this order.",
       );
     }
 
@@ -91,7 +91,7 @@ export async function createCheckoutSession(
     ) {
       throw new HttpError(
         400,
-        "Cannot create checkout session for COD orders."
+        "Cannot create checkout session for COD orders.",
       );
     }
 
@@ -112,10 +112,10 @@ export async function createCheckoutSession(
             images: variation.imageUrls.length
               ? variation.imageUrls
               : productModel.imageUrls.length
-              ? productModel.imageUrls
-              : product.imageUrls.length
-              ? product.imageUrls
-              : undefined,
+                ? productModel.imageUrls
+                : product.imageUrls.length
+                  ? product.imageUrls
+                  : undefined,
           },
           unit_amount: item.totalCents / item.quantity,
         },
@@ -165,7 +165,7 @@ export async function createCheckoutSession(
 export async function handleStripeWebhook(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Handling Stripe webhook event...");
   const sig = req.headers["stripe-signature"] as string;
@@ -211,7 +211,7 @@ export async function handleStripeWebhook(
             // Retrieve the PaymentIntent and expand the payment method
             const paymentIntent = await stripe.paymentIntents.retrieve(
               paymentIntentId,
-              { expand: ["payment_method"] }
+              { expand: ["payment_method"] },
             );
 
             // Ensure payment_method is an obj
@@ -251,7 +251,7 @@ export async function handleStripeWebhook(
                       isDefault: !defaultPaymentMethod, // Set as default if no other default exists
                     },
                   ],
-                  { session }
+                  { session },
                 );
                 console.log("✅ ", "User payment method saved successfully.");
               }
@@ -269,25 +269,25 @@ export async function handleStripeWebhook(
             variationId,
             quantity,
           })),
-          session
+          session,
         );
 
         // Update order
         const sysUserId = getSysUserId();
         order.paymentStates.push({
-          id: getPaymentStateId("2"), // paid
+          id: getPaymentStateId(LOOKUP_ID.PAYMENT_STATE.PAID),
           notes: "Payment succeeded via Stripe.",
           createdBy: sysUserId,
         });
         order.states.push({
-          id: getOrderStateId("2"), // confirmed
+          id: getOrderStateId(LOOKUP_ID.ORDER_STATE.CONFIRMED),
           notes: "Order confirmed after successful payment.",
           createdBy: sysUserId,
         });
         order.orderDate = new Date();
         order.transaction = {
-          amountCents: checkoutSession.amount_total as number,
-          currency: checkoutSession.currency as string,
+          amountCents: Number(checkoutSession.amount_total),
+          currency: String(checkoutSession.currency),
           transactionDate: new Date(checkoutSession.created * 1000), // Convert to JS Date
           paymentIntentId,
         };
@@ -295,7 +295,7 @@ export async function handleStripeWebhook(
         await order.save({ session });
         console.log(
           "✅ ",
-          "Order updated successfully after checkout session."
+          "Order updated successfully after checkout session.",
         );
         break;
       }
@@ -323,12 +323,12 @@ export async function handleStripeWebhook(
 
         const sysUserId = getSysUserId();
         order.paymentStates.push({
-          id: getPaymentStateId("3"), // failed
+          id: getPaymentStateId(LOOKUP_ID.PAYMENT_STATE.FAILED),
           notes: "Payment session expired.",
           createdBy: sysUserId,
         });
         order.states.push({
-          id: getOrderStateId("7"), // cancelled
+          id: getOrderStateId(LOOKUP_ID.ORDER_STATE.CANCELLED),
           notes: "Order cancelled due to payment timeout.",
           createdBy: sysUserId,
         });
@@ -336,7 +336,7 @@ export async function handleStripeWebhook(
         await order.save({ session });
         console.log(
           "✅ ",
-          "Order updated successfully after checkout session expired."
+          "Order updated successfully after checkout session expired.",
         );
         break;
       }
@@ -347,7 +347,7 @@ export async function handleStripeWebhook(
         });
         if (!bankAccount) {
           console.error(
-            `Webhook Error: Bank account with Stripe Connected Account ID ${account.id} not found.`
+            `Webhook Error: Bank account with Stripe Connected Account ID ${account.id} not found.`,
           );
           res.status(200).json({
             received: true,
@@ -374,7 +374,7 @@ export async function handleStripeWebhook(
             if (deletedDupAccount) {
               console.log(
                 "⚠️ ",
-                "Duplicate bank account detected. Removing the newly added bank account and keeping the existing one."
+                "Duplicate bank account detected. Removing the newly added bank account and keeping the existing one.",
               );
               // Clean up the new, redundant Stripe account and in DB
               await bankAccount.deleteOne({ session });
@@ -383,13 +383,13 @@ export async function handleStripeWebhook(
               } catch {
                 // If the account was already deleted, we can ignore this error
                 console.warn(
-                  `Could not delete Stripe account ${account.id}, it might be already deleted.`
+                  `Could not delete Stripe account ${account.id}, it might be already deleted.`,
                 );
               }
               await session.commitTransaction();
               console.log(
                 "✅ ",
-                "Duplicate bank account removed successfully."
+                "Duplicate bank account removed successfully.",
               );
 
               res.status(200).json({
@@ -447,13 +447,14 @@ export async function handleStripeWebhook(
         const withdrawalRequestId = transfer.metadata.withdrawalRequestId;
 
         // Check if withdrawalRequestId is valid
-        const withdrawalRequest = await WithdrawalRequest.findById(
-          withdrawalRequestId
-        ).session(session);
+        const withdrawalRequest =
+          await WithdrawalRequest.findById(withdrawalRequestId).session(
+            session,
+          );
         if (!withdrawalRequest) {
           // If withdrawal request is not found, we must return 200 to Stripe to stop retries for this non-existence request
           console.error(
-            `Webhook Error: Withdrawal request with ID ${withdrawalRequestId} not found.`
+            `Webhook Error: Withdrawal request with ID ${withdrawalRequestId} not found.`,
           );
           res.status(200).json({
             received: true,
@@ -467,7 +468,7 @@ export async function handleStripeWebhook(
         withdrawalRequest.stripeTransferId = transfer.id;
         withdrawalRequest.processedAt = new Date();
         withdrawalRequest.states.push({
-          id: getWithdrawalStateId("4"), // completed
+          id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.COMPLETED),
           notes: `Withdrawal completed via Stripe. Transfer ID: ${transfer.id}`,
           createdBy: getSysUserId(),
         });
@@ -481,13 +482,14 @@ export async function handleStripeWebhook(
         const withdrawalRequestId = transfer.metadata.withdrawalRequestId;
 
         // Check if withdrawalRequestId is valid
-        const withdrawalRequest = await WithdrawalRequest.findById(
-          withdrawalRequestId
-        ).session(session);
+        const withdrawalRequest =
+          await WithdrawalRequest.findById(withdrawalRequestId).session(
+            session,
+          );
         if (!withdrawalRequest) {
           // If withdrawal request is not found, we must return 200 to Stripe to stop retries for this non-existence request
           console.error(
-            `Webhook Error: Withdrawal request with ID ${withdrawalRequestId} not found.`
+            `Webhook Error: Withdrawal request with ID ${withdrawalRequestId} not found.`,
           );
           res.status(200).json({
             received: true,
@@ -501,13 +503,13 @@ export async function handleStripeWebhook(
         await User.findByIdAndUpdate(
           withdrawalRequest.userId,
           { $inc: { userBalanceCents: withdrawalRequest.amountCents } },
-          { session }
+          { session },
         );
 
         // Update withdrawal request
         withdrawalRequest.failureReason = "Transfer was reversed by Stripe";
         withdrawalRequest.states.push({
-          id: getWithdrawalStateId("5"), // failed
+          id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.FAILED),
           notes: `Transfer reversed: ${
             transfer.metadata.reversalReason || "Unknown reason"
           }`,
@@ -537,7 +539,7 @@ export async function handleStripeWebhook(
 // --- HELPER FUNCTIONS ---
 export async function createRefund(
   paymentIntentId: string,
-  amountCents?: number
+  amountCents?: number,
 ): Promise<Stripe.Refund> {
   console.log("▶️ ", `Creating Stripe refund for ${paymentIntentId}...`);
   try {
@@ -555,7 +557,7 @@ export async function createRefund(
 }
 
 export async function findOrCreateStripeCustomer(
-  userId: string
+  userId: string,
 ): Promise<string> {
   try {
     const user = await User.findById(userId);
@@ -587,7 +589,7 @@ export async function findOrCreateStripeCustomer(
 export async function createSetupIntent(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   console.log("▶️ ", "Processing create setup intent request...");
 
@@ -595,7 +597,7 @@ export async function createSetupIntent(
   if (!isPresent(user)) {
     throw new HttpError(
       500,
-      "Request user not found, this should be handled in middlewares."
+      "Request user not found, this should be handled in middlewares.",
     );
   }
 

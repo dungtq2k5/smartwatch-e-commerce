@@ -28,6 +28,7 @@ import toast from "react-hot-toast";
 import ConfirmSubmitModal from "../modal/ConfirmSubmitModal";
 import useUserCartStore from "../../../store/user/cartStore";
 import PurchaseDetailSkeleton from "../skeleton/PurchaseDetailSkeleton";
+import { LOOKUP_ID } from "../../../../../common/configs.common";
 
 type Process = {
   isProcessing: boolean;
@@ -156,7 +157,7 @@ export default function PurchaseDetail() {
       return (
         <div className="row justify-content-center mb-4">
           {states.map((state, idx) => {
-            if (state.lookupId === "7") return null; // only display up to "completed"
+            if (state.lookupId === LOOKUP_ID.ORDER_STATE.CANCELLED) return null; // only display up to "completed"
             const stepLevel = idx + 1;
             const isCompleted = currStatusLevel >= stepLevel;
             const isActive = currStatusLevel === stepLevel;
@@ -271,7 +272,9 @@ export default function PurchaseDetail() {
 
     setProcess((prev) => ({ ...prev, isProcessing: true }));
     try {
-      const completeState = getOrderStateByLookupId("6"); // "completed"
+      const completeState = getOrderStateByLookupId(
+        LOOKUP_ID.ORDER_STATE.COMPLETED,
+      );
       if (!completeState) throw new Error("Order state 'completed' not found");
 
       await updateSelfOrder(orderDetails.id, {
@@ -314,7 +317,9 @@ export default function PurchaseDetail() {
 
     setProcess((prev) => ({ ...prev, isProcessing: true }));
     try {
-      const cancelState = getOrderStateByLookupId("7"); // "cancelled"
+      const cancelState = getOrderStateByLookupId(
+        LOOKUP_ID.ORDER_STATE.CANCELLED,
+      );
       if (!cancelState) throw new Error("Order state 'cancelled' not found");
 
       await updateSelfOrder(orderDetails.id, {
@@ -423,7 +428,9 @@ export default function PurchaseDetail() {
             {
               // If the order is cancelled, display the states from orderDetails only, otherwise display all states
               genProgressBar(
-                orderDetails.states.some((s) => s.lookupId === "7")
+                orderDetails.states.some(
+                  (s) => s.lookupId === LOOKUP_ID.ORDER_STATE.CANCELLED,
+                )
                   ? orderDetails.states
                   : orderStates.states,
                 orderDetails.states,

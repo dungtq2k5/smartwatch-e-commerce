@@ -7,6 +7,7 @@ import {
   type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { capFirstLetter } from "../../../../common/utils.common";
+import { LOOKUP_ID } from "../../../../common/configs.common";
 
 type PaymentMethodBadgeProps = Readonly<{
   method?: PaymentMethodResponse;
@@ -31,12 +32,12 @@ const PaymentMethodBadge = memo(
       icon?: IconDefinition;
     } => {
       switch (method.lookupId) {
-        case "1": // COD (Cash on Delivery)
+        case LOOKUP_ID.PAYMENT_METHOD.CASH:
           return {
             variant: "bg-success-subtle text-success",
             icon: faMoneyBill,
           };
-        case "2": // Stripe
+        case LOOKUP_ID.PAYMENT_METHOD.STRIPE:
           return {
             variant: "bg-primary-subtle text-primary",
             icon: faStripe,

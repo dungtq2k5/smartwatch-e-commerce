@@ -77,6 +77,11 @@
       ```typescript
       res.set('Cache-Control', 'public, max-age=3600'); // 1 hour
       ```
+    - Modify public routes to have a prefix like /api/v1/public/...:
+      The "Public Lookup" (Unauthenticated)
+      If this is for applicants to check their results without logging in:
+      Route: POST /api/v1/public/admissions/status-check
+      Reasoning: Placing it under /public/ clarifies that it doesn't require an Auth token. Including admissions keeps the domain clear.
 
   - Database init:
     - Init roles & permissions ✅.

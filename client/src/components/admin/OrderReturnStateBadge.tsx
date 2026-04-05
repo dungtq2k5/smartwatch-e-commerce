@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { ReturnStateResponse } from "../../../../common/types.common";
 import { capFirstLetter } from "../../../../common/utils.common";
+import { LOOKUP_ID } from "../../../../common/configs.common";
 
 type OrderReturnStateBadgeProps = Readonly<{
   state?: ReturnStateResponse | null;
@@ -20,9 +21,9 @@ const OrderReturnStateBadge = memo(
     // Color scheme based on return state lifecycle
     const getBadgeVariant = (): string => {
       switch (state.lookupId) {
-        case "1": // Pending Approval
+        case LOOKUP_ID.RETURN_STATE.PENDING_APPROVAL:
           return "bg-warning text-dark";
-        case "2": // Approved
+        case LOOKUP_ID.RETURN_STATE.APPROVED: // Approved
           return "bg-info text-dark";
         case "3": // Items Returning
           return "bg-primary";

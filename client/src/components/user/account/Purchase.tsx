@@ -22,6 +22,7 @@ import { useSearchParams } from "react-router-dom";
 import Loading from "../../common/Loading";
 import usePaymentMethodStore from "../../../store/common/order/paymentMethodStore";
 import Btn from "../../common/Btn";
+import { LOOKUP_ID } from "../../../../../common/configs.common";
 
 type SearchForm = {
   activeTab: PurchaseTab;
@@ -80,7 +81,7 @@ export default function Purchase() {
     searchTerm: "",
   });
   const [searchOrders, setSearchOrders] = useState<OrderListResponse | null>(
-    null
+    null,
   );
   const [searchReturns, setSearchReturns] =
     useState<OrderReturnListResponse | null>(null);
@@ -224,7 +225,7 @@ export default function Purchase() {
             {
               limit: newSearchForm.limit.toString(),
             },
-            signal
+            signal,
           );
 
           if (!signal?.aborted) setSearchReturns(returns);
@@ -253,7 +254,7 @@ export default function Purchase() {
                 ? undefined
                 : await getOrderStateIdsForTab(newSearchForm.activeTab),
           },
-          signal
+          signal,
         );
 
         // Only update the orders if the request was not aborted
@@ -286,31 +287,35 @@ export default function Purchase() {
 
       switch (tab) {
         case "to-pay":
-          stateLookupIds = ["1"]; // pending
+          stateLookupIds = [LOOKUP_ID.ORDER_STATE.PENDING];
           break;
         case "to-ship":
-          stateLookupIds = ["2", "3", "4"]; // confirmed, placed, delivering
+          stateLookupIds = [
+            LOOKUP_ID.ORDER_STATE.CONFIRMED,
+            LOOKUP_ID.ORDER_STATE.PLACED,
+            LOOKUP_ID.ORDER_STATE.DELIVERING,
+          ];
           break;
         case "to-receive":
-          stateLookupIds = ["5"]; // delivered
+          stateLookupIds = [LOOKUP_ID.ORDER_STATE.DELIVERED];
           break;
         case "completed":
-          stateLookupIds = ["6"]; // completed
+          stateLookupIds = [LOOKUP_ID.ORDER_STATE.COMPLETED];
           break;
         case "cancelled":
-          stateLookupIds = ["7"]; // cancelled
+          stateLookupIds = [LOOKUP_ID.ORDER_STATE.CANCELLED];
           break;
       }
 
       try {
         return Promise.all(
-          stateLookupIds.map((lookupId) => fetchOrderStateByLookupId(lookupId))
+          stateLookupIds.map((lookupId) => fetchOrderStateByLookupId(lookupId)),
         ).then((states) => states.map((state) => state.id));
       } catch (error) {
         throw new Error(formatError(error));
       }
     },
-    [fetchOrderStateByLookupId]
+    [fetchOrderStateByLookupId],
   );
 
   const handleTabChange = useCallback(
@@ -324,7 +329,7 @@ export default function Purchase() {
       }
       setSearchParams({ tab: tabName });
     },
-    [process.isProcessing, searchForm.activeTab, setSearchParams]
+    [process.isProcessing, searchForm.activeTab, setSearchParams],
   );
 
   const handleShowMore = useCallback(async (): Promise<void> => {
@@ -419,7 +424,7 @@ export default function Purchase() {
         [name]: value,
       }));
     },
-    [process.isProcessing]
+    [process.isProcessing],
   );
 
   const handleSearch = useCallback(
@@ -429,7 +434,7 @@ export default function Purchase() {
 
       setSearchParams({ tab: "all", searchTerm: searchForm.searchTerm });
     },
-    [setSearchParams, searchForm.searchTerm]
+    [setSearchParams, searchForm.searchTerm],
   );
 
   const handleSubmitReceived = useCallback(async (): Promise<void> => {
@@ -446,7 +451,9 @@ export default function Purchase() {
     }
 
     try {
-      const completeState = await fetchOrderStateByLookupId("6"); // completed
+      const completeState = await fetchOrderStateByLookupId(
+        LOOKUP_ID.ORDER_STATE.COMPLETED,
+      );
       if (!completeState) throw new Error("Order state not found.");
 
       const updatedOrder = await updateSelfOrder(orderIdToSubmit, {
@@ -461,7 +468,7 @@ export default function Purchase() {
         if (searchForm.activeTab === "all") {
           // replace the current
           const orderIdx = newOrderList.findIndex(
-            (o) => o.id === orderIdToSubmit
+            (o) => o.id === orderIdToSubmit,
           );
           if (orderIdx !== -1) {
             newOrderList[orderIdx] = updatedOrder;
@@ -511,7 +518,9 @@ export default function Purchase() {
 
     try {
       // FIXME Provide cancel reason
-      const cancelledState = await fetchOrderStateByLookupId("7"); // cancelled
+      const cancelledState = await fetchOrderStateByLookupId(
+        LOOKUP_ID.ORDER_STATE.CANCELLED,
+      );
       if (!cancelledState) throw new Error("Order state not found.");
 
       const updatedOrder = await updateSelfOrder(orderIdToCancel, {
@@ -529,7 +538,7 @@ export default function Purchase() {
         } else if (searchForm.activeTab === "all") {
           // replace the current
           const orderIdx = newOrderList.findIndex(
-            (o) => o.id === orderIdToCancel
+            (o) => o.id === orderIdToCancel,
           );
           if (orderIdx !== -1) {
             newOrderList[orderIdx] = updatedOrder;
@@ -576,7 +585,9 @@ export default function Purchase() {
     }
 
     try {
-      const cancelState = await fetchReturnStateByLookupId("7"); // cancelled
+      const cancelState = await fetchReturnStateByLookupId(
+        LOOKUP_ID.RETURN_STATE.CANCELLED,
+      );
       const updatedReturn = await updateReturn(returnToCancel.returnId, {
         stateId: cancelState.id,
       });
@@ -587,7 +598,7 @@ export default function Purchase() {
 
         const updatedReturnList = prev.returns.returns;
         const returnIdx = updatedReturnList.findIndex(
-          (r) => r.id === returnToCancel.returnId
+          (r) => r.id === returnToCancel.returnId,
         );
         if (returnIdx !== -1) {
           updatedReturnList[returnIdx] = updatedReturn;
@@ -625,7 +636,7 @@ export default function Purchase() {
     (orderId: string, returnId: string): void => {
       setModal({ returnToCancel: { orderId, returnId } });
     },
-    []
+    [],
   );
 
   const closeModal = useCallback((): void => {

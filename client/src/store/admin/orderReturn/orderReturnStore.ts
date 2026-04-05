@@ -16,7 +16,10 @@ import {
 } from "../../../../../common/utils.common";
 import { ORDER_RETURN_URL } from "../../../configs";
 import { patch, retrieve } from "../../../utils/utils";
-import { MAX_ORDER_RETURNS_TO_UPDATE_BULK, LOOKUP_ID } from "../../../../../common/configs.common";
+import {
+  MAX_ORDER_RETURNS_TO_UPDATE_BULK,
+  LOOKUP_ID,
+} from "../../../../../common/configs.common";
 
 type ReturnState = {
   fetchReturns: (
@@ -35,7 +38,9 @@ type ReturnState = {
     returnId: string,
     data: OrderReturnPickupStateUpdate,
   ) => Promise<OrderReturnResponse>;
-  updateReturnPickupStateBulk: (data: OrderReturnPickupStateUpdateBulk) => Promise<void>;
+  updateReturnPickupStateBulk: (
+    data: OrderReturnPickupStateUpdateBulk,
+  ) => Promise<void>;
 
   getReturn: (returnId: string) => Promise<AdminOrderReturnResponse>;
 
@@ -184,7 +189,9 @@ export const useReturnStore = create<ReturnState>(() => ({
     }
   },
 
-  async updateReturnPickupStateBulk(data: OrderReturnPickupStateUpdateBulk): Promise<void> {
+  async updateReturnPickupStateBulk(
+    data: OrderReturnPickupStateUpdateBulk,
+  ): Promise<void> {
     try {
       if (data.returnIds.length === 0) {
         throw new Error("No returns selected for bulk pickup state update.");
@@ -195,7 +202,11 @@ export const useReturnStore = create<ReturnState>(() => ({
         );
       }
 
-      const res = await patch(`${ORDER_RETURN_URL}/pickup-state/many`, null, data);
+      const res = await patch(
+        `${ORDER_RETURN_URL}/pickup-state/many`,
+        null,
+        data,
+      );
       if (!res.success) throw new Error(res.message);
     } catch (error) {
       throw new Error(formatError(error));
@@ -215,12 +226,24 @@ export const useReturnStore = create<ReturnState>(() => ({
 
   canUpdateReturnState(returnStateLookupId: string): boolean {
     // Can update when return state is not in "refunded", "canceled", and "declined" states.
-    return !([LOOKUP_ID.RETURN_STATE.REFUNDED, LOOKUP_ID.RETURN_STATE.CANCELLED, LOOKUP_ID.RETURN_STATE.DECLINED] as string[]).includes(returnStateLookupId);
+    return !(
+      [
+        LOOKUP_ID.RETURN_STATE.REFUNDED,
+        LOOKUP_ID.RETURN_STATE.CANCELLED,
+        LOOKUP_ID.RETURN_STATE.DECLINED,
+      ] as string[]
+    ).includes(returnStateLookupId);
   },
 
   canUpdateReturnPickupState(returnStateLookupId: string): boolean {
     // Can update when return state is "approved", "items returning", and "items returned" states.
-    return ([LOOKUP_ID.RETURN_STATE.APPROVED, LOOKUP_ID.RETURN_STATE.ITEMS_RETURNING, LOOKUP_ID.RETURN_STATE.ITEMS_RETURNED] as string[]).includes(returnStateLookupId);
+    return (
+      [
+        LOOKUP_ID.RETURN_STATE.APPROVED,
+        LOOKUP_ID.RETURN_STATE.ITEMS_RETURNING,
+        LOOKUP_ID.RETURN_STATE.ITEMS_RETURNED,
+      ] as string[]
+    ).includes(returnStateLookupId);
   },
 
   canApproveReturn(returnStateLookupId: string): boolean {

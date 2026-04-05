@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { PickupStateResponse } from "../../../../common/types.common";
 import { capFirstLetter } from "../../../../common/utils.common";
+import { LOOKUP_ID } from "../../../../common/configs.common";
 
 type OrderReturnPickupStateBadgeProps = Readonly<{
   state?: PickupStateResponse | null;
@@ -20,19 +21,19 @@ const OrderReturnPickupStateBadge = memo(
     // Color scheme based on pickup state lifecycle
     const getBadgeVariant = (): string => {
       switch (state.lookupId) {
-        case "1": // Pending
+        case LOOKUP_ID.PICKUP_STATE.PENDING:
           return "bg-warning text-dark";
-        case "2": // Out For Pickup
+        case LOOKUP_ID.PICKUP_STATE.OUT_FOR_PICKUP:
           return "bg-info text-dark";
-        case "3": // Picked Up
+        case LOOKUP_ID.PICKUP_STATE.PICKED_UP:
           return "bg-primary";
-        case "4": // In Transit
+        case LOOKUP_ID.PICKUP_STATE.IN_TRANSIT_TO_WAREHOUSE:
           return "bg-primary";
-        case "5": // Returned To Warehouse (Final)
+        case LOOKUP_ID.PICKUP_STATE.RETURNED_TO_WAREHOUSE:
           return "bg-success";
-        case "6": // Pickup Failed
+        case LOOKUP_ID.PICKUP_STATE.PICKUP_FAILED:
           return "bg-danger";
-        case "7": // Pickup Rescheduled
+        case LOOKUP_ID.PICKUP_STATE.PICKUP_RESCHEDULED:
           return "bg-warning text-dark";
         default:
           return "bg-secondary";

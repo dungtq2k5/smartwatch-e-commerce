@@ -12,6 +12,7 @@ import { HttpError } from "../../utils/errorHandler";
 import WithdrawalRequest from "../../models/withdrawal/withdrawalRequest.model";
 import {
   DEFAULT_CURRENCY,
+  LOOKUP_ID,
   MIN_WITHDRAWAL_AMOUNT_CENTS,
 } from "../../../common/configs.common";
 import type {
@@ -89,7 +90,7 @@ export async function createRequest(
     // Check for existing pending withdrawal
     const existingPendingRequest = await WithdrawalRequest.findOne({
       userId,
-      "states.id": getWithdrawalStateId("1"), // pending
+      "states.id": getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PENDING),
     })
       .lean()
       .session(session);
@@ -114,7 +115,7 @@ export async function createRequest(
       },
       states: [
         {
-          id: getWithdrawalStateId("1"), // pending
+          id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PENDING),
           notes: `Withdrawal request created for bank account ending in ${bankAccount.last4}.`,
           createdBy: getSysUserId(),
         },
@@ -273,8 +274,11 @@ export async function cancelRequest(
     */
 
     const latestStateId = getLatestStateId(withdrawalRequest.states);
-    if (!latestStateId.equals(getWithdrawalStateId("1"))) {
-      // pending
+    if (
+      !latestStateId.equals(
+        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PENDING),
+      )
+    ) {
       throw new HttpError(400, "Only pending requests can be cancelled.");
     }
 
@@ -287,7 +291,7 @@ export async function cancelRequest(
     );
 
     withdrawalRequest.states.push({
-      id: getWithdrawalStateId("6"), // cancelled
+      id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.CANCELLED),
       notes: "Withdrawal request cancelled by user",
       createdBy: getSysUserId(),
     });
@@ -359,28 +363,37 @@ export async function approveRequest(
     */
 
     const latestStateId = getLatestStateId(withdrawalRequest.states);
-    if (latestStateId.equals(getWithdrawalStateId("4"))) {
-      // completed
+    if (
+      latestStateId.equals(
+        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.COMPLETED),
+      )
+    ) {
       throw new HttpError(400, "Completed requests cannot be updated.");
     }
-    if (latestStateId.equals(getWithdrawalStateId("2"))) {
-      // approved
+    if (
+      latestStateId.equals(
+        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.APPROVED),
+      )
+    ) {
       throw new HttpError(400, "This request has already been approved.");
     }
-    if (!latestStateId.equals(getWithdrawalStateId("1"))) {
-      // pending
+    if (
+      !latestStateId.equals(
+        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PENDING),
+      )
+    ) {
       throw new HttpError(400, "This request is not valid for approve.");
     }
 
     const sysUserId = getSysUserId();
     withdrawalRequest.states.push(
       {
-        id: getWithdrawalStateId("2"), // approved
+        id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.APPROVED),
         notes: notes || null,
         createdBy: new Types.ObjectId(reqUserId),
       },
       {
-        id: getWithdrawalStateId("3"), // processing
+        id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PROCESSING),
         notes: "Processing withdrawal via Stripe",
         createdBy: sysUserId,
       },
@@ -418,7 +431,7 @@ export async function approveRequest(
 
       withdrawalRequest.failureReason = stripeError.message;
       withdrawalRequest.states.push({
-        id: getWithdrawalStateId("5"), // failed
+        id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.FAILED),
         notes: `Failed to submit to Stripe: ${stripeError.message}`,
         createdBy: sysUserId,
       });
@@ -491,12 +504,18 @@ export async function rejectRequest(
     */
 
     const latestStateId = getLatestStateId(withdrawalRequest.states);
-    if (latestStateId.equals(getWithdrawalStateId("4"))) {
-      // completed
+    if (
+      latestStateId.equals(
+        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.COMPLETED),
+      )
+    ) {
       throw new HttpError(400, "Completed requests cannot be updated.");
     }
-    if (!latestStateId.equals(getWithdrawalStateId("1"))) {
-      // pending
+    if (
+      !latestStateId.equals(
+        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PENDING),
+      )
+    ) {
       throw new HttpError(400, "This request is not valid for reject.");
     }
 
@@ -509,7 +528,7 @@ export async function rejectRequest(
     );
 
     withdrawalRequest.states.push({
-      id: getWithdrawalStateId("7"), // rejected
+      id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.REJECTED),
       notes: notes || null,
       createdBy: new Types.ObjectId(reqUserId),
     });

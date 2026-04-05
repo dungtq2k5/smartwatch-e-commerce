@@ -9,6 +9,7 @@ import {
   faMoneyBillTransfer,
   type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
+import { LOOKUP_ID } from "../../../../common/configs.common";
 
 type PaymentStateBadgeProps = Readonly<{
   state?: PaymentStateResponse;
@@ -24,17 +25,17 @@ const PaymentStateBadge = memo(
     // Color and icon scheme based on payment status
     const getBadgeConfig = (): { variant: string; icon?: IconDefinition } => {
       switch (state.lookupId) {
-        case "1": // Pending
+        case LOOKUP_ID.PAYMENT_STATE.PENDING:
           return { variant: "bg-warning text-dark", icon: faClock };
-        case "2": // Paid
+        case LOOKUP_ID.PAYMENT_STATE.PAID:
           return { variant: "bg-success", icon: faCheckCircle };
-        case "3": // Failed
+        case LOOKUP_ID.PAYMENT_STATE.FAILED:
           return { variant: "bg-danger", icon: faTimesCircle };
-        case "4": // Refunded via Stripe
+        case LOOKUP_ID.PAYMENT_STATE.REFUNDED_VIA_STRIPE:
           return { variant: "bg-info", icon: faMoneyBillTransfer };
-        case "5": // Refunded to Balance
+        case LOOKUP_ID.PAYMENT_STATE.REFUNDED_TO_BALANCE:
           return { variant: "bg-info", icon: faMoneyBillTransfer };
-        case "6": // Refund via Stripe Failed
+        case LOOKUP_ID.PAYMENT_STATE.REFUND_VIA_STRIPE_FAILED:
           return { variant: "bg-danger", icon: faTimesCircle };
         default:
           return { variant: "bg-secondary" };

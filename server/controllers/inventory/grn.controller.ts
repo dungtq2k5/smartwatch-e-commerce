@@ -94,7 +94,7 @@ export async function create(
     const createdGrn = new Grn({
       ...grn,
       providerId,
-      stateId: grn.stateId || getGrnStateId("1"), // completed
+      stateId: grn.stateId || getGrnStateId(LOOKUP_ID.GRN_STATE.COMPLETED),
       createdBy: reqUser._id,
     });
 
@@ -102,7 +102,9 @@ export async function create(
 
     // Create variation instances
     const instancesToCreate: any[] = [];
-    const newInstanceConditionId = getInstanceConditionId(LOOKUP_ID.INSTANCE_CONDITION.NEW); // new
+    const newInstanceConditionId = getInstanceConditionId(
+      LOOKUP_ID.INSTANCE_CONDITION.NEW,
+    ); // new
     const variationId = new Types.ObjectId(modelVariationId);
     const instanceSkuProps = await getPropsForInstanceSkuGen(
       variationId,
@@ -124,7 +126,9 @@ export async function create(
 
     // Create inventory movements for each instance
     const inventoryMovementsToCreate: any[] = [];
-    const stockAdjustInventoryMovementTypeId = getInventoryMovementTypeId("1"); // good receipts
+    const stockAdjustInventoryMovementTypeId = getInventoryMovementTypeId(
+      LOOKUP_ID.IVT_MOVEMENT_TYPE.GOODS_RECEIPT,
+    );
     for (const instance of createdInstances) {
       inventoryMovementsToCreate.push({
         variationInstanceId: instance._id,

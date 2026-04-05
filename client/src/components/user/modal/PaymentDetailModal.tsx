@@ -9,7 +9,7 @@ import type {
 import { centsToUSD, formatError } from "../../../../../common/utils.common";
 import ApiError from "../../common/ApiError";
 import Loading from "../../common/Loading";
-import { PROJECT_NAME } from "../../../../../common/configs.common";
+import { LOOKUP_ID, PROJECT_NAME } from "../../../../../common/configs.common";
 import { Link } from "react-router-dom";
 import { MODAL_CLOSE_DELAY_MS } from "../../../configs";
 
@@ -31,7 +31,7 @@ const PaymentDetailModal = memo(
 
     const [order, setOrder] = useState<OrderResponse | null>(null);
     const [orderState, setOrderState] = useState<OrderStateResponse | null>(
-      null
+      null,
     );
 
     const [isInitializing, setIsInitializing] = useState<boolean>(true);
@@ -97,7 +97,9 @@ const PaymentDetailModal = memo(
                 </h1>
                 <p className="text-success mb-0 fs-5 text-capitalize">
                   Payment{" "}
-                  {orderState.lookupId === "1" ? "pending" : "successful"}
+                  {orderState.lookupId === LOOKUP_ID.ORDER_STATE.PENDING
+                    ? "pending"
+                    : "successful"}
                 </p>
               </div>
 
@@ -140,7 +142,7 @@ const PaymentDetailModal = memo(
         </Modal.Footer>
       </Modal>
     );
-  }
+  },
 );
 
 export default PaymentDetailModal;
