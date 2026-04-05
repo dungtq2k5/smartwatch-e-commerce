@@ -553,6 +553,7 @@ export const LOOKUP_ID = {
     FAILED: "3",
     REFUNDED_VIA_STRIPE: "4",
     REFUNDED_TO_BALANCE: "5",
+    REFUND_VIA_STRIPE_FAILED: "6",
   },
   ORDER_STATE: {
     PENDING: "1",

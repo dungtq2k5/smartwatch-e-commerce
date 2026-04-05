@@ -270,7 +270,11 @@ export async function seedPaymentMethods(
       return;
     }
     const paymentMethods = [
-      { lookupId: LOOKUP_ID.PAYMENT_METHOD.CASH, name: "cash", description: "Cash on Delivery (COD)" },
+      {
+        lookupId: LOOKUP_ID.PAYMENT_METHOD.CASH,
+        name: "cash",
+        description: "Cash on Delivery (COD)",
+      },
       {
         lookupId: LOOKUP_ID.PAYMENT_METHOD.STRIPE,
         name: "stripe",
@@ -323,6 +327,12 @@ export async function seedPaymentStates(
         description:
           "Payment has been refunded to the user balance since user hasn't had stripe customer ID or user had paid all by balance when checkout or refunded via Stripe was failed.",
       },
+      {
+        lookupId: LOOKUP_ID.PAYMENT_STATE.REFUND_VIA_STRIPE_FAILED,
+        name: "refund via Stripe failed",
+        description:
+          "The refund attempt via Stripe failed. A fallback to user balance was attempted.",
+      }
     ];
     paymentStates = paymentStates.map((state) => ({
       ...state,
