@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
+import { Accordion } from "react-bootstrap";
 import { useOrderStore } from "../../../store/admin/order/orderStore";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
@@ -618,76 +619,81 @@ export default function DetailOrder() {
                 </div>
               </div>
 
-              {/* Order States Timeline */}
-              <div className="card shadow-sm border-0 mb-4">
-                <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                  <h2 className="fs-5 card-title mb-0">Order State History</h2>
-                </div>
-                <div className="card-body">
-                  <div className="order-history-timeline newest-first mt-2">
-                    {[...orderDetails.states].reverse().map((state, idx) => {
-                      const isLatest = idx === 0;
+              {/* State Timelines */}
+              <Accordion defaultActiveKey={["0", "1", "2"]} alwaysOpen>
+                {/* Order States Timeline */}
+                <Accordion.Item
+                  eventKey="0"
+                  className="shadow-sm mb-3 border-0"
+                >
+                  <Accordion.Header className="bg-white">
+                    <h2 className="fs-5 mb-0">Order State History</h2>
+                  </Accordion.Header>
+                  <Accordion.Body className="bg-white">
+                    <div className="order-history-timeline newest-first mt-2">
+                      {[...orderDetails.states].reverse().map((state, idx) => {
+                        const isLatest = idx === 0;
 
-                      return (
-                        <div key={state.id} className="timeline-item pb-4">
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <div className="d-flex align-items-center gap-2">
-                              <OrderStateBadge
-                                state={getOrderState(state.id)}
-                              />
-                              {isLatest && (
-                                <span className="badge bg-primary bg-opacity-75">
-                                  Current
-                                </span>
-                              )}
+                        return (
+                          <div key={state.id} className="timeline-item pb-4">
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                              <div className="d-flex align-items-center gap-2">
+                                <OrderStateBadge
+                                  state={getOrderState(state.id)}
+                                />
+                                {isLatest && (
+                                  <span className="badge bg-primary bg-opacity-75">
+                                    Current
+                                  </span>
+                                )}
+                              </div>
+                              <small className="text-muted">
+                                {new Date(state.createdAt).toLocaleString()}
+                              </small>
                             </div>
-                            <small className="text-muted">
-                              {new Date(state.createdAt).toLocaleString()}
-                            </small>
-                          </div>
-                          <div className="card border p-3 rounded-3 shadow-none">
-                            <div className="small">
-                              {state.createdBy && (
-                                <div className="mb-2 text-muted">
-                                  <FontAwesomeIcon
-                                    icon={faUser}
-                                    size="xs"
-                                    className="me-1 opacity-50"
-                                  />
-                                  <DetailUserLink
-                                    userId={state.createdBy}
-                                    disabled={!canReadUser}
-                                    disabledtitle={DISABLED_TITLE_FOR_VIEWING}
-                                  >
-                                    {state.createdBy}
-                                  </DetailUserLink>
-                                </div>
-                              )}
-                              {state.notes ? (
-                                <span className="text-muted fst-italic">
-                                  Note: "{state.notes}"
-                                </span>
-                              ) : (
-                                <span className="text-muted fst-italic">
-                                  No notes.
-                                </span>
-                              )}
+                            <div className="card border p-3 rounded-3 shadow-none">
+                              <div className="small">
+                                {state.createdBy && (
+                                  <div className="mb-2 text-muted">
+                                    <FontAwesomeIcon
+                                      icon={faUser}
+                                      size="xs"
+                                      className="me-1 opacity-50"
+                                    />
+                                    <DetailUserLink
+                                      userId={state.createdBy}
+                                      disabled={!canReadUser}
+                                      disabledtitle={DISABLED_TITLE_FOR_VIEWING}
+                                    >
+                                      {state.createdBy}
+                                    </DetailUserLink>
+                                  </div>
+                                )}
+                                {state.notes ? (
+                                  <span className="text-muted fst-italic">
+                                    Note: "{state.notes}"
+                                  </span>
+                                ) : (
+                                  <span className="text-muted fst-italic">
+                                    No notes.
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+                        );
+                      })}
+                    </div>
+                  </Accordion.Body>
+                </Accordion.Item>
 
-              {/* Delivery States Timeline */}
-              <div className="card shadow-sm border-0 mb-4">
-                <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                  <h2 className="fs-5 card-title mb-0">
-                    Delivery State History
-                  </h2>
-                  <div className="d-flex align-items-center gap-2">
+                {/* Delivery States Timeline */}
+                <Accordion.Item
+                  eventKey="1"
+                  className="shadow-sm mb-3 border-0"
+                >
+                  <Accordion.Header className="bg-white d-flex justify-content-between align-items-center">
+                    <h2 className="fs-5 mb-0">Delivery State History</h2>
                     {canEditOrder && (
                       <button
                         type="button"
@@ -702,134 +708,136 @@ export default function DetailOrder() {
                         Edit
                       </button>
                     )}
-                  </div>
-                </div>
-                <div className="card-body">
-                  <div className="order-history-timeline newest-first mt-2">
-                    {[...orderDetails.deliveryStates]
-                      .reverse()
-                      .map((state, idx) => {
-                        const isLatest = idx === 0;
+                  </Accordion.Header>
+                  <Accordion.Body className="bg-white">
+                    <div className="order-history-timeline newest-first mt-2">
+                      {[...orderDetails.deliveryStates]
+                        .reverse()
+                        .map((state, idx) => {
+                          const isLatest = idx === 0;
 
-                        return (
-                          <div key={state.id} className="timeline-item pb-4">
-                            <div className="d-flex justify-content-between align-items-center mb-2">
-                              <div className="d-flex align-items-center gap-2">
-                                <DeliveryStateBadge
-                                  state={getDeliveryState(state.id)}
-                                />
-                                {isLatest && (
-                                  <span className="badge bg-primary bg-opacity-75">
-                                    Current
-                                  </span>
-                                )}
+                          return (
+                            <div key={state.id} className="timeline-item pb-4">
+                              <div className="d-flex justify-content-between align-items-center mb-2">
+                                <div className="d-flex align-items-center gap-2">
+                                  <DeliveryStateBadge
+                                    state={getDeliveryState(state.id)}
+                                  />
+                                  {isLatest && (
+                                    <span className="badge bg-primary bg-opacity-75">
+                                      Current
+                                    </span>
+                                  )}
+                                </div>
+                                <small className="text-muted">
+                                  {new Date(state.createdAt).toLocaleString()}
+                                </small>
                               </div>
-                              <small className="text-muted">
-                                {new Date(state.createdAt).toLocaleString()}
-                              </small>
-                            </div>
-                            <div className="card border p-3 rounded-3 shadow-none">
-                              <div className="small">
-                                {state.createdBy && (
-                                  <div className="mb-2 text-muted">
-                                    <FontAwesomeIcon
-                                      icon={faUser}
-                                      size="xs"
-                                      className="me-1 opacity-50"
-                                    />
-                                    <DetailUserLink
-                                      userId={state.createdBy}
-                                      disabled={!canReadUser}
-                                      disabledtitle={DISABLED_TITLE_FOR_VIEWING}
-                                    >
-                                      {state.createdBy}
-                                    </DetailUserLink>
-                                  </div>
-                                )}
-                                {state.notes ? (
-                                  <span className="text-muted fst-italic">
-                                    Note: "{state.notes}"
-                                  </span>
-                                ) : (
-                                  <span className="text-muted fst-italic">
-                                    No notes.
-                                  </span>
-                                )}
+                              <div className="card border p-3 rounded-3 shadow-none">
+                                <div className="small">
+                                  {state.createdBy && (
+                                    <div className="mb-2 text-muted">
+                                      <FontAwesomeIcon
+                                        icon={faUser}
+                                        size="xs"
+                                        className="me-1 opacity-50"
+                                      />
+                                      <DetailUserLink
+                                        userId={state.createdBy}
+                                        disabled={!canReadUser}
+                                        disabledtitle={
+                                          DISABLED_TITLE_FOR_VIEWING
+                                        }
+                                      >
+                                        {state.createdBy}
+                                      </DetailUserLink>
+                                    </div>
+                                  )}
+                                  {state.notes ? (
+                                    <span className="text-muted fst-italic">
+                                      Note: "{state.notes}"
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted fst-italic">
+                                      No notes.
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              </div>
+                          );
+                        })}
+                    </div>
+                  </Accordion.Body>
+                </Accordion.Item>
 
-              {/* Payment States Timeline */}
-              <div className="card shadow-sm border-0">
-                <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                  <h2 className="fs-5 card-title mb-0">
-                    Payment State History
-                  </h2>
-                </div>
-                <div className="card-body">
-                  <div className="order-history-timeline newest-first mt-2">
-                    {[...orderDetails.paymentStates]
-                      .reverse()
-                      .map((state, idx) => {
-                        const isLatest = idx === 0;
+                {/* Payment States Timeline */}
+                <Accordion.Item eventKey="2" className="shadow-sm border-0">
+                  <Accordion.Header className="bg-white">
+                    <h2 className="fs-5 mb-0">Payment State History</h2>
+                  </Accordion.Header>
+                  <Accordion.Body className="bg-white">
+                    <div className="order-history-timeline newest-first mt-2">
+                      {[...orderDetails.paymentStates]
+                        .reverse()
+                        .map((state, idx) => {
+                          const isLatest = idx === 0;
 
-                        return (
-                          <div key={state.id} className="timeline-item pb-4">
-                            <div className="d-flex justify-content-between align-items-center mb-2">
-                              <div className="d-flex align-items-center gap-2">
-                                <PaymentStateBadge
-                                  state={getPaymentState(state.id)}
-                                />
-                                {isLatest && (
-                                  <span className="badge bg-primary bg-opacity-75">
-                                    Current
-                                  </span>
-                                )}
+                          return (
+                            <div key={state.id} className="timeline-item pb-4">
+                              <div className="d-flex justify-content-between align-items-center mb-2">
+                                <div className="d-flex align-items-center gap-2">
+                                  <PaymentStateBadge
+                                    state={getPaymentState(state.id)}
+                                  />
+                                  {isLatest && (
+                                    <span className="badge bg-primary bg-opacity-75">
+                                      Current
+                                    </span>
+                                  )}
+                                </div>
+                                <small className="text-muted">
+                                  {new Date(state.createdAt).toLocaleString()}
+                                </small>
                               </div>
-                              <small className="text-muted">
-                                {new Date(state.createdAt).toLocaleString()}
-                              </small>
-                            </div>
-                            <div className="card border p-3 rounded-3 shadow-none">
-                              <div className="small">
-                                {state.createdBy && (
-                                  <div className="mb-2 text-muted">
-                                    <FontAwesomeIcon
-                                      icon={faUser}
-                                      size="xs"
-                                      className="me-1 opacity-50"
-                                    />
-                                    <DetailUserLink
-                                      userId={state.createdBy}
-                                      disabled={!canReadUser}
-                                      disabledtitle={DISABLED_TITLE_FOR_VIEWING}
-                                    >
-                                      {state.createdBy}
-                                    </DetailUserLink>
-                                  </div>
-                                )}
-                                {state.notes ? (
-                                  <span className="text-muted fst-italic">
-                                    Note: "{state.notes}"
-                                  </span>
-                                ) : (
-                                  <span className="text-muted fst-italic">
-                                    No notes.
-                                  </span>
-                                )}
+                              <div className="card border p-3 rounded-3 shadow-none">
+                                <div className="small">
+                                  {state.createdBy && (
+                                    <div className="mb-2 text-muted">
+                                      <FontAwesomeIcon
+                                        icon={faUser}
+                                        size="xs"
+                                        className="me-1 opacity-50"
+                                      />
+                                      <DetailUserLink
+                                        userId={state.createdBy}
+                                        disabled={!canReadUser}
+                                        disabledtitle={
+                                          DISABLED_TITLE_FOR_VIEWING
+                                        }
+                                      >
+                                        {state.createdBy}
+                                      </DetailUserLink>
+                                    </div>
+                                  )}
+                                  {state.notes ? (
+                                    <span className="text-muted fst-italic">
+                                      Note: "{state.notes}"
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted fst-italic">
+                                      No notes.
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              </div>
+                          );
+                        })}
+                    </div>
+                  </Accordion.Body>
+                </Accordion.Item>
+              </Accordion>
             </div>
           </div>
 
