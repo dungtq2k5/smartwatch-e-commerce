@@ -62,7 +62,7 @@ const EditOrderReturnStateModal = memo(
       getReturnStateByLookupId,
     } = useReturnStateStore();
     const {
-      getReturn,
+      fetchReturn,
       updateReturnState,
       canApproveReturn,
       canDeclineReturn,
@@ -99,7 +99,7 @@ const EditOrderReturnStateModal = memo(
 
           try {
             const [fetchedReturn] = await Promise.all([
-              getReturn(returnId),
+              fetchReturn(returnId),
               returnStates ? Promise.resolve() : fetchReturnStates(),
             ]);
 

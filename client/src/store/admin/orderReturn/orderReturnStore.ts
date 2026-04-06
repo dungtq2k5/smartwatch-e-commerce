@@ -22,6 +22,7 @@ import {
 } from "../../../../../common/configs.common";
 
 type ReturnState = {
+  fetchReturn: (returnId: string) => Promise<AdminOrderReturnResponse>;
   fetchReturns: (
     query?: AdminOrderReturnSearchQuery,
   ) => Promise<AdminOrderReturnListResponse>;
@@ -42,8 +43,6 @@ type ReturnState = {
     data: OrderReturnPickupStateUpdateBulk,
   ) => Promise<void>;
 
-  getReturn: (returnId: string) => Promise<AdminOrderReturnResponse>;
-
   canUpdateReturnState: (returnStateLookupId: string) => boolean;
   canUpdateReturnPickupState: (pickupStateLookupId: string) => boolean;
   canApproveReturn: (returnStateLookupId: string) => boolean;
@@ -52,6 +51,17 @@ type ReturnState = {
 };
 
 export const useReturnStore = create<ReturnState>(() => ({
+  async fetchReturn(returnId: string): Promise<AdminOrderReturnResponse> {
+    try {
+      const res = await retrieve(`${ORDER_RETURN_URL}/${returnId}/admin`);
+      if (!res.success) throw new Error(res.message);
+
+      return res.data as AdminOrderReturnResponse;
+    } catch (error) {
+      throw new Error(formatError(error));
+    }
+  },
+
   async fetchReturns(
     query?: AdminOrderReturnSearchQuery,
   ): Promise<AdminOrderReturnListResponse> {
@@ -337,17 +347,6 @@ export const useReturnStore = create<ReturnState>(() => ({
         data,
       );
       if (!res.success) throw new Error(res.message);
-    } catch (error) {
-      throw new Error(formatError(error));
-    }
-  },
-
-  async getReturn(returnId: string): Promise<AdminOrderReturnResponse> {
-    try {
-      const res = await retrieve(`${ORDER_RETURN_URL}/${returnId}/admin`);
-      if (!res.success) throw new Error(res.message);
-
-      return res.data as AdminOrderReturnResponse;
     } catch (error) {
       throw new Error(formatError(error));
     }

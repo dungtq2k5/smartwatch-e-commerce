@@ -52,7 +52,7 @@ const EditOrderReturnPickupStateModal = memo(
 
     const { pickupStates, fetchPickupStates, getPickupState } =
       usePickupStateStore();
-    const { getReturn, updateReturnPickupState, canUpdateReturnPickupState } =
+    const { fetchReturn, updateReturnPickupState, canUpdateReturnPickupState } =
       useReturnStore();
 
     const canEditReturn = useHasPermission("u_order_return");
@@ -82,7 +82,7 @@ const EditOrderReturnPickupStateModal = memo(
 
           try {
             const [fetchedReturn] = await Promise.all([
-              getReturn(returnId),
+              fetchReturn(returnId),
               pickupStates ? Promise.resolve() : fetchPickupStates(),
             ]);
 
