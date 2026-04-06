@@ -10,54 +10,65 @@ import { formatError } from "../../../../common/utils.common";
 type WithdrawalRequestState = {
   withdrawalStates: WithdrawalStateListResponse | null;
 
+  getWithdrawalStates: () => WithdrawalStateListResponse | null;
   getWithdrawalState: (id: string) => WithdrawalStateResponse | undefined;
 
   fetchWithdrawalStates: () => Promise<WithdrawalStateListResponse>;
   fetchWithdrawalState: (id: string) => Promise<WithdrawalStateResponse>;
 };
 
-const useWithdrawalStateStore = create<WithdrawalRequestState>((set, get) => ({
-  withdrawalStates: null,
+const useWithdrawalStateStoreInternal = create<WithdrawalRequestState>(
+  (set, get) => ({
+    withdrawalStates: null,
 
-  getWithdrawalState(id: string): WithdrawalStateResponse | undefined {
-    return structuredClone(
-      get().withdrawalStates?.states.find((state) => state.id === id)
-    );
-  },
+    getWithdrawalStates(): WithdrawalStateListResponse | null {
+      return structuredClone(get().withdrawalStates);
+    },
 
-  async fetchWithdrawalStates(): Promise<WithdrawalStateListResponse> {
-    const { withdrawalStates } = get();
-    if (withdrawalStates) return structuredClone(withdrawalStates);
+    getWithdrawalState(id: string): WithdrawalStateResponse | undefined {
+      return structuredClone(
+        get().withdrawalStates?.states.find((state) => state.id === id),
+      );
+    },
 
-    try {
-      const res = await retrieve(WITHDRAWAL_STATES_URL);
-      if (!res.success) throw new Error(res.message);
+    async fetchWithdrawalStates(): Promise<WithdrawalStateListResponse> {
+      const { withdrawalStates } = get();
+      if (withdrawalStates) return structuredClone(withdrawalStates);
 
-      const data = res.data as WithdrawalStateListResponse;
-      set({ withdrawalStates: data });
-      return structuredClone(data);
-    } catch (error) {
-      throw new Error(formatError(error));
-    }
-  },
+      try {
+        const res = await retrieve(WITHDRAWAL_STATES_URL);
+        if (!res.success) throw new Error(res.message);
 
-  async fetchWithdrawalState(id: string): Promise<WithdrawalStateResponse> {
-    const state = get().withdrawalStates?.states.find(
-      (state) => state.id === id
-    );
-    if (state) return structuredClone(state);
-
-    try {
-      const fetchedStates = await get().fetchWithdrawalStates();
-      const state = fetchedStates.states.find((state) => state.id === id);
-      if (!state) {
-        throw new Error(`Withdrawal state with id ${id} not found`);
+        const states = res.data as WithdrawalStateListResponse;
+        set({ withdrawalStates: states });
+        return structuredClone(states);
+      } catch (error) {
+        throw new Error(formatError(error));
       }
-      return state;
-    } catch (error) {
-      throw new Error(formatError(error));
-    }
-  },
-}));
+    },
 
-export default useWithdrawalStateStore;
+    async fetchWithdrawalState(id: string): Promise<WithdrawalStateResponse> {
+      const state = get().withdrawalStates?.states.find(
+        (state) => state.id === id,
+      );
+      if (state) return structuredClone(state);
+
+      try {
+        const fetchedStates = await get().fetchWithdrawalStates();
+        const state = fetchedStates.states.find((state) => state.id === id);
+        if (!state) {
+          throw new Error(`Withdrawal state with id ${id} not found`);
+        }
+        return state;
+      } catch (error) {
+        throw new Error(formatError(error));
+      }
+    },
+  }),
+);
+
+export default function useWithdrawalStateStore() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { withdrawalStates, ...actions } = useWithdrawalStateStoreInternal();
+  return actions;
+}
