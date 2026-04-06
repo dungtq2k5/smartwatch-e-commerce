@@ -27,6 +27,7 @@ import {
   ROLE_SEARCH_SORT_OPTIONS,
   ORDER_SEARCH_SORT_OPTIONS,
   ORDER_RETURN_SEARCH_SORT_OPTIONS,
+  WITHDRAWAL_SEARCH_SORT_OPTIONS,
 } from "./configs.common";
 
 export type ErrorResponse = {
@@ -1545,6 +1546,7 @@ export type UserBalanceHistoryResponse = {
   state: "completed" | "pending" | "failed"; // For display only
   createdAt: string;
 };
+
 export type UserBalanceHistoryListResponse = PaginatedResponse<
   "histories",
   UserBalanceHistoryResponse
@@ -1572,14 +1574,17 @@ export type UserSelfBankAccountResponse = {
   createdAt: string;
   updatedAt: string;
 };
+
 type UserBankAccountResponse = UserSelfBankAccountResponse & {
   stripeConnectedAccountId: string;
   stripeBankAccountFingerprint: string | null;
 };
+
 export type UserSelfBankAccountListResponse = {
   total: number;
   accounts: UserSelfBankAccountResponse[];
 };
+
 type UserBankAccountListResponse = {
   total: number;
   accounts: UserBankAccountResponse[];
@@ -1625,7 +1630,30 @@ export type ApproveWithdrawalRequest =
       notes?: string | null;
     }
   | undefined;
+
 export type RejectWithdrawalRequest = ApproveWithdrawalRequest;
+
+export type AdminWithdrawalRequestResponse = SelfWithdrawalRequestResponse & {
+  requestedBy: CreatedBy["createdBy"];
+};
+
+export type WithdrawalRequestSearchQuery = SearchQuery<
+  (typeof WITHDRAWAL_SEARCH_SORT_OPTIONS)[number]
+> &
+  Partial<{
+    stateIds: string[];
+    amountCentsMin: string;
+    amountCentsMax: string;
+    currency: string;
+    withdrawalMethod: (typeof WITHDRAWAL_METHODS)[number];
+    createdAtFrom: string;
+    createdAtTo: string;
+  }>;
+
+export type AdminWithdrawalRequestListResponse = PaginatedResponse<
+  "requests",
+  AdminWithdrawalRequestResponse
+>;
 
 export type WithdrawalStateResponse = OrderStateResponse;
 export type WithdrawalStateListResponse = {

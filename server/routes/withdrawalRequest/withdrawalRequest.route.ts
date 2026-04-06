@@ -12,6 +12,8 @@ import {
   cancelRequest,
   approveRequest,
   rejectRequest,
+  adminSearch,
+  adminGet,
 } from "../../controllers/withdrawal/withdrawalRequest.controller";
 
 const router = express.Router();
@@ -26,10 +28,13 @@ router.post(
   createRequest,
 );
 
+// For admin
 router.get(
-  "/me/:requestId",
+  "/",
   verifyPermission("r_withdrawal_req"),
-  getSelf
+  inputSanitizer("admin search"),
+  verifyWithdrawalRequestInput("admin search"),
+  adminSearch,
 );
 
 router.get(
@@ -39,27 +44,35 @@ router.get(
   searchSelf,
 );
 
+router.get("/me/:requestId", verifyPermission("r_withdrawal_req"), getSelf);
+
+// For admin
+router.get("/:requestId", verifyPermission("r_withdrawal_req"), adminGet);
+
 router.patch(
   "/me/:requestId/cancel",
   verifyPermission("u_withdrawal_req"),
-  sanitizeWithdrawalInput,
+  inputSanitizer("update"),
   verifyWithdrawalRequestInput("cancel request"),
   cancelRequest,
 );
 
-// -- ROUTES FOR ADMIN ONLY ---
+// For admin
 router.patch(
   "/:requestId/approve",
   verifyPermission("u_withdrawal_req"),
+  inputSanitizer("update"),
   verifyWithdrawalRequestInput("approve request"),
-  approveRequest
+  approveRequest,
 );
 
+// For admin
 router.patch(
   "/:requestId/reject",
   verifyPermission("u_withdrawal_req"),
+  inputSanitizer("update"),
   verifyWithdrawalRequestInput("reject request"),
-  rejectRequest
+  rejectRequest,
 );
 
 export default router;

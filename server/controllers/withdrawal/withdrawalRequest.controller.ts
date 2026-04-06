@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import {
+  formatAdminWithdrawalRequestResponse,
   formatSelfWithdrawalRequestResponse,
   getLatestStateId,
   getSysUserId,
@@ -23,10 +24,17 @@ import type {
   RejectWithdrawalRequest,
   SelfWithdrawalRequestSearchQuery,
   WithdrawalRequestCreate,
+  AdminWithdrawalRequestResponse,
+  WithdrawalRequestSearchQuery,
+  AdminWithdrawalRequestListResponse,
 } from "../../../common/types.common";
 import UserBankAccount from "../../models/user/userBankAccount.model";
 import stripe from "../../configs/stripe.config";
-import { DEFAULT_SEARCH_LIMIT } from "../../configs/configs";
+import {
+  DEFAULT_SEARCH_LIMIT,
+  OPTIMIZE_CREATED_BY_PIPELINE,
+  OPTIMIZE_PIPELINE,
+} from "../../configs/configs";
 
 // --- BOTH BUYER AND ADMIN FUNCTIONS ---
 export async function createRequest(
@@ -548,5 +556,197 @@ export async function rejectRequest(
     next(error);
   } finally {
     session.endSession();
+  }
+}
+
+export async function adminSearch(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Admin searching withdrawal requests...");
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly is missing, this should be handled by middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You don not have permission to perform this action."),
+    );
+  }
+
+  const reqQuery = req["sanitizedQuery"] as WithdrawalRequestSearchQuery;
+
+  const limit = reqQuery.limit
+    ? Number.parseInt(reqQuery.limit, 10)
+    : DEFAULT_SEARCH_LIMIT;
+  const offset = reqQuery.offset ? Number.parseInt(reqQuery.offset, 10) : 0;
+  const query: any = {};
+
+  try {
+    if (reqQuery.searchTerm) {
+      const isValidObjId = Types.ObjectId.isValid(reqQuery.searchTerm);
+
+      if (isValidObjId) {
+        query.$or = [
+          {
+            _id: isValidObjId
+              ? new Types.ObjectId(reqQuery.searchTerm)
+              : undefined,
+          },
+          {
+            userId: isValidObjId
+              ? new Types.ObjectId(reqQuery.searchTerm)
+              : undefined,
+          },
+        ];
+      } else {
+        // Search by user fullName and email
+        const userIds = await User.find({
+          $or: [
+            { fullName: { $regex: reqQuery.searchTerm, $options: "i" } },
+            { email: { $regex: reqQuery.searchTerm, $options: "i" } },
+          ],
+        })
+          .select("_id")
+          .lean();
+
+        query.userId = { $in: userIds.map((u) => u._id) };
+      }
+    }
+
+    if (reqQuery.stateIds && reqQuery.stateIds.length > 0) {
+      query["states.id"] = { $in: reqQuery.stateIds };
+    }
+
+    if (reqQuery.amountCentsMin) {
+      query.amountCents = {
+        $gte: Number.parseInt(reqQuery.amountCentsMin, 10),
+      };
+    }
+    if (reqQuery.amountCentsMax) {
+      query.amountCents = {
+        ...query.amountCents,
+        $lte: Number.parseInt(reqQuery.amountCentsMax, 10),
+      };
+    }
+
+    if (reqQuery.currency) {
+      query.currency = reqQuery.currency;
+    }
+
+    if (reqQuery.withdrawalMethod) {
+      query.withdrawalMethod = reqQuery.withdrawalMethod;
+    }
+
+    if (reqQuery.createdAtFrom) {
+      query.createdAt = {
+        $gte: new Date(reqQuery.createdAtFrom),
+      };
+    }
+    if (reqQuery.createdAtTo) {
+      query.createdAt = {
+        ...query.createdAt,
+        $lte: new Date(reqQuery.createdAtTo),
+      };
+    }
+
+    const sort = (reqQuery.sortBy || "createdAt").split("_");
+    const sortField = sort[0];
+    const sortBy = sort[1] === "desc" ? 1 : -1;
+    const sortStage: any = { [sortField]: sortBy, _id: 1 };
+
+    const withdrawalRequests = await WithdrawalRequest.aggregate([
+      { $match: query },
+      OPTIMIZE_PIPELINE,
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "requestedBy",
+          pipeline: [OPTIMIZE_CREATED_BY_PIPELINE],
+        },
+      },
+      { $unwind: "$requestedBy" },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $sort: sortStage }, { $skip: offset }, { $limit: limit }],
+        },
+      },
+    ]);
+
+    const total: number = withdrawalRequests[0].metadata[0]?.total || 0;
+    const formattedRequests: AdminWithdrawalRequestResponse[] =
+      withdrawalRequests[0].data.map(formatAdminWithdrawalRequestResponse);
+
+    res.status(200).json({
+      success: true,
+      message: "Withdrawal requests retrieved successfully.",
+      data: {
+        total,
+        requests: {
+          total: formattedRequests.length,
+          requests: formattedRequests,
+        },
+        offset,
+        limit,
+      },
+    } as SuccessResponse<AdminWithdrawalRequestListResponse>);
+    console.log("✅ ", "Withdrawal requests retrieved.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Like normal getSelf function but has returnedBy field
+export async function adminGet(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Admin getting withdrawal request...");
+
+  const isBuyerOnly = req["auth"]?.isBuyerOnly;
+  if (!isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "isBuyerOnly is missing, this should be handled by middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You don not have permission to perform this action."),
+    );
+  }
+
+  const { requestId } = req.params;
+
+  try {
+    if (!Types.ObjectId.isValid(requestId)) {
+      throw new HttpError(404, "Request not found.");
+    }
+    const withdrawalRequest = await WithdrawalRequest.findById(requestId).populate("userId", "_id fullName").lean();
+    if (!withdrawalRequest) {
+      throw new HttpError(404, "Request not found.");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Withdrawal request retrieved successfully.",
+      data: formatAdminWithdrawalRequestResponse(withdrawalRequest),
+    } as SuccessResponse<AdminWithdrawalRequestResponse>);
+    console.log("✅ ", "Withdrawal request retrieved.");
+  } catch (error) {
+    next(error);
   }
 }

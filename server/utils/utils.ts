@@ -1268,6 +1268,19 @@ export function formatSelfWithdrawalRequestResponse(
   };
 }
 
+export function formatAdminWithdrawalRequestResponse(
+  request: any,
+): commonType.AdminWithdrawalRequestResponse {
+  return {
+    ...formatSelfWithdrawalRequestResponse(request),
+    // Handle both cases of aggregation or populate
+    requestedBy: {
+      id: request.requestedBy?._id || request.userId._id,
+      fullName: request.requestedBy?.fullName || request.userId.fullName,
+    },
+  };
+}
+
 export function formatWithdrawalStateResponse(
   state: any,
 ): commonType.WithdrawalStateResponse {

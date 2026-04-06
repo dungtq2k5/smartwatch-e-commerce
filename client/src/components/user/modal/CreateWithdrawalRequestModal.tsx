@@ -25,7 +25,7 @@ type Process = {
   isCreatingAccount: boolean;
   isSubmitting: boolean;
 };
-
+// TODO Add "notes" field for cancellation reason
 type FormData = {
   amountCents: {
     val: number;

@@ -605,3 +605,12 @@ export const LOOKUP_ID = {
     REJECTED: "7",
   },
 } as const;
+
+export const WITHDRAWAL_SEARCH_SORT_OPTIONS = [
+  "amountCents_desc",
+  "amountCents_asc",
+  "createdAt_desc",
+  "createdAt_asc",
+  "updatedAt_desc",
+  "updatedAt_asc",
+] as const;
