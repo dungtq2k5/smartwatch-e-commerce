@@ -117,7 +117,7 @@ export async function createRequest(
         {
           id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PENDING),
           notes: `Withdrawal request created for bank account ending in ${bankAccount.last4}.`,
-          createdBy: getSysUserId(),
+          createdBy: userId,
         },
       ],
     });
@@ -250,6 +250,7 @@ export async function cancelRequest(
     );
   }
   const { requestId } = req.params;
+  const notes = (req.body as RejectWithdrawalRequest)?.notes;
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -292,8 +293,8 @@ export async function cancelRequest(
 
     withdrawalRequest.states.push({
       id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.CANCELLED),
-      notes: "Withdrawal request cancelled by user",
-      createdBy: getSysUserId(),
+      notes: notes || "Withdrawal request cancelled by user",
+      createdBy: new Types.ObjectId(userId),
     });
 
     await withdrawalRequest.save({ session });

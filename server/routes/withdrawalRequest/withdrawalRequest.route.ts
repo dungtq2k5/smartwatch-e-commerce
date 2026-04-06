@@ -1,7 +1,10 @@
 import express from "express";
 import { verifyPermission } from "../../utils/middlewares/auth.middleware";
 import { verifyEmptyBody } from "../../utils/middlewares/general.middleware";
-import { verifyWithdrawalRequestInput } from "../../utils/middlewares/user/withdrawalRequest.middleware";
+import {
+  inputSanitizer,
+  verifyWithdrawalRequestInput,
+} from "../../utils/middlewares/user/withdrawalRequest.middleware";
 import {
   createRequest,
   getSelf,
@@ -20,7 +23,7 @@ router.post(
   verifyPermission("c_withdrawal_req"),
   verifyEmptyBody,
   verifyWithdrawalRequestInput("create"),
-  createRequest
+  createRequest,
 );
 
 router.get(
@@ -33,13 +36,15 @@ router.get(
   "/me",
   verifyPermission("r_withdrawal_req"),
   verifyWithdrawalRequestInput("search"),
-  searchSelf
+  searchSelf,
 );
 
 router.patch(
   "/me/:requestId/cancel",
   verifyPermission("u_withdrawal_req"),
-  cancelRequest
+  sanitizeWithdrawalInput,
+  verifyWithdrawalRequestInput("cancel request"),
+  cancelRequest,
 );
 
 // -- ROUTES FOR ADMIN ONLY ---
