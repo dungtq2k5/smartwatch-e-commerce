@@ -14,6 +14,7 @@ import type {
   RoleDisplayField,
   UserDisplayField,
   VariationInstanceDisplayField,
+  WithdrawalRequestDisplayField,
 } from "../../utils/types";
 import { CONFIG_STORAGE_KEY, DEFAULT_ADMIN_CONFIG } from "../../configs";
 
@@ -76,6 +77,11 @@ type ConfigState = {
     displayFields: OrderReturnDisplayField[],
   ) => void;
   resetOrderReturnManagementDisplayFields: () => void;
+
+  setWithdrawalRequestManagementDisplayFields: (
+    displayFields: WithdrawalRequestDisplayField[],
+  ) => void;
+  resetWithdrawalRequestManagementDisplayFields: () => void;
 };
 
 const getInitialState = (): AdminConfig => {
@@ -380,6 +386,29 @@ const useConfigStore = create<ConfigState>((set, get) => ({
       ...get().config,
       orderReturnManagementDisplayFields:
         DEFAULT_ADMIN_CONFIG.orderReturnManagementDisplayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  setWithdrawalRequestManagementDisplayFields: (
+    displayFields: WithdrawalRequestDisplayField[],
+  ): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      withdrawalRequestManagementDisplayFields: displayFields,
+    };
+
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+    set({ config: newConfig });
+  },
+
+  resetWithdrawalRequestManagementDisplayFields: (): void => {
+    const newConfig: AdminConfig = {
+      ...get().config,
+      withdrawalRequestManagementDisplayFields:
+        DEFAULT_ADMIN_CONFIG.withdrawalRequestManagementDisplayFields,
     };
 
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));

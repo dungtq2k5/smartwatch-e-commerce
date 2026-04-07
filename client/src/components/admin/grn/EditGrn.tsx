@@ -26,6 +26,7 @@ import Label from "../../common/Label";
 import Input from "../../common/Input";
 import Select from "../../common/Select";
 import Textarea from "../../common/Textarea";
+import EditGrnSkeleton from "../skeleton/EditGrnSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -297,7 +298,7 @@ export default function EditGrn() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO Loading skeleton
+        <EditGrnSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !grnStates ? (

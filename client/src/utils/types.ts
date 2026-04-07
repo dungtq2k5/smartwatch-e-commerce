@@ -9,6 +9,7 @@ import type {
   AdminProductOsResponse,
   AdminProductResponse,
   AdminUserResponse,
+  AdminWithdrawalRequestResponse,
   GrnDetailsItem,
   Nullable,
   PermissionResponse,
@@ -126,6 +127,10 @@ export type AdminOrderReturnDisplayableField =
   | keyof AdminOrderReturnResponse
   | "actions";
 
+export type AdminWithdrawalRequestDisplayableField =
+  | keyof AdminWithdrawalRequestResponse
+  | "actions";
+
 export type TableColDisplay<Item, SortOption> = {
   label: string; // For header display
   thClassName?: string; // Additional className for <th>
@@ -182,6 +187,9 @@ export type OrderDisplayField = DisplayField<AdminOrderDisplayableField>;
 export type OrderReturnDisplayField =
   DisplayField<AdminOrderReturnDisplayableField>;
 
+export type WithdrawalRequestDisplayField =
+  DisplayField<AdminWithdrawalRequestDisplayableField>;
+
 export type AdminConfig = {
   userManagementDisplayFields: UserDisplayField[];
   productManagementDisplayFields: ProductDisplayField[];
@@ -196,6 +204,7 @@ export type AdminConfig = {
   roleManagementDisplayFields: RoleDisplayField[];
   orderManagementDisplayFields: OrderDisplayField[];
   orderReturnManagementDisplayFields: OrderReturnDisplayField[];
+  withdrawalRequestManagementDisplayFields: WithdrawalRequestDisplayField[];
 };
 
 export type ProductCreationWizardStep =

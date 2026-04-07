@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import {
+  isStringArray,
   isValidDateTimeString,
   isValidNumString,
   removeOddSpaces,
@@ -65,14 +66,35 @@ export function sanitizeWithdrawalSearchInput(
   next();
 }
 
+export function sanitizeWithdrawalUpdateBulkInput(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  console.log("▶️ ", "Sanitizing withdrawal request bulk update input...");
+  const { requestIds, notes } = req.body;
+
+  if (Array.isArray(requestIds)) {
+    req.body.requestIds = [...new Set(requestIds)];
+  }
+
+  if (typeof notes === "string") {
+    req.body.notes = removeOddSpaces(notes);
+  }
+
+  next();
+}
+
 export function inputSanitizer(
-  type: "update" | "admin search",
+  type: "update" | "admin search" | "update bulk",
 ): (req: Request, res: Response, next: NextFunction) => void {
   switch (type) {
     case "update":
       return sanitizeWithdrawalInput;
     case "admin search":
       return sanitizeWithdrawalSearchInput;
+    case "update bulk":
+      return sanitizeWithdrawalUpdateBulkInput;
   }
 }
 
@@ -83,13 +105,10 @@ export function verifyWithdrawalRequestInput(
     | "approve request"
     | "reject request"
     | "cancel request"
-    | "admin search",
+    | "admin search"
+    | "update bulk",
 ): (req: Request, res: Response, next: NextFunction) => void {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     console.log("▶️ ", "Validating withdrawal request input...");
 
     const errors: string[] = [];
@@ -247,6 +266,22 @@ export function verifyWithdrawalRequestInput(
             new Date(createdAtFrom) > new Date(createdAtTo)
           ) {
             errors.push("createdAtFrom cannot be later than createdAtTo.");
+          }
+          break;
+        }
+        case "update bulk": {
+          console.log("Validating withdrawal request bulk update input...");
+          const { requestIds, notes } = req.body;
+
+          if (!requestIds) {
+            errors.push("Request IDs are required.");
+          } else if (!Array.isArray(requestIds) || requestIds.length === 0) {
+            errors.push("Request IDs must be a non-empty array.");
+          } else if (!isStringArray(requestIds)) {
+            errors.push("Request IDs must be an array of strings.");
+          }
+          if (isPresent(notes) && (typeof notes !== "string" || !notes)) {
+            errors.push("notes must be a non-empty string.");
           }
           break;
         }

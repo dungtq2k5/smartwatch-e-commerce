@@ -1,32 +1,34 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { FormInput } from "../../../utils/types";
-import { useReturnStore } from "../../../store/admin/orderReturn/orderReturnStore";
+import useWithdrawalRequestStore from "../../../store/admin/withdrawalRequestStore";
+import useWithdrawalStateStore from "../../../store/common/withdrawalStateStore";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
 import type {
-  ReturnStateResponse,
-  AdminOrderReturnResponse,
+  AdminWithdrawalRequestResponse,
+  ApproveWithdrawalRequest,
+  RejectWithdrawalRequest,
+  WithdrawalStateResponse,
 } from "../../../../../common/types.common";
+import { LOOKUP_ID } from "../../../../../common/configs.common";
 import {
   capFirstLetter,
   formatError,
   removeOddSpaces,
 } from "../../../../../common/utils.common";
+import { MODAL_CLOSE_DELAY_MS, WAITING_EMOJI } from "../../../configs";
 import toast from "react-hot-toast";
-import { WAITING_EMOJI, MODAL_CLOSE_DELAY_MS } from "../../../configs";
-import { LOOKUP_ID } from "../../../../../common/configs.common";
 import { Button, Modal } from "react-bootstrap";
 import Loading from "../../common/Loading";
 import ApiError from "../../common/ApiError";
 import Label from "../../common/Label";
 import Textarea from "../../common/Textarea";
 import Btn from "../../common/Btn";
-import useReturnStateStore from "../../../store/common/returnRefund/returnStateStore";
 
-export type EditOrderReturnStateModalType = "approve" | "decline" | "refund";
+export type EditWithdrawalRequestStateModalType = "approve" | "reject";
 
-type EditOrderReturnStateModalProps = Readonly<{
-  type: EditOrderReturnStateModalType;
-  returnId?: string | null; // Only show when returnId is provided
+type EditWithdrawalRequestStateModalProps = Readonly<{
+  type: EditWithdrawalRequestStateModalType;
+  requestId?: string | null; // Only show when requestId is provided
   onHide: () => void;
   onSuccess?: () => void;
 }>;
@@ -45,37 +47,41 @@ const DEFAULT_FORM_DATA: FormData = {
   notes: { val: "" },
 };
 
-const EditOrderReturnStateModal = memo(
-  ({ type, returnId, onHide, onSuccess }: EditOrderReturnStateModalProps) => {
+const EditWithdrawalRequestStateModal = memo(
+  ({
+    type,
+    requestId,
+    onHide,
+    onSuccess,
+  }: EditWithdrawalRequestStateModalProps) => {
     // DEV temp for testing
     const renderCount = useRef(0);
     renderCount.current += 1;
     console.log(
-      "EditOrderReturnStateModal rendered count: ",
+      "EditWithdrawalRequestStateModal rendered count: ",
       renderCount.current,
     );
 
     const {
-      returnStates,
-      fetchReturnStates,
-      getReturnState,
-      getReturnStateByLookupId,
-    } = useReturnStateStore();
+      fetchWithdrawalRequest,
+      approveWithdrawalRequest,
+      rejectWithdrawalRequest,
+      canApproveRequest,
+      canRejectRequest,
+    } = useWithdrawalRequestStore();
     const {
-      fetchReturn,
-      updateReturnState,
-      canApproveReturn,
-      canDeclineReturn,
-      canRefundReturn,
-    } = useReturnStore();
+      withdrawalStates,
+      fetchWithdrawalStates,
+      getWithdrawalState,
+      getWithdrawalStateByLookupId,
+    } = useWithdrawalStateStore();
 
-    const canEditReturn = useHasPermission("u_order_return");
+    const canEditRequest = useHasPermission("u_withdrawal_req");
 
-    const [orderReturn, setOrderReturn] =
-      useState<AdminOrderReturnResponse | null>(null);
-    const [submitState, setSubmitState] = useState<ReturnStateResponse | null>(
-      null,
-    );
+    const [request, setRequest] =
+      useState<AdminWithdrawalRequestResponse | null>(null);
+    const [submitState, setSubmitState] =
+      useState<WithdrawalStateResponse | null>(null);
 
     const [process, setProcess] = useState<Process>({
       isProcessing: false,
@@ -88,7 +94,7 @@ const EditOrderReturnStateModal = memo(
 
     // Fetch set initial data when first loading the modal
     useEffect(() => {
-      if (returnId) {
+      if (requestId) {
         const handleFetchSetInitialData = async (): Promise<void> => {
           setProcess((prev) => ({
             ...prev,
@@ -98,21 +104,23 @@ const EditOrderReturnStateModal = memo(
           setApiErr(null);
 
           try {
-            const [fetchedReturn] = await Promise.all([
-              fetchReturn(returnId),
-              returnStates ? Promise.resolve() : fetchReturnStates(),
+            const [fetchedRequest] = await Promise.all([
+              fetchWithdrawalRequest(requestId),
+              withdrawalStates ? Promise.resolve() : fetchWithdrawalStates(), // Only fetch withdrawal states if not already fetched
             ]);
 
-            setOrderReturn(fetchedReturn);
+            setRequest(fetchedRequest);
 
             const submitState =
               type === "approve"
-                ? getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.APPROVED)
-                : type === "decline"
-                  ? getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.DECLINED)
-                  : getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.REFUNDING);
+                ? getWithdrawalStateByLookupId(
+                    LOOKUP_ID.WITHDRAWAL_STATE.APPROVED,
+                  )
+                : getWithdrawalStateByLookupId(
+                    LOOKUP_ID.WITHDRAWAL_STATE.REJECTED,
+                  );
             if (!submitState) {
-              throw new Error("Return submit state not found.");
+              throw new Error("Withdrawal request submit state not found.");
             }
             setSubmitState(submitState);
           } catch (error) {
@@ -130,16 +138,16 @@ const EditOrderReturnStateModal = memo(
       }
 
       setTimeout(() => {
-        setOrderReturn(null);
+        setRequest(null);
         setFormData(DEFAULT_FORM_DATA);
         setApiErr(null);
       }, MODAL_CLOSE_DELAY_MS); // Small delay to allow modal close animation before clearing data
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [returnId, type]);
+    }, [requestId]);
 
     const handleChange = useCallback(
       async (e: React.ChangeEvent<HTMLTextAreaElement>): Promise<void> => {
-        if (process.isProcessing || !orderReturn) return;
+        if (process.isProcessing || !request) return;
 
         const { name, value: val } = e.target;
 
@@ -154,7 +162,7 @@ const EditOrderReturnStateModal = memo(
           [name]: { val, err },
         }));
       },
-      [process.isProcessing, orderReturn],
+      [process.isProcessing, request],
     );
 
     const handleSubmit = useCallback(
@@ -166,46 +174,36 @@ const EditOrderReturnStateModal = memo(
           });
           return;
         }
-        if (!orderReturn) {
-          toast.error("Return data not found. Please try again.");
+        if (!request) {
+          toast.error("Request data not found. Please try again.");
           return;
         }
-        if (!submitState) {
-          toast.error("Submit state data not found. Please try again.");
-          return;
-        }
-        if (!canEditReturn) {
+        if (!canEditRequest) {
           toast.error("You don't have permission to perform this action.");
           return;
         }
 
-        const currStateId = orderReturn.states.at(-1)?.id;
-        const currState = currStateId ? getReturnState(currStateId) : undefined;
+        const currStateId = request.states.at(-1)?.id;
+        const currState = currStateId
+          ? getWithdrawalState(currStateId)
+          : undefined;
         if (!currState) {
-          toast.error("Current return state not found. Please try again.");
+          toast.error("Current request state not found. Please try again.");
           return;
         }
         switch (type) {
           case "approve":
-            if (!canApproveReturn(currState.lookupId)) {
+            if (!canApproveRequest(currState.lookupId)) {
               toast.error(
-                "This return cannot be approved from its current state.",
+                "This request cannot be approved from its current state.",
               );
               return;
             }
             break;
-          case "decline":
-            if (!canDeclineReturn(currState.lookupId)) {
+          case "reject":
+            if (!canRejectRequest(currState.lookupId)) {
               toast.error(
-                "This return cannot be declined from its current state.",
-              );
-              return;
-            }
-            break;
-          case "refund":
-            if (!canRefundReturn(currState.lookupId)) {
-              toast.error(
-                "This return cannot be refunded from its current state.",
+                "This request cannot be rejected from its current state.",
               );
               return;
             }
@@ -216,13 +214,6 @@ const EditOrderReturnStateModal = memo(
         }
 
         const validateForm = (): boolean => {
-          if (currStateId === submitState.id) {
-            toast.success(
-              `Return is already in the "${submitState.name}" state. No changes made.`,
-            );
-            return false;
-          }
-
           let isValid = true;
           const newFormData = { ...formData };
 
@@ -243,13 +234,21 @@ const EditOrderReturnStateModal = memo(
           }));
 
           try {
-            await updateReturnState(orderReturn.id, {
-              returnStateId: submitState.id,
+            const submitData:
+              | ApproveWithdrawalRequest
+              | RejectWithdrawalRequest = {
               notes: formData.notes.val || undefined,
-            });
+            };
+
+            if (type === "approve") {
+              await approveWithdrawalRequest(request.id, submitData);
+            } else {
+              await rejectWithdrawalRequest(request.id, submitData);
+            }
+
             onSuccess?.();
             onHide();
-            toast.success("Order updated successfully.");
+            toast.success("Request updated successfully.");
           } catch (error) {
             toast.error(formatError(error));
           } finally {
@@ -263,56 +262,55 @@ const EditOrderReturnStateModal = memo(
       },
       [
         process.isProcessing,
-        orderReturn,
-        submitState,
-        canEditReturn,
-        getReturnState,
+        request,
+        canEditRequest,
+        getWithdrawalState,
         type,
-        canApproveReturn,
-        canDeclineReturn,
-        canRefundReturn,
+        canApproveRequest,
+        canRejectRequest,
         formData,
-        updateReturnState,
         onSuccess,
         onHide,
+        approveWithdrawalRequest,
+        rejectWithdrawalRequest,
       ],
     );
 
     return (
-      <Modal show={!!returnId} onHide={onHide} centered>
+      <Modal show={!!requestId} onHide={onHide} centered>
         <Modal.Header closeButton>
           <Modal.Title>
-            {capFirstLetter(type)} Return Request for Return #ID{" "}
-            {orderReturn?.id || returnId}
+            {capFirstLetter(type)} Withdrawal Request for Request #ID{" "}
+            {request?.id || requestId}
           </Modal.Title>
         </Modal.Header>
 
         {process.isInitializing ? (
           <Modal.Body>
-            <Loading loadingMsg="Loading return data" />
+            <Loading loadingMsg="Loading request data" />
           </Modal.Body>
         ) : apiErr ? (
           <Modal.Body>
             <ApiError errorMessage={apiErr} />
           </Modal.Body>
-        ) : !returnStates ? (
+        ) : !withdrawalStates ? (
           <Modal.Body>
-            <ApiError errorMessage="Return states data not found." />
-          </Modal.Body>
-        ) : !orderReturn ? (
-          <Modal.Body>
-            <ApiError errorMessage="Return data not found." />
+            <ApiError errorMessage="Withdrawal states data not found." />
           </Modal.Body>
         ) : !submitState ? (
           <Modal.Body>
-            <ApiError errorMessage="Return submit state not found." />
+            <ApiError errorMessage="Submit state data not found." />
+          </Modal.Body>
+        ) : !request ? (
+          <Modal.Body>
+            <ApiError errorMessage="Request data not found." />
           </Modal.Body>
         ) : (
           <form onSubmit={handleSubmit}>
             <Modal.Body>
               <div className="mb-3">
                 <Label htmlFor="stateId" className="form-label" required>
-                  Return State
+                  Request State
                 </Label>
                 <select
                   id="stateId"
@@ -375,4 +373,4 @@ const EditOrderReturnStateModal = memo(
   },
 );
 
-export default EditOrderReturnStateModal;
+export default EditWithdrawalRequestStateModal;

@@ -10,10 +10,13 @@ import {
 import mongoose, { Types } from "mongoose";
 import User from "../../models/user/user.model";
 import { HttpError } from "../../utils/errorHandler";
-import WithdrawalRequest from "../../models/withdrawal/withdrawalRequest.model";
+import WithdrawalRequest, {
+  IWithdrawalRequest,
+} from "../../models/withdrawal/withdrawalRequest.model";
 import {
   DEFAULT_CURRENCY,
   LOOKUP_ID,
+  MAX_WITHDRAWAL_REQUESTS_TO_UPDATE_BULK,
   MIN_WITHDRAWAL_AMOUNT_CENTS,
 } from "../../../common/configs.common";
 import type {
@@ -27,6 +30,7 @@ import type {
   AdminWithdrawalRequestResponse,
   WithdrawalRequestSearchQuery,
   AdminWithdrawalRequestListResponse,
+  ApproveWithdrawalRequestBulk,
 } from "../../../common/types.common";
 import UserBankAccount from "../../models/user/userBankAccount.model";
 import stripe from "../../configs/stripe.config";
@@ -364,89 +368,13 @@ export async function approveRequest(
       throw new HttpError(404, "Request not found.");
     }
 
-    /*
-      Business logic: only can approve when in pending state.
-        - approve -> withdraw by stripe.transfers.create -> listen to webhook to update db
-    */
-
-    const latestStateId = getLatestStateId(withdrawalRequest.states);
-    if (
-      latestStateId.equals(
-        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.COMPLETED),
-      )
-    ) {
-      throw new HttpError(400, "Completed requests cannot be updated.");
-    }
-    if (
-      latestStateId.equals(
-        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.APPROVED),
-      )
-    ) {
-      throw new HttpError(400, "This request has already been approved.");
-    }
-    if (
-      !latestStateId.equals(
-        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PENDING),
-      )
-    ) {
-      throw new HttpError(400, "This request is not valid for approve.");
-    }
-
-    const sysUserId = getSysUserId();
-    withdrawalRequest.states.push(
-      {
-        id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.APPROVED),
-        notes: notes || null,
-        createdBy: new Types.ObjectId(reqUserId),
-      },
-      {
-        id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PROCESSING),
-        notes: "Processing withdrawal via Stripe",
-        createdBy: sysUserId,
-      },
+    const resMsg = await handleApproveRequest(
+      reqUserId,
+      withdrawalRequest,
+      { notes },
+      session,
     );
 
-    let resMsg: string = "";
-    try {
-      // Create Stripe transfer to user's connected account
-      await stripe.transfers.create({
-        amount: withdrawalRequest.amountCents,
-        currency: withdrawalRequest.currency,
-        destination: withdrawalRequest.bankAccount.stripeConnectedAccountId,
-        description: `Withdrawal for user ${withdrawalRequest.userId.toString()}`,
-        metadata: {
-          userId: withdrawalRequest.userId.toString(),
-          withdrawalRequestId: withdrawalRequest._id.toString(),
-        },
-      });
-
-      resMsg = "Withdrawal request approved and is being processed.";
-    } catch (stripeError: any) {
-      // If Stripe call fails, mark as failed immediately (no webhook will fire)
-      console.error(
-        "❌ ",
-        "Stripe transfer creation failed:",
-        stripeError,
-        ".This request will be updated as failed.",
-      );
-
-      await User.findByIdAndUpdate(
-        withdrawalRequest.userId,
-        { $inc: { userBalanceCents: withdrawalRequest.amountCents } },
-        { session },
-      );
-
-      withdrawalRequest.failureReason = stripeError.message;
-      withdrawalRequest.states.push({
-        id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.FAILED),
-        notes: `Failed to submit to Stripe: ${stripeError.message}`,
-        createdBy: sysUserId,
-      });
-
-      resMsg = "Withdrawal request failed during processing.";
-    }
-
-    await withdrawalRequest.save({ session });
     await session.commitTransaction();
 
     res.status(200).json({
@@ -455,6 +383,66 @@ export async function approveRequest(
       data: formatSelfWithdrawalRequestResponse(withdrawalRequest),
     } as SuccessResponse<SelfWithdrawalRequestResponse>);
     console.log("✅ ", "Withdrawal request approved.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
+export async function approveRequestBulk(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Bulk approve withdrawal requests...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or role is missing, this should be handled by middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You don not have permission to perform this action."),
+    );
+  }
+
+  const { requestIds, notes } = req.body as ApproveWithdrawalRequestBulk;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (requestIds.length > MAX_WITHDRAWAL_REQUESTS_TO_UPDATE_BULK) {
+      throw new HttpError(
+        400,
+        `You can only approve up to ${MAX_WITHDRAWAL_REQUESTS_TO_UPDATE_BULK} requests at a time.`,
+      );
+    }
+
+    const requests = await WithdrawalRequest.find({
+      _id: { $in: requestIds },
+    }).session(session);
+    if (requests.length !== requestIds.length) {
+      throw new HttpError(404, "One or more requests not found.");
+    }
+
+    for (const request of requests) {
+      await handleApproveRequest(userId, request, { notes }, session);
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: `${requests.length} withdrawal requests approved successfully.`,
+    } as SuccessResponse);
   } catch (error) {
     await session.abortTransaction();
     next(error);
@@ -503,42 +491,8 @@ export async function rejectRequest(
       throw new HttpError(404, "Request not found.");
     }
 
-    /*
-      Business logic: can only be reject when in pending state
-        - reject -> refund to user balance
-    */
+    await handleRejectRequest(reqUserId, withdrawalRequest, { notes }, session);
 
-    const latestStateId = getLatestStateId(withdrawalRequest.states);
-    if (
-      latestStateId.equals(
-        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.COMPLETED),
-      )
-    ) {
-      throw new HttpError(400, "Completed requests cannot be updated.");
-    }
-    if (
-      !latestStateId.equals(
-        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PENDING),
-      )
-    ) {
-      throw new HttpError(400, "This request is not valid for reject.");
-    }
-
-    await User.findByIdAndUpdate(
-      withdrawalRequest.userId,
-      {
-        $inc: { userBalanceCents: withdrawalRequest.amountCents },
-      },
-      { session },
-    );
-
-    withdrawalRequest.states.push({
-      id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.REJECTED),
-      notes: notes || null,
-      createdBy: new Types.ObjectId(reqUserId),
-    });
-
-    await withdrawalRequest.save({ session });
     await session.commitTransaction();
 
     res.status(200).json({
@@ -547,6 +501,66 @@ export async function rejectRequest(
       data: formatSelfWithdrawalRequestResponse(withdrawalRequest),
     } as SuccessResponse<SelfWithdrawalRequestResponse>);
     console.log("✅ ", "Withdrawal request rejected.");
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+}
+
+export async function rejectRequestBulk(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  console.log("▶️ ", "Bulk reject withdrawal requests...");
+
+  const [userId, isBuyerOnly] = [req["auth"]?.userId, req["auth"]?.isBuyerOnly];
+  if (!isPresent(userId) || !isPresent(isBuyerOnly)) {
+    return next(
+      new HttpError(
+        500,
+        "User ID or role is missing, this should be handled by middlewares.",
+      ),
+    );
+  }
+  if (isBuyerOnly) {
+    return next(
+      new HttpError(403, "You don not have permission to perform this action."),
+    );
+  }
+
+  const { requestIds, notes } = req.body as ApproveWithdrawalRequestBulk;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (requestIds.length > MAX_WITHDRAWAL_REQUESTS_TO_UPDATE_BULK) {
+      throw new HttpError(
+        400,
+        `You can only reject up to ${MAX_WITHDRAWAL_REQUESTS_TO_UPDATE_BULK} requests at a time.`,
+      );
+    }
+
+    const requests = await WithdrawalRequest.find({
+      _id: { $in: requestIds },
+    }).session(session);
+    if (requests.length !== requestIds.length) {
+      throw new HttpError(404, "One or more requests not found.");
+    }
+
+    for (const request of requests) {
+      await handleRejectRequest(userId, request, { notes }, session);
+    }
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: `${requests.length} withdrawal requests rejected successfully.`,
+    } as SuccessResponse);
   } catch (error) {
     await session.abortTransaction();
     next(error);
@@ -731,7 +745,9 @@ export async function adminGet(
     if (!Types.ObjectId.isValid(requestId)) {
       throw new HttpError(404, "Request not found.");
     }
-    const withdrawalRequest = await WithdrawalRequest.findById(requestId).populate("userId", "_id fullName").lean();
+    const withdrawalRequest = await WithdrawalRequest.findById(requestId)
+      .populate("userId", "_id fullName")
+      .lean();
     if (!withdrawalRequest) {
       throw new HttpError(404, "Request not found.");
     }
@@ -744,5 +760,159 @@ export async function adminGet(
     console.log("✅ ", "Withdrawal request retrieved.");
   } catch (error) {
     next(error);
+  }
+}
+
+// ---HELPER FUNCTIONS---
+// Return message to display in response body
+async function handleApproveRequest(
+  reqUserId: Types.ObjectId | string,
+  withdrawalRequest: IWithdrawalRequest,
+  approveData: ApproveWithdrawalRequest,
+  session: mongoose.ClientSession,
+  saveRequest: boolean = true,
+): Promise<string> {
+  const notes = approveData?.notes;
+
+  try {
+    /*
+      Business logic: only can approve when in pending state.
+        - approve -> withdraw by stripe.transfers.create -> listen to webhook to update db
+    */
+
+    const latestStateId = getLatestStateId(withdrawalRequest.states);
+    if (
+      latestStateId.equals(
+        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.COMPLETED),
+      )
+    ) {
+      throw new HttpError(400, "Completed requests cannot be updated.");
+    }
+    if (
+      latestStateId.equals(
+        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.APPROVED),
+      )
+    ) {
+      throw new HttpError(400, "This request has already been approved.");
+    }
+    if (
+      !latestStateId.equals(
+        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PENDING),
+      )
+    ) {
+      throw new HttpError(400, "This request is not valid for approve.");
+    }
+
+    const sysUserId = getSysUserId();
+    withdrawalRequest.states.push(
+      {
+        id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.APPROVED),
+        notes: notes || null,
+        createdBy: new Types.ObjectId(reqUserId),
+      },
+      {
+        id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PROCESSING),
+        notes: "Processing withdrawal via Stripe",
+        createdBy: sysUserId,
+      },
+    );
+
+    let resMsg: string = "";
+    try {
+      // Create Stripe transfer to user's connected account
+      await stripe.transfers.create({
+        amount: withdrawalRequest.amountCents,
+        currency: withdrawalRequest.currency,
+        destination: withdrawalRequest.bankAccount.stripeConnectedAccountId,
+        description: `Withdrawal for user ${withdrawalRequest.userId.toString()}`,
+        metadata: {
+          userId: withdrawalRequest.userId.toString(),
+          withdrawalRequestId: withdrawalRequest._id.toString(),
+        },
+      });
+
+      resMsg = "Withdrawal request approved and is being processed.";
+    } catch (stripeError: any) {
+      // If Stripe call fails, mark as failed immediately (no webhook will fire)
+      console.error(
+        "❌ ",
+        "Stripe transfer creation failed:",
+        stripeError,
+        ".This request will be updated as failed.",
+      );
+
+      await User.findByIdAndUpdate(
+        withdrawalRequest.userId,
+        { $inc: { userBalanceCents: withdrawalRequest.amountCents } },
+        { session },
+      );
+
+      withdrawalRequest.failureReason = stripeError.message;
+      withdrawalRequest.states.push({
+        id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.FAILED),
+        notes: `Failed to submit to Stripe: ${stripeError.message}`,
+        createdBy: sysUserId,
+      });
+
+      resMsg = "Withdrawal request failed during processing.";
+    }
+
+    if (saveRequest) await withdrawalRequest.save({ session });
+    return resMsg;
+  } catch (error) {
+    console.log("❌ ", "Error in handleApproveRequest:", error);
+    throw error;
+  }
+}
+
+async function handleRejectRequest(
+  reqUserId: Types.ObjectId | string,
+  withdrawalRequest: IWithdrawalRequest,
+  rejectData: RejectWithdrawalRequest,
+  session: mongoose.ClientSession,
+  saveRequest: boolean = true,
+): Promise<void> {
+  const notes = rejectData?.notes;
+
+  try {
+    /*
+      Business logic: can only be reject when in pending state
+        - reject -> refund to user balance
+    */
+
+    const latestStateId = getLatestStateId(withdrawalRequest.states);
+    if (
+      latestStateId.equals(
+        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.COMPLETED),
+      )
+    ) {
+      throw new HttpError(400, "Completed requests cannot be updated.");
+    }
+    if (
+      !latestStateId.equals(
+        getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.PENDING),
+      )
+    ) {
+      throw new HttpError(400, "This request is not valid for reject.");
+    }
+
+    await User.findByIdAndUpdate(
+      withdrawalRequest.userId,
+      {
+        $inc: { userBalanceCents: withdrawalRequest.amountCents },
+      },
+      { session },
+    );
+
+    withdrawalRequest.states.push({
+      id: getWithdrawalStateId(LOOKUP_ID.WITHDRAWAL_STATE.REJECTED),
+      notes: notes || null,
+      createdBy: new Types.ObjectId(reqUserId),
+    });
+
+    if (saveRequest) await withdrawalRequest.save({ session });
+  } catch (error) {
+    console.log("❌ ", "Error in handleRejectRequest:", error);
+    throw error;
   }
 }

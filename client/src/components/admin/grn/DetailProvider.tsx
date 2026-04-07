@@ -20,6 +20,7 @@ import ConfirmSubmitModal from "../../user/modal/ConfirmSubmitModal";
 import useProviderAddressStore from "../../../store/admin/grn/providerAddressStore";
 import toast from "react-hot-toast";
 import useProviderWizardStore from "../../../store/admin/wizard/providerWizardStore";
+import DetailProviderSkeleton from "../skeleton/DetailProviderSkeleton";
 
 type Modal = {
   createAddress: boolean;
@@ -182,7 +183,7 @@ export default function DetailProvider() {
   return (
     <>
       {isInitializing ? (
-        <p>Loading...</p> // TODO Loading skeleton
+        <DetailProviderSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !providerDetails ? (

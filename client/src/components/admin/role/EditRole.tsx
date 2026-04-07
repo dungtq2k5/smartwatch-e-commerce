@@ -40,6 +40,7 @@ import {
   getGroupedPermissions,
   getPermissionsMatrix,
 } from "../../../utils/utils";
+import EditRoleSkeleton from "../skeleton/EditRoleSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -416,7 +417,7 @@ export default function EditRole() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO Skeleton loading
+        <EditRoleSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !role ? (

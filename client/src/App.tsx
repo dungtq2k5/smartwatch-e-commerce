@@ -84,6 +84,8 @@ import OrderManagement from "./components/admin/order/OrderManagement.tsx";
 import DetailOrder from "./components/admin/order/DetailOrder.tsx";
 import OrderReturnManagement from "./components/admin/orderReturn/OrderReturnManagement.tsx";
 import DetailOrderReturn from "./components/admin/orderReturn/DetailOrderReturn.tsx";
+import WithdrawalRequestManagement from "./components/admin/withdrawalRequest/WithdrawalRequestManagement.tsx";
+import DetailWithdrawalRequest from "./components/admin/withdrawalRequest/DetailWithdrawalRequest.tsx";
 
 export default function App() {
   // DEV for testing
@@ -240,6 +242,11 @@ export default function App() {
                 <Route path="order-returns">
                   <Route index element={<OrderReturnManagement />} />
                   <Route path=":id" element={<DetailOrderReturn />} />
+                </Route>
+
+                <Route path="withdrawal-requests">
+                  <Route index element={<WithdrawalRequestManagement />} />
+                  <Route path=":id" element={<DetailWithdrawalRequest />} />
                 </Route>
               </Route>
             </Route>

@@ -14,6 +14,7 @@ import LinkBtn from "../../common/LinkBtn";
 import useHasPermission from "../../../hooks/admin/useHasPermission";
 import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
 import DetailUserLink from "../DetailUserLink";
+import DetailGrnSkeleton from "../skeleton/DetailGrnSkeleton";
 
 export default function DetailGrn() {
   // DEV temp for testing
@@ -71,7 +72,7 @@ export default function DetailGrn() {
   return (
     <>
       {isInitializing ? (
-        <p>Loading...</p> // TODO Loading skeleton
+        <DetailGrnSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !grnStates ? (

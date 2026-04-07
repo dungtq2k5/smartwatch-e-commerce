@@ -18,6 +18,7 @@ import type {
 import DetailUserLink from "../DetailUserLink";
 import { DISABLED_TITLE_FOR_VIEWING } from "../../../configs";
 import { getGroupedPermissions } from "../../../utils/utils";
+import DetailRoleSkeleton from "../skeleton/DetailRoleSkeleton";
 
 export default function DetailRole() {
   // DEV temp for testing
@@ -74,7 +75,7 @@ export default function DetailRole() {
   return (
     <>
       {isInitializing ? (
-        <p>Loading...</p> // TODO Loading skeleton
+        <DetailRoleSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !roleDetails ? (

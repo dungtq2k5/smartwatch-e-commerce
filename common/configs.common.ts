@@ -609,8 +609,12 @@ export const LOOKUP_ID = {
 export const WITHDRAWAL_SEARCH_SORT_OPTIONS = [
   "amountCents_desc",
   "amountCents_asc",
+  "processedAt_desc",
+  "processedAt_asc",
   "createdAt_desc",
   "createdAt_asc",
   "updatedAt_desc",
   "updatedAt_asc",
 ] as const;
+
+export const MAX_WITHDRAWAL_REQUESTS_TO_UPDATE_BULK = 10;

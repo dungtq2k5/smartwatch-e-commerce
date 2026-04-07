@@ -93,10 +93,10 @@ const EditBulkOrderReturnStateModal = memo(
 
             const submitState =
               type === "approve"
-                ? getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.APPROVED) // approved
+                ? getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.APPROVED)
                 : type === "decline"
-                  ? getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.DECLINED) // declined
-                  : getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.REFUNDING); // refunding
+                  ? getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.DECLINED)
+                  : getReturnStateByLookupId(LOOKUP_ID.RETURN_STATE.REFUNDING);
             if (!submitState) {
               throw new Error("Return submit state not found.");
             }
@@ -120,7 +120,7 @@ const EditBulkOrderReturnStateModal = memo(
         setApiErr(null);
       }, MODAL_CLOSE_DELAY_MS); // Small delay to allow modal close animation before clearing data
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [returnIds]);
+    }, [returnIds, type]);
 
     const handleChange = useCallback(
       async (e: React.ChangeEvent<HTMLTextAreaElement>): Promise<void> => {

@@ -30,6 +30,7 @@ import Btn from "../../common/Btn";
 import PhoneInput from "react-phone-number-input";
 import useRefreshStore from "../../../store/admin/refreshStore";
 import DetailUserLink from "../DetailUserLink";
+import EditProviderSkeleton from "../skeleton/EditProviderSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -263,7 +264,7 @@ export default function EditProvider() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO Loading skeleton
+        <EditProviderSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !provider ? (

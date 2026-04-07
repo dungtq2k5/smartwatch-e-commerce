@@ -29,6 +29,7 @@ import type {
   AdminRoleDisplayableField,
   AdminUserDisplayableField,
   AdminVariationInstanceDisplayableField,
+  AdminWithdrawalRequestDisplayableField,
   GrnDisplayField,
   ModelVariationDisplayField,
   OrderDisplayField,
@@ -46,6 +47,7 @@ import type {
   RoleDisplayField,
   UserDisplayField,
   VariationInstanceDisplayField,
+  WithdrawalRequestDisplayField,
 } from "./utils/types";
 import type { JSX } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -127,7 +129,8 @@ export const SELF_BANK_ACCOUNTS_URL = `${ROOT_URL}/user-bank-accounts/me`;
 
 export const SELF_BALANCE_HISTORY_URL = `${ROOT_URL}/user-balance-history/me`;
 
-export const SELF_WITHDRAWAL_REQUESTS_URL = `${ROOT_URL}/withdrawal-requests/me`;
+export const WITHDRAWAL_REQUESTS_URL = `${ROOT_URL}/withdrawal-requests`;
+export const SELF_WITHDRAWAL_REQUESTS_URL = `${WITHDRAWAL_REQUESTS_URL}/me`;
 export const WITHDRAWAL_STATES_URL = `${ROOT_URL}/withdrawal-states`;
 
 export const ROLE_URL = `${ROOT_URL}/roles`;
@@ -505,6 +508,25 @@ export const ORDER_RETURN_FIELD_LABEL_LEGEND: Readonly<
   actions: "Actions",
 };
 
+export const WITHDRAWAL_REQUEST_FIELD_LABEL_LEGEND: Readonly<
+  Record<AdminWithdrawalRequestDisplayableField, string>
+> = {
+  id: "ID",
+  requestedBy: "Requested By",
+  amountCents: "Amount",
+  currency: "Currency",
+  states: "State", // Only display latest state
+  withdrawalMethod: "Withdrawal Method",
+  stripeTransferGroupId: "Stripe Transfer Group ID",
+  stripeTransferId: "Stripe Transfer ID",
+  bankAccount: "Bank Account",
+  failureReason: "Failure Reason",
+  processedAt: "Processed At",
+  createdAt: "Created At",
+  updatedAt: "Updated At",
+  actions: "Actions",
+};
+
 export const DEFAULT_ADMIN_USER_DISPLAY_FIELDS: UserDisplayField[] = [
   { name: "id", visible: false, exportable: true },
   { name: "fullName", visible: true, exportable: true },
@@ -686,6 +708,24 @@ export const DEFAULT_ADMIN_ORDER_RETURN_DISPLAY_FIELDS: OrderReturnDisplayField[
     { name: "actions", visible: true, exportable: false },
   ];
 
+export const DEFAULT_ADMIN_WITHDRAWAL_REQUEST_DISPLAY_FIELDS: WithdrawalRequestDisplayField[] =
+  [
+    { name: "id", visible: true, exportable: true },
+    { name: "amountCents", visible: true, exportable: true },
+    { name: "currency", visible: true, exportable: true },
+    { name: "states", visible: true, exportable: true },
+    { name: "withdrawalMethod", visible: true, exportable: true },
+    { name: "stripeTransferGroupId", visible: false, exportable: true },
+    { name: "stripeTransferId", visible: false, exportable: true },
+    { name: "bankAccount", visible: false, exportable: true },
+    { name: "failureReason", visible: false, exportable: true },
+    { name: "processedAt", visible: true, exportable: true },
+    { name: "createdAt", visible: true, exportable: true },
+    { name: "updatedAt", visible: false, exportable: true },
+    { name: "requestedBy", visible: true, exportable: true },
+    { name: "actions", visible: true, exportable: false },
+  ];
+
 export const CARD_BRAND_ICONS: { [key: string]: JSX.Element } = {
   visa: (
     <FontAwesomeIcon
@@ -731,6 +771,8 @@ export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   roleManagementDisplayFields: DEFAULT_ADMIN_ROLE_DISPLAY_FIELDS,
   orderManagementDisplayFields: DEFAULT_ADMIN_ORDER_DISPLAY_FIELDS,
   orderReturnManagementDisplayFields: DEFAULT_ADMIN_ORDER_RETURN_DISPLAY_FIELDS,
+  withdrawalRequestManagementDisplayFields:
+    DEFAULT_ADMIN_WITHDRAWAL_REQUEST_DISPLAY_FIELDS,
 };
 
 export const GRN_FILE_IMPORT_WORKSHEET_NAME = "grn-import-template"; // Must match with the worksheet name in the Excel template file

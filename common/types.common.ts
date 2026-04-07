@@ -1631,7 +1631,15 @@ export type ApproveWithdrawalRequest =
     }
   | undefined;
 
+export type ApproveWithdrawalRequestBulk = {
+  requestIds: string[];
+} & ApproveWithdrawalRequest;
+
 export type RejectWithdrawalRequest = ApproveWithdrawalRequest;
+
+export type RejectWithdrawalRequestBulk = {
+  requestIds: string[];
+} & RejectWithdrawalRequest;
 
 export type AdminWithdrawalRequestResponse = SelfWithdrawalRequestResponse & {
   requestedBy: CreatedBy["createdBy"];

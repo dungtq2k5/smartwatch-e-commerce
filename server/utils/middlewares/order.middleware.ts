@@ -165,7 +165,7 @@ function sanitizeOrderUpdateBulkInput(
   const { orderIds, notes } = req.body;
 
   if (Array.isArray(orderIds)) {
-    req.body.orderIds = Array.from(new Set(orderIds));
+    req.body.orderIds = [...new Set(orderIds)];
   }
 
   if (typeof notes === "string") {

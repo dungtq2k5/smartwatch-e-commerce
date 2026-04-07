@@ -32,6 +32,7 @@ import {
   getPermissionsMatrix,
 } from "../../../utils/utils";
 import type { PermissionMatrix } from "../../../utils/types";
+import CreateRoleSkeleton from "../skeleton/CreateRoleSkeleton";
 
 type Process = {
   isProcessing: boolean;
@@ -344,7 +345,7 @@ export default function CreateRole() {
   return (
     <>
       {process.isInitializing ? (
-        <p>Loading...</p> // TODO Skeleton loading
+        <CreateRoleSkeleton />
       ) : apiErr ? (
         <ApiError errorMessage={apiErr} />
       ) : !permissions || !permissionsMatrix ? (

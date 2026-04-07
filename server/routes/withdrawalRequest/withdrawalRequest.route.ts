@@ -14,6 +14,8 @@ import {
   rejectRequest,
   adminSearch,
   adminGet,
+  approveRequestBulk,
+  rejectRequestBulk,
 } from "../../controllers/withdrawal/withdrawalRequest.controller";
 
 const router = express.Router();
@@ -48,6 +50,24 @@ router.get("/me/:requestId", verifyPermission("r_withdrawal_req"), getSelf);
 
 // For admin
 router.get("/:requestId", verifyPermission("r_withdrawal_req"), adminGet);
+
+// For admin
+router.patch(
+  "/approve/many",
+  verifyPermission("u_withdrawal_req"),
+  inputSanitizer("update bulk"),
+  verifyWithdrawalRequestInput("update bulk"),
+  approveRequestBulk,
+);
+
+// For admin
+router.patch(
+  "/reject/many",
+  verifyPermission("u_withdrawal_req"),
+  inputSanitizer("update bulk"),
+  verifyWithdrawalRequestInput("update bulk"),
+  rejectRequestBulk,
+);
 
 router.patch(
   "/me/:requestId/cancel",
