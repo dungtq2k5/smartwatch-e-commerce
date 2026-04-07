@@ -63,6 +63,8 @@ import Pagination from "../../common/Pagination";
 import EditWithdrawalRequestStateModal from "./EditWithdrawalRequestModal";
 import EditBulkWithdrawalRequestStateModal from "./EditBulkWithdrawalRequestStateModal";
 import ConfigDisplayModal from "../modal/ConfigDisplayModal";
+import WithdrawalRequestStateBadge from "../WithdrawalRequestStateBadge";
+import WithdrawalMethodBadge from "../WithdrawalMethodBadge";
 
 type Process = {
   isProcessing: boolean;
@@ -186,7 +188,7 @@ export default function WithdrawalRequestManagement() {
             request.states.length === 0
               ? null
               : getWithdrawalState(request.states.at(-1)?.id || "");
-          return <>{currState}</>; // TODO Use WithdrawalRequestStateBadge component
+          return <WithdrawalRequestStateBadge state={currState} />;
         },
         getCsvVal: (request) => {
           const currState =
@@ -204,7 +206,9 @@ export default function WithdrawalRequestManagement() {
         label:
           WITHDRAWAL_REQUEST_FIELD_LABEL_LEGEND["withdrawalMethod"] ||
           "Withdrawal Method",
-        tdContent: (request) => <>{request.withdrawalMethod}</>, // TODO Use WithdrawalMethodBadge component
+        tdContent: (request) => (
+          <WithdrawalMethodBadge method={request.withdrawalMethod} />
+        ),
         getCsvVal: (request) => request.withdrawalMethod,
       },
       stripeTransferGroupId: {

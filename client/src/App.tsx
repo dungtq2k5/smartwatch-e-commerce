@@ -127,7 +127,6 @@ export default function App() {
           <Route path="/admin">
             {/* TODO Admin features
               - Dashboard
-              - Withdraw request management
               - Design robust menu UI for all features (e.g. user/product/order management)
             */}
             <Route element={<AdminNotAuthRoute />}>
