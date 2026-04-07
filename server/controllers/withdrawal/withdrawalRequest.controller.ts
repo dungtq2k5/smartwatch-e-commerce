@@ -357,11 +357,9 @@ export async function approveRequest(
 
   try {
     // Check exists
-    if (!Types.ObjectId.isValid(requestId)) {
-      throw new HttpError(404, "Request not found.");
-    }
-    const withdrawalRequest =
-      await WithdrawalRequest.findById(requestId).session(session);
+    const withdrawalRequest = Types.ObjectId.isValid(requestId)
+      ? await WithdrawalRequest.findById(requestId).session(session)
+      : undefined;
     if (!withdrawalRequest) {
       throw new HttpError(404, "Request not found.");
     }
@@ -498,11 +496,9 @@ export async function rejectRequest(
 
   try {
     // Check exists
-    if (!Types.ObjectId.isValid(requestId)) {
-      throw new HttpError(404, "Request not found.");
-    }
-    const withdrawalRequest =
-      await WithdrawalRequest.findById(requestId).session(session);
+    const withdrawalRequest = Types.ObjectId.isValid(requestId)
+      ? await WithdrawalRequest.findById(requestId).session(session)
+      : undefined;
     if (!withdrawalRequest) {
       throw new HttpError(404, "Request not found.");
     }
